@@ -1,0 +1,31 @@
+# Line-ending hygiene — Windows dev (FastAPI native) + WSL2 Ubuntu (PostgreSQL) + Linux VPS target.
+# Shell/SQL files MUST be LF so they run inside WSL2/VPS unchanged.
+* text=auto
+
+*.sh   text eol=lf
+*.sql  text eol=lf
+*.py   text eol=lf
+*.md   text eol=lf
+*.csv  text eol=lf
+*.toml text eol=lf
+*.ini  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+.env.example text eol=lf
+
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binaries — never touch
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.parquet binary
+*.xlsx binary
+*.docx binary
+*.pptx binary
