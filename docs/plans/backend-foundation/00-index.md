@@ -1,0 +1,76 @@
+# BACKEND FOUNDATION — PHÂN RÃ THỰC THI THEO PHASE
+
+> **Nguồn gốc:** [`../backend-foundation-execute-plan.md`](../backend-foundation-execute-plan.md) v1.0 · bối cảnh gốc: [`../../../AGENTS.md`](../../../AGENTS.md)
+> **Cách dùng:** mỗi lần thực thi = đúng 1 phase. Làm xong tick checkbox trong file phase + cập nhật cột Status ở bảng dưới. Lệch kế hoạch → ghi entry dated vào [`../../../docs/decisions.md`](../../../docs/decisions.md) TRƯỚC khi làm tiếp.
+> **Ngày phân rã:** 2026-08-23
+
+---
+
+## 1. Hiện trạng máy (đã khảo sát 2026-08-23)
+
+| Hạng mục | Trạng thái | Ảnh hưởng |
+|---|---|---|
+| Git identity + commit #1 `.gitattributes` | ✅ Xong | — |
+| Repo | Gần trống: chỉ có AGENTS.md, README.md, docs/ | Phải dựng toàn bộ |
+| WSL | ❌ Lệnh `wsl` không tồn tại | **Chặn PG-in-WSL2** → Phase 01 việc người dùng |
+| uv | ❌ Chưa cài (python hệ thống 3.11.9) | Phase 01 cài |
+| Env vars Windows `STANZA_RESOURCES_DIR`, `PIP_CACHE_DIR` | ❌ Chưa đặt | Phase 01 đặt |
+| Models stanza (vi, en) + spaCy `en_core_web_lg` | ❌ Chưa tải | Phase 01 tải |
+| `.env` / `.env.example` | ❌ Chưa tồn tại | Phase 01 tạo example, người dùng điền key |
+| Tín dụng API (OpenRouter) | ⚠️ Rất thấp (subagent từng lỗi 402) | Thực thi inline, không spawn subagent |
+
+## 2. Bảng phase
+
+| # | File | Phạm vi | Blocked by | Status | Commit |
+|---|---|---|---|---|---|
+| 01 | [01-preconditions-environment.md](01-preconditions-environment.md) | §3 preconditions + §5 env contract + cài uv/pyproject pins | — | ⬜ | `chore(env): …` |
+| 02 | [02-spikes-core-s1-s2-s3-s6.md](02-spikes-core-s1-s2-s3-s6.md) | §8 spike S1, S2, S3, S6 | 01 (S3/S6 cần PG) | ⬜ | `test(spikes): …` |
+| 03 | [03-repo-skeleton-models-migrations.md](03-repo-skeleton-models-migrations.md) | §4 layout + §6 models + Alembic | 01 | ⬜ | `feat(db): …` |
+| 04 | [04-auth-rbac.md](04-auth-rbac.md) | Auth + RBAC | 03 | ⬜ | `feat(auth): …` |
+| 05 | [05-feedback-ingestion.md](05-feedback-ingestion.md) | Ingestion POST/CSV/list/detail | 03, 04 | ⬜ | `feat(feedback): …` |
+| 06 | [06-pii-presidio-service.md](06-pii-presidio-service.md) | Presidio sanitize + wiring | 05, 01 (models đã tải) | ⬜ | `feat(pii): …` |
+| 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ⬜ | `feat(llm): …` |
+| 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ⬜ | `feat(embedding): …` |
+| 09 | [09-analysis-runner-progress-api.md](09-analysis-runner-progress-api.md) | Batch runner + progress API | 06, 07, 08 | ⬜ | `feat(analysis): …` |
+| 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ⬜ | `test(spikes): …` |
+| 11 | [11-test-suite-polish.md](11-test-suite-polish.md) | Suite pytest hoàn thiện | 04–09 | ⬜ | `test(suite): …` |
+| 12 | [12-definition-of-done-sweep.md](12-definition-of-done-sweep.md) | §9 DoD sweep + docs cuối | Tất cả | ⬜ | `docs(dod): …` |
+
+Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12**.
+
+Đồ thị phụ thuộc rút gọn:
+
+```text
+01 ─┬─ 02 (S3/S6 đợi PG thật) ────────────────┐
+    ├─ 03 ─┬─ 04 ─ 05 ─ 06 ─┐                 │
+    │      ├─ 07 ────────────┼─ 09 ─ 11 ─ 12   │
+    │      ├─ 08 ────────────┘                 │
+    │      └─ 10 (S5 cần PG)                   │
+    └─ (việc người dùng: WSL, .env, Langfuse) ─┴─ chặn S3/S6/S5 + mọi verify cần PG
+```
+
+## 3. Quy tắc làm việc chung (áp cho mọi phase)
+
+1. **Mỗi phase ≥ 1 conventional commit** (`feat(auth): …`, `fix(db): …`), nhỏ, không commit `.env` hay key thật.
+2. **Blocker rule (§10.6):** phase fail sau nỗ lực hợp lý → STOP phase đó, ghi blocker vào `docs/decisions.md`, chuyển sang phase độc lập khác, báo cáo cuối phiên.
+3. **Deviation rule:** mọi lệch (conflict package, thiếu apt package, quirk provider) → fix forward + entry dated theo format trong `decisions.md`.
+4. **Không Docker** dưới mọi hình thức. Dev = FastAPI native Windows + PG16 trong WSL2.
+5. **PII boundary:** raw content không bao giờ vào prompt, log, trace, docs. Chỉ `sanitized_content` ra khỏi biên sanitize.
+6. **Windows quirks:** `uvicorn --reload` chạy RIÊNG một terminal, không spawn subprocess dưới reload; mọi file `.sh`/`.sql` LF-only (`.gitattributes` đã ép).
+7. **Pin đúng ngày đầu** trong `backend/pyproject.toml`; thêm thư viện ngoài danh sách §1 → phải log lý do (`tenacity` đã được duyệt sẵn).
+8. **Không spawn subagent** khi thực thi (tín dụng API thấp) — làm inline.
+
+## 4. Checklist tiến độ tổng
+
+- [ ] 01 Môi trường + preconditions
+- [ ] 02 Spike S1/S2/S3/S6
+- [ ] 03 Skeleton + models + migrations
+- [ ] 04 Auth + RBAC
+- [ ] 05 Ingestion
+- [ ] 06 Presidio PII
+- [ ] 07 LLM client + classifier
+- [ ] 08 Embedder + similarity
+- [ ] 09 Analysis runner
+- [ ] 10 Spike S4/S5
+- [ ] 11 Test suite polish
+- [ ] 12 DoD sweep
