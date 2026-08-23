@@ -1,12 +1,12 @@
 # Phase 03 — Repo skeleton · SQLAlchemy models · Alembic
 
 > **Nguồn:** execute-plan §4 (repo layout) + §6 (database models) + §1 (migrations decision)
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 01 · **Verify cần PG thật** (WSL đã lên)
+> **Trạng thái:** ⬜ · **Blocked by:** Phase 01 · **Verify cần DB thật** (Supabase active, cần internet)
 > **Commit mẫu:** `feat(db): app skeleton, all core models, alembic baseline`
 
 ## 1 · Mục tiêu
 
-Dựng xong "xương sống" FastAPI + toàn bộ 8 bảng dữ liệu + migration chạy được lên PG-in-WSL2. Các phase sau chỉ cắm module vào khung này.
+Dựng xong "xương sống" FastAPI + toàn bộ 8 bảng dữ liệu + migration chạy được lên **Supabase** (managed PG17). Các phase sau chỉ cắm module vào khung này.
 
 Cây thư mục cần tạo đúng §4 (đã có sẵn từ 01: `pyproject.toml`, `.python-version`):
 
@@ -25,7 +25,7 @@ backend/
 
 ## 2 · Việc CON NGƯỜI
 
-- Không có. (PG phải đang chạy trong WSL để verify — nếu chưa, phần `alembic upgrade head` bị hoãn như S6.)
+- Không có. (Cần internet + Supabase project active để verify — nếu project bị pause, vào dashboard Resume trước.)
 
 ## 3 · Việc AGENT làm — checklist chi tiết
 
@@ -39,7 +39,9 @@ backend/
 - **Rule PII:** logger KHÔNG BAO GIỜ nhận payload content; chỉ id/metadata. Ghi comment cảnh báo ngay đầu module.
 
 ### 3.3 DB — `app/db/session.py`, `app/db/base.py`
-- `engine = create_engine(settings.DATABASE_URL)` (psycopg driver); `SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)`.
+- `engine = create_engine(settings.DATABASE_URL, connect_args={"options": "-csearch_path=extensions,public"}, pool_size=2, max_overflow=2)`:
+  - `search_path` chứa schema `extensions` theo quy ước Supabase (nơi extension `vector` được cài);
+  - pool nhỏ phù hợp free tier qua internet; `SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)`.
 - `base.py`: `class Base(DeclarativeBase)`; import tất cả models để metadata đầy đủ cho Alembic.
 
 ### 3.4 App factory — `app/main.py`
@@ -75,7 +77,7 @@ Chuẩn chung: pk `uuid` (`uuid.uuid4` default, PG UUID type); timestamp timezon
   - **`include_object()` filter LOẠI 4 bảng langgraph**: `checkpoints`, `checkpoint_blobs`, `checkpoint_writes`, `checkpoint_migrations` (quyết định đã khóa §1) — autogenerate về sau sẽ không đụng chúng;
   - `compare_type=True`.
 - Migration theo nhóm logic (autogenerate rồi rà tay):
-  1. `0001_baseline_extensions_users` — `op.execute("CREATE EXTENSION IF NOT EXISTS vector")` + bảng `users`;
+  1. `0001_baseline_extensions_users` — `op.execute("CREATE EXTENSION IF NOT EXISTS vector")` (**bare** — Supabase không cho pin version) + bảng `users`;
   2. `0002_feedback_analysis_logs` — `feedbacks`, `analysis_runs`, `llm_call_logs`;
   3. `0003_future_phase_tables` — `clusters`, `insights`, `human_reviews`, `correction_examples`.
 - Chạy: `uv run alembic upgrade head` → verify `\dt` trong psql thấy đủ bảng, extension vector tồn tại.
@@ -85,8 +87,8 @@ Chuẩn chung: pk `uuid` (`uuid.uuid4` default, PG UUID type); timestamp timezon
 | Tiêu chí | Bằng chứng |
 |---|---|
 | `uv run uvicorn app.main:app` boot xanh (không cần DB cho health cơ bản) | terminal output |
-| `alembic upgrade head` sạch trên PG thật; `alembic downgrade base` + upgrade lại cũng sạch | lệnh |
-| 8 bảng + 7 enum types tồn tại đúng tên; extension `vector` enabled | `\dT+` / `\dt` |
+| `alembic upgrade head` sạch trên Supabase; `alembic downgrade base` + upgrade lại cũng sạch | lệnh |
+| 8 bảng + 7 enum types tồn tại đúng tên; extension `vector` enabled | Supabase Studio → Database → Tables/Extensions, hoặc SQL Editor query `SELECT extname FROM pg_extension WHERE extname='vector'` |
 | Filter langgraph hoạt động: tạo bảng giả `checkpoints` thủ công rồi `alembic revision --autogenerate` → diff KHÔNG sinh drop/create cho nó | test tay 1 lần, ghi kết quả |
 | Không file nào log/print raw content | review diff |
 
@@ -95,7 +97,9 @@ Chuẩn chung: pk `uuid` (`uuid.uuid4` default, PG UUID type); timestamp timezon
 ```powershell
 cd backend
 uv run alembic upgrade head
-wsl -d Ubuntu-24.04 -- bash -lc "sudo -u thesis psql -d feedback_agent -c '\dt' -c '\dT+'"
+# kiểm bảng/enum/extension: Supabase Studio → SQL Editor:
+#   SELECT tablename FROM pg_tables WHERE schemaname='public';
+#   SELECT extname FROM pg_extension WHERE extname='vector';
 uv run uvicorn app.main:app   # Ctrl+C thoát; --reload để dành terminal riêng
 ```
 
@@ -105,5 +109,5 @@ uv run uvicorn app.main:app   # Ctrl+C thoát; --reload để dành terminal ri�
 |---|---|
 | `Vector(1536)` import/pgvector-python lệch API | Ghim đúng `pgvector>=0.5,<0.6`, entry nếu phải đổi cách khai báo |
 | Autogenerate sinh sai enum/index | Sửa tay migration, entry ghi lý do |
-| PG chưa available | Hoãn verify, làm tiếp code các phase độc lập, quay lại verify khi WSL sẵn sàng |
+| Supabase pause/mất mạng | Dashboard → Resume project; hoãn verify, làm tiếp code các phase độc lập |
 | Đổi bộ giá trị enum so với đề xuất ở 3.5 | Entry dated trước khi viết migration |

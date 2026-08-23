@@ -19,7 +19,7 @@ Rà từng dòng §9 trên máy THẬT, điền kết quả vào bảng checklis
 
 | # | Điều kiện (§9) | Cách kiểm | Kết quả |
 |---|---|---|---|
-| 1 | Fresh-machine path đúng: WSL script → `uv sync` → `alembic upgrade head` → seed → uvicorn boots green | Làm đủ chuỗi lệnh theo README vừa viết | ☐ |
+| 1 | Fresh-machine path đúng: Supabase project sẵn sàng → `uv sync` → `.env` → `alembic upgrade head` → seed → uvicorn boots green | Làm đủ chuỗi lệnh theo README vừa viết (cần internet) | ☐ |
 | 2 | Login cả 2 role; role sai bị 403 | curl 3 lần | ☐ |
 | 3 | Import CSV 20 rows mixed VN-EN (fake PII) OK | CLI/API + report | ☐ |
 | 4 | raw ≠ sanitized; pii_entities có; sanitized qua API mặc định, raw cần flag | query DB + curl 2 chế độ | ☐ |
@@ -28,10 +28,10 @@ Rà từng dòng §9 trên máy THẬT, điền kết quả vào bảng checklis
 | 7 | llm_call_logs populated; Langfuse EU thấy trace CHỈ sanitized (inspect 1 trace); kill switch hoạt động | dashboard + env flip | ☐ |
 | 8 | 6 spike scripts chạy xong; outcomes + fallback ghi decisions.md | đọc decisions.md | ☐ |
 | 9 | pytest green (unit luôn; integration khi PG có) | pytest output | ☐ |
-| 10 | Không secrets trong git history; `.env.example` đủ; README phủ Windows-dev+WSL-PG+run/test/deploy-placeholder | mục 3.3 dưới | ☐ |
+| 10 | Không secrets trong git history; `.env.example` đủ; README phủ Windows-dev + Supabase-PG + run/test/deploy-placeholder | mục 3.3 dưới | ☐ |
 
 ### 3.2 Docs cuối
-- **README.md** cập nhật (giữ tiếng Việt): quickstart đúng thứ tự fresh-machine (WSL setup → uv sync → .env → alembic → seed → uvicorn riêng terminal → pytest), ma trận test, placeholder mục "Deploy VPS (phase sau)".
+- **README.md** cập nhật (giữ tiếng Việt): quickstart đúng thứ tự fresh-machine (tạo Supabase project → uv sync → .env → alembic → seed → uvicorn riêng terminal → pytest), quy tắc anti-pause 7 ngày, ma trận test, placeholder mục "Deploy VPS (phase sau)".
 - **docs/api-notes.md** viết: bảng endpoint thực tế đã ship (method, path, role, body/response chính), mode structured-output hiện hành, PROMPT_VERSION hiện tại.
 - Rà OUT-OF-SCOPE §2: không có code clustering/insight/graph/frontend lọt vào; `frontend/README.md` placeholder tồn tại ("phase B1"); stubs 501 (clusters, insights, reviews, corrections, reports) còn nguyên docstring.
 
@@ -55,7 +55,8 @@ Bảng 3.1 đủ 10 dòng có trạng thái + bằng chứng; mọi dòng ⛔ đ
 ```powershell
 cd backend
 uv run pytest -q ; uv run pytest -q -m integration
-wsl -d Ubuntu-24.04 -- bash -lc "sudo -u thesis psql -d feedback_agent -c 'SELECT count(*) FROM feedbacks' -c 'SELECT count(*) FROM llm_call_logs'"
+# đếm rows: Supabase Studio SQL Editor hoặc:
+uv run python -c "from app.db.session import engine; from sqlalchemy import text; c=engine.connect(); print(c.execute(text('SELECT count(*) FROM feedbacks')).scalar(), 'feedbacks;', c.execute(text('SELECT count(*) FROM llm_call_logs')).scalar(), 'llm_call_logs')"
 git status --short   # sạch
 ```
 

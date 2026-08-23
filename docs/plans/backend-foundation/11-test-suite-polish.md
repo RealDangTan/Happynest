@@ -15,18 +15,18 @@ Suite pytest đáng tin: unit chạy không cần PG/không network (LLM mocked)
 ## 3 · Việc AGENT làm — checklist chi tiết
 
 ### 3.1 Chiến lược DB trong tests (`tests/conftest.py`)
-- **Ràng buộc kỹ thuật:** native PG enum + cột `vector` → sqlite KHÔNG dùng được. Mọi test đụng DB cần **PG thật**.
+- **Ràng buộc kỹ thuật:** native PG enum + cột `vector` → sqlite KHÔNG dùng được. Mọi test đụng DB cần DB thật — khuyến nghị **free project Supabase thứ 2** (được 2 free projects/account) làm test DB để integration test không xóa data demo; cần internet.
 - `conftest.py`:
   - đọc `TEST_DATABASE_URL` env, fallback `DATABASE_URL`;
   - fixture session-scoped: tạo schema sạch mỗi lần chạy test (truncate bảng theo thứ tự FK hoặc drop/create schema);
   - fixture function-scoped `db_session` rollback sau mỗi test;
   - fixture `client` = TestClient với dependency_overrides cho `get_db` và override settings;
   - fixture `fake_llm` / `fake_embedder` deterministic (seed cố định), inject qua monkeypatch vào classifier/runner;
-  - **Nếu PG không reachable:** pytest.skip toàn bộ test DB với message rõ ("PG-in-WSL2 not reachable") — unit thuần vẫn chạy.
+  - **Nếu DB không reachable (mất mạng / project pause):** pytest.skip toàn bộ test DB với message rõ ("Supabase not reachable") — unit thuần vẫn chạy.
 - Đăng ký marker trong `pyproject.toml`:
   ```toml
   [tool.pytest.ini_options]
-  markers = ["integration: requires real PostgreSQL in WSL2"]
+  markers = ["integration: requires real PostgreSQL (Supabase) + internet"]
   addopts = "-m 'not integration'"   # mặc định bỏ integration; bật bằng -m integration
   ```
 
@@ -46,7 +46,7 @@ Việc phase này: chạy toàn bộ, sửa flaky, đảm bảo KHÔNG test nào
 ### 3.3 Ma trận chạy chuẩn (ghi vào README ở Phase 12)
 ```powershell
 uv run pytest                    # unit-only khi chưa bật marker ngược
-uv run pytest -m integration     # PG thật phải đang chạy trong WSL
+uv run pytest -m integration     # Supabase test project phải active + internet
 ```
 Kỳ vọng DoD mục 9: "pytest green except integration marks skipped without PG; integration pass against real PG".
 
@@ -62,9 +62,9 @@ Kỳ vọng DoD mục 9: "pytest green except integration marks skipped without 
 
 ```powershell
 cd backend
-# 1. Không PG (hoặc tắt WSL): unit vẫn xanh
+# 1. Không mạng / chưa có TEST_DATABASE_URL: unit vẫn xanh, integration skip
 uv run pytest -q
-# 2. Bật WSL PG:
+# 2. Supabase test project active + có internet:
 uv run pytest -q -m integration
 uv run pytest -q   # tổng
 ```

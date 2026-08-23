@@ -56,7 +56,7 @@ def embed_one(text: str) -> list[float]
 |---|---|
 | `/similar` trả neighbors có cosine score giảm dần | curl thật / test integration |
 | Vector lưu kèm model+dim | query DB 3 cột |
-| Không ANN index được tạo | `\di` trong psql |
+| Không ANN index được tạo | Supabase Studio → Database → Indexes (chỉ PK/FK mặc định) |
 
 ## 5 · Lệnh kiểm chứng
 

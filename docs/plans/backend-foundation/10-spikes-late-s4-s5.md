@@ -1,7 +1,7 @@
 # Phase 10 — Spike muộn S4 (HDBSCAN toy) · S5 (LangGraph interrupt/resume)
 
 > **Nguồn:** execute-plan §8 (S4, S5) + §2 OUT-OF-SCOPE (chỉ spike script được đụng langgraph)
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 03 (PG + deps). S5 thêm cần bảng checkpoint do langgraph tự tạo.
+> **Trạng thái:** ⬜ · **Blocked by:** Phase 03 (DB + deps). S5 thêm cần internet + Supabase active — checkpoint tables do langgraph tự tạo trên đó.
 > **Commit mẫu:** `test(spikes): S4 hdbscan toy evidence, S5 langgraph interrupt resume`
 
 ## 1 · Mục tiêu
@@ -36,7 +36,7 @@ Hai spike phục vụ **các phase sau** (clustering, HITL graph): trả lời b
 - **Thiết kế:**
   - Graph tối giản: node A → node B (`interrupt_before=["B"]`) → node C;
   - Side-effect counter: bảng `_spike_side_effects(id serial, ts)` — node B INSERT 1 row khi thực thi;
-  - Checkpointer: `AsyncPostgresSaver.from_conn_string(DATABASE_URL)`; setup() tạo 4 bảng checkpoint (đã bị Alembic filter loại từ Phase 03 — kiểm chứng lại chúng xuất hiện và bị ignore);
+  - Checkpointer: `AsyncPostgresSaver.from_conn_string(DATABASE_URL)` nối thẳng Supabase; setup() tạo 4 bảng checkpoint trên đó (đã bị Alembic filter loại từ Phase 03 — kiểm chứng lại chúng xuất hiện và bị ignore);
   - Kịch bản: run 1 đến interrupt → **thoát process hẳn** (script nhận flag `--phase resume` chạy lần 2 như tiến trình mới) → run 2 resume → node B chạy đúng MỘT lần → assert counter == 1.
 - **Pass:** resume OK, side effect đúng 1 lần.
 - **Fallback nếu fail:** note "DB state machine tự quản" cho HITL phase — production graph vẫn ngoài scope giai đoạn này.
@@ -68,5 +68,5 @@ uv run python ../scripts/spikes/s5_langgraph_interrupt.py --phase resume
 | Sự kiện | Hành động |
 |---|---|
 | HDBSCAN sklearn API lệch version | Ghim version ad-hoc rõ trong entry |
-| AsyncPostgresSaver setup lỗi quyền/schema | Entry + thử sync saver hoặc tạo schema riêng |
+| AsyncPostgresSaver setup lỗi quyền/schema trên Supabase | Entry + thử sync saver hoặc chỉ định schema riêng cho checkpoint |
 | Resume nhân đôi side effect | Đây chính là câu trả lời spike — ghi fail + fallback state machine, KHÔNG fix lan sang production code |

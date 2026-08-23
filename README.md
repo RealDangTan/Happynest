@@ -10,13 +10,14 @@ Pipeline: PII sanitize → LLM classify → embed (pgvector) → cluster → tre
 
 📄 [`docs/plans/backend-foundation-execute-plan.md`](docs/plans/backend-foundation-execute-plan.md)
 
-## Quickstart (tóm tắt — chi tiết đầy đủ trong plan §3–§4)
+## Quickstart (tóm tắt — chi tiết đầy đủ trong plan §3–§4 và `docs/plans/backend-foundation/`)
 
-> Yêu cầu sẵn: WSL2 Ubuntu 24.04, Python 3.12 + uv, Node không cần ở giai đoạn này.
+> Yêu cầu sẵn: tài khoản **Supabase** (free tier), Python 3.12 + uv, Node không cần ở giai đoạn này. Lưu ý: free tier Supabase tự pause sau 7 ngày không hoạt động — mỗi tuần mở dashboard hoặc chạy ≥1 query.
 
 ```bash
-# 1. PostgreSQL 16 + pgvector trong WSL2 (chạy một lần, idempotent)
-wsl -d Ubuntu -- bash -lc "sudo bash /mnt/d/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/infra/wsl_pg_setup.sh"
+# 1. Tạo Supabase project (chạy một lần, trên trình duyệt)
+#    Region: Singapore (gần VN) hoặc EU. Dashboard → Connect → Session pooler
+#    → copy connection string vào DATABASE_URL của .env
 
 # 2. Backend deps (terminal Windows, từ thư mục backend/)
 cd backend && uv sync
@@ -30,7 +31,7 @@ uv run python scripts/seed_users.py
 uv run uvicorn app.main:app --reload   # chạy RIÊNG một terminal
 ```
 
-> ⚠️ Các bước trên khả dụng sau khi agent thực thi plan xong milestone tương ứng (`infra/wsl_pg_setup.sh`, `scripts/seed_users.py` do agent tạo).
+> ⚠️ Các bước trên khả dụng sau khi agent thực thi plan xong milestone tương ứng (`infra/supabase_setup.md`, `scripts/seed_users.py` do agent tạo).
 
 ## Tài liệu
 

@@ -3,6 +3,7 @@
 > **Thesis:** AI Agent tổng hợp, phân loại và phát hiện vấn đề từ phản hồi người dùng về sản phẩm AI
 > **Standing context:** read [`AGENTS.md`](../../AGENTS.md) first — project identity, locked stack, hard rules live there.
 > **Plan version:** v1.0 · authored 2026-08-23
+> **⚠️ Amendment v1.1 (cùng ngày):** Database chuyển từ PostgreSQL 16-in-WSL2 sang **Supabase** (managed PG17 + pgvector, session pooler). Toàn bộ chỗ nhắc WSL2 trong tài liệu này đã cập nhật theo v1.1 — lý do và hậu quả chấp nhận xem [`../decisions.md`](../decisions.md) entry "Database chuyển từ PostgreSQL 16-in-WSL2 sang Supabase".
 > **Phạm vi:** CHỈ nền backend + hạ tầng. Không UI, không clustering/trend/insight production, không LangGraph production graph (chỉ spike xác minh).
 
 ---
@@ -11,7 +12,7 @@
 
 You are the lead engineer for an undergraduate thesis project: **AI Agent for User Feedback Intelligence for AI-enabled Digital Products** (feedback mostly Vietnamese with English code-switching).
 
-Your current mission: **build and verify the backend foundation ONLY** — repo, database, auth, ingestion, PII sanitization, LLM classification service, embeddings + pgvector, batch analysis job runner. Everything must run WITHOUT Docker: FastAPI natively on Windows, PostgreSQL inside WSL2 Ubuntu, future deploy = native Ubuntu VPS with systemd.
+Your current mission: **build and verify the backend foundation ONLY** — repo, database, auth, ingestion, PII sanitization, LLM classification service, embeddings + pgvector, batch analysis job runner. Everything must run WITHOUT Docker: FastAPI natively on Windows, database = **Supabase** (managed PostgreSQL 17 + pgvector, reached over internet via session pooler), future deploy = native Ubuntu VPS with systemd.
 
 Do NOT build UI. Do NOT build clustering/trends/insights/reports. Those are later phases that will plug into the contracts you create here.
 
@@ -20,7 +21,7 @@ Do NOT build UI. Do NOT build clustering/trends/insights/reports. Those are late
 | Area | Decision |
 |---|---|
 | Runtime | Python **3.12** pinned via `uv` (`.python-version` committed); Node 24 LTS exists but NO frontend this phase |
-| Database | PostgreSQL 16 **inside WSL2 Ubuntu** (apt), host `localhost:5432`; extension `vector`; NO ANN index (dataset ≤1500 rows, exact scan only) |
+| Database | **Supabase** managed PostgreSQL 17, kết nối qua **session pooler** (`aws-0-<region>.pooler.supabase.com:5432`); extension `vector` trong schema `extensions`; NO ANN index (dataset ≤1500 rows, exact scan only) — *(v1.1: thay PG16-in-WSL2)* |
 | Vector | `pgvector>=0.5,<0.6` + SQLAlchemy 2.x; column `VECTOR(1536)`; always store `embedding_model` + `embedding_dim` per row |
 | LLM | `openai` python SDK with `base_url` override; env-driven (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`); `temperature=0` |
 | Structured output | Try `response_format={"type":"json_schema",...}`; on provider rejection/error fall back to prompt-JSON + Pydantic validate + ONE retry including the validation error; record which mode worked in Decision Log |
@@ -38,7 +39,7 @@ Do NOT build UI. Do NOT build clustering/trends/insights/reports. Those are late
 
 1. Repo skeleton + git hygiene + env contract
 2. Spike scripts S1–S6 (validation evidence, kept in `scripts/spikes/`)
-3. Postgres-in-WSL2 bootstrap script + DB/user creation
+3. Supabase project setup (human, trình duyệt) + `infra/supabase_setup.md` note
 4. FastAPI app skeleton: settings, health, CORS, exception handlers, logging
 5. All core SQLAlchemy models + Alembic migrations
 6. Auth (register disabled; login; current-user; role guard; seed script)
@@ -64,8 +65,8 @@ Do NOT build UI. Do NOT build clustering/trends/insights/reports. Those are late
 
 Check these before coding; print instructions if any fail (do not silently proceed):
 
-1. WSL2 Ubuntu 24.04 available (`wsl -l -v`) with systemd; `.wslconfig` capped (`memory=2GB`)
-2. In WSL: `postgresql-16` + `postgresql-16-pgvector` packages exist (`apt-cache policy postgresql-16-pgvector`); if missing → build pgvector from source (`postgresql-server-dev-16`, `make && make install`) and RECORD it in Decision Log
+1. **Supabase project created** (free tier OK): region **Singapore** (gần VN) hoặc EU (đồng bộ với Langfuse EU); database password đã đặt; lấy connection string **session pooler** cho `.env` (Dashboard → Connect → Session pooler)
+2. Anti-pause discipline ghi nhận: free tier tự pause sau 7 ngày low-activity — mỗi tuần phải mở dashboard hoặc chạy ≥1 query
 3. Windows env vars set (user level OK): `STANZA_RESOURCES_DIR=D:\stanza_resources`, `PIP_CACHE_DIR=D:\.pip-cache`
 4. Models downloaded: `stanza.download('vi')` and `('en')`; spaCy `en_core_web_lg` wheel installed directly
 5. `.env` present with real values for: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `EMBEDDING_MODEL` (name confirmed by calling provider `/v1/embeddings` once), `DATABASE_URL`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`
@@ -78,12 +79,12 @@ thesis/
 ├── .gitattributes              # DONE (commit #1)
 ├── .gitignore                  # .env, __pycache__, node_modules, *.pyc, .venv, dist/
 ├── .env.example                # THE contract (see §5)
-├── README.md                   # setup: Windows dev + WSL2 PG + run commands
+├── README.md                   # setup: Windows dev + Supabase PG + run commands
 ├── docs/
 │   ├── decisions.md            # Decision Log (seeded; append every deviation)
 │   └── api-notes.md
 ├── infra/
-│   ├── wsl_pg_setup.sh         # apt install, create db+user, enable systemd svc (idempotent)
+│   ├── supabase_setup.md       # note setup 1 lần: extension vector + connection string (agent tạo)
 │   ├── setup_vps.sh            # placeholder skeleton now (Ubuntu native deploy, filled in later phase)
 │   └── systemd/                # empty dir, placeholders later
 ├── backend/
@@ -135,8 +136,8 @@ APP_ENV=dev                      # dev|prod
 SECRET_KEY=changeme-openssl-rand-hex-32
 CORS_ORIGINS=http://localhost:3000
 
-# --- Database (PG in WSL2, reached from Windows via localhost) ---
-DATABASE_URL=postgresql+psycopg://thesis:thesis@localhost:5432/feedback_agent
+# --- Database (Supabase session pooler; direct db.<ref>.supabase.co:5432 chỉ khi mạng hỗ trợ IPv6) ---
+DATABASE_URL=postgresql+psycopg://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
 
 # --- LLM provider (OpenAI-compatible) ---
 LLM_BASE_URL=
@@ -173,7 +174,7 @@ PROMPT_VERSION=v1
 - `analysis_runs`: id, pipeline_version, llm_model, prompt_version, embedding_model, started_at, completed_at, status enum(running/completed/failed), processed_count, total_count, error
 - `llm_call_logs`: id, analysis_run_id nullable, feedback_id nullable, call_type enum(classify/embed/name_cluster/generate_insight), prompt_version, model, latency_ms, prompt_tokens, completion_tokens, error nullable, created_at
 
-Rules: `CREATE EXTENSION IF NOT EXISTS vector` inside the first migration via `op.execute()`. All enums as native PG enums via SQLAlchemy `Enum(name=...)`. Timestamps timezone-aware.
+Rules: `CREATE EXTENSION IF NOT EXISTS vector` (bare — Supabase deprecated extension version pinning) inside the first migration via `op.execute()`; engine `connect_args={"options": "-csearch_path=extensions,public"}` (Supabase cài extension vào schema `extensions`). All enums as native PG enums via SQLAlchemy `Enum(name=...)`. Timestamps timezone-aware.
 
 ## 7. SERVICE CONTRACTS (module boundaries — later phases depend on THESE signatures)
 
@@ -218,14 +219,14 @@ API routes (REST, prefix `/api`):
 |---|---|---|---|---|
 | S1 | s1_presidio_vi.py | Does StanzaNlpEngine("vi")+regex catch PII in 20 mixed VN-EN samples with planted fake PII? | ≥80% obvious-type recall (email/phone/CCCD), person names usable-with-caveat | Regex-only + documented limitation |
 | S2 | s2_llm_schema.py | Does provider honor json_schema response_format? 10 calls | ≥9/10 valid | Prompt-JSON+validate+retry mode |
-| S3 | s3_embedding_pgvector.py | Provider `/v1/embeddings` works? roundtrip through PG-in-WSL2? | self-match rank #1; record served model name + dims | Alternate embedding provider |
+| S3 | s3_embedding_pgvector.py | Provider `/v1/embeddings` works? roundtrip through Supabase pgvector? | self-match rank #1; record served model name + dims | Alternate embedding provider |
 | S4 | s4_hdbscan_toy.py | sklearn HDBSCAN cosine sane on 200 toy vectors? | runs <5s, sensible noise on sweep | KMeans-primary trade-off note |
 | S5 | s5_langgraph_interrupt.py | interrupt→server restart→resume with AsyncPostgresSaver? | resume OK, zero duplicated side effects | DB state machine note (production graph still later phase) |
-| S6 | s6_parity.py | Windows-native backend ↔ PG-in-WSL2 end-to-end incl. Alembic + vector insert/query? | green | Move whole dev into WSL2 |
+| S6 | s6_parity.py | Windows-native backend ↔ Supabase cloud end-to-end incl. Alembic + vector insert/query? | green | Rà lại cấu hình pooler / cân nhắc PG local mirror |
 
 ## 9. DEFINITION OF DONE (this phase)
 
-- [ ] Fresh-machine path documented & true: WSL script → `uv sync` → `alembic upgrade head` → `seed_users` → `uvicorn app.main:app` boots green
+- [ ] Fresh-machine path documented & true: Supabase project sẵn sàng → `uv sync` → điền `.env` → `alembic upgrade head` → `seed_users` → `uvicorn app.main:app` boots green
 - [ ] Login as both seeded roles; role-guarded route rejects wrong role (403)
 - [ ] CSV import of 20 mixed VN-EN rows (with planted fake PII) succeeds
 - [ ] `raw_content ≠ sanitized_content`; `pii_entities` populated; sanitized text visible via API, raw only with explicit flag
@@ -234,7 +235,7 @@ API routes (REST, prefix `/api`):
 - [ ] `llm_call_logs` populated; Langfuse traces visible in EU dashboard (only sanitized text — verified by inspecting one trace); kill switch env works
 - [ ] All 6 spike scripts executed; outcomes + activated fallbacks written in docs/decisions.md
 - [ ] pytest green except integration marks skipped without PG; integration tests pass against real PG
-- [ ] No secrets in git history; `.env.example` complete; README covers Windows-dev + WSL-PG + run/test/deploy-placeholder
+- [ ] No secrets in git history; `.env.example` complete; README covers Windows-dev + Supabase-PG + run/test/deploy-placeholder
 
 ## 10. RULES OF ENGAGEMENT
 

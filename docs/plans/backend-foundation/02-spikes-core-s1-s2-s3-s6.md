@@ -1,7 +1,7 @@
 # Phase 02 — Spike cốt lõi S1 · S2 · S3 · S6
 
 > **Nguồn:** execute-plan §8 (bảng spike) + rule §10.8 (spike trước khi build module production)
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 01 (deps + models). Riêng **S3 cần PG thật** (WSL đã cài); **S2 cần key LLM** trong `.env`.
+> **Trạng thái:** ⬜ · **Blocked by:** Phase 01 (deps + models). Riêng **S3 cần DB thật** (Supabase active, cần internet); **S2 cần key LLM** trong `.env`.
 > **Commit mẫu:** `test(spikes): add S1-S3,S6 evidence scripts and record outcomes`
 
 ## 1 · Mục tiêu
@@ -18,7 +18,7 @@ Mỗi script in báo cáo JSON ra stdout VÀ lưu `scripts/spikes/results/<tên>
 ## 2 · Việc CON NGƯỜI
 
 - Đảm bảo `.env` đã có `LLM_*` + `EMBEDDING_MODEL` thật (cho S2/S3).
-- Đảm bảo WSL Ubuntu + PG16 đã lên (cho S3/S6) — nếu chưa: agent vẫn làm được **S1**, và tạm hoãn S3/S6 sang khi sẵn sàng (ghi blocker vào decisions.md, nhảy sang Phase 03 theo rule §10.6).
+- Đảm bảo Supabase project đã tạo và `.env` có `DATABASE_URL` session pooler (cho S3/S6) — nếu chưa: agent vẫn làm được **S1**, và tạm hoãn S3/S6 sang khi sẵn sàng (ghi blocker vào decisions.md, nhảy sang Phase 03 theo rule §10.6).
 
 ## 3 · Việc AGENT làm — checklist chi tiết
 
@@ -50,23 +50,23 @@ Mỗi script in báo cáo JSON ra stdout VÀ lưu `scripts/spikes/results/<tên>
 - [ ] Script + chạy 10 call + record
 - ⛔ Nếu chưa có key: đánh dấu blocked trong decisions.md, quay lại sau khi người dùng điền `.env`.
 
-### 3.3 S3 — `s3_embedding_pgvector.py` · Embeddings API + roundtrip pgvector qua WSL2?
+### 3.3 S3 — `s3_embedding_pgvector.py` · Embeddings API + roundtrip pgvector qua Supabase?
 
-- **Câu hỏi:** `/v1/embeddings` hoạt động? Vector đi vào PG-in-WSL2 và query cosine về đúng?
+- **Câu hỏi:** `/v1/embeddings` hoạt động? Vector đi vào Supabase (managed PG17 + pgvector) và query cosine về đúng?
 - **Thiết kế:**
   1. Call embeddings cho 10 câu VI; in **model name mà server report** + số chiều thực tế; đối chiếu `EMBEDDING_DIM=1536` — lệch → dừng, ghi Decision Log (đổi `EMBEDDING_DIM` + `VECTOR(n)` tương ứng).
-  2. Tạo bảng toy (`CREATE TABLE _spike_vec (id serial, v vector(1536))`) trên DB `feedback_agent` qua psycopg thuần.
-  3. Insert 10 vector; lấy câu #1 query `ORDER BY v <=> :q LIMIT 3` → self-match phải rank #1 với score ≈ 1.0 (cosine similarity `1 - distance`).
+  2. Tạo bảng toy (`CREATE TABLE _spike_vec (id serial, v vector(1536))`) trên DB `postgres` của Supabase qua psycopg thuần (qua session pooler; extension vector đã enable — xem `infra/supabase_setup.md`).
+  3. Insert 10 vector; lấy câu #1 query `ORDER BY v <=> :q LIMIT 3` → self-match phải rank #1 với score ≈ 1.0 (cosine similarity `1 - distance`); đo và ghi latency mỗi query (~100ms là bình thường qua internet).
 - **Pass:** self-match rank #1 mọi câu; ghi model name + dims thực đo.
 - **Fallback:** provider embedding thay thế (đổi env); nếu pgvector extension lỗi tạo bảng → xem Phase 03 mục migration.
 - [ ] Script + chạy + record; drop bảng toy xong việc.
 
-### 3.4 S6 — `s6_parity.py` · Parity Windows-native ↔ PG-in-WSL2 end-to-end?
+### 3.4 S6 — `s6_parity.py` · Parity Windows-native backend ↔ Supabase cloud end-to-end?
 
-- **Câu hỏi:** Toàn bộ chuỗi dev chạy từ Windows side: Alembic migrate + insert/query vector qua SQLAlchemy + pgvector-python OK không?
-- **Thiết kế:** (1) `uv run alembic upgrade head` từ `backend/` target WSL PG; (2) insert 1 row `feedbacks` có embedding bằng ORM; (3) query ngược so khớp; (4) đo thời gian 20 query cosine tuần tự (tham khảo hiệu năng localhost↔WSL).
+- **Câu hỏi:** Toàn bộ chuỗi dev chạy từ Windows side qua internet: Alembic migrate + insert/query vector qua SQLAlchemy + pgvector-python OK không?
+- **Thiết kế:** (1) `uv run alembic upgrade head` từ `backend/` target Supabase (session pooler); (2) insert 1 row `feedbacks` có embedding bằng ORM; (3) query ngước so khớp; (4) đo thời gian 20 query cosine tuần tự (tham khảo hiệu năng WAN — so sánh với con số S3).
 - **⚠️ Thứ tự thực tế:** S6 cần migrations của Phase 03 tồn tại mới chạy đủ. Cho phép: chạy phần "PG reachable + raw psycopg roundtrip" ngay phase này, phần Alembic/ORM hoàn tất ngay sau Phase 03 (ghi rõ trong decisions.md ngày chạy từng phần). Pass criterion cuối: green toàn phần.
-- **Fallback nếu fail:** chuyển toàn bộ dev vào WSL2 (nặng) — chỉ cân nhắc khi parity hỏng thật sự, phải entry dated.
+- **Fallback nếu fail:** rà lại cấu hình pooler/prepared statements; trường hợp xấu nhất cân nhắc PostgreSQL local làm mirror dev — phải entry dated.
 - [ ] Script + chạy phần khả dụng + record
 
 ## 4 · Tiêu chí nghiệm thu
@@ -96,5 +96,5 @@ git log --oneline -3                                # thấy commit spikes
 | S1 < 80% recall | Kích hoạt regex-only, ghi cả 2 con số |
 | S2 < 9/10 | Mode production = prompt-JSON+validate+retry, Phase 07 dùng nhánh này làm mặc định |
 | S3 dims ≠ 1536 | Entry dated: đổi EMBEDDING_DIM + cột VECTOR(n), cập nhật `.env.example` |
-| WSL/PG chưa sẵn sàng | Ghi blocker, làm S1 rồi nhảy Phase 03 (rule §10.6) |
+| Supabase chưa sẵn sàng / mất mạng | Ghi blocker, làm S1 rồi nhảy Phase 03 (rule §10.6) |
 | Provider từ chối `json_schema` hoàn toàn (HTTP 400 cố định) | Ghi response lỗi nguyên văn (che key) vào entry |

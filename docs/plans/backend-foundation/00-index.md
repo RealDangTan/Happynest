@@ -1,6 +1,6 @@
 # BACKEND FOUNDATION — PHÂN RÃ THỰC THI THEO PHASE
 
-> **Nguồn gốc:** [`../backend-foundation-execute-plan.md`](../backend-foundation-execute-plan.md) v1.0 · bối cảnh gốc: [`../../../AGENTS.md`](../../../AGENTS.md)
+> **Nguồn gốc:** [`../backend-foundation-execute-plan.md`](../backend-foundation-execute-plan.md) v1.0 (**amendment v1.1: DB = Supabase**) · bối cảnh gốc: [`../../../AGENTS.md`](../../../AGENTS.md)
 > **Cách dùng:** mỗi lần thực thi = đúng 1 phase. Làm xong tick checkbox trong file phase + cập nhật cột Status ở bảng dưới. Lệch kế hoạch → ghi entry dated vào [`../../../docs/decisions.md`](../../../docs/decisions.md) TRƯỚC khi làm tiếp.
 > **Ngày phân rã:** 2026-08-23
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | Git identity + commit #1 `.gitattributes` | ✅ Xong | — |
 | Repo | Gần trống: chỉ có AGENTS.md, README.md, docs/ | Phải dựng toàn bộ |
-| WSL | ❌ Lệnh `wsl` không tồn tại | **Chặn PG-in-WSL2** → Phase 01 việc người dùng |
+| Database | 🔄 Chuyển sang **Supabase** (v1.1) — project chưa tạo | Phase 01 việc người dùng; thay cho PG-in-WSL2 gốc (xem decisions.md) |
 | uv | ❌ Chưa cài (python hệ thống 3.11.9) | Phase 01 cài |
 | Env vars Windows `STANZA_RESOURCES_DIR`, `PIP_CACHE_DIR` | ❌ Chưa đặt | Phase 01 đặt |
 | Models stanza (vi, en) + spaCy `en_core_web_lg` | ❌ Chưa tải | Phase 01 tải |
@@ -46,7 +46,7 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
     │      ├─ 07 ────────────┼─ 09 ─ 11 ─ 12   │
     │      ├─ 08 ────────────┘                 │
     │      └─ 10 (S5 cần PG)                   │
-    └─ (việc người dùng: WSL, .env, Langfuse) ─┴─ chặn S3/S6/S5 + mọi verify cần PG
+    └─ (việc người dùng: Supabase project, .env, Langfuse) ─┴─ chặn S3/S6/S5 + mọi verify cần DB (cần internet)
 ```
 
 ## 3. Quy tắc làm việc chung (áp cho mọi phase)
@@ -54,7 +54,8 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 1. **Mỗi phase ≥ 1 conventional commit** (`feat(auth): …`, `fix(db): …`), nhỏ, không commit `.env` hay key thật.
 2. **Blocker rule (§10.6):** phase fail sau nỗ lực hợp lý → STOP phase đó, ghi blocker vào `docs/decisions.md`, chuyển sang phase độc lập khác, báo cáo cuối phiên.
 3. **Deviation rule:** mọi lệch (conflict package, thiếu apt package, quirk provider) → fix forward + entry dated theo format trong `decisions.md`.
-4. **Không Docker** dưới mọi hình thức. Dev = FastAPI native Windows + PG16 trong WSL2.
+4. **Không Docker** dưới mọi hình thức. Dev = FastAPI native Windows + **Supabase** managed PostgreSQL (v1.1).
+9. **Anti-pause Supabase:** free tier tự pause sau 7 ngày low-activity — mỗi tuần mở dashboard hoặc chạy ≥1 query. DB cần internet mọi phiên làm việc.
 5. **PII boundary:** raw content không bao giờ vào prompt, log, trace, docs. Chỉ `sanitized_content` ra khỏi biên sanitize.
 6. **Windows quirks:** `uvicorn --reload` chạy RIÊNG một terminal, không spawn subprocess dưới reload; mọi file `.sh`/`.sql` LF-only (`.gitattributes` đã ép).
 7. **Pin đúng ngày đầu** trong `backend/pyproject.toml`; thêm thư viện ngoài danh sách §1 → phải log lý do (`tenacity` đã được duyệt sẵn).

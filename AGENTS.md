@@ -19,7 +19,7 @@ Explicitly OUT OF SCOPE until a later phase is declared:
 - Any frontend/UI code (Next.js comes later; leave `frontend/` untouched)
 - Clustering / trend / emerging-topic / insight production code
 - Production LangGraph graph and correction→few-shot loop
-- **Docker of any kind — permanently banned** (dev = FastAPI native on Windows + PostgreSQL inside WSL2 Ubuntu; prod = native Ubuntu VPS with systemd)
+- **Docker of any kind — permanently banned** (dev = FastAPI native on Windows + **Supabase** managed PostgreSQL; prod = native Ubuntu VPS with systemd)
 
 ## Locked stack
 
@@ -28,7 +28,7 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 | Concern | Choice |
 |---|---|
 | Runtime | Python **3.12** via `uv` (`backend/.python-version` committed) |
-| Database | PostgreSQL 16 **inside WSL2 Ubuntu** (apt), reached from Windows at `localhost:5432`; extension `vector`; NO ANN index (dataset ≤ 1500 rows) |
+| Database | **Supabase** managed PostgreSQL 17 qua session pooler (`aws-0-<region>.pooler.supabase.com:5432`); extension `vector` trong schema `extensions`; NO ANN index (dataset ≤ 1500 rows) — *v1.1, xem decisions.md* |
 | Vectors | `VECTOR(1536)`; OpenAI-compatible `/v1/embeddings`; store `embedding_model` + `embedding_dim` per row |
 | LLM | `openai` SDK with `base_url` override; env-driven provider; `temperature=0` |
 | Structured output | try `response_format json_schema` → fallback prompt-JSON + Pydantic validate + ONE retry |
@@ -48,7 +48,7 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 │   ├── plans/backend-foundation-execute-plan.md   # ACTIVE MISSION (§0–§10)
 │   └── decisions.md           # Decision Log — every deviation goes here
 ├── infra/
-│   ├── wsl_pg_setup.sh        # agent creates: PG16+pgvector bootstrap inside WSL2 (idempotent)
+│   ├── supabase_setup.md      # agent tạo: note setup 1 lần trên Supabase (extension vector, connection string)
 │   ├── setup_vps.sh           # placeholder until deploy phase
 │   └── systemd/
 ├── backend/                   # uv project — ALL application code lives here
@@ -65,13 +65,15 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 - `.env.example` at repo root is THE single source of truth for required variables. Copy to `backend/.env`, fill real values, never commit it.
 - Windows user-level env vars: `STANZA_RESOURCES_DIR=D:\stanza_resources`, `PIP_CACHE_DIR=D:\.pip-cache`.
 - Models pre-downloaded before first run: `stanza.download('vi')` + `('en')`; spaCy `en_core_web_lg` wheel installed directly.
-- Database URL shape: `postgresql+psycopg://thesis:thesis@localhost:5432/feedback_agent`.
+- Database URL shape (session pooler — KHÔNG dùng transaction pooler :6543 vì phá prepared statements của Alembic):
+  `postgresql+psycopg://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`.
+- Free tier Supabase tự pause sau 7 ngày low-activity → mỗi tuần mở dashboard hoặc chạy ≥1 query.
 
 ## Commands
 
 ```bash
-# one-time (inside WSL2 Ubuntu): PostgreSQL 16 + pgvector + db/user
-wsl -d Ubuntu -- bash -lc "sudo bash /mnt/d/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/infra/wsl_pg_setup.sh"
+# one-time (trình duyệt): tạo Supabase project → lấy session-pooler connection string
+# Dashboard → Connect → Session pooler; dán vào backend/.env (DATABASE_URL)
 
 # backend (Windows terminal, from backend/)
 uv sync                          # install pinned deps

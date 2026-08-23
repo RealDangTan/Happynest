@@ -1,65 +1,39 @@
 # Phase 01 — Preconditions & Môi trường
 
-> **Nguồn:** execute-plan §3 (preconditions) + §5 (env contract) + rule §10.1 (pin ngày đầu)
+> **Nguồn:** execute-plan §3 (preconditions) + §5 (env contract) + rule §10.1 (pin ngày đầu) · **v1.1: DB = Supabase**
 > **Trạng thái:** ⬜ · **Blocked by:** — (phase đầu tiên)
-> **Commit mẫu:** `chore(env): pin deps day one, add .env.example` + `chore(env): spike tooling bootstrap`
+> **Commit mẫu:** `chore(env): pin deps day one, add .env.example` + `chore(infra): supabase setup note`
 
 ## 1 · Mục tiêu
 
-Máy đạt đủ điều kiện để mọi phase sau chạy được: WSL2 Ubuntu 24.04 + PostgreSQL 16 + pgvector sẵn sàng (việc người dùng), uv + Python 3.12 pinned + toàn bộ dependencies cài xong (việc agent), env contract `.env.example` commit, `.env` thật có key LLM/Langfuse.
+Máy đạt đủ điều kiện để mọi phase sau chạy được: **Supabase project** sẵn sàng với connection string session pooler (việc người dùng), uv + Python 3.12 pinned + toàn bộ dependencies cài xong (việc agent), env contract `.env.example` commit, `.env` thật có key LLM/Langfuse/DB.
 
 **Nguyên tắc §3:** precondition fail → in hướng dẫn, KHÔNG âm thầm bỏ qua.
 
 ## 2 · Việc CON NGƯỜI tự làm (agent không thể thay)
 
-### 2.1 Cài WSL2 Ubuntu 24.04 ⚠️ cần quyền admin + có thể phải restart
+### 2.1 Tạo Supabase project (~10 phút, trên trình duyệt)
 
-Hiện trạng: lệnh `wsl` **không tồn tại** trên máy.
+1. Đăng ký/đăng nhập [supabase.com](https://supabase.com) — free tier đủ dùng (500 MB, 2 free projects).
+2. **New project**:
+   - **Region: Singapore** (gần VN, latency thấp nhất) — hoặc EU nếu muốn đồng bộ region với Langfuse EU;
+   - Đặt **Database Password** mạnh, LƯU NGAY vào password manager (quên phải reset).
+3. Lấy connection string: **Dashboard → Connect → tab "Session pooler"** — copy URI dạng:
+   `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`
+   → đổi scheme thành `postgresql+psycopg://` khi điền vào `.env`.
+   - **KHÔNG dùng** transaction pooler (port `6543`) — phá prepared statements của Alembic/psycopg;
+   - Direct connection `db.<ref>.supabase.co:5432` chỉ dùng nếu mạng nhà hỗ trợ IPv6 tốt — mặc định ưu tiên pooler.
+4. Ghi chú anti-pause: free tier **tự pause sau 7 ngày low-activity** → đặt lịch nhắc tuần: mở dashboard hoặc chạy ≥1 query.
 
-```powershell
-# 1. PowerShell với Run as Administrator:
-wsl --install -d Ubuntu-24.04
-# 2. Restart máy khi được yêu cầu.
-# 3. Lần boot đầu Ubuntu sẽ hỏi tạo user/password trong WSL (khác user Windows).
-# 4. Bật systemd bên trong Ubuntu (cần cho service postgresql):
-sudo tee /etc/wsl.conf >/dev/null <<'EOF'
-[boot]
-systemd=true
-EOF
-# 5. Từ Windows: restart distro để systemd ăn
-wsl --shutdown
-wsl -d Ubuntu-24.04 -- bash -lc "systemctl --version"   # phải ra số version, không lỗi
-```
-
-Giới hạn RAM (máy 8 GB) — tạo file `C:\Users\<user>\.wslconfig`:
-
-```ini
-[wsl2]
-memory=2GB
-processors=2
-swap=1GB
-```
-
-Sau đó `wsl --shutdown` lần nữa.
-
-### 2.2 Kiểm tra package PostgreSQL 16 + pgvector trong WSL
-
-```bash
-wsl -d Ubuntu-24.04 -- bash -lc "apt-cache policy postgresql-16 postgresql-16-pgvector"
-```
-
-- Ubuntu 24.04 (noble) có `postgresql-16` ở repo chính; `postgresql-16-pgvector` nằm ở universe — nếu trống → chạy `sudo add-apt-repository universe && sudo apt update`, vẫn thiếu thì build từ source (`postgresql-server-dev-16`, `make && make install`) và **GHI Decision Log**.
-- Kết quả check này dán vào entry decisions.md nếu phải build source.
-
-### 2.3 Điền `.env` thật
+### 2.2 Điền `.env` thật
 
 Copy `.env.example` (agent tạo ở mục 3.4) thành `backend/.env`, điền giá trị thật:
 
 | Biến | Người dùng cung cấp |
 |---|---|
+| `DATABASE_URL` | Session-pooler URI từ 2.1 (scheme `postgresql+psycopg://`) |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Provider OpenAI-compatible đã chọn |
 | `EMBEDDING_MODEL` | Tên model embedding **đã xác nhận bằng 1 call `/v1/embeddings` thật** (spike S2/S3 sẽ verify lại) |
-| `DATABASE_URL` | Giữ mặc định `postgresql+psycopg://thesis:thesis@localhost:5432/feedback_agent` |
 | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | Tạo project trên Langfuse Cloud **Hobby, region EU**, copy key từ project settings |
 
 Không commit `.env`. Không paste key vào chat/docs.
@@ -76,16 +50,16 @@ Không commit `.env`. Không paste key vào chat/docs.
   [Environment]::SetEnvironmentVariable('STANZA_RESOURCES_DIR','D:\stanza_resources','User')
   [Environment]::SetEnvironmentVariable('PIP_CACHE_DIR','D:\.pip-cache','User')
   New-Item -ItemType Directory -Force D:\stanza_resources, D:\.pip-cache | Out-Null
-  # terminal mới sau khi đặt để PATH/env mới có hiệu lực
+  # terminal mới sau khi đặt để env mới có hiệu lực
   ```
 - [ ] **3.3 Tải models NLP** (chạy sau 3.2; nặng ~vài GB, máy 8 GB nên đóng app khác):
   ```powershell
   cd backend
   uv run python -c "import stanza; stanza.download('vi'); stanza.download('en')"
-  # spaCy en_core_web_lg: cài thẳng wheel theo AGENTS.md (không qua pip resolve mạng dài)
+  # spaCy en_core_web_lg: cài thẳng wheel theo AGENTS.md
   uv pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
   ```
-- [ ] **3.4 Tạo `.env.example` tại root repo** — nội dung Y HỆT khối ini dưới đây (contract §5, thêm bớt là lệch):
+- [ ] **3.4 Tạo `.env.example` tại root repo** — nội dung Y HỆT khối ini dưới đây (contract §5 v1.1, thêm bớt là lệch):
 
   ```ini
   # --- App ---
@@ -93,8 +67,8 @@ Không commit `.env`. Không paste key vào chat/docs.
   SECRET_KEY=changeme-openssl-rand-hex-32
   CORS_ORIGINS=http://localhost:3000
 
-  # --- Database (PG in WSL2, reached from Windows via localhost) ---
-  DATABASE_URL=postgresql+psycopg://thesis:thesis@localhost:5432/feedback_agent
+  # --- Database (Supabase session pooler; direct db.<ref>.supabase.co:5432 chỉ khi IPv6 OK) ---
+  DATABASE_URL=postgresql+psycopg://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
 
   # --- LLM provider (OpenAI-compatible) ---
   LLM_BASE_URL=
@@ -140,8 +114,8 @@ Không commit `.env`. Không paste key vào chat/docs.
   ```powershell
   uv run python -c "import fastapi, sqlalchemy, alembic, psycopg, pgvector, openai, langfuse, presidio_analyzer, stanza, spacy, pwdlib, jwt, tenacity; print('OK')"
   ```
-- [ ] **3.9 Tạo hạ tầng `infra/`** (§4 layout):
-  - `infra/wsl_pg_setup.sh` — script **idempotent** chạy trong WSL Ubuntu: `apt install postgresql-16 postgresql-16-pgvector`, tạo role `thesis`/db `feedback_agent` (mật khẩu `thesis` khớp DATABASE_URL mặc định), grant đủ quyền, enable service qua systemctl; chạy lại không phá dữ liệu. LF-only (`sudo bash /mnt/d/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/infra/wsl_pg_setup.sh`);
+- [ ] **3.9 Tạo hạ tầng `infra/`** (§4 layout v1.1):
+  - `infra/supabase_setup.md` — note setup 1 lần: link dashboard Connect, SQL cần chạy tay trong **SQL Editor** nếu muốn kiểm soát (`CREATE EXTENSION IF NOT EXISTS vector;` — bare, không pin version), region/password đã dùng, quy tắc anti-pause;
   - `infra/setup_vps.sh` — placeholder skeleton (Ubuntu native deploy, điền ở phase deploy sau);
   - `infra/systemd/` — thư mục rỗng + `.gitkeep`.
 
@@ -149,20 +123,22 @@ Không commit `.env`. Không paste key vào chat/docs.
 
 | Tiêu chí | Bằng chứng |
 |---|---|
-| `wsl -l -v` thấy `Ubuntu-24.04 Running`, systemd bật | output lệnh |
-| apt có `postgresql-16` + `postgresql-16-pgvector` (hoặc đã build source + logged) | output `apt-cache policy` |
+| Supabase project active, connection string session pooler đã có | `.env` điền xong (không hiện giá trị) |
+| Kết nối DB test được: `uv run python -c "import psycopg; psycopg.connect('<url>').execute('select 1'); print('DB OK')"` | output `DB OK` |
 | `uv run python -V` = 3.12.x trong backend/ | output |
-| `.env.example` tồn tại, đúng contract §5, đã commit; `.env` bị ignore (`git check-ignore backend/.env`) | git |
+| `.env.example` tồn tại, đúng contract §5 v1.1, đã commit; `.env` bị ignore (`git check-ignore backend/.env`) | git |
 | Models tải xong: `D:\stanza_resources\vi` + `\en` tồn tại; `import spacy; spacy.load('en_core_web_lg')` OK | lệnh |
 | `uv.lock` commit, pins không có `latest` | git diff |
 
 ## 5 · Lệnh kiểm chứng tổng
 
 ```powershell
-wsl -l -v
-wsl -d Ubuntu-24.04 -- bash -lc "systemctl is-system-running"
-cd backend; uv sync; uv run python -V
+cd backend
+uv sync
+uv run python -V
 uv run python -c "import spacy; spacy.load('en_core_web_lg'); print('spaCy OK')"
+# DB reachability (dán URL thật vào lệnh, KHÔNG commit):
+uv run python -c "import os, psycopg; c=psycopg.connect(os.environ['DATABASE_URL']); print(c.execute('select version()').fetchone()[0])"
 git status --short   # sạch sau commit, không thấy .env
 ```
 
@@ -170,7 +146,8 @@ git status --short   # sạch sau commit, không thấy .env
 
 | Sự kiện | Hành động |
 |---|---|
-| `postgresql-16-pgvector` thiếu ở apt | Build pgvector từ source + entry dated (context→decision→alternatives→consequence) |
-| Người dùng chọn **không** cài WSL, dùng PG native Windows thay | Entry dated đánh dấu deviation khỏi locked stack; các phase sau đổi `DATABASE_URL` tương ứng; script `infra/wsl_pg_setup.sh` vẫn giữ cho VPS path |
+| Direct connection `db.<ref>.supabase.co` lỗi IPv6 | Đã mặc định dùng session pooler — nếu pooler cũng lỗi, kiểm firewall/proxy; entry nếu phải đổi kiến trúc kết nối |
+| Free project bị pause giữa phase | Dashboard → Resume; entry nhỏ nếu mất dữ liệu (không đáng lẽ) |
 | Wheel nào fail cài trên Windows (thường là spaCy/stanza build) | Ghi entry, thử wheel prebuilt tương ứng Python 3.12 win_amd64 |
 | Máy hết RAM khi tải/cài models | Đóng app, chạy từng model một; entry nếu phải hạ kích thước model |
+| Supabase hết free quota / đổi policy | Cân nhắc PG native Windows làm mirror — entry bắt buộc trước khi chuyển |
