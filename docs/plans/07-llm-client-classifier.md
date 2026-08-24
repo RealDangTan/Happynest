@@ -1,7 +1,7 @@
 # Phase 07 — LLM Client · Classifier · Tracing
 
 > **Nguồn:** execute-plan §1 (LLM, Structured output, HITL trigger, Observability) + §7 contracts + DoD mục 5 (một phần), 7
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 03 + `.env` có key LLM thật; kết quả spike S2 chọn mode mặc định
+> **Trạng thái:** ✅ 2026-08-24 · **Blocked by:** Phase 03 + `.env` có key LLM thật; kết quả spike S2 chọn mode mặc định
 > **Commit mẫu:** `feat(llm): structured chat client with fallback chain, classifier v1, tracing`
 
 ## 1 · Mục tiêu

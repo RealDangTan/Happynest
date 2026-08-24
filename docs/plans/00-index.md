@@ -29,7 +29,7 @@
 | 04 | [04-auth-rbac.md](04-auth-rbac.md) | Auth + RBAC | 03 | ✅ 2026-08-24 | `feat(auth): oauth2 password flow, jwt cookie, role guard, seed users` |
 | 05 | [05-feedback-ingestion.md](05-feedback-ingestion.md) | Ingestion POST/CSV/list/detail | 03, 04 | ⬜ | `feat(feedback): …` |
 | 06 | [06-pii-presidio-service.md](06-pii-presidio-service.md) | Presidio sanitize + wiring | 05, 01 (models đã tải) | ⬜ | `feat(pii): …` |
-| 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ⬜ | `feat(llm): …` |
+| 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ✅ 2026-08-24 | code trong `feat(services)` 0df1e4b (sweep phiên song song) + `test(llm): …` |
 | 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ⬜ | `feat(embedding): …` |
 | 09 | [09-analysis-runner-progress-api.md](09-analysis-runner-progress-api.md) | Batch runner + progress API | 06, 07, 08 | ⬜ | `feat(analysis): …` |
 | 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ⬜ | `test(spikes): …` |
@@ -69,7 +69,7 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [x] 04 Auth + RBAC
 - [ ] 05 Ingestion
 - [ ] 06 Presidio PII
-- [ ] 07 LLM client + classifier
+- [x] 07 LLM client + classifier
 - [ ] 08 Embedder + similarity
 - [ ] 09 Analysis runner
 - [ ] 10 Spike S4/S5
