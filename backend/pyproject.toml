@@ -1,0 +1,42 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "AI Feedback Agent - backend (khoa luan): tong hop, phan loai va phat hien van de tu phan hoi nguoi dung"
+requires-python = "==3.12.*"
+dependencies = [
+    # --- Web ---
+    "fastapi",
+    "uvicorn>=0.30",
+    "python-multipart",
+    # --- DB / pgvector (Supabase session pooler, amendment v1.1) ---
+    "sqlalchemy>=2",
+    "alembic",
+    "psycopg[binary,pool]",
+    "pgvector>=0.5,<0.6",
+    # --- Auth ---
+    "pwdlib[argon2]",
+    "pyjwt",
+    # --- PII ---
+    "presidio-analyzer",
+    "presidio-anonymizer",
+    "stanza",
+    "spacy",
+    # spaCy model khong co tren PyPI — pin truc tiep wheel URL, xem docs/decisions.md 2026-08-24
+    "en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl",
+    # --- LLM / tracing / graph ---
+    "openai",
+    "langfuse>=3,<4",
+    "langgraph>=1.2,<2",
+    "langgraph-checkpoint-postgres>=3.1,<3.2",
+    # --- Backoff (pre-approved trong plan) ---
+    "tenacity",
+    # --- Settings (ly do: config 12+ bien env typed — xem docs/decisions.md 2026-08-24) ---
+    "pydantic-settings",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
