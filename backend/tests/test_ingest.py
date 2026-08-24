@@ -78,7 +78,9 @@ class TestPostSingle:
         body = response.json()
         # Ranh giới PII: response mặc định KHÔNG chứa raw_content
         assert "raw_content" not in body
-        assert body["sanitized_content"] is None  # Phase 06 mới điền
+        # Phase 06: sanitize chạy ngay lúc ingest; text sạch → pass-through.
+        assert body["sanitized_content"] == content
+        assert body["pii_detected"] is False
         assert body["severity"] is None and body["categories"] is None
         assert body["review_status"] == "unreviewed"
         assert body["requires_human_review"] is False
@@ -87,7 +89,7 @@ class TestPostSingle:
         with SessionLocal() as db:
             row = db.get(Feedback, uuid.UUID(body["id"]))
             assert row.raw_content == content  # lưu nguyên vẹn (DoD mục 3)
-            assert row.sanitized_content is None
+            assert row.sanitized_content == content
             # created_at thiếu → event time = now() lúc ingest (+dung sai WAN)
             delta = abs((row.created_at - before).total_seconds())
             assert delta < 180, f"created_at lệch {delta}s"

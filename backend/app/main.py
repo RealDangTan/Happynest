@@ -19,14 +19,16 @@ from app.api.routes import admin, auth, feedback
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
-from app.services import llm_client, tracing
+from app.services import llm_client, presidio_service, tracing
 
 logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Phase 06 neo TẠI ĐÂY: khởi tạo Presidio analyzer singleton (instantiated once).
+    # Phase 06 neo TẠI ĐÂY: khởi tạo Presidio analyzer singleton (instantiated once)
+    # — Stanza vi+en nặng ~1GB RAM, KHÔNG được tạo lại mỗi request.
+    presidio_service.init_presidio()
     yield
     # Phase 07: flush batch trace Langfuse trước khi process thoát.
     tracing.flush()
@@ -92,6 +94,7 @@ def create_app() -> FastAPI:
             "structured_output_mode": llm_client._structured_output_mode,
             "llm_model": settings.LLM_MODEL or None,
             "embedding_model": settings.EMBEDDING_MODEL or None,
+            "pii_mode": presidio_service.mode()["mode"],
         }
 
     app.include_router(admin.router)

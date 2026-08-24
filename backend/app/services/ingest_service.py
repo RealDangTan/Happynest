@@ -1,11 +1,15 @@
-"""Service ingestion — Phase 05 (05-feedback-ingestion.md §3.2).
+"""Service ingestion — Phase 05, mở rộng Phase 06 (05/06-*.md §3.2).
 
 Tầng dùng chung cho API (`routes/feedback.py`) và CLI
 (`scripts/import_csv.py`) để logic ingest không bị nhân bản.
 
-Nguyên tắc phase này: chỉ lưu `raw_content`; `sanitized_content` cố ý NULL —
-Phase 06 (Presidio) điền sau. `created_at` là event time do nguồn cung cấp,
-thiếu thì lấy now() tại thời điểm ingest.
+Ranh giới PII (hard rule #2): từ Phase 06, mọi content đi qua `sanitize()`
+NGAY tại đây — áp cho cả POST đơn lẻ lẫn CSV vì chung `ingest_one`.
+`raw_content` giữ nguyên trong DB; chỉ `sanitized_content` + metadata
+`pii_entities` (không mang text raw) ra ngoài biên.
+
+`created_at` là event time do nguồn cung cấp, thiếu thì lấy now() tại thời
+điểm ingest.
 """
 
 import csv
@@ -17,17 +21,24 @@ from sqlalchemy.orm import Session
 
 from app.models.feedback import Feedback
 from app.schemas.feedback import CsvImportError, CsvImportReport, FeedbackIn
+from app.services.presidio_service import sanitize
 
 _REQUIRED_COLUMNS = ("source", "content")
 
 
 def ingest_one(session: Session, item: FeedbackIn) -> Feedback:
-    """Tạo 1 row feedback; commit ngay. Trả row đã refresh (có id, imported_at)."""
+    """Tạo 1 row feedback (đã sanitize); commit ngay.
+    Trả row đã refresh (có id, imported_at)."""
+    result = sanitize(item.content)
     feedback = Feedback(
         source=item.source,
         raw_content=item.content,
         external_ref=item.external_ref,
         created_at=item.created_at or datetime.now(timezone.utc),
+        # Phase 06: điền ngay lúc ingest — trước đó để NULL chờ backfill.
+        sanitized_content=result.sanitized_text,
+        pii_detected=result.pii_detected,
+        pii_entities=[e.model_dump() for e in result.entities],
     )
     session.add(feedback)
     session.commit()

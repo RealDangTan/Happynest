@@ -1,7 +1,7 @@
 # Phase 06 — PII Sanitization (Presidio + Stanza "vi")
 
 > **Nguồn:** execute-plan §1 (PII) + §7 contract `sanitize()` + DoD mục 4 + Hard rule #2
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 05 (+ models stanza đã tải từ Phase 01)
+> **Trạng thái:** ✅ 2026-08-24 · **Blocked by:** Phase 05 (+ models stanza đã tải từ Phase 01)
 > **Commit mẫu:** `feat(pii): presidio sanitize service wired into ingestion`
 
 ## 1 · Mục tiêu

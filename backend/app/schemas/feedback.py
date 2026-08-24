@@ -36,6 +36,7 @@ class FeedbackOut(BaseModel):
     created_at: datetime
     imported_at: datetime
     review_status: ReviewStatus
+    pii_detected: bool  # Phase 06: metadata sanitize — không mang text PII
     severity: Severity | None
     categories: list[str] | None
     confidence: float | None
