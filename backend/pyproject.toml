@@ -45,3 +45,8 @@ dev = [
 # `.` = backend/: `app`, `scripts` import được từ mọi entrypoint pytest
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    # Đăng ký marker theo AGENTS.md: `uv run pytest` = unit; `-m integration` cần PG thật.
+    "integration: cần PostgreSQL thật (Supabase) + internet — chạy riêng: uv run pytest -m integration",
+]
+addopts = "-m 'not integration'"  # mặc định bỏ integration; -m trên CLI ghi đè (last-wins)

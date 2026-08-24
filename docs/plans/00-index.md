@@ -30,7 +30,7 @@
 | 05 | [05-feedback-ingestion.md](05-feedback-ingestion.md) | Ingestion POST/CSV/list/detail | 03, 04 | ⬜ | `feat(feedback): …` |
 | 06 | [06-pii-presidio-service.md](06-pii-presidio-service.md) | Presidio sanitize + wiring | 05, 01 (models đã tải) | ⬜ | `feat(pii): …` |
 | 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ✅ 2026-08-24 | code trong `feat(services)` 0df1e4b (sweep phiên song song) + `test(llm): …` |
-| 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ⬜ | `feat(embedding): …` |
+| 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ✅ 2026-08-24 | `feat(embedding): embedder service, vector storage, similar endpoint` |
 | 09 | [09-analysis-runner-progress-api.md](09-analysis-runner-progress-api.md) | Batch runner + progress API | 06, 07, 08 | ⬜ | `feat(analysis): …` |
 | 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ⬜ | `test(spikes): …` |
 | 11 | [11-test-suite-polish.md](11-test-suite-polish.md) | Suite pytest hoàn thiện | 04–09 | ⬜ | `test(suite): …` |
@@ -70,7 +70,7 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [ ] 05 Ingestion
 - [ ] 06 Presidio PII
 - [x] 07 LLM client + classifier
-- [ ] 08 Embedder + similarity
+- [x] 08 Embedder + similarity
 - [ ] 09 Analysis runner
 - [ ] 10 Spike S4/S5
 - [ ] 11 Test suite polish

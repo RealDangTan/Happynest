@@ -1,7 +1,7 @@
 # Phase 08 — Embedder · pgvector · Similarity
 
 > **Nguồn:** execute-plan §1 (Vector, Embeddings) + §7 contracts + DoD mục 6
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 03 + key `EMBEDDING_MODEL` thật (spike S3 đã xác nhận model/dims)
+> **Trạng thái:** ✅ 2026-08-24 · **Blocked by:** Phase 03 + key `EMBEDDING_MODEL` thật (spike S3 đã xác nhận model/dims)
 > **Commit mẫu:** `feat(embedding): embedder service, vector storage, similar endpoint`
 
 ## 1 · Mục tiêu

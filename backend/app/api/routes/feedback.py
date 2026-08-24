@@ -44,9 +44,13 @@ def similar_feedbacks(
             ),
         )
 
-    from pgvector.utils import to_db  # noqa: PLC0415 - import cục bộ nhẹ
-
-    query_vec = to_db(feedback.embedding)  # dạng text '[a,b,...]' cast về vector
+    # Chuẩn hóa vector về dạng text '[a,b,...]' để cast AS vector trong SQL.
+    # Cột Vector tùy driver có thể trả pgvector.Vector | ndarray | list.
+    emb = feedback.embedding
+    if hasattr(emb, "to_text"):  # pgvector.Vector (result processor)
+        query_vec = emb.to_text()
+    else:
+        query_vec = "[" + ",".join(f"{float(x)!r}" for x in emb) + "]"
     rows = session.execute(
         text(
             """
