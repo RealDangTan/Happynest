@@ -32,7 +32,7 @@
 | 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ✅ 2026-08-24 | code trong `feat(services)` 0df1e4b (sweep phiên song song) + `test(llm): …` |
 | 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ✅ 2026-08-24 | `feat(embedding): embedder service, vector storage, similar endpoint` |
 | 09 | [09-analysis-runner-progress-api.md](09-analysis-runner-progress-api.md) | Batch runner + progress API | 06, 07, 08 | ⬜ | `feat(analysis): …` |
-| 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ⬜ | `test(spikes): …` |
+| 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ✅ 2026-08-24 | `test(spikes): S4/S5 evidence scripts, outcomes 6/6 PASS` |
 | 11 | [11-test-suite-polish.md](11-test-suite-polish.md) | Suite pytest hoàn thiện | 04–09 | ⬜ | `test(suite): …` |
 | 12 | [12-definition-of-done-sweep.md](12-definition-of-done-sweep.md) | §9 DoD sweep + docs cuối | Tất cả | ⬜ | `docs(dod): …` |
 
@@ -72,6 +72,6 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [x] 07 LLM client + classifier
 - [x] 08 Embedder + similarity
 - [ ] 09 Analysis runner
-- [ ] 10 Spike S4/S5
+- [x] 10 Spike S4/S5
 - [ ] 11 Test suite polish
 - [ ] 12 DoD sweep

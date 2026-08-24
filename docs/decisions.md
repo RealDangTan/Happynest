@@ -38,8 +38,8 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
 | S1 | Presidio + Stanza("vi") bắt được PII trong sample VN-EN trộn? | ≥80% recall obvious-type | **PASS** — presidio_full: EMAIL/PHONE/CCCD/URL/IP = 100%, PERSON = 66.7% (usable-with-caveat); regex-only fallback đo được: obvious 100%, PERSON 0% (chi tiết + bug presidio 2.2.364: xem entry cùng ngày) | 2026-08-24 | Có — mở rộng recognizer set tùy chỉnh (không phải regex-only) |
 | S2 | Provider có honor `json_schema` response_format? | ≥9/10 calls valid | **PASS** — gemini-3-flash @ api.orimise.com/v1: **10/10 valid**, temperature=0, không retry → production mode = json_schema (sau khi sửa base_url thiếu `/v1`) | 2026-08-24 | Không |
 | S3 | Embeddings API + roundtrip pgvector qua Supabase? | self-match rank #1 | **PASS** — text-embedding-3-small dims thực đo **1536 khớp hợp đồng**; insert OK vào `public._spike_vec`; self-match rank #1 cả 10 câu, sim min = 1.0; latency ~280ms/query (WAN tới ap-southeast-2); bảng toy đã drop | 2026-08-24 | Không |
-| S4 | sklearn HDBSCAN cosine sane trên 200 toy vectors? | <5s, noise hợp lý | pending | | |
-| S5 | LangGraph interrupt → restart → resume với AsyncPostgresSaver? | resume OK, zero duplicate side effects | pending | | |
+| S4 | sklearn HDBSCAN cosine sane trên 200 toy vectors? | <5s, noise hợp lý | **PASS** — scikit-learn 1.9.0 (ad-hoc `uv run --with`, KHÔNG pin production); cả 3 cấu hình min_cluster_size {5,10,15} tìm đúng 3 cụm, noise 7.5–8.5% (ground truth 10%), fit 0.018–0.108s/cấu hình, tổng **0.165s** ≪ 5s; FutureWarning nhỏ về tham số `copy` (sklearn 1.10 đổi default) | 2026-08-24 | Không |
+| S5 | LangGraph interrupt → restart → resume với AsyncPostgresSaver? | resume OK, zero duplicate side effects | **PASS** — `interrupt_before=["b"]` dừng đúng trước node B (next=['b'], side effect 0); process THOÁT hẳn; tiến trình MỚI resume `ainvoke(None)` chạy đủ a→b→c, side effect đúng **1 lần**; setup() idempotent tạo đúng 4 bảng checkpoint khớp filter Alembic env.py; resume ~9s (WAN Supabase). Quirks Windows/API xem entry cùng ngày | 2026-08-24 | Không |
 | S6 | Parity Windows-native backend ↔ Supabase cloud end-to-end? | green | **PARTIAL green** — PostgreSQL 17.6 reachable qua session pooler từ Windows; raw psycopg roundtrip OK; WAN baseline ~253ms/query. Phần Alembic upgrade head + ORM feedbacks insert/query chạy ngay sau Phase 03 theo plan §3.4 | 2026-08-24 | Không (split-run đúng kế hoạch §3.4) |
 
 ## Deviations / amendments
@@ -123,6 +123,15 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
   Ý nghĩa: feedback nghiêm trọng (high/critical) nhưng model thiếu tự tin (<0.75) cũng bắt qua người xem, dù vẫn trên ngưỡng 0.60 chung.
 - Alternatives rejected: (1) xóa biến khỏi env contract — mất khả năng tune ngưỡng riêng cho severity cao mà không đụng code; (2) áp ngưỡng 0.75 cho mọi severity — quá tay, review queue phình với cả low/medium; (3) để nguyên không dùng — biến chết trong config là nợ kỹ thuật + điểm trừ khi bảo vệ.
 - Consequence: Mọi test HITL phải phủ thêm nhánh thứ 5 này; đổi ngưỡng sau này chỉ cần sửa `.env`, không đổi code.
+
+## 2026-08-24 — S4/S5: quirks scikit-learn ad-hoc + AsyncPostgresSaver trên Windows/Supabase (đều PASS)
+- Context: Spike muộn phase 10 chạy HDBSCAN toy (S4) và interrupt/resume LangGraph với checkpoint Supabase (S5). Ba quirk phát hiện khi chạy thật cần ghi lại cho phase clustering và phase HITL graph sau này.
+- Decision:
+  (1) **S4 — scikit-learn chỉ spike-only**: cài ad-hoc qua `uv run --with scikit-learn` (resolve ra **1.9.0**, scipy đi kèm), KHÔNG đưa vào pyproject; production clustering sẽ chốt lib riêng khi làm (HDBSCAN cosine sane: 3/3 cụm, noise ~8%, 0.165s). Lưu ý sklearn 1.10 sẽ đổi default tham số `copy` trong HDBSCAN (FutureWarning hiện tại, vô hại).
+  (2) **S5 — psycopg async trên Windows cần SelectorEventLoop**: `asyncio.run()` mặc định ProactorEventLoop → `psycopg.InterfaceError` ngay khi `AsyncPostgresSaver.from_conn_string`. Fix: `asyncio.run(..., loop_factory=lambda: asyncio.SelectorEventLoop(selectors.SelectSelector()))`. Phase HITL sau phải mang pattern này vào app.
+  (3) **S5 — saver.conn là AsyncConnection đơn, row_factory=dict_row**: `from_conn_string` KHÔNG trả pool — `saver.conn.cursor()` dùng trực tiếp; mọi query tay trên connection này trả dict thay vì tuple.
+- Alternatives rejected: (1) pin scikit-learn vào pyproject "cho chắc" — vi phạm rule §10.7 (ngoài danh sách §1) trong khi chưa chọn lib clustering chính thức; (2) chạy S5 bằng PostgresSaver sync — lệch câu hỏi spike (async runtime của FastAPI); (3) tự quản state machine ngay từ đầu bỏ qua spike — mất bằng chứng resume-no-duplicate cho khóa luận.
+- Consequence: Bảng `_spike_side_effects` + 4 bảng checkpoint đã DROP sạch khỏi Supabase dev sau đo (verify information_schema trống); production graph vẫn ngoài scope đến phase HITL — khi đó setup() sẽ tái tạo 4 bảng checkpoint (idempotent) và Alembic vẫn ignore nhờ filter sẵn có.
 
 ## 2026-08-24 — Phase 03: Supabase session pooler (PgBouncer) strip libpq `options` → search_path của engine vô hiệu
 - Context: Plan chỉ định engine `connect_args={"options": "-csearch_path=extensions,public"}`. Chạy thật qua pooler `aws-0-*.pooler.supabase.com:5432`, `SHOW search_path` trả `"$user", public, extensions` — tức startup parameter `options` bị PgBouncer bỏ qua, KHÔNG áp dụng.

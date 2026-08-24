@@ -1,7 +1,7 @@
 # Phase 10 — Spike muộn S4 (HDBSCAN toy) · S5 (LangGraph interrupt/resume)
 
 > **Nguồn:** execute-plan §8 (S4, S5) + §2 OUT-OF-SCOPE (chỉ spike script được đụng langgraph)
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 03 (DB + deps). S5 thêm cần internet + Supabase active — checkpoint tables do langgraph tự tạo trên đó.
+> **Trạng thái:** ✅ 2026-08-24 · **Blocked by:** Phase 03 (DB + deps). S5 thêm cần internet + Supabase active — checkpoint tables do langgraph tự tạo trên đó.
 > **Commit mẫu:** `test(spikes): S4 hdbscan toy evidence, S5 langgraph interrupt resume`
 
 ## 1 · Mục tiêu
@@ -43,8 +43,8 @@ Hai spike phục vụ **các phase sau** (clustering, HITL graph): trả lời b
 - Chạy: `uv run python ../scripts/spikes/s5_langgraph_interrupt.py --phase start` rồi `--phase resume`.
 
 ### 3.3 Record
-- [ ] Cập nhật dòng S4, S5 bảng Spike outcomes trong decisions.md (Kết quả + Ngày + fallback?)
-- [ ] Dọn bảng toy `_spike_*` khỏi DB sau khi đo xong.
+- [x] Cập nhật dòng S4, S5 bảng Spike outcomes trong decisions.md (Kết quả + Ngày + fallback?)
+- [x] Dọn bảng toy `_spike_*` khỏi DB sau khi đo xong. (script resume tự drop sau PASS: `_spike_side_effects` + 4 bảng checkpoint; verify information_schema trống)
 
 ## 4 · Tiêu chí nghiệm thu
 
