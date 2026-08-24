@@ -41,6 +41,11 @@ class Feedback(Base):
     pii_entities: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
 
     # --- Kết quả classify (Phase 07 điền) ---
+    # safety_issue là lệch §6 có chủ đích (decisions.md 2026-08-24): công thức
+    # HITL cần truy vấn trực tiếp, không giấu trong categories/rationale.
+    safety_issue: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     categories: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     ai_issue: Mapped[AiIssue | None] = mapped_column(AI_ISSUE_ENUM, nullable=True)
     sentiment: Mapped[Sentiment | None] = mapped_column(SENTIMENT_ENUM, nullable=True)
