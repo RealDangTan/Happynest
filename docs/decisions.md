@@ -97,3 +97,23 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
 - Decision: Agent sửa 2 dòng URL trong `backend/.env` về dạng base chuẩn OpenAI-compatible (`…/v1`, không đụng key/password). Sau fix S2 đạt **10/10 valid** với `response_format={"type":"json_schema", strict:true}` temperature=0, không cần retry → **mode production `llm_client.chat_structured` = json_schema**; nhánh prompt-JSON + validate + retry chỉ là fallback dự phòng Phase 07.
 - Alternatives rejected: giữ URL lệch và cấu hình SDK đường dẫn riêng — lệch chuẩn OpenAI-compatible, rắc rối cho Phase 07.
 - Consequence: Mọi provider sau này phải khai báo dạng base `…/v1`; người dùng cần biết `.env` đã được agent sửa 2 giá trị URL nói trên.
+
+## 2026-08-24 — Phase 03: chốt bộ giá trị enum ai_issue_enum và sentiment_enum
+- Context: Execute plan §6 chỉ định cột `ai_issue`/`sentiment` là native PG enum nhưng không liệt kê giá trị. Checklist phase 03 §3.5 yêu cầu chốt TRƯỚC khi viết migration vì native enum không có giá trị mới = phải `ALTER TYPE`.
+- Decision: Chốt đúng đề xuất khởi điểm của plan §3.5 — `sentiment_enum = ('positive','negative','neutral','mixed')`; `ai_issue_enum = ('hallucination','inaccuracy','bias','safety','privacy','performance','other')`. Các enum còn lại giữ nguyên spec: `user_role(pm,operations)`, `severity_enum(low,medium,high,critical)`, `review_status(unreviewed,pending,approved,edited,rejected)`, `review_action(approve,edit,reject)`, `run_status(running,completed,failed)`, `llm_call_type(classify,embed,name_cluster,generate_insight)` — tổng **8 types** theo liệt kê §6 (bảng nghiệm thu plan 03 ghi "7" là lệch đếm; verify theo danh sách tên, không theo số).
+- Alternatives rejected: mở rộng dự phòng thêm giá trị (`off_topic`, `question`…) — làm loãng taxonomy khi Phase 07 mới chính thức định nghĩa schemas/taxonomy.py; đoán sai từ đầu còn tệ hơn ADD VALUE sau này.
+- Consequence: Phase 07 phải map output classifier vào đúng bộ này; cần giá trị mới → migration mới với `ALTER TYPE … ADD VALUE IF NOT EXISTS` (không phá dữ liệu). Định nghĩa Python nằm tại `backend/app/models/enums.py` — một nguồn duy nhất.
+
+## 2026-08-24 — Phase 03: alembic `set_main_option` chết với `%` trong password percent-encoded
+- Context: Password DB chứa `@` → URL chuẩn hóa phải percent-encode (`%40`). Khi env.py gọi `config.set_main_option("sqlalchemy.url", …)`, configparser interpolation của alembic coi `%` là cú pháp đặc biệt → `ValueError: invalid interpolation syntax` TRƯỚC khi nối DB.
+- Decision: Bỏ hẳn `set_main_option`; env.py truyền URL thẳng từ Settings vào `context.configure(url=…)` cho offline mode, còn online mode tái dùng engine ứng dụng (`app.db.session.engine`) vốn đã mang connect_args đúng.
+- Alternatives rejected: escape `%%` trước khi set — rườm rà, dễ quên ở chỗ khác; hardcode URL vào alembic.ini — tuyệt đối không (secret).
+- Consequence: `sqlalchemy.url` trong alembic.ini để trống vĩnh viễn; ai sửa env.py sau này phải giữ nguyên pattern truyền URL trực tiếp. Sự cố kèm theo: lần lỗi đầu, traceback in connection string (kèm password thật) ra terminal — password đã nằm trong transcript phiên làm việc; khuyến nghị người dùng reset database password Supabase sau phiên.
+
+## 2026-08-24 — Phase 03: Supabase session pooler (PgBouncer) strip libpq `options` → search_path của engine vô hiệu
+- Context: Plan chỉ định engine `connect_args={"options": "-csearch_path=extensions,public"}`. Chạy thật qua pooler `aws-0-*.pooler.supabase.com:5432`, `SHOW search_path` trả `"$user", public, extensions` — tức startup parameter `options` bị PgBouncer bỏ qua, KHÔNG áp dụng.
+- Decision: Chấp nhận hành vi mặc định của Supabase: search_path mặc định đã chứa `public` TRƯỚC `extensions` → (a) CREATE TABLE/TYPE không schema-qualify vẫn rơi vào `public` như mong muốn (xác nhận: 8 bảng + 8 enum đều ở public); (b) type `vector` vẫn resolve được vì `extensions` nằm trong path (Supabase pre-install pgvector vào schema extensions). Giữ nguyên connect_args cho trường hợp nối thẳng (bypass pooler) — vô hại.
+- Alternatives rejected: schema-qualify tay mọi tham chiếu (`extensions.vector`) — rò rỉ chi tiết hạ tầng vào code/migration, khó chuyển về PG thường khi deploy VPS; SET search_path mỗi session qua event listener — thêm phức tạp không cần thiết khi default đã đúng.
+- Consequence: Không phụ thuộc được vào connect_args khi đi qua pooler; mọi migration sau phải giả định search_path mặc định Supabase (`"$user", public, extensions`). Nếu ngày nào Supabase đổi default, phải quay lại mục này.
+
+

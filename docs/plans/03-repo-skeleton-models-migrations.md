@@ -1,7 +1,7 @@
 # Phase 03 — Repo skeleton · SQLAlchemy models · Alembic
 
 > **Nguồn:** execute-plan §4 (repo layout) + §6 (database models) + §1 (migrations decision)
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 01 · **Verify cần DB thật** (Supabase active, cần internet)
+> **Trạng thái:** ✅ done 2026-08-24 · **Blocked by:** Phase 01 · **Verify cần DB thật** (Supabase active, cần internet)
 > **Commit mẫu:** `feat(db): app skeleton, all core models, alembic baseline`
 
 ## 1 · Mục tiêu
