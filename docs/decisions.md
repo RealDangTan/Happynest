@@ -153,3 +153,9 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
 
 
 
+
+## 2026-08-24 — Phase 05: guard router-level che luôn /similar; test ingest dùng marker `integration`; external_ref không dedup
+- Context: (1) Entry Phase 08 chấp nhận `/similar` tạm công khai ở dev; docstring file route hẹn Phase 05 "wire auth cho toàn bộ router". (2) Phase 08 đăng ký marker pytest `integration` + `addopts -m 'not integration'` SAU khi plan 05 viết lệnh verify `uv run pytest tests/test_ingest.py` — chạy đúng nguyên văn sẽ bị deselect hết. (3) Cột `external_ref` không có unique constraint (§6), import cùng file 2 lần tạo bản sao.
+- Decision: (1) Gắn `dependencies=[Depends(require_role("pm","operations"))]` ở TẦNG ROUTER feedback — mọi endpoint kể cả `/similar` yêu cầu auth từ nay; (2) `tests/test_ingest.py` đánh `pytestmark = pytest.mark.integration`, verify bằng `uv run pytest tests/test_ingest.py -m integration`; test tự dọn row qua fixture (id + tiền tố external_ref `fixture20-`/`badcsv-`/`listtest-`) để không để rác trong DB dev dùng chung; (3) giữ nguyên append-only không dedup — trách nhiệm chống nhân bản thuộc về người gọi (CLI/API), phù hợp scope thesis.
+- Alternatives rejected: (1) guard từng endpoint riêng — dễ sót endpoint mới thêm sau này; (2) bỏ marker cho ingest test để khớp chữ plan — phá quy ước unit/integration vừa thiết lập, `uv run pytest` mặc định sẽ đòi internet+DB thật; (3) unique constraint trên external_ref — nguồn ngoài có thể tái sử dụng ref hợp lệ, cấm cứng gây fail import oan.
+- Consequence: `/similar` không còn gọi được vô danh (thay đổi so với acceptance Phase 08 — cập nhật test phía đó nếu có); ai chạy test ingest phải nhớ `-m integration`; import CSV trùng file trong DB dev phải dọn tay hoặc đổi ref.

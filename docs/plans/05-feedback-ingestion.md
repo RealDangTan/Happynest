@@ -1,7 +1,7 @@
 # Phase 05 — Feedback Ingestion (POST · CSV · list · detail)
 
 > **Nguồn:** execute-plan §7 (routes feedback) + DoD mục 3
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 03, 04
+> **Trạng thái:** ✅ 2026-08-24 · **Blocked by:** Phase 03, 04
 > **Commit mẫu:** `feat(feedback): manual post, csv import, paginated list/detail`
 
 ## 1 · Mục tiêu

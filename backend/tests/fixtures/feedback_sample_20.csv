@@ -1,0 +1,21 @@
+﻿source,content,external_ref,created_at
+app_review,Ứng dụng dịch nhanh nhưng hay lag khi chuyển tab,fixture20-01,2026-07-01T09:15:00+07:00
+survey,Anh Nguyễn Văn An - SĐT 0901234567 - rất hài lòng về tính năng nhắc lịch,fixture20-02,2026-07-03T14:30:00+07:00
+support_ticket,Tôi đã gửi email đến hotro@example.com ba lần nhưng chưa được trả lời,fixture20-03,2026-07-05T08:00:00Z
+app_review,The translation quality is great but the app drains battery fast,fixture20-04,2026-07-08T21:10:00+07:00
+in_app_form,"Crash ngay khi mở màn hình thống kê, máy Xiaomi Redmi Note 10",fixture20-05,2026-07-10T11:45:00+07:00
+email,Liên hệ hộ chị Trần Thị Bình số 0918765432 giúp tôi với nhé,fixture20-06,2026-07-12T16:20:00+07:00
+survey,"Giao diện đẹp, dễ dùng cho người lớn tuổi",fixture20-07,2026-07-15T09:00:00+07:00
+app_review,"Please add dark mode, my eyes hurt when using at night",fixture20-08,2026-07-18T22:05:00Z
+support_ticket,Không đăng nhập được bằng tài khoản Gmail từ sáng nay,fixture20-09,2026-07-20T07:55:00+07:00
+email,"Đề nghị xuất báo cáo ra Excel, hiện tại chỉ có PDF",fixture20-10,2026-07-22T10:30:00+07:00
+app_review,App hay nhưng quên mật khẩu thì lấy lại cực khó,fixture20-11,2026-07-25T19:40:00+07:00
+survey,Nhóm người dùng vùng biên cần thêm tính năng dịch tiếng Khmer,fixture20-12,2026-07-28T13:25:00+07:00
+in_app_form,Bị trùng thông báo 2 lần mỗi sự kiện,fixture20-13,2026-08-01T18:15:00+07:00
+app_review,Voice input không nhận giọng miền Trung,fixture20-14,2026-08-03T12:00:00+07:00
+email,"Tôi là Lê Minh Cường, muốn nâng cấp gói nhưng bị lỗi thanh toán",fixture20-15,2026-08-06T15:35:00+07:00
+survey,"Ổn hơn phiên bản trước, ít quảng cáo hơn",fixture20-16,2026-08-09T20:45:00+07:00
+app_review,Battery drain is unacceptable after the last update,fixture20-17,2026-08-12T23:50:00Z
+support_ticket,Dữ liệu biểu đồ không cập nhật realtime như mô tả,fixture20-18,2026-08-15T08:20:00+07:00
+in_app_form,Nút gửi phản hồi bị che dưới bàn phím ảo,fixture20-19,2026-08-18T17:10:00+07:00
+app_review,"Great app overall, just needs offline mode",fixture20-20,2026-08-21T21:30:00+07:00

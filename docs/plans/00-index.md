@@ -27,7 +27,7 @@
 | 02 | [02-spikes-core-s1-s2-s3-s6.md](02-spikes-core-s1-s2-s3-s6.md) | §8 spike S1, S2, S3, S6 | 01 (S3/S6 cần PG) | ✅ 2026-08-24 (S4/S5 dời phase 10) | `test(spikes): add S1-S3,S6 evidence scripts and record outcomes` |
 | 03 | [03-repo-skeleton-models-migrations.md](03-repo-skeleton-models-migrations.md) | §4 layout + §6 models + Alembic | 01 | ✅ 2026-08-24 | `feat(db): app skeleton, all core models, alembic baseline` |
 | 04 | [04-auth-rbac.md](04-auth-rbac.md) | Auth + RBAC | 03 | ✅ 2026-08-24 | `feat(auth): oauth2 password flow, jwt cookie, role guard, seed users` |
-| 05 | [05-feedback-ingestion.md](05-feedback-ingestion.md) | Ingestion POST/CSV/list/detail | 03, 04 | ⬜ | `feat(feedback): …` |
+| 05 | [05-feedback-ingestion.md](05-feedback-ingestion.md) | Ingestion POST/CSV/list/detail | 03, 04 | ✅ 2026-08-24 | `feat(feedback): manual post, csv import, paginated list/detail` |
 | 06 | [06-pii-presidio-service.md](06-pii-presidio-service.md) | Presidio sanitize + wiring | 05, 01 (models đã tải) | ⬜ | `feat(pii): …` |
 | 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ✅ 2026-08-24 | code trong `feat(services)` 0df1e4b (sweep phiên song song) + `test(llm): …` |
 | 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ✅ 2026-08-24 | `feat(embedding): embedder service, vector storage, similar endpoint` |
@@ -67,7 +67,7 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [x] 02 Spike S1/S2/S3/S6
 - [x] 03 Skeleton + models + migrations
 - [x] 04 Auth + RBAC
-- [ ] 05 Ingestion
+- [x] 05 Ingestion
 - [ ] 06 Presidio PII
 - [x] 07 LLM client + classifier
 - [x] 08 Embedder + similarity
