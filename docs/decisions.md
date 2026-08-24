@@ -110,10 +110,37 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
 - Alternatives rejected: escape `%%` trước khi set — rườm rà, dễ quên ở chỗ khác; hardcode URL vào alembic.ini — tuyệt đối không (secret).
 - Consequence: `sqlalchemy.url` trong alembic.ini để trống vĩnh viễn; ai sửa env.py sau này phải giữ nguyên pattern truyền URL trực tiếp. Sự cố kèm theo: lần lỗi đầu, traceback in connection string (kèm password thật) ra terminal — password đã nằm trong transcript phiên làm việc; khuyến nghị người dùng reset database password Supabase sau phiên.
 
+## 2026-08-24 — Phase 07: thêm cột `safety_issue` vào bảng `feedbacks`
+- Context: Output schema của classifier v1 có field `safety_issue: bool` (cần cho công thức HITL), nhưng execute plan §6 không định nghĩa cột tương ứng trên `feedbacks`. Plan phase 07 §3.1 đã phân tích: giấu flag này trong `rationale` hay suy ra từ categories đều là mất dữ liệu có cấu trúc — `compute_requires_human_review` cần truy vấn được trực tiếp.
+- Decision: Thêm cột `safety_issue BOOLEAN NOT NULL DEFAULT false` vào `feedbacks` bằng Alembic revision `0004` (nhỏ, reversible). Model `Feedback` cập nhật đồng bộ. Giá trị do classifier điền lúc classify; feedback chưa classify giữ default `false`.
+- Alternatives rejected: (1) parse lại từ `categories`/`rationale` khi cần — logic rải rác, mất dữ liệu cấu trúc, không index/query được; (2) tái dùng cột `pii_detected` với ngữ nghĩa rộng hơn — sai ngữ nghĩa, hai nguồn độc lập trong công thức HITL phải tách bạch; (3) bỏ field khỏi output schema — vi phạm locked decision HITL trigger vốn có mệnh đề `safety_issue`.
+- Consequence: Lệch §6 một cột — mọi tài liệu mô tả schema phải phản ánh từ nay; migration chạy trên Supabase dev ngay trong phase này.
+
+## 2026-08-24 — Phase 07: chốt cách dùng ngưỡng `HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW`
+- Context: Env contract §5 khai báo `HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW=0.75` nhưng locked decision HITL chỉ dùng `confidence<0.60` chung mọi severity — ngưỡng 0.75 không có chỗ dùng, nguy cơ thành biến chết. Plan phase 07 §3.4 đề xuất một cách dùng và yêu cầu chốt trước khi code.
+- Decision: Công thức HITL đầy đủ (mở rộng locked formula, giữ nguyên 4 mệnh đề cũ):
+  `requires_human_review = severity=="critical" OR safety_issue OR pii_detected OR confidence < CLASSIFY_CONFIDENCE_REVIEW_BELOW OR (severity in {high, critical} AND confidence < HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW)`
+  Ý nghĩa: feedback nghiêm trọng (high/critical) nhưng model thiếu tự tin (<0.75) cũng bắt qua người xem, dù vẫn trên ngưỡng 0.60 chung.
+- Alternatives rejected: (1) xóa biến khỏi env contract — mất khả năng tune ngưỡng riêng cho severity cao mà không đụng code; (2) áp ngưỡng 0.75 cho mọi severity — quá tay, review queue phình với cả low/medium; (3) để nguyên không dùng — biến chết trong config là nợ kỹ thuật + điểm trừ khi bảo vệ.
+- Consequence: Mọi test HITL phải phủ thêm nhánh thứ 5 này; đổi ngưỡng sau này chỉ cần sửa `.env`, không đổi code.
+
 ## 2026-08-24 — Phase 03: Supabase session pooler (PgBouncer) strip libpq `options` → search_path của engine vô hiệu
 - Context: Plan chỉ định engine `connect_args={"options": "-csearch_path=extensions,public"}`. Chạy thật qua pooler `aws-0-*.pooler.supabase.com:5432`, `SHOW search_path` trả `"$user", public, extensions` — tức startup parameter `options` bị PgBouncer bỏ qua, KHÔNG áp dụng.
 - Decision: Chấp nhận hành vi mặc định của Supabase: search_path mặc định đã chứa `public` TRƯỚC `extensions` → (a) CREATE TABLE/TYPE không schema-qualify vẫn rơi vào `public` như mong muốn (xác nhận: 8 bảng + 8 enum đều ở public); (b) type `vector` vẫn resolve được vì `extensions` nằm trong path (Supabase pre-install pgvector vào schema extensions). Giữ nguyên connect_args cho trường hợp nối thẳng (bypass pooler) — vô hại.
 - Alternatives rejected: schema-qualify tay mọi tham chiếu (`extensions.vector`) — rò rỉ chi tiết hạ tầng vào code/migration, khó chuyển về PG thường khi deploy VPS; SET search_path mỗi session qua event listener — thêm phức tạp không cần thiết khi default đã đúng.
 - Consequence: Không phụ thuộc được vào connect_args khi đi qua pooler; mọi migration sau phải giả định search_path mặc định Supabase (`"$user", public, extensions`). Nếu ngày nào Supabase đổi default, phải quay lại mục này.
+
+## 2026-08-24 — Phase 08 thực thi khi Phase 05/07 chưa làm → dựng scaffold tối thiểu
+- Context: Plan 08 tham chiếu `routes/feedback.py` stub `/similar` (plan 05 tạo), `tracing.py::write_llm_call_log` và "pattern như llm_client" (plan 07 tạo) — chưa tồn tại vì phase 04–07 chưa thực thi; bảng phụ thuộc 00-index lại chỉ ghi 08 blocked-by 03 (lệch giữa graph và văn bản plan). Repo cũng chưa có `app/services/`, `tests/`. Owner đã chọn phương án trước khi code.
+- Decision: Dựng đúng đủ scope plan 08 kèm scaffold tối thiểu cho phần phụ thuộc: (a) `app/services/tracing.py` chỉ chứa writer `write_llm_call_log(...)` ĐÚNG chữ ký contract 07 §3.2 — phần Langfuse client/span để 07 bổ sung; (b) `app/api/routes/feedback.py` CHỈ chứa `GET /api/feedbacks/{id}/similar`, chưa guard role vì `get_current_user` thuộc 04 — kèm `app/api/deps.py` mới với `get_db`; (c) test infra lần đầu: `backend/tests/` + marker `integration` đăng ký trong pyproject, mặc định `-m 'not integration'` để `uv run pytest` = unit suite đúng như AGENTS.md mô tả; (d) integration test nối `TEST_DATABASE_URL` nếu env có (ý tưởng project-test-thứ-2 từ entry v1.1), fallback về `DATABASE_URL` dev — insert/cleanup row riêng bằng UUID, không đụng data thật.
+- Alternatives rejected: (1) hoãn route `/similar` sang sau phase 05 — phase 08 không nghiệm thu trọn DoD mục 6 (/similar trả neighbors cosine); (2) đảo thứ tự làm 04→07 rồi mới 08 — ngược yêu cầu owner muốn hoàn thành 08 trong phiên này.
+- Consequence: Phase 05 phải MỞ RỘNG `feedback.py` (thêm CRUD ingestion + wire auth) thay vì viết lại; phase 07 mở rộng `tracing.py` (Langfuse wrapper + flush lifespan); `/similar` tạm thời công khai ở dev — chấp nhận vì DB chỉ chứa fake data; mọi phase sau dùng chung markers/conftest đã dựng.
+
+## 2026-08-24 — Phase 04: token nhận từ cookie httpOnly HOẶC header Bearer song song
+- Context: Plan 04 §6 đã dự liệu "Swagger UI không authorize được vì cookie-based" và cho phép "thêm cơ chế chấp nhận `Authorization: Bearer` song song kèm entry nhỏ". Cookie httpOnly là cơ chế thật cho Next.js proxy, nhưng Swagger UI, curl và pytest cần đường Bearer.
+- Decision: `deps.OAuth2PasswordBearerWithCookie` kế thừa `OAuth2PasswordBearer`: đọc cookie `access_token` TRƯỚC, không có thì rơi về hành vi gốc (header Bearer, tự 401 kèm WWW-Authenticate). `POST /api/auth/token` vẫn trả `TokenOut{access_token}` trong body để test/Swagger lấy token. Hai nguồn cùng tồn tại vĩnh viễn, cookie ưu tiên.
+- Alternatives rejected: (1) chỉ cookie — Swagger "Authorize" chết, mọi curl/test phải quản lý cookie jar thủ công; (2) chỉ Bearer — mất ý nghĩa httpOnly (XSS đọc được token qua JS); (3) header dạng `access_token=<jwt>` trong cookie rồi strip tiền tố "Bearer " — dư một lớp biến đổi vô ích.
+- Consequence: Route guard (`get_current_user`, `require_role`) không phân biệt nguồn token; Phase 11 viết test có thể chọn cookie hoặc header tuỳ tiện. JWT HS256 key = SECRET_KEY (đã enforce: prod thiếu key thật sẽ từ chối khởi động, dev cảnh báo).
+
 
 

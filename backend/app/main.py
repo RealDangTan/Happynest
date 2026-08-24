@@ -13,10 +13,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
-from app.api.routes import admin
+from app.api.routes import admin, auth
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
+from app.db.session import engine
+from app.services import llm_client, tracing
 
 logger = get_logger(__name__)
 
@@ -25,12 +28,27 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     # Phase 06 neo TẠI ĐÂY: khởi tạo Presidio analyzer singleton (instantiated once).
     yield
-    # Phase 07 neo TẠI ĐÂY: langfuse.shutdown() trước khi process thoát.
+    # Phase 07: flush batch trace Langfuse trước khi process thoát.
+    tracing.flush()
+
+
+_DEFAULT_SECRET_VALUES = {"", "changeme-openssl-rand-hex-32"}
+
+
+def _enforce_secret_key(settings) -> None:
+    """Phase 04: JWT đã bật — prod phải có SECRET_KEY thật; dev chỉ cảnh báo."""
+    if settings.APP_ENV == "prod" and settings.SECRET_KEY in _DEFAULT_SECRET_VALUES:
+        raise RuntimeError(
+            "APP_ENV=prod nhưng SECRET_KEY chưa đặt/giữ giá trị mặc định — từ chối khởi động."
+        )
+    if settings.SECRET_KEY in _DEFAULT_SECRET_VALUES:
+        logger.warning("SECRET_KEY đang dùng giá trị mặc định/dev — KHÔNG dùng cho prod.")
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging()
+    _enforce_secret_key(settings)
 
     app = FastAPI(
         title="AI Feedback Agent",
@@ -55,10 +73,29 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health", tags=["health"])
     def health():
-        """Bản sơ khai Phase 03 — Phase 08 mở rộng: check DB + LLM structured mode."""
-        return {"status": "ok", "app_env": settings.APP_ENV}
+        """Phase 07 mở rộng: check DB (SELECT 1) + trạng thái LLM client.
+
+        `structured_output_mode`: "json_schema" | "prompt_json" | null khi chưa
+        có call nào kể từ lúc process start (module state của llm_client).
+        """
+        db_status = "ok"
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except Exception as exc:  # noqa: BLE001 — health không được raise
+            db_status = "error"
+            logger.error("health DB check failed: %s", type(exc).__name__)
+        return {
+            "status": "ok" if db_status == "ok" else "degraded",
+            "app_env": settings.APP_ENV,
+            "db": db_status,
+            "structured_output_mode": llm_client._structured_output_mode,
+            "llm_model": settings.LLM_MODEL or None,
+            "embedding_model": settings.EMBEDDING_MODEL or None,
+        }
 
     app.include_router(admin.router)
+    app.include_router(auth.router)
 
     return app
 

@@ -40,3 +40,8 @@ dev = [
     "pytest-asyncio",
     "httpx",
 ]
+
+[tool.pytest.ini_options]
+# `.` = backend/: `app`, `scripts` import được từ mọi entrypoint pytest
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,7 +1,7 @@
 # Phase 04 — Auth & RBAC
 
 > **Nguồn:** execute-plan §1 (Auth) + §7 (routes auth) + DoD mục 2
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 03
+> **Trạng thái:** ✅ 2026-08-24 · **Blocked by:** Phase 03
 > **Commit mẫu:** `feat(auth): oauth2 password flow, jwt cookie, role guard, seed users`
 
 ## 1 · Mục tiêu
