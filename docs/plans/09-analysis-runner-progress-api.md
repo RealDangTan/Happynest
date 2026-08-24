@@ -1,7 +1,7 @@
 # Phase 09 — Analysis Runner (batch idempotent) + Progress API
 
 > **Nguồn:** execute-plan §7 (jobs + routes analysis) + DoD mục 5
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 06, 07, 08
+> **Trạng thái:** ✅ 2026-08-25 · **Blocked by:** Phase 06, 07, 08
 > **Commit mẫu:** `feat(analysis): idempotent batch runner, run progress endpoints`
 
 ## 1 · Mục tiêu

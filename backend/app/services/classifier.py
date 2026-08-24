@@ -34,12 +34,19 @@ Chỉ trả về JSON object, không text thừa."""
 
 
 def classify_feedback(
-    sanitized_text: str, few_shot: list[dict] | None = None
+    sanitized_text: str,
+    few_shot: list[dict] | None = None,
+    *,
+    feedback_id=None,
+    analysis_run_id=None,
 ) -> Classification:
     """Phân loại một feedback ĐÃ SANITIZE thành `Classification`.
 
     `few_shot`: list dict {"text": str, "label": Classification-like dict} —
     param tồn tại từ v1 để loop correction (phase sau) cắm vào mà không đổi chữ ký.
+
+    `feedback_id`/`analysis_run_id` (Phase 09 thêm): passthrough metadata vào
+    llm_call_logs/Langfuse để truy vết call theo run — không đổi hành vi phân loại.
     """
     user_parts: list[str] = []
     for ex in few_shot or []:
@@ -54,6 +61,8 @@ def classify_feedback(
         Classification,
         call_type=LlmCallType.classify,
         prompt_version=PROMPT_VERSION,
+        feedback_id=feedback_id,
+        analysis_run_id=analysis_run_id,
     )
 
 
