@@ -11,6 +11,9 @@ __pycache__/
 *.egg-info/
 .ruff_cache/
 
+# Spike outputs — chỉ commit code spike; kết quả dạng số ghi vào decisions.md
+scripts/spikes/results/
+
 # Node (frontend phase sau)
 node_modules/
 dist/

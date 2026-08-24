@@ -35,12 +35,12 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
 
 | # | Câu hỏi | Pass criterion | Kết quả | Ngày | Fallback kích hoạt? |
 |---|---|---|---|---|---|
-| S1 | Presidio + Stanza("vi") bắt được PII trong sample VN-EN trộn? | ≥80% recall obvious-type | pending | | |
-| S2 | Provider có honor `json_schema` response_format? | ≥9/10 calls valid | pending | | |
-| S3 | Embeddings API + roundtrip pgvector qua Supabase? | self-match rank #1 | pending | | |
+| S1 | Presidio + Stanza("vi") bắt được PII trong sample VN-EN trộn? | ≥80% recall obvious-type | **PASS** — presidio_full: EMAIL/PHONE/CCCD/URL/IP = 100%, PERSON = 66.7% (usable-with-caveat); regex-only fallback đo được: obvious 100%, PERSON 0% (chi tiết + bug presidio 2.2.364: xem entry cùng ngày) | 2026-08-24 | Có — mở rộng recognizer set tùy chỉnh (không phải regex-only) |
+| S2 | Provider có honor `json_schema` response_format? | ≥9/10 calls valid | **PASS** — gemini-3-flash @ api.orimise.com/v1: **10/10 valid**, temperature=0, không retry → production mode = json_schema (sau khi sửa base_url thiếu `/v1`) | 2026-08-24 | Không |
+| S3 | Embeddings API + roundtrip pgvector qua Supabase? | self-match rank #1 | **PASS** — text-embedding-3-small dims thực đo **1536 khớp hợp đồng**; insert OK vào `public._spike_vec`; self-match rank #1 cả 10 câu, sim min = 1.0; latency ~280ms/query (WAN tới ap-southeast-2); bảng toy đã drop | 2026-08-24 | Không |
 | S4 | sklearn HDBSCAN cosine sane trên 200 toy vectors? | <5s, noise hợp lý | pending | | |
 | S5 | LangGraph interrupt → restart → resume với AsyncPostgresSaver? | resume OK, zero duplicate side effects | pending | | |
-| S6 | Parity Windows-native backend ↔ Supabase cloud end-to-end? | green | pending | | |
+| S6 | Parity Windows-native backend ↔ Supabase cloud end-to-end? | green | **PARTIAL green** — PostgreSQL 17.6 reachable qua session pooler từ Windows; raw psycopg roundtrip OK; WAN baseline ~253ms/query. Phần Alembic upgrade head + ORM feedbacks insert/query chạy ngay sau Phase 03 theo plan §3.4 | 2026-08-24 | Không (split-run đúng kế hoạch §3.4) |
 
 ## Deviations / amendments
 
@@ -79,3 +79,21 @@ Bảng quyết định gốc đã chốt với owner của đề tài — KHÔNG
 
 - Alternatives rejected: Không áp dụng — mọi bounds trong pyproject giữ theo plan §1 (`>=`/range); con số trên là kết quả resolve, không nâng tay.
 - Consequence: Smoke import toàn bộ lib nặng PASS trên Windows (Python 3.12.9); spaCy model load OK. Khi cần nâng version nào, sửa bound + cập nhật entry mới tại đây để giữ dấu vết cho khóa luận. Ghi chú vận hành nhỏ: uv cache nằm ở C: còn venv ở D: → hardlink fail, uv fallback sang copy (warning vô hại).
+
+## 2026-08-24 — .env người dùng lệch tên biến hợp đồng §5 → chấp nhận qua alias
+- Context: Người dùng điền `backend/.env` với `DB_CONNECT_STRING` (thay `DATABASE_URL`), `EMBEDDING_DIMENSIONS` (thay `EMBEDDING_DIM=1536`), thêm `EMBEDDING_BASE_URL`/`EMBEDDING_API_KEY` riêng cho embeddings (hợp đồng §5 chỉ có `LLM_*` dùng chung). Ngữ nghĩa đều đúng: DB là Supabase **session pooler :5432** đúng quy tắc, dims=1536 khớp hợp đồng.
+- Decision: Code chấp nhận CẢ bộ tên theo thứ tự ưu tiên `DATABASE_URL`→`DB_CONNECT_STRING`, `EMBEDDING_DIM`→`EMBEDDING_DIMENSIONS`; embeddings đọc `EMBEDDING_BASE_URL`/`EMBEDDING_API_KEY` nếu có rồi mới fallback `LLM_*`. Spike scripts áp dụng qua `scripts/spikes/_common.py`; Phase 03 khai báo tương ứng bằng `AliasChoices` trong class `Settings`.
+- Alternatives rejected: (1) bắt người dùng đổi lại tên theo `.env.example` — ma sát không cần thiết vì ngữ nghĩa đã đúng; (2) hard-code một bộ tên duy nhất — spike S3/S6 gãy ngay trong ngày.
+- Consequence: Settings class Phase 03 phải nhớ `AliasChoices` (đã ghi checklist phase); `.env.example` giữ tên chuẩn làm tài liệu. Phát hiện kèm theo: password DB chứa ký tự `@` → mọi parser connection string phải tách userinfo ở ký tự `@` CUỐI (chuẩn RFC 3986) hoặc truyền param rời cho psycopg (`scripts/spikes/_common.py::db_params`).
+
+## 2026-08-24 — S1: Presidio builtin thiếu sót trên tiếng Việt → recognizer set tùy chỉnh (PASS sau fix)
+- Context: Chạy spike S1 trên 20 mẫu fake VN–EN. Lần đầu: EMAIL 50%, PHONE 50%, PERSON 0% dù CCCD/URL/IP = 100%. Ba nguyên nhân: (a) builtin `EmailRecognizer` bỏ sót TLD dự phòng `.test`/`.example` mà chính plan §3.1 chọn làm dữ liệu giả; (b) số điện thoại có khoảng trắng (`0912 345 678`) không match vì chưa normalize trước khi match như plan chỉ định; (c) PERSON = 0% do **bug presidio-analyzer 2.2.364**: `StanzaRecognizer.__init__` forwarding kwarg `nlp_engine` lên `SpacyRecognizer.__init__` (không nhận tham số này) → TypeError, không dựng được recognizer NER builtin — trong khi stanza vi thực chất vẫn trả entity `PERSON` đúng trong nlp_artifacts.
+- Decision: Giữ NGUYÊN dataset theo plan, mở rộng recognizer set: thêm `VnEmailRecognizer` (pattern email rộng), normalize dấu cách/dot giữa chữ số trước khi match VN_PHONE, tự viết `StanzaViPersonRecognizer` đọc thẳng `nlp_artifacts.entities` (workaround bug upstream). Kết quả cuối: EMAIL/PHONE/CCCD/URL/IP = **100%**, PERSON = **66.7%** usable-with-caveat (đúng kịch bản plan §3.1 — câu "Tôi là Nguyễn Văn A" là điểm yếu thật của NER vlsp). Regex-only fallback đo được để đối chiếu: obvious types 100%, PERSON 0%. **Mode production = presidio_full.**
+- Alternatives rejected: (1) đổi dataset sang domain "dễ ăn" (.com/.vn) — giấu lỗi builtin, mất giá trị spike; (2) monkey-patch `StanzaRecognizer` — phụ thuộc nội bộ thư viện, vỡ khi nâng version; (3) hạ pass criterion — sai quy trình nghiệm thu.
+- Consequence: Phase 06 đóng gói đúng recognizer set này (4 custom + builtin URL/IP); cần rule ưu tiên CCCD khi overlap VN_PHONE (12 số chứa 10 số con); **pin presidio-analyzer ==2.2.364** hoặc kiểm tra upstream đã fix trước khi nâng version.
+
+## 2026-08-24 — S2: base_url relay thiếu `/v1` trong `.env`; json_schema được honor 10/10 (PASS)
+- Context: Lần chạy đầu S2 toàn call 404 từ relay `api.orimise.com`. Probe GET `/models` chứng minh endpoint chuẩn là `https://api.orimise.com/v1/*` và model `gemini-3-flash` tồn tại — `.env` điền thiếu đuôi `/v1`. Tương tự `EMBEDDING_BASE_URL` bị điền dạng full-endpoint `/v1/embeddings` thay vì base `/v1` (openai SDK tự nối `/embeddings`); probe xác nhận POST `/v1/embeddings` HTTP 200, **dims=1536 khớp hợp đồng**.
+- Decision: Agent sửa 2 dòng URL trong `backend/.env` về dạng base chuẩn OpenAI-compatible (`…/v1`, không đụng key/password). Sau fix S2 đạt **10/10 valid** với `response_format={"type":"json_schema", strict:true}` temperature=0, không cần retry → **mode production `llm_client.chat_structured` = json_schema**; nhánh prompt-JSON + validate + retry chỉ là fallback dự phòng Phase 07.
+- Alternatives rejected: giữ URL lệch và cấu hình SDK đường dẫn riêng — lệch chuẩn OpenAI-compatible, rắc rối cho Phase 07.
+- Consequence: Mọi provider sau này phải khai báo dạng base `…/v1`; người dùng cần biết `.env` đã được agent sửa 2 giá trị URL nói trên.
