@@ -96,3 +96,9 @@ uv run pytest -m integration     # requires real PG reachable
 6. **Windows quirks:** run `uvicorn --reload` alone in its own terminal; never spawn subprocesses under reload; all shell/SQL files LF-only (enforced by `.gitattributes`).
 7. **Scope discipline:** if a milestone's acceptance fails after honest effort, STOP that milestone, record the blocker in `docs/decisions.md`, continue independent milestones, report at the end. Do not silently expand scope.
 8. Spikes S1–S6 are validation evidence for the thesis — keep their scripts and record outcomes even when a fallback gets activated.
+
+## Skills & multi-agent handoff
+
+- **Handoff protocol (binding for every agent):** before starting AND before ending any session, follow [`.claude/skills/agent-handoff/SKILL.md`](.claude/skills/agent-handoff/SKILL.md) — check/leave append-only records in [`docs/handoffs/`](docs/handoffs/), sign commits with `Assisted-by: <agent-name>`, verify incoming claims (`git log`, tests) before trusting them.
+- **In-repo skills:** `.claude/skills/` (Claude Code auto-loads) and `.agents/skills/` (universal — Codex/Cursor/Gemini/Antigravity). Both directories are required-reading references; list them when planning work, don't duplicate their content elsewhere.
+- Plan execution is **inline** in one session — no subagent fan-out (LLM API credit is limited, see `docs/plans/00-index.md` §1).
