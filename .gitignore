@@ -21,3 +21,6 @@ dist/
 # OS / editor noise
 Thumbs.db
 .DS_Store
+
+# .claude/skills chi la junction tro toi .agents/skills - ban that duy nhat nam o .agents
+.claude/skills/

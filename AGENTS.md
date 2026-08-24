@@ -99,6 +99,6 @@ uv run pytest -m integration     # requires real PG reachable
 
 ## Skills & multi-agent handoff
 
-- **Handoff protocol (binding for every agent):** before starting AND before ending any session, follow [`.claude/skills/agent-handoff/SKILL.md`](.claude/skills/agent-handoff/SKILL.md) — check/leave append-only records in [`docs/handoffs/`](docs/handoffs/), sign commits with `Assisted-by: <agent-name>`, verify incoming claims (`git log`, tests) before trusting them.
-- **In-repo skills:** `.claude/skills/` (Claude Code auto-loads) and `.agents/skills/` (universal — Codex/Cursor/Gemini/Antigravity). Both directories are required-reading references; list them when planning work, don't duplicate their content elsewhere.
+- **Handoff protocol (binding for every agent):** before starting AND before ending any session, follow [`.agents/skills/agent-handoff/SKILL.md`](.agents/skills/agent-handoff/SKILL.md) — check/leave append-only records in [`docs/handoffs/`](docs/handoffs/), sign commits with `Assisted-by: <agent-name>`, verify incoming claims (`git log`, tests) before trusting them.
+- **In-repo skills:** single source of truth is [`.agents/skills/`](.agents/skills/) (universal — Codex/Cursor/Gemini/Antigravity). `.claude/skills/` is a local NTFS junction pointing there so Claude Code still auto-loads them; it is gitignored — recreate after a fresh clone: `New-Item -ItemType Junction -Path .claude/skills -Target .agents/skills`. Add new skills ONLY under `.agents/skills/`; never keep copies in both places.
 - Plan execution is **inline** in one session — no subagent fan-out (LLM API credit is limited, see `docs/plans/00-index.md` §1).
