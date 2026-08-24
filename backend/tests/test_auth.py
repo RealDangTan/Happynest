@@ -1,9 +1,15 @@
 """Auth & RBAC tests — Phase 04 (docs/plans/04-auth-rbac.md §3.6).
 
-Chạy trên DB Supabase DEV thật (xem conftest) — cần .env + internet.
+⚠️ Marker `integration` — chạm DB Supabase thật qua fixture `client`/`seeded_users`
+(cần .env + internet). Marker bổ sung Phase 11: từ Phase 04 file này thiếu marker
+nên 12 test auth lọt vào unit suite mặc định — phát hiện khi rà soát plan 11 §3.2.
 """
 
+import pytest
+
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
+
+pytestmark = pytest.mark.integration
 
 PM_EMAIL = SEED_EMAILS["pm"]
 OPS_EMAIL = SEED_EMAILS["operations"]

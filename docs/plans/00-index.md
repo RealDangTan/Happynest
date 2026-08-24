@@ -33,7 +33,7 @@
 | 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ✅ 2026-08-24 | `feat(embedding): embedder service, vector storage, similar endpoint` |
 | 09 | [09-analysis-runner-progress-api.md](09-analysis-runner-progress-api.md) | Batch runner + progress API | 06, 07, 08 | ✅ 2026-08-25 | `feat(analysis): idempotent batch runner, run progress endpoints` |
 | 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ✅ 2026-08-24 | `test(spikes): S4/S5 evidence scripts, outcomes 6/6 PASS` |
-| 11 | [11-test-suite-polish.md](11-test-suite-polish.md) | Suite pytest hoàn thiện | 04–09 | ⬜ | `test(suite): …` |
+| 11 | [11-test-suite-polish.md](11-test-suite-polish.md) | Suite pytest hoàn thiện | 04–09 | ✅ 2026-08-25 | `test(suite): conftest strategy, markers, green unit + integration` |
 | 12 | [12-definition-of-done-sweep.md](12-definition-of-done-sweep.md) | §9 DoD sweep + docs cuối | Tất cả | ⬜ | `docs(dod): …` |
 
 Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12**.
@@ -73,5 +73,5 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [x] 08 Embedder + similarity
 - [x] 09 Analysis runner
 - [x] 10 Spike S4/S5
-- [ ] 11 Test suite polish
+- [x] 11 Test suite polish
 - [ ] 12 DoD sweep

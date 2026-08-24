@@ -1,7 +1,7 @@
 # Phase 11 — Test Suite hoàn thiện
 
 > **Nguồn:** execute-plan §2 (IN-SCOPE mục 13) + §9 DoD mục 9
-> **Trạng thái:** ⬜ · **Blocked by:** Phase 04–09
+> **Trạng thái:** ✅ 2026-08-25 · **Blocked by:** Phase 04–09
 > **Commit mẫu:** `test(suite): conftest strategy, markers, green unit + integration`
 
 ## 1 · Mục tiêu
@@ -33,15 +33,16 @@ Suite pytest đáng tin: unit chạy không cần PG/không network (LLM mocked)
 ### 3.2 Rà từng file test tồn tại từ các phase
 | File | Phủ | Trạng thái |
 |---|---|---|
-| `test_auth.py` | login/me/403 | từ Phase 04 |
-| `test_presidio_service.py` | recall + placeholder + no-leak | từ Phase 06 |
-| `test_ingest.py` | POST/CSV/filter/raw-flag | từ Phase 05 |
-| `test_classifier_unit.py` | fallback chain + HITL formula | từ Phase 07 |
-| `test_classifier_idempotency.py` | crash/resume không trùng | từ Phase 09 |
-| `test_embedder_unit.py` | batch/dim/log | từ Phase 08 |
-| `test_similarity_roundtrip.py` | `@pytest.mark.integration` | từ Phase 08 |
+| `test_auth.py` | login/me/403 | từ Phase 04 · ✅ 2026-08-25 — bổ sung marker `integration` (từng thiếu từ Phase 04, xem decisions.md) |
+| `test_presidio_service.py` | recall + placeholder + no-leak | từ Phase 06 · ✅ unit chạy local stanza offline; wiring class đã integration |
+| `test_ingest.py` | POST/CSV/filter/raw-flag | từ Phase 05 · ✅ integration, cleanup prefix |
+| `test_classifier_unit.py` | fallback chain + HITL formula | từ Phase 07 · ✅ mock trọn (fake client + sqlite sink + tracing off) |
+| `test_classifier_idempotency.py` | crash/resume không trùng | từ Phase 09 · ✅ integration + fakes bắt buộc autouse |
+| `test_embedder_unit.py` | batch/dim/log | từ Phase 08 · ✅ fake client + recorder factory |
+| `test_similarity_roundtrip.py` | `@pytest.mark.integration` | từ Phase 08 · ✅ đã sửa auth Phase 09 |
 
 Việc phase này: chạy toàn bộ, sửa flaky, đảm bảo KHÔNG test nào gọi network thật (grep mock coverage), không test nào phụ thuộc thứ tự chạy.
+→ Đã xong 2026-08-25: audit grep xác nhận unit suite không có đường ra network; suite xanh cả 2 chế độ; lệch kế hoạch (auto-wipe → skip-guard + TEST_DATABASE_URL) ghi decisions.md cùng ngày.
 
 ### 3.3 Ma trận chạy chuẩn (ghi vào README ở Phase 12)
 ```powershell
