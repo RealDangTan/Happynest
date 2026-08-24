@@ -1,7 +1,7 @@
 # Phase 12 — Definition of Done Sweep + Docs cuối
 
 > **Nguồn:** execute-plan §9 (10 dòng DoD) + §2 (OUT-OF-SCOPE rà lại) + Hard rules
-> **Trạng thái:** ⬜ · **Blocked by:** Tất cả phase 01–11
+> **Trạng thái:** ✅ 2026-08-25 · **Blocked by:** Tất cả phase 01–11
 > **Commit mẫu:** `docs(dod): final readme, api notes, dod sweep results`
 
 ## 1 · Mục tiêu
@@ -19,16 +19,18 @@ Rà từng dòng §9 trên máy THẬT, điền kết quả vào bảng checklis
 
 | # | Điều kiện (§9) | Cách kiểm | Kết quả |
 |---|---|---|---|
-| 1 | Fresh-machine path đúng: Supabase project sẵn sàng → `uv sync` → `.env` → `alembic upgrade head` → seed → uvicorn boots green | Làm đủ chuỗi lệnh theo README vừa viết (cần internet) | ☐ |
-| 2 | Login cả 2 role; role sai bị 403 | curl 3 lần | ☐ |
-| 3 | Import CSV 20 rows mixed VN-EN (fake PII) OK | CLI/API + report | ☐ |
-| 4 | raw ≠ sanitized; pii_entities có; sanitized qua API mặc định, raw cần flag | query DB + curl 2 chế độ | ☐ |
-| 5 | 1 run đầy đủ trên 20 rows: labels+severity+confidence+review flag+embeddings(model+dim); crash→resume không trùng (test chứng minh) | POST run + test idempotency | ☐ |
-| 6 | `/similar` trả ranked neighbors cosine | curl k=5 | ☐ |
-| 7 | llm_call_logs populated; Langfuse EU thấy trace CHỈ sanitized (inspect 1 trace); kill switch hoạt động | dashboard + env flip | ☐ |
-| 8 | 6 spike scripts chạy xong; outcomes + fallback ghi decisions.md | đọc decisions.md | ☐ |
-| 9 | pytest green (unit luôn; integration khi PG có) | pytest output | ☐ |
-| 10 | Không secrets trong git history; `.env.example` đủ; README phủ Windows-dev + Supabase-PG + run/test/deploy-placeholder | mục 3.3 dưới | ☐ |
+| 1 | Fresh-machine path đúng: Supabase project sẵn sàng → `uv sync` → `.env` → `alembic upgrade head` → seed → uvicorn boots green | Làm đủ chuỗi lệnh theo README vừa viết (cần internet) | ✅ 2026-08-25 |
+| 2 | Login cả 2 role; role sai bị 403 | curl 3 lần | ✅ 2026-08-25 |
+| 3 | Import CSV 20 rows mixed VN-EN (fake PII) OK | CLI/API + report | ✅ 2026-08-25 |
+| 4 | raw ≠ sanitized; pii_entities có; sanitized qua API mặc định, raw cần flag | query DB + curl 2 chế độ | ✅ 2026-08-25 |
+| 5 | 1 run đầy đủ trên 20 rows: labels+severity+confidence+review flag+embeddings(model+dim); crash→resume không trùng (test chứng minh) | POST run + test idempotency | ✅ 2026-08-25 |
+| 6 | `/similar` trả ranked neighbors cosine | curl k=5 | ✅ 2026-08-25 |
+| 7 | llm_call_logs populated; Langfuse EU thấy trace CHỈ sanitized (inspect 1 trace); kill switch hoạt động | dashboard + env flip | ✅ 2026-08-25 |
+| 8 | 6 spike scripts chạy xong; outcomes + fallback ghi decisions.md | đọc decisions.md | ✅ 2026-08-25 |
+| 9 | pytest green (unit luôn; integration khi PG có) | pytest output | ✅ 2026-08-25 |
+| 10 | Không secrets trong git history; `.env.example` đủ; README phủ Windows-dev + Supabase-PG + run/test/deploy-placeholder | mục 3.3 dưới | ✅ 2026-08-25 |
+
+→ Bằng chứng chi tiết từng dòng: [`../backend-foundation-report.md`](../backend-foundation-report.md) (sweep 2026-08-25, run thật `9c6687bc` 22/22 completed).
 
 ### 3.2 Docs cuối
 - **README.md** cập nhật (giữ tiếng Việt): quickstart đúng thứ tự fresh-machine (tạo Supabase project → uv sync → .env → alembic → seed → uvicorn riêng terminal → pytest), quy tắc anti-pause 7 ngày, ma trận test, placeholder mục "Deploy VPS (phase sau)".
