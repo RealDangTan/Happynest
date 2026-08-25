@@ -1,9 +1,9 @@
 # UF-02 — Screen specs: Login · Shell · Feedback list · Detail (+similar) · Nhập liệu/CSV
 
-> **Phiên bản:** v1.0 · **Ngày:** 2026-08-25
+> **Phiên bản:** v1.1 · **Ngày cập nhật:** 2026-08-26 (v1.0: 2026-08-25)
 > **Nguồn bám:** contract [`delivery-contracts.md`](delivery-contracts.md) (feedback endpoints đã ship) · [`../user-flows.md`](../user-flows.md) F1–F3/F5 · [`../api-checklist.md`](../api-checklist.md) · quy ước chung [UF-01](UF-01-information-architecture.md) §4–§5
-> **Verify API 2026-08-25:** `backend/app/api/routes/feedback.py` + `schemas/feedback.py` + `models/enums.py`. **KHÔNG có filter `source`; KHÔNG có sort param** (sort cứng `created_at DESC, id DESC`); `category` = match chính xác 1 giá trị nằm trong JSONB `categories`.
-> **Ghi chú hiện trạng:** cả 5 màn đều đã ship theo FE-02/FE-03 (detail + similar xong 2026-08-25, commit `9f60c3b`) — spec này là chuẩn tham chiếu + acceptance checklist.
+> **Verify API 2026-08-25:** `backend/app/api/routes/feedback.py` + `schemas/feedback.py` + `models/enums.py`. **KHÔNG có filter `source`; KHÔNG có sort param** (sort cứng `created_at DESC, id DESC`); `category` = match chính xác 1 giá trị nằm trong JSONB `categories`. **Bổ sung 2026-08-26 (FE-03b):** nhóm `/api/sources` mới (`GET` list · `POST` tạo · `PATCH` bật/tắt) dùng cho field Nguồn khi nhập liệu.
+> **Ghi chú hiện trạng:** cả 5 màn đều đã ship theo FE-02/FE-03/FE-03b (detail + similar `9f60c3b`; source registry + CSV wizard + column menu theo báo FE 2026-08-26) — spec này là chuẩn tham chiếu + acceptance checklist.
 
 ---
 
@@ -49,7 +49,8 @@
 - **Data:** `GET /api/feedbacks?limit(≤100, def20)&offset&review_status&severity&category` → `{total, limit, offset, items[FeedbackOut]}`. FeedbackOut gồm: id, source, external_ref|null, created_at, imported_at, review_status, pii_detected, severity|null, categories[]|null, ai_issue|null, sentiment|null, confidence|null, requires_human_review, sanitized_content|null.
 - **Bố cục:** thanh filter trên cùng + Table + pagination dưới đáy.
   - Filter: Select `review_status` (5 enum + tất cả) · Select `severity` (4 + tất cả) · Input `category` (text, match chính xác 1 giá trị trong mảng). Nút phụ "Xoá bộ lọc" khi đang có filter.
-  - Cột đề xuất: `created_at` (định dạng ngắn) · `source` · snippet `sanitized_content` (1–2 dòng, truncate) · Badge severity · Badge sentiment · chips categories (tối đa 2 + "+n") · Badge review_status · icon/badge `pii_detected` · dấu hiệu `requires_human_review` (icon alert nhỏ). Row click → `/feedbacks/[id]`.
+  - Cột mặc định: `created_at` (định dạng ngắn) · `source` · snippet `sanitized_content` (1–2 dòng, truncate) · Badge severity · Badge sentiment · chips categories (tối đa 2 + "+n") · Badge review_status · icon/badge `pii_detected` · dấu hiệu `requires_human_review` (icon alert nhỏ). Row click → `/feedbacks/[id]`.
+  - Menu "Hiện thị cột" (ship FE-03b): toggle bật/tắt cột phụ (sentiment · ai_issue · confidence · PII…), lựa chọn persist qua localStorage per-viewer — bộ cột liệt kê trên là MẶC ĐỊNH, không phải bộ cứng. Quy tắc: cột khóa (created_at, source, snippet, review_status) không cho ẩn để bảng luôn đọc được.
   - Pagination: prev/next + text "đang xem x–y trên total"; không cho chỉnh limit trên UI (mặc định 20).
 - **Components:** Table · Select · Input · Badge · Skeleton · Empty · Button; component pagination thêm bằng `pnpm dlx shadcn@latest add pagination` lúc cần.
 - **States:**
@@ -88,23 +89,26 @@
 - **Purpose:** 2 đường ingestion của F2 ngay trong UI: thêm 1 feedback thủ công hoặc import loạt CSV.
 - **Data:**
   - Tab nhập tay: `POST /api/feedbacks` `{source*, content*, external_ref?, created_at?}` → **201** FeedbackOut.
-  - Tab CSV: `POST /api/feedbacks/import-csv` multipart file `.csv` → `200 {imported, failed, errors:[{row, reason}]}` — lỗi từng dòng KHÔNG abort file; backend đọc utf-8-sig (CSV Excel BOM OK). Cột bắt buộc `source`, `content`; tuỳ chọn `created_at` ISO 8601, `external_ref`.
-- **UX flow:**
-  - Nút "Nhập liệu" trên list → Dialog có Tabs `[Nhập tay | Import CSV]` (Tabs luôn kèm Title — rule shadcn).
-  - Nhập tay: Field bắt buộc source (Input), content (Textarea); tuỳ chọn external_ref, created_at (để trống = thời điểm ingest). Submit → toast success + invalidate query key list + đóng dialog.
-  - CSV: chọn file (client check đuôi `.csv` trước khi upload) → upload → panel kết quả: Alert tổng (`imported`/`failed`) + bảng errors (`row`, `reason`) khi `failed > 0`. Import thành công một phần vẫn là kết quả bình thường — không coi là error toast.
+  - Field Nguồn lấy từ nhóm endpoint mới (FE-03b): `GET /api/sources` (list) · `POST /api/sources` (wizard đăng ký) · `PATCH /api/sources/{id}` (bật/tắt). Ingest vẫn **permissive** — source lạ ngoài registry không bị chặn (validation theo registry là backlog sau P1).
+  - Tab CSV: `POST /api/feedbacks/import-csv` multipart file `.csv` → `200 {imported, failed, errors:[{row, reason}]}` — endpoint/không đổi; lỗi từng dòng KHÔNG abort file; backend đọc utf-8-sig (CSV Excel BOM OK).
+- **UX flow (ship FE-03b):**
+  - Nút "Nhập liệu" trên list → Dialog Tabs `[Nhập tay | Import CSV]`.
+  - Nhập tay: `source` = Select từ danh sách nguồn (`GET /api/sources`) với mục cuối **"＋ Đăng ký nguồn mới…"** mở wizard 2 bước (đặt tên/ghi chú → lưu `POST /api/sources`, tự chọn nguồn vừa tạo vào field); `content` Textarea; `external_ref` tuỳ chọn. **Không có input `created_at` trên UI** — event time = lúc ingest; dữ liệu lịch sử dùng đường CSV. Submit → toast + invalidate list + đóng dialog.
+  - CSV — wizard 3 bước: **(1)** chọn file (client check đuôi `.csv`) → **(2)** map cột: auto-guess alias tiếng Việt/tiếng Anh cho header, cột bắt buộc `source` + `content` phải được map mới sang bước tiếp được → **(3)** preview 5 dòng đầu → gửi BE CSV canonical (endpoint như cũ) → panel kết quả: Alert tổng (`imported`/`failed`) + bảng errors (`row`, `reason`) khi `failed > 0`. Import một phần vẫn là kết quả bình thường — không coi là error toast.
 - **Components:** Dialog · Tabs · FieldGroup/Field · Input · Textarea · Button · Progress (file lớn) · Alert · Table (errors) · sonner toast.
 - **States:** validation inline 422 dưới từng field; 422 "File phải có đuôi .csv" từ server → Alert trong dialog; loading = nút disable.
 - **Edge cases:** sau ingest thô feedback **chưa có nhãn** — phải chạy analysis (UF-03) mới classify/embed; UI nên nói rõ điều đó ở toast ("Đã thêm — chạy Analysis để phân loại"). Không có sửa/xoá sau import — chỉnh nhãn sau này bằng correction (UF-04).
 - **Acceptance criteria:**
   - [ ] Import CSV 10 dòng trong đó 2 dòng thiếu `content` → report `imported=8, failed=2`, 8 dòng mới xuất hiện ở list sau invalidate.
   - [ ] Chọn file `.xlsx` → bị chặn client-side, không gọi API.
-  - [ ] created_at người dùng tự điền được hiển thị đúng ở list/detail (event time ≠ imported_at).
+  - [ ] Wizard CSV không cho sang bước preview khi cột bắt buộc `source` hoặc `content` chưa được map.
+  - [ ] Đăng ký nguồn mới xong trong wizard → nguồn xuất hiện ngay trong Select mà không phải đóng/mở lại dialog.
 
 ---
 
 ## Rủi ro UX & câu hỏi mở
 
-- **OQ-4 — `created_at` nhập tay:** để datetime-local picker hay ô text ISO? Picker thân thiện hơn nhưng thêm component (`pnpm dlx shadcn add calendar popover` nếu dùng DatePicker đầy đủ — cân nhắc chi phí); đề xuất mặc định: để trống (server lấy now), ô text ISO cho trường hợp dữ liệu lịch sử.
-- **OQ-5 — Back từ detail "giữ filter":** muốn giữ đúng bộ lọc cũ cần đọc params từ URL trước khi điều hướng (state không tự giữ). Ưu tiên thấp — chấp nhận back = list mặc định nếu FE muốn đơn giản; ghi rõ lựa chọn nào cũng được miễn nhất quán.
+- **OQ-4 — ✅ resolved 2026-08-26:** dialog nhập tay KHÔNG có input `created_at` (FE chốt khi ship) — event time = lúc ingest; dữ liệu lịch sử đi đường CSV wizard. Không còn câu hỏi.
+- **OQ-5 — ✅ resolved 2026-08-26:** back từ detail là `<Link href="/feedbacks">` về list MẶC ĐỊNH (không giữ filter) — lựa chọn đơn giản, nhất quán; ai muốn quay lại bộ lọc thì dùng nút back của trình duyệt.
 - **Rủi ro:** người dùng tưởng "nhập xong là có nhãn AI" → thất vọng khi bảng trống nhãn. Giảm nhẹ: toast + placeholder ở snippet cột đã nêu; dashboard/analysis nhắc chạy run khi tồn tại row chưa xử lý (UF-03 empty state).
+- **Rủi ro mới (FE-03b):** source registry permissive — người dùng tạo nguồn trùng/nhầm tên vẫn ingest được; đã có backlog validation theo registry (decisions 2026-08-26). Chấp nhận v1.
