@@ -1,0 +1,43 @@
+# API Checklist — AI Feedback Agent
+
+> **Quy tắc đồng bộ (Hard rule #10 — AGENTS.md):** thêm/sửa/xóa endpoint, đổi request/response schema hay auth → BẮT BUỘC cập nhật bảng dưới trong cùng commit; đổi phía FE (nối/sửa call API) cũng cập nhật 2 cột cuối. Agent tự đập vào checklist này, không cần nhắc.
+>
+> List này là **bản đồ nối FE ↔ BE** — đủ 16/16 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
+
+Snapshot: 2026-08-26 · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`, `frontend/hooks/*`
+
+Chú thích:
+- **Trạng thái (BE):** ✅ production · 🚧 stub 501 (in-scope P3/P4, plans 14–16)
+- **Trên FE:** ✅ đã nối · 🔶 đã có hook/API client nhưng chưa gắn UI · ⬜ chưa nối
+
+## Bảng endpoint
+
+| Trạng thái | Method | Endpoint | Auth | Tác dụng | Trên FE | Vị trí trên FE |
+|---|---|---|---|---|---|---|
+| ✅ | GET | `/api/health` | public | Health check: DB (`SELECT 1`), `structured_output_mode`, LLM/embedding model, `pii_mode` | ⬜ | — (chỉ cần khi debug deploy) |
+| ✅ | POST | `/api/auth/token` | public | Đăng nhập (OAuth2 password form, username = email) → JWT vào cookie httpOnly SameSite=Lax + `TokenOut` body | ✅ | Trang `/login` — `frontend/app/login/page.tsx` |
+| ✅ | GET | `/api/auth/me` | cookie/Bearer | Thông tin user hiện tại (email, role) | ✅ | Guard toàn khu `(app)` + header — `frontend/app/(app)/layout.tsx` (hook `useMe`) |
+| ✅ | POST | `/api/feedbacks` | pm \| operations | Ingest 1 feedback đơn lẻ → 201 (chỉ lưu `raw_content`; sanitize chạy ở pipeline) | ✅ | Dialog "Nhập liệu" trong trang Feedbacks — `frontend/app/(app)/feedbacks/data-entry-dialog.tsx` |
+| ✅ | POST | `/api/feedbacks/import-csv` | pm \| operations | Import CSV multipart (utf-8-sig chống BOM Excel) → `CsvImportReport` lỗi theo dòng, không abort cả file | ✅ | Cùng dialog trên (tab import CSV) — `data-entry-dialog.tsx` |
+| ✅ | GET | `/api/feedbacks` | pm \| operations | List phân trang (`limit` ≤100, `offset`) + filter `review_status` / `severity` / `category` | ✅ | Trang `/feedbacks` — `frontend/app/(app)/feedbacks/page.tsx` (hook `useFeedbacks`) |
+| ✅ | GET | `/api/feedbacks/{feedback_id}` | pm \| operations | Chi tiết feedback; mặc định KHÔNG kèm `raw_content` (ranh giới PII), chỉ trả khi `?include_raw=true` | ✅ | Trang chi tiết `/feedbacks/[id]` — `frontend/app/(app)/feedbacks/[id]/page.tsx` (hook `useFeedbackDetail`) |
+| ✅ | GET | `/api/feedbacks/{feedback_id}/similar` | pm \| operations | Cosine nearest-neighbor exact scan quanh embedding của 1 feedback (`k` ≤ 50, snippet sanitized); **409** khi chưa có embedding → UI hiện Empty | ✅ | Panel "Phản hồi tương tự" cùng trang `[id]/page.tsx` (hook `useSimilarFeedbacks`) |
+| ✅ | GET | `/api/sources` | pm \| operations | List toàn bộ nguồn registry (kể cả inactive — UI tự lọc theo flag), order theo tên | ✅ | Select nguồn + wizard — `frontend/app/(app)/feedbacks/data-entry-dialog.tsx` (hook `useSources`) |
+| ✅ | POST | `/api/sources` | pm \| operations | Đăng ký nguồn mới `{name ≤100, description? ≤500}` → 201; trùng tên → 409 | ✅ | Wizard 2 bước trong dialog trên (mutation `useCreateSource`) |
+| ✅ | PATCH | `/api/sources/{source_id}` | pm \| operations | Bật/tắt nguồn `{is_active}` (không DELETE — feedback trỏ source bằng string) | ⬜ | Chưa có UI quản lý nguồn riêng (backlog sau P1) |
+| ✅ | POST | `/api/analysis/runs` | pm \| operations | Tạo run batch phân loại + đẩy job nền (`BackgroundTasks`) → 201 `{run_id}` ngay; idempotent (chỉ nhặt row chưa có run) | ⬜ | Trang `/analysis` đã có placeholder `frontend/app/(app)/analysis/page.tsx` — chưa nối |
+| ✅ | GET | `/api/analysis/runs/{run_id}` | pm \| operations | Progress một run: status, processed/total, error summary | ⬜ | Cùng trang `/analysis` — chưa nối (cần polling progress) |
+| ✅ | GET | `/api/analysis/runs/{run_id}/results` | pm \| operations | Kết quả phân loại theo run, phân trang (item chưa xử lý xong có labels NULL) | ⬜ | Cùng trang `/analysis` — chưa nối |
+| ✅ | POST | `/api/reviews/{feedback_id}` | pm \| operations | HITL duyệt/sửa/từ chối (`approve\|edit\|reject`) qua LangGraph interrupt/resume + Postgres checkpoint | ⬜ | Chưa có UI review — gợi ý: detail drawer trang `/feedbacks` |
+| ✅ | POST | `/api/corrections/{feedback_id}` | pm \| operations | Sửa nhãn trực tiếp (thuần DB) trên feedback đã classify + ghi `CorrectionExample` nuôi few-shot loop | ⬜ | Chưa có UI sửa nhãn |
+| 🚧 | GET | `/api/clusters` | (stub 501) | Chưa triển khai — clustering + trend/emerging/spike detection (plans 14–16); bảng `clusters` đã sẵn sàng | ⬜ | Trang `/clusters` placeholder `frontend/app/(app)/clusters/page.tsx` — BE cũng đang stub |
+| 🚧 | GET | `/api/insights` | (stub 501) | Chưa triển khai — insight generation evidence-backed (plans 14–16); bảng `insights` đã sẵn sàng | ⬜ | Trang `/insights` placeholder `frontend/app/(app)/insights/page.tsx` — BE cũng đang stub |
+| 🚧 | GET | `/api/reports/summary` | (stub 501) | Chưa triển khai — báo cáo tổng hợp cho PM (plans 14–16) | ⬜ | Trang `/reports` placeholder `frontend/app/(app)/reports/page.tsx` — BE cũng đang stub |
+
+## Quy ước chung
+
+- **Roles:** chỉ `pm` và `operations`; register DISABLED — user chỉ tạo bằng `scripts/seed_users.py`.
+- **Bộ lỗi chuẩn:** 401 sai/thiếu credentials · 403 sai role · 404 thiếu row · 409 trạng thái không hợp lệ · 422 body sai schema · 500 generic (không leak chi tiết).
+- **PII boundary:** `raw_content` không bao giờ xuất hiện trong response trừ `GET /feedbacks/{id}?include_raw=true`; log chỉ method + path.
+- **Routing FE→BE:** mọi request `/api/*` từ browser được Next.js rewrite về FastAPI `http://127.0.0.1:8000/api/*` (same-origin giữ cookie httpOnly — `frontend/next.config.ts`). FE gọi qua helper `apiFetch` (`frontend/lib/api.ts`) + React Query hooks trong `frontend/hooks/`.
+- **Swagger:** `http://localhost:8000/docs` khi chạy `uvicorn app.main:app --reload`.
