@@ -30,6 +30,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { DataEntryDialog } from "./data-entry-dialog";
 
 const SEVERITY_LABEL: Record<string, string> = {
   low: "Thấp",
@@ -224,7 +225,10 @@ function FeedbacksTable() {
 export default function FeedbacksPage() {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-2xl">Phản hồi</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-heading text-2xl">Phản hồi</h1>
+        <DataEntryDialog />
+      </div>
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>
         <FeedbacksTable />
       </Suspense>
