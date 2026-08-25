@@ -22,6 +22,8 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { ReviewActions } from "./review-actions";
+import { CorrectionDialog } from "./correction-dialog";
 
 export default function FeedbackDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -56,7 +58,11 @@ export default function FeedbackDetailPage() {
         <Button asChild variant="ghost" size="sm">
           <Link href="/feedbacks">← Danh sách</Link>
         </Button>
+        {d.categories != null ? (
+          <CorrectionDialog d={d} />
+        ) : null}
       </div>
+      {d.review_status === "pending" ? <ReviewActions d={d} /> : null}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">

@@ -11,6 +11,8 @@ export type ReviewBody = {
   reason?: string;
 };
 
+export type FeedbackRaw = Feedback & { raw_content: string };
+
 /** Feedback gốc chưa che PII — CHỈ toggle review ở trang detail pending được
  * bật query này (ngoại lệ duy nhất của app, decisions 2026-08-26). */
 export function useFeedbackRaw(id: string, enabled: boolean) {
@@ -18,7 +20,7 @@ export function useFeedbackRaw(id: string, enabled: boolean) {
     queryKey: ["feedback-raw", id],
     enabled,
     queryFn: () =>
-      apiFetch<Feedback>(`/api/feedbacks/${id}?include_raw=true`),
+      apiFetch<FeedbackRaw>(`/api/feedbacks/${id}?include_raw=true`),
     staleTime: 0,
   });
 }
