@@ -30,7 +30,7 @@ from app.db.session import SessionLocal
 from app.jobs import analysis_runner as runner_mod
 from app.jobs.analysis_runner import run_analysis
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import RunStatus
+from app.models.enums import ReviewStatus, RunStatus
 from app.models.feedback import Feedback
 from app.schemas.taxonomy import Classification
 from app.services import classifier as classifier_mod
@@ -279,6 +279,12 @@ def test_crash_then_resume_classifies_each_item_exactly_once(batch, fake_llm_emb
             assert r.confidence == pytest.approx(_preset_for(i).confidence)
             # công thức HITL khớp kỳ vọng per-item (plan §3.3)
             assert r.requires_human_review is _expected_review(i), f"item {i}"
+            # Phase 13 Task 1: row đủ điều kiện HITL phải được đẩy sang 'pending'
+            # (vào được hàng chờ review); row thường giữ 'unreviewed'.
+            expected_rs = (
+                ReviewStatus.pending if _expected_review(i) else ReviewStatus.unreviewed
+            )
+            assert r.review_status is expected_rs, f"review_status item {i}"
             # embedding lưu KÈM model + dim — store_embedding THẬT đọc tên model
             # từ settings (fake chỉ thay embed_one), đúng hợp đồng plan 08.
             assert r.embedding_model == get_settings().EMBEDDING_MODEL

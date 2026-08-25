@@ -39,7 +39,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import RunStatus
+from app.models.enums import ReviewStatus, RunStatus
 from app.models.feedback import Feedback
 from app.services.classifier import (
     PROMPT_VERSION,
@@ -108,6 +108,11 @@ def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
     fb.safety_issue = classification.safety_issue
     fb.requires_human_review = compute_requires_human_review(
         classification, pii_detected=fb.pii_detected
+    )
+    # Phase 13: row đủ điều kiện HITL vào ngay hàng chờ 'pending' — không thì
+    # POST /api/reviews không bao giờ thấy nó. Row thường giữ 'unreviewed'.
+    fb.review_status = (
+        ReviewStatus.pending if fb.requires_human_review else ReviewStatus.unreviewed
     )
 
     # 4. Embedding từ sanitized (PII boundary) — luôn kèm model + dim.
