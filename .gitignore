@@ -24,3 +24,6 @@ Thumbs.db
 
 # .claude/skills chi la junction tro toi .agents/skills - ban that duy nhat nam o .agents
 .claude/skills/
+
+# Log server evidence cục bộ (docs/evidence/hitl-checkpoint-resume.md)
+backend/evidence-server-*.log

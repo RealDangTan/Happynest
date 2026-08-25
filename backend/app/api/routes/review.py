@@ -47,10 +47,16 @@ def submit_review(
     fb = db.get(Feedback, feedback_id)
     if fb is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Feedback không tồn tại.")
-    if fb.review_status != ReviewStatus.pending:
+    # Pre-check hàng chờ: chỉ chặn row CHƯA BAO GIỜ vào graph ('unreviewed').
+    # Row đã rời 'pending' (approved/edited/rejected) VẪN được đưa vào graph:
+    # thread completed → graph raise ReviewAlreadyCompleted → 409 y như cũ;
+    # thread đang dở vì crash giữa apply_action-commit và record_correction-
+    # commit → request này chính là cơ chế TỰ-HEAL: chạy nốt phần còn thiếu
+    # thay vì kẹt 409 vĩnh viễn và đánh mất dòng log (decisions.md 2026-08-25).
+    if fb.review_status == ReviewStatus.unreviewed:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            detail=f"Feedback đang '{fb.review_status.value}' — chỉ review được row 'pending'.",
+            detail=f"Feedback đang '{fb.review_status.value}' — không nằm trong hàng chờ review.",
         )
     try:
         hitl_graph.submit_review(
