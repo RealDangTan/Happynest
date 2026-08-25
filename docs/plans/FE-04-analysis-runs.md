@@ -25,8 +25,8 @@
 
 **Files:** Create `frontend/hooks/use-analysis.ts`; Modify `frontend/lib/types.ts`; CLI `pnpm dlx shadcn@latest add alert-dialog progress`
 
-- [ ] Types: `RunProgress { id, status: "running"|"completed"|"failed", processedCount?…}` — bám snake_case BE: `{id, status, processed_count, total_count, error, started_at, completed_at}`; `TriggerRunResult { run_id }`.
-- [ ] Hooks:
+- [x] Types: `RunProgress { id, status: "running"|"completed"|"failed", processedCount?…}` — bám snake_case BE: `{id, status, processed_count, total_count, error, started_at, completed_at}`; `TriggerRunResult { run_id }`.
+- [x] Hooks:
   - `useRunProgress(runId)` — queryKey `["analysis","run",runId]`, `refetchInterval: (q)=> q.state.data?.status === "running" ? 4000 : false`, staleTime 0.
   - `useRunResults(runId, page)` — PAGE_SIZE 20, envelope FeedbackListResponse, `keepPreviousData`.
   - `useTriggerRun()` — mutation POST `/api/analysis/runs` → `{run_id}`; onSuccess invalidate `["analysis"]`.
@@ -35,13 +35,13 @@
 
 **Files:** Modify `frontend/app/(app)/analysis/page.tsx` (thay placeholder)
 
-- [ ] Landing không `?run=`: Empty giải thích + CTA mở AlertDialog confirm → Confirm → POST → `router.replace("/analysis?run="+run_id)`.
-- [ ] Khối progress khi có `?run=`: Badge trạng thái + Progress `%` + "x/y đã xử lý"; completed → toast xanh 1 lần; failed → Alert destructive kèm `error` + nút "Chạy lại phần còn lại" (POST mới → thay `?run=`).
-- [ ] Results table: Nội dung/Nguồn/Mức độ/Duyệt/Cảm xúc/Confidence; nhãn null → "…đang xử lý"; row link `/feedbacks/{id}`; phân trang Trước/Sau.
-- [ ] Nút trigger disable khi `status==="running"`; Suspense bọc vì dùng `useSearchParams`.
+- [x] Landing không `?run=`: Empty giải thích + CTA mở AlertDialog confirm → Confirm → POST → `router.replace("/analysis?run="+run_id)`.
+- [x] Khối progress khi có `?run=`: Badge trạng thái + Progress `%` + "x/y đã xử lý"; completed → toast xanh 1 lần; failed → Alert destructive kèm `error` + nút "Chạy lại phần còn lại" (POST mới → thay `?run=`).
+- [x] Results table: Nội dung/Nguồn/Mức độ/Duyệt/Cảm xúc/Confidence; nhãn null → "…đang xử lý"; row link `/feedbacks/{id}`; phân trang Trước/Sau.
+- [x] Nút trigger disable khi `status==="running"`; Suspense bọc vì dùng `useSearchParams`.
 
 ### Task 3: Verify + đóng bài
 
-- [ ] Build xanh; vitest xanh.
-- [ ] Live: POST run thật với row chưa classify còn lại từ FE-03b (đúng 1 item) → thấy progress → completed → results có nhãn; api-checklist cập nhật 3 dòng analysis ⬜→✅.
-- [ ] Board FE-00 tick FE-04 + log tiến độ; commit từng task.
+- [x] Build xanh; vitest xanh.
+- [x] Live: POST run thật với row chưa classify còn lại từ FE-03b (đúng 1 item) → thấy progress → completed → results có nhãn; api-checklist cập nhật 3 dòng analysis ⬜→✅.
+- [x] Board FE-00 tick FE-04 + log tiến độ; commit từng task.
