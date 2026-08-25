@@ -17,6 +17,7 @@ Backend Foundation đã đóng 12/12 phase ✅ (bằng chứng: [docs/plans/00-i
 - **Frontend** Next.js trong `frontend/` (shadcn/ui, preset `b4IdeDqtkJ`) — plan series mới trong `docs/plans/`
 - **4 nhóm route stub → production**: `GET /api/clusters`, `GET /api/insights`, `POST /api/reviews/{id}` + `POST /api/corrections/{id}` (HITL), `GET /api/reports/summary`
 - **Production LangGraph HITL graph + correction→few-shot loop** (spike S5 đã PASS làm bằng chứng khả thi)
+- **Agent module — series 17–20** (khai báo 2026-08-26, xem [decisions](docs/decisions.md) cùng ngày): LangGraph graph fully LLM-routed (router node + budget cap + critic + risk gate) + toolbox + closed-loop KPIs — plans [17–20](docs/plans/00-index.md), đăng ký là pha P6 của delivery; runner phase 09 KHÔNG bị thay thế
 
 Vẫn OUT OF SCOPE (không đổi):
 
@@ -99,6 +100,8 @@ uv run pytest -m integration     # requires real PG reachable
 6. **Windows quirks:** run `uvicorn --reload` alone in its own terminal; never spawn subprocesses under reload; all shell/SQL files LF-only (enforced by `.gitattributes`).
 7. **Scope discipline:** if a milestone's acceptance fails after honest effort, STOP that milestone, record the blocker in `docs/decisions.md`, continue independent milestones, report at the end. Do not silently expand scope.
 8. Spikes S1–S6 are validation evidence for the thesis — keep their scripts and record outcomes even when a fallback gets activated.
+9. **UI/FE work REQUIRES FE skills:** any task touching UI / frontend design — component, page, layout, styling, design tokens, Figma→code — MUST invoke the relevant FE skill FIRST (`frontend-design`, `shadcn`, `figma:figma-design-to-code`, …) before writing any code. Never hand-roll UI without loading a skill.
+10. **API checklist sync:** adding/changing/removing any endpoint, request/response schema, or auth guard → update [`docs/api-checklist.md`](docs/api-checklist.md) in the SAME commit (endpoint + method + auth + trạng thái + tác dụng). Wiring/renaming an API call on the FRONTEND → update its "Trên FE" / "Vị trí trên FE" columns too. The agent making the change updates the checklist itself — no reminder needed.
 
 ## Skills & multi-agent handoff
 

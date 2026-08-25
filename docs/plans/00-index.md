@@ -75,3 +75,21 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [x] 10 Spike S4/S5
 - [x] 11 Test suite polish
 - [x] 12 DoD sweep
+
+## 5. Series Agent module (17–20) — khai báo 2026-08-26
+
+> Bổ sung sau khi backend foundation đóng. Số 13–16 đã bị series delivery chiếm trước đó (xem decisions 2026-08-25/26) → agent module đánh số **17–20**, đăng ký như pha **P6** của [`delivery-execute-plan.md`](delivery-execute-plan.md). **Phase 09 KHÔNG superseded** — runner deterministic vẫn là đường sản xuất; agent là tầng điều tra trên cụm (`pipeline_version='agent-router-v1'` phân biệt trong `analysis_runs`).
+
+| # | File | Phạm vi | Blocked by | Status |
+|---|---|---|---|---|
+| 17 | [17-agent-substrate-demo-data.md](17-agent-substrate-demo-data.md) | Migration 0007 (insights.embedding, action_drafts, insight_reviews, impact_checks, enum route/critic) + dataset demo ~650 row planted spike/false-alarm | head migration ổn định | ⬜ |
+| 18 | [18-agent-toolbox.md](18-agent-toolbox.md) | 5 tool deterministic + registry cho router + backfill insight embeddings | 17, phase 14 Task 3–4 | ⬜ |
+| 19 | [19-agent-graph-hitl.md](19-agent-graph-hitl.md) | LangGraph fully LLM-routed (router node) + budget cap + critic + risk gate + interrupt/resume + `/api/agent/*` | 18 | ⬜ |
+| 20 | [20-closed-loop-kpis-demo.md](20-closed-loop-kpis-demo.md) | Impact check closed-loop + `GET /api/reports/kpis` (thuần SQL) + demo script + align success story | 17 (Task 1–2 độc lập); 19 (demo trọn) | ⬜ |
+
+```text
+17 ── 18 ── 19 ── 20 (Task 1–2 của 20 chỉ cần 17)
+ └── phase 14 engine clusters phải xong trước 18
+```
+
+Quy tắc áp dụng nguyên bộ quy tắc §3 phía trên (inline, không subagent, PII boundary, lệch → decisions). Các series khác: FE xem [`FE-00-index.md`](FE-00-index.md), UF xem [`UF-00-index.md`](UF-00-index.md).

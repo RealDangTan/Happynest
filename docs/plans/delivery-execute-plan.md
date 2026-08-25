@@ -32,6 +32,7 @@
 | **P3** | T5 | Clustering engine + trang clusters | **[14-clusters-api.md](14-clusters-api.md) đã có** (viết sớm 2026-08-25) · **phần clusters của FE-06**: viết khi mount màn; điều kiện: UF-05 (phần clusters) xong | FE | Trang clusters hiện data thật | ☐ |
 | **P4** | T6 | Insights + reports + dashboard đầy đủ | **[15-insights-api.md](15-insights-api.md), [16-reports-summary.md](16-reports-summary.md) đã có** (viết sớm 2026-08-25) · **phần còn lại FE-06**: viết khi mount màn | FE | Dashboard PM có chart thật | ☐ |
 | **P5** | T7–8 | Polish `[tuỳ chọn]` + data demo + tư liệu báo cáo | Checklist §4 dưới | cả hai | Bản demo bảo vệ | ☐ |
+| **P6** | T6–9 (∥/sau P4) | **Agent module** (series 17–20): substrate + migration 0007 + data demo planted-spike → toolbox 5 tool → graph LangGraph fully LLM-routed HITL (`/api/agent/*`) → closed-loop KPIs + demo script. Engine (18/19) vào sau khi P3 xong; Task 1–2 của 20 chỉ cần 17. Trễ deadline → P5 là nơi hy sinh trước, P6 là lõi luận văn không cắt | [17](17-agent-substrate-demo-data.md) · [18](18-agent-toolbox.md) · [19](19-agent-graph-hitl.md) · [20](20-closed-loop-kpis-demo.md) — viết sẵn 2026-08-26 (decisions cùng ngày) | AGENT | Demo bảo vệ: agent tự điều tra cụm nổi bật → đề xuất → người duyệt/reject → đo tác động | ☐ |
 
 Thứ tự cứng: P0 → P1 → P1.5 → P2 → P3 → P4 → P5. Trong P1, FE-01→02→03→04 tuần tự; UF chạy song song theo UF-00. P1.5 chạy ngay sau FE-03 (trong P1, trước P2); nếu GCP credentials chưa sẵn sàng thì P1.5 trượt sang sau P2 mà không chặn HITL.
 
@@ -46,6 +47,8 @@ Thứ tự cứng: P0 → P1 → P1.5 → P2 → P3 → P4 → P5. Trong P1, FE-
 | `AGENTS.md` · `decisions.md` · `00-index.md` · file này | chỉ append/tick dòng mình, **re-read trước ghi** | chỉ append/tick dòng mình, **re-read trước ghi** |
 
 Kèm theo: commit ngay sau mỗi bước; trước khi ghi file chung `git status` + đọc lại nội dung mới nhất; không bao giờ `git add .` (dùng đường dẫn tường minh — tree có thể chứa file của session kia).
+
+Bổ sung 2026-08-26: lane thứ ba **session AGENT** sở hữu `docs/plans/17–20-*`, `backend/app/agents/`, `backend/scripts/generate_demo_dataset.py`, `backend/scripts/backfill_insight_embeddings.py` — hai lane còn lại chỉ đọc các vùng này. Lane AGENT KHÔNG thực thi migration khi một lane khác đang sửa `models/`/`alembic/` (phối hợp qua `docs/handoffs/`).
 
 ## 3. Quy tắc viết plan just-in-time
 
@@ -72,6 +75,7 @@ Plan mới xong → cập nhật dòng pha tương ứng ở bảng §1 (re-read
 - [ ] P3 Clusters end-to-end
 - [ ] P4 Insights + Reports + dashboard
 - [ ] P5 Demo data + polish + evidence chụp đủ
+- [ ] P6 Agent module end-to-end (substrate → toolbox → graph HITL → closed-loop KPIs)
 
 Preconditions owner treo từ Phase 12: Node ≥20.18.1 (chặn FE-01) · rotate SECRET_KEY + reset password Supabase trước deploy prod (không chặn dev).
 
