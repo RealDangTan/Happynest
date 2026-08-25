@@ -79,6 +79,6 @@ Supabase giữ nguyên làm managed DB. Sẽ được phân rã thành plan riê
 | [`AGENTS.md`](AGENTS.md) | AI coding agent — ngữ cảnh đứng, stack đã chốt, quy tắc cứng |
 | [`docs/backend-foundation-execute-plan.md`](docs/backend-foundation-execute-plan.md) | Kế hoạch gốc giai đoạn vừa hoàn thành |
 | [`docs/plans/00-index.md`](docs/plans/00-index.md) | Phân rã 12 phase + trạng thái thực thi |
-| [`docs/api-notes.md`](docs/api-notes.md) | Bảng endpoint đã ship, mode structured-output, PROMPT_VERSION |
+| [`docs/api-checklist.md`](docs/api-checklist.md) | Bản đồ endpoint đã ship + quy tắc sync khi thêm/sửa API (thay `api-notes.md` không từng tồn tại — decisions 2026-08-26) |
 | [`docs/backend-foundation-report.md`](docs/backend-foundation-report.md) | Kết quả DoD sweep — tư liệu chương khóa luận |
 | [`docs/decisions.md`](docs/decisions.md) | Decision Log — mọi lệch khỏi plan |

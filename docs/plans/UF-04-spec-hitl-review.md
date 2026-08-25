@@ -33,6 +33,7 @@
   ```
   Side effect server: `edited_content` chạy lại Presidio trước khi lưu thành `sanitized_content`; `edit`/`reject` tự ghi `correction_examples`.
 - **Bố cục:** thanh hành động trên detail, CHỈ hiện khi `review_status === "pending"`: `[Duyệt]` (primary) · `[Sửa nội dung]` (outline) · `[Từ chối]` (destructive outline).
+- **Toggle "Hiện bản gốc" (chỉ màn pending — decisions 2026-08-26):** reviewer được phép bật xem `raw_content` qua `GET /api/feedbacks/{id}?include_raw=true`. Quy tắc bắt buộc: (1) toggle đặt trong vùng review, mặc định TẮT mỗi lần mở trang; (2) khi BẬT hiện Alert destructive "Đang hiển thị dữ liệu gốc chưa che PII — tắt trước khi share màn hình"; (3) đây là NGOẠI LỆ duy nhất của app — mọi màn khác vẫn cấm include_raw; (4) nội dung gõ vào edit vẫn là bản sanitized prefill, không tự điền raw vào textarea.
 - **Ba luồng:**
   1. **Duyệt** — 1 click → toast "Đã duyệt." Không dialog (ưu tiên tốc độ; approve là lựa chọn an toàn nhất).
   2. **Sửa nội dung** — Dialog: Textarea **prefill bằng `sanitized_content` hiện tại** + Field `reason` (tuỳ chọn, placeholder "Vì sao phải sửa"). Client chặn submit khi textarea rỗng/chỉ khoảng trắng (đúng rule 422 của server). Confirm → POST `action="edit"`.
@@ -47,13 +48,14 @@
   | Mutation loading | cả 3 nút disable đồng thời (chống double-submit) |
 - **Edge cases:**
   - **Không có undo review**: sau approve/edit/reject không API nào đưa về pending → copy confirm của reject/edit phải nói rõ "thao tác không hoàn tác".
-  - Người review chỉ làm việc trên **text đã sanitize** — PII gốc (email/SĐT…) đã bị che thành `<EMAIL_ADDRESS>`… Đây là chủ đích (PII boundary), không phải bug; hướng dẫn người demo trước.
+  - Người review làm việc trên **text đã sanitize** theo mặc định — PII gốc đã bị che `<EMAIL_ADDRESS>`…; chỉ khi cần đánh giá sanitizer có làm mất nghĩa thì mới bật toggle "Hiện bản gốc" (quy tắc 4 điểm ở bố cục; owner duyệt ngày 2026-08-26). Khi demo screen-share: nhắc tắt toggle trước.
   - Graph LangGraph chạy ngầm sau POST (interrupt/resume + checkpoint Postgres) — UI không cần xử lý gì đặc biệt; crash backend giữa chừng → resume tự lo phía BE, FE chỉ cần retry POST bình thường.
 - **Acceptance criteria:**
   - [ ] Approve/edit/reject mỗi luồng trả đúng `review_status` mới trên UI ngay mà không F5.
   - [ ] Edit với textarea rỗng không thể submit; cố tình gọi thẳng API → 422 được hiển thị đúng inventory.
   - [ ] POST lại 1 mục đã duyệt → thấy Alert 409 "đã được xử lý", không crash.
   - [ ] `edited_content` chứa email/SDT giả lập → sau lưu, detail hiển thị bản ĐÃ che PII (Presidio chạy lại) chứ không giữ nguyên text gõ vào.
+  - [ ] Toggle "Hiện bản gốc": mặc định tắt khi mở trang; bật → thấy raw + Alert đỏ; tắt → mất raw khỏi màn. Màn KHÁC detail-pending gọi include_raw sẽ bị coi là lỗi code review (grep chỉ được đúng 1 call site).
 
 ## Màn 3 — Sửa nhãn (correction)
 
@@ -88,7 +90,7 @@
 
 ## Rủi ro UX & câu hỏi mở
 
-- **OQ-8 — Có cho reviewer xem `raw_content` khi duyệt?** Thiết kế §4 của delivery-design-spec cho phép "raw content chỉ hiện qua toggle explicit", nhưng FE-03 đã chốt chặt hơn: UI không bao giờ gọi `include_raw=true`. Với HITL, xem raw giúp đánh giá sanitizer có làm mất nghĩa không — nhưng mở lại rủi ro PII lên màn hình (screen-share lúc demo!). **Đề xuất:** giữ chặn tuyệt đối trong v1; owner quyết nếu muốn mở toggle chỉ cho role operations, phải qua decisions.md TRƯỚC.
-- **OQ-9 — Không xoá nhãn được về null** (CorrectionIn: null = không đổi): nếu phát sinh nhu cầu "AI gán nhãn oan, muốn bỏ hẳn" → cần BE bổ sung sentinel/cơ chế riêng → decisions.md. v1 chấp nhận chỉ thay thế.
+- **OQ-8 — ✅ resolved 2026-08-26:** owner CHỐT mở toggle raw cho reviewer (trái đề xuất giữ chặn của spec v1.0) — entry dated trong decisions.md cùng ngày là phê duyệt; đã spec hoá ở bố cục Màn 2, phạm vi áp dụng thuộc FE-05.
+- **OQ-9 — ✅ resolved 2026-08-26:** chấp nhận v1 — correction chỉ THAY nhãn, không xoá về null (null = giữ nguyên theo CorrectionIn). Nếu phát sinh nhu cầu thật thì là scope mới qua decisions.
 - **Rủi ro demo:** duyệt nhầm do đọc nhanh — giảm nhẹ bằng cách bắt reject/edit qua dialog có nội dung context, approve là 1-click có chủ đích; không có bulk-action (cố ý, tránh duyệt hàng loạt vô trách nhiệm trong v1).
 - **Rủi ro hiểu nhầm trạng thái:** `edited` ≠ thất bại — nó là kết quả tích cực (người dùng cải thiện dữ liệu); màu badge amber dễ bị đọc là cảnh báo. FE cân nhắc tone màu trung tính-tích cực cho `edited` theo map UF-01 §5.

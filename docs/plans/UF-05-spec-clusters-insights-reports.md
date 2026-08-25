@@ -44,7 +44,7 @@
 - **Purpose:** mỗi cụm quan trọng nhận 1 kết luận tóm tắt + hành động đề xuất, kèm bằng chứng trích nguyên văn (đã sanitize) — phần "AI đọc hộ" của hệ thống.
 - **Data:** `GET /api/insights` → items: `{id, cluster_id|null, title, summary, suggested_action, evidence[{feedback_id, snippet, severity, created_at}] (≤5), review_status}`. Trigger: `POST /api/insights/run` → **409 nếu chưa có cluster** ("chạy POST /api/clusters/run trước") · 200 `{insights_generated, duration_ms}`; server cap số cụm mỗi lượt (`INSIGHT_MAX_CLUSTERS`, default 10).
 - **Components:** Card list dọc (đọc như báo cáo) · Badge severity từng evidence · Blockquote snippet · Button trigger · Alert 409 · Skeleton · Empty.
-- **Bố cục mỗi card:** `title` · `summary` · khối nổi bật "Hành động đề xuất": `suggested_action` · mục "Bằng chứng": từng evidence là 1 dòng — snippet (trích `sanitized_content`, link sang `/feedbacks/[feedback_id]`) + badge severity + ngày. Footer card: link sang cụm liên quan (`cluster_id` → `/clusters`) + badge `review_status` (**hiển thị-only**, không có nút đổi — non-goal).
+- **Bố cục mỗi card:** `title` · `summary` · khối nổi bật "Hành động đề xuất": `suggested_action` · mục "Bằng chứng": từng evidence là 1 dòng — snippet (trích `sanitized_content`, link sang `/feedbacks/[feedback_id]`) + badge severity + ngày. Footer card: link sang cụm liên quan (`cluster_id` → `/clusters`). Badge `review_status` **ẨN trong v1** (OQ-11 resolved 2026-08-26: mọi insight mãi "unreviewed" vì chưa có API đổi — hiển thị gây hiểu nhầm là có việc phải làm; hiện lại khi có API).
 - **States:** empty chưa chạy = Empty + CTA "Sinh insight"; bấm trigger khi chưa có cluster → Alert 409 đúng chữ server + link sang `/clusters`; loading skeleton cards (call LLM mất ~vài chục giây — hiện trạng thái đang sinh rõ ràng, disable nút); success toast `{insights_generated} insight · {duration_ms}s`.
 - **Edge cases:** cap 10 cụm/lượt là hành vi server — nếu cụm nhiều hơn, chạy lại lần nữa sẽ sinh tiếp; insight `cluster_id=null` (ngoài cụm) vẫn hiển thị bình thường; evidence snippet là text đã sanitize — không bao giờ raw.
 - **Acceptance criteria:**
@@ -85,7 +85,9 @@
 
 ## Rủi ro UX & câu hỏi mở
 
-- **OQ-10 — Ngưỡng spike/emerging là env config** (`CLUSTER_SPIKE_*`, `CLUSTER_EMERGING_MIN`, window days): nghĩa giải thích trên UI đúng tại thời điểm spec, nhưng nếu owner đổi ngưỡng thì *chữ* vẫn đúng vì mô tả định tính (so kỳ trước). Không hiển thị con số ngưỡng lên UI — tránh ràng buộc.
-- **OQ-11 — `insight.review_status` hiển thị mãi "unreviewed"**: không có API đổi trạng thái (non-goal v1). Nếu demo bị hỏi "ô này để làm gì" → trả lời: chỗ neo cho phiên bản sau; cân nhắc ẩn badge nếu gây nhiễu (quyết định FE khi mount, ghi vào plan FE-06).
+> **Trạng thái 2026-08-26:** OQ-10/11 đã chốt với owner (decisions.md cùng ngày).
+
+- **OQ-10 — ✅ resolved:** không hiển thị con số ngưỡng trend lên UI; mô tả định tính ("so kỳ trước") vẫn đúng kể cả khi owner đổi env config.
+- **OQ-11 — ✅ resolved:** ẨN badge review_status của insight trong v1 (đã cập nhật bố cục Màn 2); hiện lại khi có API đổi trạng thái.
 - **Rủi ro chi phí:** nút "Chạy phân cụm" rebuild sạch dữ liệu cũ — người dùng bấm nghịch làm mất insight đã có. Giảm nhẹ: confirm dialog nêu rõ hậu quả + wording "Tạo lại" thay vì "Chạy".
 - **Rủi ro đọc sai số liệu:** growth_ratio 9.99-sentinel và priority null đã có quy tắc hiển thị riêng — FE phải code theo đúng "Cạm bẫy hiển thị" đầu file, đưa vào checklist review màn P3/P4.

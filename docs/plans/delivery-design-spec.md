@@ -1,7 +1,7 @@
 # DELIVERY PHASE — DESIGN SPEC (Frontend + Pipeline Completion)
 
 > **Ngày:** 2026-08-25 · **Trạng thái:** đã duyệt qua brainstorming với owner cùng ngày (5 section, từng phần một) — chờ review file trước khi phân rã plan thực thi
-> **Nguồn:** [AGENTS.md](../../AGENTS.md) §CURRENT PHASE (khai báo delivery 2026-08-25) · entry dated cùng ngày trong [`decisions.md`](../decisions.md) · API hiện hành: [`api-notes.md`](../api-notes.md)
+> **Nguồn:** [AGENTS.md](../../AGENTS.md) §CURRENT PHASE (khai báo delivery 2026-08-25) · entry dated cùng ngày trong [`decisions.md`](../decisions.md) · API hiện hành: [`api-checklist.md`](../api-checklist.md)
 > **Cách dùng file này:** nguồn sự thật kiến trúc cho toàn bộ plan series mới (`delivery-execute-plan.md`, `UF-*`, `FE-*`, `13–16`). Lệch spec khi thực thi → entry dated vào `decisions.md` TRƯỚC khi làm tiếp.
 
 ---

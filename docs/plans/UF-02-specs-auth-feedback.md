@@ -79,7 +79,7 @@
 - **States:** loading = skeleton card; 404 = Empty "Không tìm thấy feedback" + link về list; similar 409 = Alert destructive với hướng dẫn hành động ("Chạy analysis để tạo embedding") nhưng **phần còn lại của trang vẫn hiện bình thường**.
 - **Edge cases:** `sanitized_content` null (chưa chạy pipeline) → placeholder giải thích + gợi ý chạy analysis; similar list < k → hiện ít hơn, không lỗi; confidence null → ẩn dòng thay vì hiện "null%".
 - **Acceptance criteria:**
-  - [ ] Grep toàn bộ code FE không có chuỗi `include_raw=true`.
+  - [ ] Grep code FE: `include_raw=true` chỉ xuất hiện đúng 1 call site — toggle review HITL (ngoại lệ duy nhất, decisions 2026-08-26); màn detail thường không bao giờ gọi.
   - [ ] Feedback chưa embed: trang detail vẫn dùng được, riêng tab Similar báo 409 đúng nội dung hướng dẫn.
   - [ ] Click 1 item similar → detail mới load, không mất khả năng back.
 

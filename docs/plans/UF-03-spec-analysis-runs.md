@@ -43,7 +43,9 @@
 
 ## Rủi ro UX & câu hỏi mở
 
-- **OQ-6 — Không có GET /api/analysis/runs (list):** sau khi mất `?run=` khỏi URL/history, người dùng không tìm lại run cũ được. Nếu owner muốn lịch sử run trên UI → cần endpoint mới (ngoài contract hiện hành) → quyết định qua decisions.md; v1 chấp nhận: run_id sống trong URL + toast chứa id.
-- **OQ-7 — Snapshot cấu hình (llm_model, prompt_version…) lưu trong DB nhưng RunProgressOut không trả:** UI không thể hiển thị "run này dùng model gì". Nice-to-have cho luận văn (so sánh A/B); nếu cần thì BE bổ sung field response (nhỏ), ghi decisions.md trước.
+> **Trạng thái 2026-08-26:** OQ-6/7 đã chốt với owner (decisions.md cùng ngày).
+
+- **OQ-6 — ✅ resolved:** chấp nhận v1, KHÔNG thêm GET list runs — run_id sống trên URL + toast; mất URL là không tra cứu được (chấp nhận có chủ đích).
+- **OQ-7 — ✅ resolved:** BE sẽ bổ sung 4 field snapshot (`llm_model`, `prompt_version`, `pipeline_version`, `embedding_model`) vào RunProgressOut — backward-compatible; UI hiển thị 1 dòng metadata nhỏ dưới progress bar ("Run dùng model X · prompt vY"). Việc BE thuộc session FE/BE, sync api-checklist khi làm; UI chỉ hiện KHI field có mặt (feature-detect, không lỗi nếu chưa ship).
 - **Rủi ro chi phí:** double-click/nhiều tab trigger nhiều run → nhiều call LLM song song. Đã giảm nhẹ bằng confirm dialog + disable; chấp nhận residual risk vì dataset ≤1500 và người dùng nội bộ.
 - **Rủi ro hiểu nhầm:** "Chạy lại phần còn lại" tạo run MỚI chứ không resume run cũ (URL `?run=` đổi) — copy nút phải nói đúng điều đó ("Chạy lại" thay vì "Tiếp tục").

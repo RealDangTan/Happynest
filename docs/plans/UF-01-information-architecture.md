@@ -126,12 +126,14 @@ Preset token cụ thể (`vega/olive/lucide`) do FE chọn gần nhất; UF khó
 - [ ] Đổi filter bất kỳ → `offset` về 0 (thử trên `/feedbacks` đã ship).
 - [ ] Copy URL có filter → mở incognito (đăng nhập) → cùng trạng thái bảng.
 - [ ] 401 (xoá cookie thủ công rồi refetch) → bị đưa về `/login`, không treo màn trắng.
-- [ ] Không màn nào hiển thị `raw_content` (grep code FE không có `include_raw=true`).
+- [ ] `raw_content` chỉ xuất hiện tại toggle review HITL (ngoại lệ duy nhất — decisions 2026-08-26); mọi màn khác không có `include_raw=true` trong code.
 - [ ] Badge severity/sentiment/review_status dùng đúng map §5 ở mọi màn có chúng.
 
 ## Rủi ro UX & câu hỏi mở
 
-- **OQ-1 — `docs/api-notes.md` được trỏ ở README, design-spec, UF-00 nhưng KHÔNG tồn tại** (plan 12 định viết, chưa thực thi). Bản đồ endpoint thật hiện là [`../api-checklist.md`](../api-checklist.md). Owner chọn: (a) tạo api-notes theo plan 12, hoặc (b) cập nhật các link trỏ sang api-checklist. UF spec các phần sau bám api-checklist + contract.
-- **OQ-2 — Không logout** (non-goal v1, contract ghi rõ): menu avatar chỉ có email + badge role. Người dùng demo cần hiểu cookie hết hạn theo tuổi thọ token (~12h) — nên ghi vào kịch bản demo để không bị hỏi "sao không đăng xuất được".
-- **OQ-3 — Root `/` vẫn là placeholder template shadcn** ("Project ready!"): cần redirect về `/dashboard` (việc FE nhỏ, gợi ý gộp vào FE-04 hoặc polish FE-07).
+> **Trạng thái 2026-08-26:** cả 11 OQ của workstream đã chốt với owner (entry dated trong decisions.md cùng ngày). Các dòng dưới giữ làm hồ sơ.
+
+- **OQ-1 — ✅ resolved:** bỏ api-notes.md, chuẩn hoá link sang api-checklist.md (README + design-spec + UF-00 sửa trong đợt này; các plan FE-* cũ tự sửa khi đụng tới).
+- **OQ-2 — ✅ resolved:** logout giữ lịch P1.5/FE-08 (đã duyệt entry 2026-08-25); trước đó menu avatar chỉ có email + role, kịch bản demo ghi rõ "cookie hết hạn theo token ~12h".
+- **OQ-3 — ✅ resolved:** redirect root `/` → `/dashboard`, session FE gộp vào FE-04.
 - **Rủi ro:** cả 2 role thấy hết màn → người demo vai operations có thể lỡ trigger cluster/insight (tốn LLM credit). Giảm nhẹ: nút trigger dạng confirm (UF-03/UF-05), không ai vô tình bấm là chạy.
