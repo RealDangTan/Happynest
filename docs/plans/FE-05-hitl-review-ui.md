@@ -24,38 +24,38 @@
 
 **Files:** Create `frontend/hooks/use-review.ts`; Modify `frontend/lib/types.ts`
 
-- [ ] Type `CorrectionResponse = Feedback & { correction_recorded: boolean }`.
-- [ ] `useSubmitReview(id)` — POST `/api/reviews/{id}` body `{action, edited_content?, reason?}` → FeedbackOut; onSuccess invalidate `["feedback", id]`, `["feedbacks"]`, `["analysis"]`.
-- [ ] `useSubmitCorrection(id)` — POST `/api/corrections/{id}` body chỉ field khác null → CorrectionResponse; invalidate cùng cụm.
-- [ ] `useFeedbackRaw(id, enabled)` — GET `/api/feedbacks/{id}?include_raw=true`, `enabled` gate bởi toggle; queryKey riêng `["feedback-raw", id]`; **call site include_raw duy nhất của app**.
-- [ ] `usePendingNeighbors(id)` — GET list `review_status=pending&limit=50`, trả id kế tiếp sau `id` hiện tại (cho offer "Xem mục tiếp theo"); staleTime 15s.
+- [x] Type `CorrectionResponse = Feedback & { correction_recorded: boolean }`.
+- [x] `useSubmitReview(id)` — POST `/api/reviews/{id}` body `{action, edited_content?, reason?}` → FeedbackOut; onSuccess invalidate `["feedback", id]`, `["feedbacks"]`, `["analysis"]`.
+- [x] `useSubmitCorrection(id)` — POST `/api/corrections/{id}` body chỉ field khác null → CorrectionResponse; invalidate cùng cụm.
+- [x] `useFeedbackRaw(id, enabled)` — GET `/api/feedbacks/{id}?include_raw=true`, `enabled` gate bởi toggle; queryKey riêng `["feedback-raw", id]`; **call site include_raw duy nhất của app**.
+- [x] `usePendingNeighbors(id)` — GET list `review_status=pending&limit=50`, trả id kế tiếp sau `id` hiện tại (cho offer "Xem mục tiếp theo"); staleTime 15s.
 
 ### Task 2: Review bar + toggle raw tại `/feedbacks/[id]`
 
 **Files:** Create `frontend/app/(app)/feedbacks/[id]/review-actions.tsx`; Modify `[id]/page.tsx` (gắn component khi `d.review_status === "pending"`)
 
-- [ ] Bar 3 nút: `Duyệt` primary 1-click (toast "Đã duyệt."), `Sửa nội dung` outline mở Dialog (Textarea prefill sanitized + Field reason tuỳ chọn; chặn submit rỗng), `Từ chối` destructive outline mở AlertDialog confirm kèm Field reason (copy nói rõ không hoàn tác).
-- [ ] Toggle "Hiện bản gốc" (Switch) trong bar, mặc định tắt; bật → Alert destructive "Đang hiển thị dữ liệu gốc chưa che PII — tắt trước khi share màn hình" + render `raw_content` từ `useFeedbackRaw`.
-- [ ] 409 → Alert "Mục này đã được xử lý trước đó." + tự invalidate detail; loading disable cả 3 nút.
-- [ ] Sau thành công: nếu `usePendingNeighbors(id)` có item kế → toast action "Xem mục chờ duyệt tiếp theo" (`router.push`).
+- [x] Bar 3 nút: `Duyệt` primary 1-click (toast "Đã duyệt."), `Sửa nội dung` outline mở Dialog (Textarea prefill sanitized + Field reason tuỳ chọn; chặn submit rỗng), `Từ chối` destructive outline mở AlertDialog confirm kèm Field reason (copy nói rõ không hoàn tác).
+- [x] Toggle "Hiện bản gốc" (Switch) trong bar, mặc định tắt; bật → Alert destructive "Đang hiển thị dữ liệu gốc chưa che PII — tắt trước khi share màn hình" + render `raw_content` từ `useFeedbackRaw`.
+- [x] 409 → Alert "Mục này đã được xử lý trước đó." + tự invalidate detail; loading disable cả 3 nút.
+- [x] Sau thành công: nếu `usePendingNeighbors(id)` có item kế → toast action "Xem mục chờ duyệt tiếp theo" (`router.push`).
 
 ### Task 3: Dialog sửa nhãn (correction)
 
 **Files:** Create `frontend/app/(app)/feedbacks/[id]/correction-dialog.tsx`; Modify `[id]/page.tsx` (nút "Sửa nhãn" khi `d.categories != null`)
 
-- [ ] Form: categories chip editor (Input + Enter/Nút thêm → Badge xoá được; gợi ý = categories gom từ cache TanStack Query các list đã load); ai_issue/severity/sentiment Select enum + option "__keep__" = giữ nguyên; note Textarea tuỳ chọn.
-- [ ] Lưu disable đến khi ≥1 nhãn khác giá trị gốc; gửi body CHỈ gồm field đã đổi (+ note nếu có).
-- [ ] Toast thành công "Đã ghi nhận chỉnh sửa — sẽ giúp phân loại sau chính xác hơn."; lỗi 409 chưa classify → Alert hướng dẫn chạy Analysis.
+- [x] Form: categories chip editor (Input + Enter/Nút thêm → Badge xoá được; gợi ý = categories gom từ cache TanStack Query các list đã load); ai_issue/severity/sentiment Select enum + option "__keep__" = giữ nguyên; note Textarea tuỳ chọn.
+- [x] Lưu disable đến khi ≥1 nhãn khác giá trị gốc; gửi body CHỈ gồm field đã đổi (+ note nếu có).
+- [x] Toast thành công "Đã ghi nhận chỉnh sửa — sẽ giúp phân loại sau chính xác hơn."; lỗi 409 chưa classify → Alert hướng dẫn chạy Analysis.
 
 ### Task 4: Shortcut queue + Empty tích cực
 
 **Files:** Modify `frontend/app/(app)/feedbacks/page.tsx`
 
-- [ ] Header thêm Button outline icon ShieldCheck "Chờ duyệt" → link `/feedbacks?review_status=pending`.
-- [ ] Khi filter `review_status=pending` đang bật và list rỗng → Empty tích cực "Không có mục nào chờ duyệt." + CTA "Xem tất cả phản hồi" xoá filter.
+- [x] Header thêm Button outline icon ShieldCheck "Chờ duyệt" → link `/feedbacks?review_status=pending`.
+- [x] Khi filter `review_status=pending` đang bật và list rỗng → Empty tích cực "Không có mục nào chờ duyệt." + CTA "Xem tất cả phản hồi" xoá filter.
 
 ### Task 5: Verify + đóng bài
 
-- [ ] Build xanh; vitest xanh; `grep -r "include_raw" frontend/` ra đúng 1 call site.
-- [ ] Live: ingest 1 feedback chứa PII rõ (email + SDT) → chạy Analysis (pipeline detect PII → `requires_human_review` → `pending`) → thấy item trong queue; approve 1 mục; edit mục khác với nội dung chứa email giả → response hiển thị bản ĐÃ che; correction severity trên 1 mục đã classify; POST lại mục đã duyệt → thấy Alert 409.
-- [ ] api-checklist: 2 dòng reviews/corrections ⬜→✅; board tick FE-05 + log; commit từng task.
+- [x] Build xanh; vitest xanh; `grep -r "include_raw" frontend/` ra đúng 1 call site.
+- [x] Live: ingest 1 feedback chứa PII rõ (email + SDT) → chạy Analysis (pipeline detect PII → `requires_human_review` → `pending`) → thấy item trong queue; approve 1 mục; edit mục khác với nội dung chứa email giả → response hiển thị bản ĐÃ che; correction severity trên 1 mục đã classify; POST lại mục đã duyệt → thấy Alert 409.
+- [x] api-checklist: 2 dòng reviews/corrections ⬜→✅; board tick FE-05 + log; commit từng task.
