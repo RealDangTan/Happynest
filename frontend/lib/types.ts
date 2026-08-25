@@ -44,3 +44,11 @@ export type ImportCsvResult = {
   failed: number;
   errors: { row: number; reason: string }[];
 };
+
+export type Source = {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+};
