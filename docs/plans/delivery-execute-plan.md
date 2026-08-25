@@ -26,9 +26,9 @@
 |---|---|---|---|---|---|---|
 | **P0** | T1 | Freeze contract; roadmap + index; Node ≥20.18.1; pointer trong `AGENTS.md`/`00-index.md` | Đã có: [contracts](delivery-contracts.md) · [FE-00](FE-00-index.md) · [FE-01](FE-01-init-scaffold.md) · [FE-02](FE-02-auth-shell.md) · [UF-00](UF-00-index.md) | cả hai | 2 session khởi động được | ☐ |
 | **P1** | T1–2 | FE scaffold → auth/shell → feedback screens → analysis runs ∥ UF specs | FE-01, FE-02 ✅ · **FE-03, FE-04**: session FE viết NGAY TRƯỚC khi code màn tương ứng ∥ **UF-01→03**: session UF theo [UF-00](UF-00-index.md) | FE ∥ UF | CRUD feedback + trigger run từ UI | ☐ |
-| **P2** | T3–4 | HITL production BE + review UI (mock→real) | **13-hitl-langgraph.md + FE-05**: session FE viết đầu T3; điều kiện: UF-04 spec đã xong (UF đi trước 1 pha) | FE | Duyệt 1 feedback pending qua UI; checkpoint sống sót restart | ☐ |
-| **P3** | T5 | Clustering engine + trang clusters | **14-clusters-api.md + phần clusters của FE-06**: viết đầu T5; điều kiện: UF-05 (phần clusters) xong | FE | Trang clusters hiện data thật | ☐ |
-| **P4** | T6 | Insights + reports + dashboard đầy đủ | **15-insights-api.md, 16-reports-summary.md + phần còn lại FE-06**: viết đầu T6 | FE | Dashboard PM có chart thật | ☐ |
+| **P2** | T3–4 | HITL production BE + review UI (mock→real) | **[13-hitl-langgraph.md](13-hitl-langgraph.md) đã có** (viết sớm 2026-08-25 — decisions cùng ngày) · **FE-05**: session FE viết trước khi code màn; điều kiện: UF-04 spec đã xong (UF đi trước 1 pha) | FE | Duyệt 1 feedback pending qua UI; checkpoint sống sót restart | ☐ |
+| **P3** | T5 | Clustering engine + trang clusters | **[14-clusters-api.md](14-clusters-api.md) đã có** (viết sớm 2026-08-25) · **phần clusters của FE-06**: viết khi mount màn; điều kiện: UF-05 (phần clusters) xong | FE | Trang clusters hiện data thật | ☐ |
+| **P4** | T6 | Insights + reports + dashboard đầy đủ | **[15-insights-api.md](15-insights-api.md), [16-reports-summary.md](16-reports-summary.md) đã có** (viết sớm 2026-08-25) · **phần còn lại FE-06**: viết khi mount màn | FE | Dashboard PM có chart thật | ☐ |
 | **P5** | T7–8 | Polish `[tuỳ chọn]` + data demo + tư liệu báo cáo | Checklist §4 dưới | cả hai | Bản demo bảo vệ | ☐ |
 
 Thứ tự cứng: P0 → P1 → P2 → P3 → P4 → P5. Trong P1, FE-01→02→03→04 tuần tự; UF chạy song song theo UF-00.
