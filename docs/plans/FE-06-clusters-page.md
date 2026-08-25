@@ -25,22 +25,22 @@
 
 **Files:** Create `frontend/hooks/use-clusters.ts`; Modify `frontend/lib/types.ts`; Modify `frontend/lib/format.ts`; CLI `pnpm dlx shadcn@latest add hovercard`
 
-- [ ] Types: `ClusterItem` đủ 15 field snake_case của ClusterOut; `ClusterRunResult {clusters_upserted, assigned_count, unassigned_count, duration_ms}`.
-- [ ] `useClusters(sort)` — GET `/api/clusters?sort=…`, queryKey `["clusters", sort]`, staleTime 30s.
-- [ ] `useRunClustering()` — POST `/api/clusters/run` mutation, onSuccess invalidate `["clusters"]`.
-- [ ] `formatRelative(iso)` vào lib/format — "hôm qua"/"n ngày trước"/"n giờ trước".
+- [x] Types: `ClusterItem` đủ 15 field snake_case của ClusterOut; `ClusterRunResult {clusters_upserted, assigned_count, unassigned_count, duration_ms}`.
+- [x] `useClusters(sort)` — GET `/api/clusters?sort=…`, queryKey `["clusters", sort]`, staleTime 30s.
+- [x] `useRunClustering()` — POST `/api/clusters/run` mutation, onSuccess invalidate `["clusters"]`.
+- [x] `formatRelative(iso)` vào lib/format — "hôm qua"/"n ngày trước"/"n giờ trước".
 
 ### Task 2: Trang `/clusters`
 
 **Files:** Rewrite `frontend/app/(app)/clusters/page.tsx`
 
-- [ ] Header: tiêu đề + HoverCard "từ điển" (Cluster/Emerging/Spike/Tỷ lệ tăng/Mức ưu tiên — copy y hệt bảng spec) + Select sort 3 giá trị gắn URL param `sort` (`feedback_count` mặc định | `growth_ratio` | `recent`) qua `router.replace`.
-- [ ] Grid card mỗi cụm: name · summary line-clamp-2 · Badge "Mới nổi"/"Tăng đột biến" · dòng số liệu tổng/kỳ này/kỳ trước · tỷ lệ tăng (emerging → chữ "Mới"; ngược lại `${ratio.toFixed(1)}×`) · ưu tiên đề xuất map trên (null → ẩn) · footer ≤5 link sample `/feedbacks/{id}` + `last_seen` formatRelative.
-- [ ] Nút "Tạo lại phân cụm" (destructive outline) → AlertDialog cảnh báo rebuild → confirm gọi mutation; loading disable + Spinner.
-- [ ] States: Skeleton cards khi pending; items rỗng → Empty giải thích + CTA chính là nút tạo lại; thành công toast `{clusters_upserted} cụm · {assigned_count} phản hồi được gán · {unassigned_count} chưa gán (nhiễu/chưa embed)`.
+- [x] Header: tiêu đề + HoverCard "từ điển" (Cluster/Emerging/Spike/Tỷ lệ tăng/Mức ưu tiên — copy y hệt bảng spec) + Select sort 3 giá trị gắn URL param `sort` (`feedback_count` mặc định | `growth_ratio` | `recent`) qua `router.replace`.
+- [x] Grid card mỗi cụm: name · summary line-clamp-2 · Badge "Mới nổi"/"Tăng đột biến" · dòng số liệu tổng/kỳ này/kỳ trước · tỷ lệ tăng (emerging → chữ "Mới"; ngược lại `${ratio.toFixed(1)}×`) · ưu tiên đề xuất map trên (null → ẩn) · footer ≤5 link sample `/feedbacks/{id}` + `last_seen` formatRelative.
+- [x] Nút "Tạo lại phân cụm" (destructive outline) → AlertDialog cảnh báo rebuild → confirm gọi mutation; loading disable + Spinner.
+- [x] States: Skeleton cards khi pending; items rỗng → Empty giải thích + CTA chính là nút tạo lại; thành công toast `{clusters_upserted} cụm · {assigned_count} phản hồi được gán · {unassigned_count} chưa gán (nhiễu/chưa embed)`.
 
 ### Task 3: Verify + đóng bài
 
-- [ ] Build xanh; vitest xanh.
-- [ ] Live: GET trước khi chạy → items rỗng đẹp; POST run thật → toast số liệu đúng response C5; list render card (hoặc rỗng nếu data demo noise — ghi rõ bằng chứng thô); sort đổi URL param.
-- [ ] api-checklist 2 dòng clusters ⬜→✅; board tick FE-06 (+ thêm dòng FE-06b cho Insights/Reports/dashboard P4 khi BE 15–16 ship); commit từng task.
+- [x] Build xanh; vitest xanh.
+- [x] Live: GET trước khi chạy → items rỗng đẹp; POST run thật → toast số liệu đúng response C5; list render card (hoặc rỗng nếu data demo noise — ghi rõ bằng chứng thô); sort đổi URL param.
+- [x] api-checklist 2 dòng clusters ⬜→✅; board tick FE-06 (+ thêm dòng FE-06b cho Insights/Reports/dashboard P4 khi BE 15–16 ship); commit từng task.
