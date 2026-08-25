@@ -14,7 +14,7 @@ Cấu trúc thư mục App Router trong `frontend/app/` — đối chiếu thự
 ```text
 frontend/app/
 ├── login/page.tsx                    # P1 ✅ FE-02  | public, không nằm trong shell
-├── page.tsx                          # ⚠️ vẫn là placeholder template shadcn — cần redirect (OQ-3)
+├── page.tsx                          # ✅ redirect server-side → /dashboard (ship 36faa21 — OQ-3)
 └── (app)/
     ├── layout.tsx                    # P1 ✅ FE-02  | shell: Sidebar + user menu; middleware guard cookie
     ├── dashboard/page.tsx            # P1 khung rỗng → P4 đầy đủ (UF-05 §4)
@@ -34,7 +34,7 @@ Trang chưa đến pha mount hiển thị **Empty** kèm nhãn pha ("Sắp có �
 | Tình huống | Hành vi |
 |---|---|
 | Truy cập route `(app)` khi thiếu cookie | Middleware → `/login` (đã ship FE-02; JWT xác minh vẫn phía FastAPI) |
-| `/` root | Đích thiết kế: redirect `/dashboard` (hiện còn placeholder — OQ-3) |
+| `/` root | Redirect server-side → `/dashboard` (✅ ship `36faa21` — OQ-3 resolved) |
 | Sau login thành công | Về `/dashboard` (mặc định); nếu có trang gốc định đi trước đó → quay lại trang đó nếu cơ chế lưu sẵn có, không bắt buộc |
 | 401 giữa phiên (cookie hết hạn) | Xoá cache query → redirect `/login` (inventory §5) |
 
