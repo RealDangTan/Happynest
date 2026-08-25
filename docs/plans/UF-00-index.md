@@ -20,7 +20,7 @@
 
 | # | File nội dung | Phạm vi | Due (đi trước FE 1 pha) | Status |
 |---|---|---|---|---|
-| UF-01 | `UF-01-information-architecture.md` | Sitemap route đầy đủ; ma trận role×screen; ánh xạ F1–F7 → screen; quy ước nav + URL params; inventory trạng thái dùng chung | ngay (nền cho UF-02..05) | ☐ |
+| UF-01 | `UF-01-information-architecture.md` | Sitemap route đầy đủ; ma trận role×screen; ánh xạ F1–F7 → screen; quy ước nav + URL params; inventory trạng thái dùng chung | ngay (nền cho UF-02..05) | ✅ xong 2026-08-25 |
 | UF-02 | `UF-02-specs-auth-feedback.md` | Login · Shell/Sidebar · Feedback list · Detail (+similar) · Import CSV — theo khuôn mẫu trên | trước giữa P1 | ☐ |
 | UF-03 | `UF-03-spec-analysis-runs.md` | Trang analysis: trigger, progress polling UX (interval, trạng thái failed/resume), results table | trước khi FE viết FE-04 | ☐ |
 | UF-04 | `UF-04-spec-hitl-review.md` | Queue pending; luồng approve/edit/reject; correction UI; **trạng thái mock "DEMO"** trước khi plan 13 thật; limitation không logout | TRƯỚC CUỐI T2 (chặn P2) | ☐ |
@@ -35,3 +35,4 @@
 ## Tiến độ log (append-only)
 
 - 2026-08-25 — tạo board + khuôn mẫu (đợt 1). — claude-code
+- 2026-08-25 — UF-01 xong (v1.0): sitemap khớp thực tế `frontend/app/`, role matrix chung 2 role, quy ước URL param = tên query API, inventory trạng thái + map badge. Lệch ghi nhận: `api-notes.md` KHÔNG tồn tại → UF bám `../api-checklist.md` (OQ-1 trong UF-01); root `/` còn placeholder template (OQ-3). — claude-code (session UF)
