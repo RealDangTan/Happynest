@@ -7,6 +7,12 @@ import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks";
 import type { Feedback } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import {
+  AI_ISSUE_LABEL,
+  REVIEW_LABEL,
+  SENTIMENT_LABEL,
+  SEVERITY_LABEL,
+} from "@/lib/labels";
+import {
   Table,
   TableBody,
   TableCell,
@@ -40,35 +46,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { DataEntryDialog } from "./data-entry-dialog";
-
-const SEVERITY_LABEL: Record<string, string> = {
-  low: "Thấp",
-  medium: "Trung bình",
-  high: "Cao",
-  critical: "Nghiêm trọng",
-};
-const REVIEW_LABEL: Record<string, string> = {
-  unreviewed: "Chưa duyệt",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  edited: "Đã sửa",
-  rejected: "Đã loại",
-};
-export const SENTIMENT_LABEL: Record<string, string> = {
-  positive: "Tích cực",
-  negative: "Tiêu cực",
-  neutral: "Trung lập",
-  mixed: "Trộn",
-};
-export const AI_ISSUE_LABEL: Record<string, string> = {
-  hallucination: "Ảo giác",
-  inaccuracy: "Thiếu chính xác",
-  bias: "Thiên vị",
-  safety: "An toàn",
-  privacy: "Quyền riêng tư",
-  performance: "Hiệu năng",
-  other: "Khác",
-};
 
 // Cột bật/tắt được (FE-03b T3). Cột "Nội dung" cố định luôn hiển thị.
 type ColumnKey =

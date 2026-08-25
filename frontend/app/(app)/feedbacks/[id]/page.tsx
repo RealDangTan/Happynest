@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useFeedbackDetail, useSimilarFeedbacks } from "@/hooks/use-feedback-detail";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
+import { REVIEW_LABEL, SEVERITY_LABEL } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,20 +22,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-
-const SEVERITY_LABEL: Record<string, string> = {
-  low: "Thấp",
-  medium: "Trung bình",
-  high: "Cao",
-  critical: "Nghiêm trọng",
-};
-const REVIEW_LABEL: Record<string, string> = {
-  unreviewed: "Chưa duyệt",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  edited: "Đã sửa",
-  rejected: "Đã loại",
-};
 
 export default function FeedbackDetailPage() {
   const { id } = useParams<{ id: string }>();
