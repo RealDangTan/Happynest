@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.routes import admin, analysis, auth, feedback, review
+from app.api.routes import admin, analysis, auth, feedback, review, sources
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
@@ -118,6 +118,8 @@ def create_app() -> FastAPI:
     app.include_router(analysis.router)
     # Phase 13: HITL — POST /reviews (graph interrupt/resume) + /corrections.
     app.include_router(review.router)
+    # FE-03b: sources registry (decisions 2026-08-25).
+    app.include_router(sources.router)
 
     return app
 

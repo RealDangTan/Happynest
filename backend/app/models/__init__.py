@@ -7,6 +7,7 @@ from app.models.feedback import Feedback
 from app.models.human_review import HumanReview
 from app.models.insight import Insight
 from app.models.llm_call_log import LlmCallLog
+from app.models.source import Source
 from app.models.user import User
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "HumanReview",
     "Insight",
     "LlmCallLog",
+    "Source",
     "User",
 ]
