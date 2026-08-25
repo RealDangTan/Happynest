@@ -1,10 +1,21 @@
-# frontend — placeholder (phase B1)
+# Next.js template
 
-Giai đoạn backend foundation (12 phase, hoàn thành 2026-08-25) KHÔNG bao gồm UI.
-Thư mục này giữ chỗ cho giai đoạn kế tiếp: dashboard PM/operations —
-danh sách feedback + filter, badge `requires_human_review`, xem tiến độ
-analysis run, màn hình HITL review/correction.
+This is a Next.js template with shadcn/ui.
 
-API backend sẵn sàng cho UI: xem [`../docs/api-notes.md`](../docs/api-notes.md).
-Auth từ browser đi qua cookie httpOnly `access_token` (đã thiết kế từ Phase 04);
-CORS whitelist bằng env `CORS_ORIGINS`.
+## Adding components
+
+To add components to your app, run the following command:
+
+```bash
+npx shadcn@latest add button
+```
+
+This will place the ui components in the `components` directory.
+
+## Using components
+
+To use the components in your app, import them as follows:
+
+```tsx
+import { Button } from "@/components/ui/button";
+```
