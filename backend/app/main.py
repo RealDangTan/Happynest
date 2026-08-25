@@ -19,7 +19,7 @@ from app.api.routes import admin, analysis, auth, feedback
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
-from app.services import llm_client, presidio_service, tracing
+from app.services import hitl_graph, llm_client, presidio_service, tracing
 
 logger = get_logger(__name__)
 
@@ -29,6 +29,13 @@ async def lifespan(app: FastAPI):
     # Phase 06 neo TẠI ĐÂY: khởi tạo Presidio analyzer singleton (instantiated once)
     # — Stanza vi+en nặng ~1GB RAM, KHÔNG được tạo lại mỗi request.
     presidio_service.init_presidio()
+    # Phase 13 (plan §3.5): tạo sớm 4 bảng checkpoint LangGraph (idempotent,
+    # ngoài filter Alembic). Lỗi không chặn boot — endpoint reviews tự báo lỗi
+    # khi gọi; giữ đúng triết lý health-degraded của app.
+    try:
+        await hitl_graph.asetup_once()
+    except Exception as exc:  # noqa: BLE001 — boot phải sống khi Supabase chập chờn
+        logger.error("checkpoint saver setup failed: %s", type(exc).__name__)
     yield
     # Phase 07: flush batch trace Langfuse trước khi process thoát.
     tracing.flush()
