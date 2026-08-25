@@ -52,3 +52,15 @@ export type Source = {
   isActive: boolean;
   createdAt: string;
 };
+
+export type RunStatus = "running" | "completed" | "failed";
+
+export type RunProgress = {
+  id: string;
+  status: RunStatus;
+  processed_count: number;
+  total_count: number;
+  error: string | null;
+  started_at: string;
+  completed_at: string | null;
+};
