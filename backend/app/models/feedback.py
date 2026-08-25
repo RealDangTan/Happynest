@@ -68,3 +68,8 @@ class Feedback(Base):
     analysis_run_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("analysis_runs.id"), nullable=True
     )
+
+    # --- Clustering (Phase 14 điền); noise HDBSCAN (-1) giữ NULL ---
+    cluster_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("clusters.id"), nullable=True
+    )

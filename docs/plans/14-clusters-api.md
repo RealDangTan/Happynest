@@ -33,16 +33,16 @@ psql-ish check qua Supabase Studio: bảng clusters rỗng, feedbacks chưa có 
 
 **Files:** Modify `backend/pyproject.toml`, `backend/app/models/feedback.py`; Create `backend/alembic/versions/0004_feedback_cluster_id.py`; `docs/decisions.md` (entry dated)
 
-- [ ] Step 1.1: Entry decisions TRƯỚC: chốt **scikit-learn** làm lib clustering production (lý do: S4 đã chứng minh API + hiệu năng trên đúng metric cosine; `hdbscan` package gốc không mang thêm giá trị nào cho dataset ≤1500 mà tăng rủi ro wheel Windows; phiên pin `scikit-learn>=1.9,<2`). Đây là dep ngoài danh sách §1 — bắt buộc log theo quy tắc 00-index §3.7.
-- [ ] Step 1.2: Thêm `"scikit-learn>=1.9,<2"` vào pyproject (nhóm LLM/graph, kèm comment dẫn decisions). Verify: `uv sync` sạch, `uv run python -c "from sklearn.cluster import HDBSCAN"` OK.
-- [ ] Step 1.3: Model `Feedback` thêm:
+- [x] Step 1.1: Entry decisions TRƯỚC: chốt **scikit-learn** làm lib clustering production (lý do: S4 đã chứng minh API + hiệu năng trên đúng metric cosine; `hdbscan` package gốc không mang thêm giá trị nào cho dataset ≤1500 mà tăng rủi ro wheel Windows; phiên pin `scikit-learn>=1.9,<2`). Đây là dep ngoài danh sách §1 — bắt buộc log theo quy tắc 00-index §3.7.
+- [x] Step 1.2: Thêm `"scikit-learn>=1.9,<2"` vào pyproject (nhóm LLM/graph, kèm comment dẫn decisions). Verify: `uv sync` sạch, `uv run python -c "from sklearn.cluster import HDBSCAN"` OK.
+- [x] Step 1.3: Model `Feedback` thêm:
   ```python
   cluster_id: Mapped[uuid.UUID | None] = mapped_column(
       ForeignKey("clusters.id"), nullable=True
   )
   ```
-- [ ] Step 1.4: Revision thường `0004_feedback_cluster_id`: `op.add_column("feedbacks", sa.Column("cluster_id", postgresql.UUID(as_uuid=True), nullable=True))` + `op.create_foreign_key(...)` + `op.create_index("ix_feedbacks_cluster_id", ...)`. KHÔNG đụng bảng checkpoint (filter Alembic giữ nguyên).
-- [ ] Step 1.5: Verify: `uv run alembic upgrade head` trên Supabase dev → `\d feedbacks` thấy cột + index; `alembic downgrade -1` rồi `upgrade head` lại được (reversible). Commit: `feat(db): pin scikit-learn, add feedbacks.cluster_id (single delivery migration)`
+- [x] Step 1.4: Revision thường `0004_feedback_cluster_id`: `op.add_column("feedbacks", sa.Column("cluster_id", postgresql.UUID(as_uuid=True), nullable=True))` + `op.create_foreign_key(...)` + `op.create_index("ix_feedbacks_cluster_id", ...)`. KHÔNG đụng bảng checkpoint (filter Alembic giữ nguyên).
+- [x] Step 1.5: Verify: `uv run alembic upgrade head` trên Supabase dev → `\d feedbacks` thấy cột + index; `alembic downgrade -1` rồi `upgrade head` lại được (reversible). Commit: `feat(db): pin scikit-learn, add feedbacks.cluster_id (single delivery migration)`
 
 ### Task 2 — Settings + công thức trend (chốt cứng mọi hằng số)
 
