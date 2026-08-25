@@ -20,9 +20,10 @@ cookie ưu tiên khi cả hai có mặt (decisions.md 2026-08-24).
 | POST | `/api/analysis/runs` | pm, operations | — (snapshot cấu hình tự động vào row run) | 201 `{run_id}` NGAY LẬC TỨC; job nền qua BackgroundTasks |
 | GET | `/api/analysis/runs/{id}` | pm, operations | — | `{status: running\|completed\|failed, processed_count, total_count, error, started_at, completed_at}` |
 | GET | `/api/analysis/runs/{id}/results` | pm, operations | `limit(1–100), offset` | trang FeedbackOut của CÁC row thuộc run (labels/severity/confidence/review flag) |
-| GET | `/api/clusters` · `/api/insights` | pm, operations | — | **501 stub** — giai đoạn sau (clustering/insight) |
-| POST | `/api/reviews/{feedback_id}` · `/api/corrections/{feedback_id}` | pm, operations | — | **501 stub** — HITL flow + few-shot loop giai đoạn sau |
-| GET | `/api/reports/summary` | pm, operations | — | **501 stub** — báo cáo PM giai đoạn sau |
+| POST | `/api/reviews/{feedback_id}` | pm, operations | `{action: approve\|edit\|reject, edited_content?, reason?}` — edit bắt buộc `edited_content` khác rỗng | `FeedbackOut` sau cập nhật (`review_status` → approved/edited/rejected); 409 nếu row không ở `pending` hoặc thread đã hoàn tất; 503 nếu chưa dựng được bảng checkpoint (Supabase chập chờn — retry); edit đi qua Presidio TRƯỚC khi lưu |
+| POST | `/api/corrections/{feedback_id}` | pm, operations | `{categories?, ai_issue?, severity?, sentiment?, note?}` — cần ≥1 nhãn | `CorrectionOut` = FeedbackOut + `correction_recorded:true`; chỉ sửa nhãn được gửi; 409 nếu feedback chưa classify |
+| GET | `/api/clusters` · `/api/insights` | pm, operations | — | **501 stub** — P3/P4 (plans 14–15) |
+| GET | `/api/reports/summary` | pm, operations | — | **501 stub** — P4b (plan 16) |
 
 Lỗi chuẩn: 401 vô danh (khác 403 role sai — route-level guard `require_role`),
 404 id lạ, 409 thiếu embedding trên `/similar`, 422 validation (limit >100,
@@ -46,6 +47,19 @@ k ngoài 1–50, file không phải CSV…).
 - **Runner idempotent/resumable**: marker "đã xử lý" = `categories IS NOT NULL`;
   resume CÙNG run bằng cách gọi lại `run_analysis(run_id)` trực tiếp (POST luôn
   tạo run MỚI — muốn heal run fail giữa chừng thì gọi hàm, xem decisions.md 2026-08-25).
+- **Hàng chờ HITL (phase 13)**: runner đẩy row đủ điều kiện sang
+  `review_status='pending'` ngay trong commit classify; POST `/api/reviews`
+  chỉ nhận row `pending` (409 nếu không). Row đã classify TRƯỚC phase 13 vẫn
+  `unreviewed` dù đủ điều kiện — muốn đưa vào hàng chờ thì chạy lại classify.
+- **HITL graph (phase 13)**: LangGraph interrupt/resume với checkpoint
+  AsyncPostgresSaver trên Supabase, thread `hitl-{feedback_id}` sống sót
+  restart process (`POST /reviews` tự resume thread đang dở). Approve không
+  đụng content; edit chạy lại Presidio trên nội dung mới; reject giữ content.
+  Edit/reject tự ghi ĐÚNG 1 dòng `human_reviews` + `correction_examples`
+  (idempotent theo marker `_thread` trong JSONB). Ngữ nghĩa corrected_value:
+  edit = nhãn cũ + content mới; reject = xóa sạch nhãn (tín hiệu âm few-shot).
+- **Few-shot stretch (mặc định TẮT)**: env `CLASSIFY_FEWSHOT_ENABLED=true`
+  → runner nạp ≤5 correction gần nhất vào prompt classify (chi phí token tăng).
 - **PII boundary**: chỉ `sanitized_content` đi vào prompt LLM và response mặc định;
   `pii_entities` chỉ chứa metadata `{type,start,end,score}` — không text.
 
