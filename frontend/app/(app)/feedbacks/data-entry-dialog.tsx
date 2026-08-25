@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -30,8 +30,9 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { Feedback, ImportCsvResult } from "@/lib/types";
+import type { Feedback } from "@/lib/types";
 import { useCreateSource, useSources } from "@/hooks/use-sources";
+import { CsvImportWizard } from "./csv-import-wizard";
 
 const NEW_SOURCE = "__register-new__";
 
@@ -46,7 +47,6 @@ export function DataEntryDialog() {
     name: "",
     description: "",
   });
-  const fileRef = useRef<HTMLInputElement>(null);
   const sources = useSources();
   const createSource = useCreateSource();
 
@@ -73,23 +73,6 @@ export function DataEntryDialog() {
     onSuccess: () => {
       toast.success("Đã thêm phản hồi.");
       setOpen(false);
-      refreshList();
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Lỗi không rõ"),
-  });
-
-  const importCsv = useMutation({
-    mutationFn: async (file: File) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      // KHÔNG set Content-Type tay — trình duyệt tự thêm boundary multipart
-      return apiFetch<ImportCsvResult>("/api/feedbacks/import-csv", {
-        method: "POST",
-        body: fd,
-      });
-    },
-    onSuccess: (r) => {
-      toast.success(`Import xong: ${r.imported} dòng mới, ${r.failed} lỗi.`);
       refreshList();
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Lỗi không rõ"),
@@ -175,44 +158,7 @@ export function DataEntryDialog() {
             </TabsContent>
 
             <TabsContent value="csv">
-              <form
-                className="flex flex-col gap-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const file = fileRef.current?.files?.[0];
-                  if (file) importCsv.mutate(file);
-                }}
-              >
-                <Field>
-                  <FieldLabel htmlFor="csv-file">File CSV *</FieldLabel>
-                  <Input ref={fileRef} id="csv-file" type="file" accept=".csv,text/csv" required />
-                </Field>
-                <p className="text-sm text-muted-foreground">
-                  Cột: <code>source,content[,external_ref][,created_at]</code>. Dòng lỗi
-                  không chặn dòng hợp lệ.
-                </p>
-                {importCsv.data ? (
-                  <div className="rounded-md border p-3 text-sm">
-                    <p>
-                      Đã nhập: <b>{importCsv.data.imported}</b> · Lỗi:{" "}
-                      <b>{importCsv.data.failed}</b>
-                    </p>
-                    {importCsv.data.errors.length > 0 ? (
-                      <ul className="mt-2 max-h-32 overflow-auto text-muted-foreground">
-                        {importCsv.data.errors.map((er) => (
-                          <li key={er.row}>
-                            Dòng {er.row}: {er.reason}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                ) : null}
-                <Button type="submit" disabled={importCsv.isPending}>
-                  {importCsv.isPending ? <Spinner data-icon="inline-start" /> : null}
-                  Import
-                </Button>
-              </form>
+              <CsvImportWizard onImported={refreshList} />
             </TabsContent>
           </Tabs>
         </DialogContent>
