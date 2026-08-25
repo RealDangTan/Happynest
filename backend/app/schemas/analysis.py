@@ -21,7 +21,12 @@ class RunCreatedOut(BaseModel):
 
 
 class RunProgressOut(BaseModel):
-    """GET /api/analysis/runs/{id} — snapshot tiến độ."""
+    """GET /api/analysis/runs/{id} — snapshot tiến độ.
+
+    4 field cấu hình (OQ-7, decisions 2026-08-26) là snapshot ĐÃ LƯU trên row
+    run lúc tạo — so sánh kết quả giữa các lần chạy khi config đổi. Backward-
+    compatible: chỉ thêm field, client cũ bỏ qua.
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -32,3 +37,7 @@ class RunProgressOut(BaseModel):
     error: str | None
     started_at: datetime
     completed_at: datetime | None
+    pipeline_version: str
+    llm_model: str
+    prompt_version: str
+    embedding_model: str

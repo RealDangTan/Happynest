@@ -377,6 +377,15 @@ def test_runs_endpoints_create_progress_results(client, batch, monkeypatch):
     assert body["processed_count"] == 0
     assert body["total_count"] == count_unclaimed
     assert body["error"] is None
+    # OQ-7: snapshot cấu hình lưu trên row run phải lộ qua progress API —
+    # FE hiển thị "run này dùng model nào" khi so sánh giữa các lần chạy.
+    for field in (
+        "pipeline_version",
+        "llm_model",
+        "prompt_version",
+        "embedding_model",
+    ):
+        assert body.get(field), f"progress thiếu snapshot {field}"
 
     # Runner bị patch no-op → tự gắn seed rows vào run như runner thật sẽ làm,
     # rồi kiểm tra results trả ĐỦ items thuộc run kèm labels chưa xử lý.
