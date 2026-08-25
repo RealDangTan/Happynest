@@ -15,6 +15,7 @@
 | 05 | FE-05-hitl-review-ui.md | Queue pending; Dialog edit/AlertDialog reject; mock rõ nhãn → swap thật khi 13 xong | đầu P2 | FE-04, UF-04, plan 13 | ☐ |
 | 06 | FE-06-analytics-pages.md | Clusters page (P3) → Insights + Reports + dashboard chart (P4) | đầu P3/P4 | FE-04, UF-05, plans 14–16 | ☐ |
 | 07 | FE-07-polish-demo.md | `[tuỳ chọn]` dark-mode toggle, empty states tinh gọn, data demo chuẩn bị bảo vệ | đầu P5 | tất cả | ☐ |
+| 08 | FE-08-auth-register-google.md *(chưa viết)* | Đăng ký email/mật khẩu (default operations) + Google OAuth (email lạ → auto-create) + logout — BE+FE | ngay trước khi thực thi P1.5 (roadmap §1) | FE-03 · GCP credentials ([guide](../google-oauth-setup.md)) | ☐ backlog |
 
 ## Quy ước bắt buộc mọi plan/code FE
 
