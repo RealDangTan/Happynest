@@ -78,19 +78,19 @@ Thêm vào `Settings` (mỗi biến một dòng, default ghi rõ):
 
 **Files:** Modify `backend/app/api/routes/admin.py` (xoá stub `/clusters`, router dependencies guard như feedback router), Create `backend/app/schemas/cluster.py`
 
-- [ ] Step 4.1: `POST /api/clusters/run` (sync def — threadpool của FastAPI đủ cho ≤1500 row): gọi `run_clustering`, trả `{clusters_upserted, assigned_count, unassigned_count, duration_ms}` (đo `perf_counter`). Lỗi giữa chừng → rollback + 500 chuẩn, DB về trạng thái cũ (transaction bảo đảm).
-- [ ] Step 4.2: `GET /api/clusters?sort=growth_ratio|recent` (default `feedback_count` giảm dần; `recent` = `last_seen` giảm): trả C1 nguyên vẹn — gồm `sample_feedback_ids` = ≤5 id member mới nhất (1 query phụ group-by, hoặc window function). Chưa từng run → `{"items": []}` 200.
-- [ ] Step 4.3: Integration test `-m integration` (`tests/test_clusters_api_integration.py`): dùng 22 row demo đã có embedding → `POST /api/clusters/run` 200, số liệu hợp lệ (`assigned + unassigned == tổng row có embedding`) → `GET /api/clusters` shape C1 từng field → **rerun lần 2**: `clusters_upserted` ổn định, không nhân bản row (idempotence thật trên Supabase). Verify: `uv run pytest -m integration tests/test_clusters_api_integration.py -v` PASS. Commit: `feat(clustering): clusters run + list endpoints replace 501 stub`
+- [x] Step 4.1: `POST /api/clusters/run` (sync def — threadpool của FastAPI đủ cho ≤1500 row): gọi `run_clustering`, trả `{clusters_upserted, assigned_count, unassigned_count, duration_ms}` (đo `perf_counter`). Lỗi giữa chừng → rollback + 500 chuẩn, DB về trạng thái cũ (transaction bảo đảm).
+- [x] Step 4.2: `GET /api/clusters?sort=growth_ratio|recent` (default `feedback_count` giảm dần; `recent` = `last_seen` giảm): trả C1 nguyên vẹn — gồm `sample_feedback_ids` = ≤5 id member mới nhất (1 query phụ group-by, hoặc window function). Chưa từng run → `{"items": []}` 200.
+- [x] Step 4.3: Integration test `-m integration` (`tests/test_clusters_api_integration.py`): dùng 22 row demo đã có embedding → `POST /api/clusters/run` 200, số liệu hợp lệ (`assigned + unassigned == tổng row có embedding`) → `GET /api/clusters` shape C1 từng field → **rerun lần 2**: `clusters_upserted` ổn định, không nhân bản row (idempotence thật trên Supabase). Verify: `uv run pytest -m integration tests/test_clusters_api_integration.py -v` PASS. Commit: `feat(clustering): clusters run + list endpoints replace 501 stub`
 
 ## 4 · Acceptance criteria + Evidence cần chụp
 
-- [ ] `feedbacks.cluster_id` tồn tại + index; revision reversible; 4 bảng checkpoint vẫn ngoài Alembic
-- [ ] Rerun `/clusters/run` không sinh duplicate, insight cũ bị xoá sạch (nền cho P4)
-- [ ] Noise `-1` và row chưa embed nằm hết trong `unassigned_count`, không bị gán bừa
-- [ ] Không snippet nào trong prompt naming đến từ `raw_content` (test assert payload chỉ chứa sanitized)
-- [ ] `llm_call_logs` ghi đúng 1 dòng `name_cluster` mỗi run (kể cả fallback — call thất bại cũng phải được log bởi `_record_attempt` sẵn có)
-- [ ] GET shape khớp C1 100% field-by-field; sort 3 chế độ đúng thứ tự
-- [ ] **Evidence luận văn:** screenshot trang Supabase Studio bảng clusters có name tiếng Việt + JSON response `/api/clusters` trên data demo 22 row; số liệu duration_ms đưa vào chương kết quả
+- [x] `feedbacks.cluster_id` tồn tại + index; revision reversible; 4 bảng checkpoint vẫn ngoài Alembic
+- [x] Rerun `/clusters/run` không sinh duplicate, insight cũ bị xoá sạch (nền cho P4)
+- [x] Noise `-1` và row chưa embed nằm hết trong `unassigned_count`, không bị gán bừa
+- [x] Không snippet nào trong prompt naming đến từ `raw_content` (test assert payload chỉ chứa sanitized)
+- [x] `llm_call_logs` ghi đúng 1 dòng `name_cluster` mỗi run (kể cả fallback — call thất bại cũng phải được log bởi `_record_attempt` sẵn có)
+- [x] GET shape khớp C1 100% field-by-field; sort 3 chế độ đúng thứ tự
+- [ ] **Evidence luận văn** *(dời P5 — data demo chưa có nhóm chủ đề thật, decisions 2026-08-26; sweep JSON: docs/evidence/cluster-sweep-results.json)*: screenshot trang Supabase Studio bảng clusters có name tiếng Việt + JSON response `/api/clusters` trên data demo 22 row; số liệu duration_ms đưa vào chương kết quả
 
 ## 5 · Blocker rule
 

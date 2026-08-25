@@ -1,0 +1,38 @@
+{
+  "n_rows": 25,
+  "metric": "cosine",
+  "sweeps": [
+    {
+      "min_cluster_size": 5,
+      "n_clusters": 0,
+      "cluster_sizes": [],
+      "noise": 25,
+      "noise_ratio": 1.0,
+      "fit_seconds": 0.087
+    },
+    {
+      "min_cluster_size": 8,
+      "n_clusters": 0,
+      "cluster_sizes": [],
+      "noise": 25,
+      "noise_ratio": 1.0,
+      "fit_seconds": 0.004
+    },
+    {
+      "min_cluster_size": 10,
+      "n_clusters": 0,
+      "cluster_sizes": [],
+      "noise": 25,
+      "noise_ratio": 1.0,
+      "fit_seconds": 0.007
+    },
+    {
+      "min_cluster_size": 15,
+      "n_clusters": 0,
+      "cluster_sizes": [],
+      "noise": 25,
+      "noise_ratio": 1.0,
+      "fit_seconds": 0.004
+    }
+  ]
+}
