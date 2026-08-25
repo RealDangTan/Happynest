@@ -3,7 +3,7 @@
 > **Phiên bản:** v1.0 · **Ngày:** 2026-08-25
 > **Nguồn bám:** contract [`delivery-contracts.md`](delivery-contracts.md) (feedback endpoints đã ship) · [`../user-flows.md`](../user-flows.md) F1–F3/F5 · [`../api-checklist.md`](../api-checklist.md) · quy ước chung [UF-01](UF-01-information-architecture.md) §4–§5
 > **Verify API 2026-08-25:** `backend/app/api/routes/feedback.py` + `schemas/feedback.py` + `models/enums.py`. **KHÔNG có filter `source`; KHÔNG có sort param** (sort cứng `created_at DESC, id DESC`); `category` = match chính xác 1 giá trị nằm trong JSONB `categories`.
-> **Ghi chú hiện trạng:** Login/Shell/List/dialog nhập liệu đã ship theo FE-02/FE-03 — spec này là chuẩn tham chiếu + acceptance; phần detail đang build.
+> **Ghi chú hiện trạng:** cả 5 màn đều đã ship theo FE-02/FE-03 (detail + similar xong 2026-08-25, commit `9f60c3b`) — spec này là chuẩn tham chiếu + acceptance checklist.
 
 ---
 

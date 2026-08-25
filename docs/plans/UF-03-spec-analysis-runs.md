@@ -21,7 +21,7 @@
 - **Bố cục đề xuất (3 khối dọc):**
   1. **Khối trigger** — mô tả 1 dòng ("Phân loại + tạo embedding cho mọi feedback chưa xử lý; tốn LLM credit") + nút "Chạy phân loại" → mở AlertDialog confirm (vì tốn tiền): "Chạy trên toàn bộ feedback chưa xử lý?" → Confirm → POST → ghi `run_id` lên URL `?run=<uuid>` ngay.
   2. **Khối progress** (chỉ hiện khi có `?run=`): tiêu đề run rút gọn + Progress bar `%` = processed/total + text "x/y đã xử lý" + Badge trạng thái. Khi `status != running`: ngừng poll, hiện kết quả tổng (completed: toast xanh; failed: Alert destructive kèm `error`).
-  3. **Khối results** — Table của run hiện tại: cột như list Feedbacks (UF-02 Màn 3) + `confidence` (%) + flag `requires_human_review`; item nhãn `null` → ô nhãn hiển thị "…đang xử lý". Row click → detail. Phân trang offset như list.
+  3. **Khối results** — Table của run hiện tại: cột như list Feedbacks (UF-02 Màn 3, đã gồm flag `requires_human_review`) + thêm cột `confidence` (%); item nhãn `null` → ô nhãn hiển thị "…đang xử lý". Row click → detail. Phân trang offset như list.
 - **States:**
   - **Loading:** progress block Skeleton trong lúc poll đầu tiên; results skeleton dòng.
   - **Empty (chưa có `?run=`):** Empty giải thích mục đích màn + CTA chính là nút trigger. Đây là landing mặc định của `/analysis`.
@@ -33,6 +33,7 @@
   - Người khác (tab/session khác) cũng trigger: tạo thêm run riêng, không phá run hiện tại; hai run cùng lúc chỉ làm việc không trùng nhau (claim theo row). UI không cần chặn, nhưng nút trigger **disable khi run đang theo dõi ở trạng thái running** (quy tắc spec §4).
   - Run dài (dataset lớn: ~1–2s/item do LLM) — progress tăng từ từ là bình thường; KHÔNG hiện đếm giờ ước tính (dễ sai).
   - Item lỗi đơn lẻ bị bỏ qua trong run (không retry trong run) — thấy ở results là row nhãn vẫn `null` khi run completed → hướng dẫn dùng "Chạy lại phần còn lại".
+  - **Backend chết/restart giữa lúc đang poll** (kịch bản evidence checkpoint của luận văn): request poll lỗi mạng → giữ nguyên progress cuối cùng đã thấy + toast lỗi mạng chung; KHÔNG xoá khối progress, KHÔNG đổi URL. Khi backend lên lại, polling tự tiếp tục và progress chạy tiếp từ giá trị thật của server — UI không cần làm gì ngoài retry mặc định của TanStack Query.
 - **Acceptance criteria:**
   - [ ] Trigger → URL đổi thành `/analysis?run=<uuid>` NGAY khi nhận `{run_id}`; refresh giữ nguyên tiến độ.
   - [ ] Polling dừng hẳn khi completed/failed (network tab: không request nữa).

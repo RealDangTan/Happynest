@@ -20,7 +20,7 @@ frontend/app/
     ├── dashboard/page.tsx            # P1 khung rỗng → P4 đầy đủ (UF-05 §4)
     ├── feedbacks/page.tsx            # P1 ✅ FE-03  | list + filter URL params
     │   └── data-entry-dialog.tsx     #   (component, không phải route): tab nhập tay + tab import CSV
-    ├── feedbacks/[id]/page.tsx       # P1 🔨 FE-03  | detail + panel similar
+    ├── feedbacks/[id]/page.tsx       # P1 ✅ FE-03  | detail + panel similar
     ├── analysis/page.tsx             # P1 ⬜ FE-04  | trigger run + progress + results (UF-03)
     ├── clusters/page.tsx             # P3 ⬜ FE-06  | placeholder hiện tại (UF-05 §1)
     ├── insights/page.tsx             # P4 ⬜ FE-06  | placeholder hiện tại (UF-05 §2)
