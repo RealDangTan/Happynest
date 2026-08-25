@@ -66,3 +66,26 @@ export type RunProgress = {
 };
 
 export type CorrectionResponse = Feedback & { correction_recorded: boolean };
+
+export type ClusterItem = {
+  id: string;
+  name: string;
+  summary: string;
+  feedback_count: number;
+  first_seen: string;
+  last_seen: string;
+  current_count: number;
+  previous_count: number;
+  growth_ratio: number;
+  is_emerging: boolean;
+  is_spike: boolean;
+  suggested_priority: number | null;
+  sample_feedback_ids: string[];
+};
+
+export type ClusterRunResult = {
+  clusters_upserted: number;
+  assigned_count: number;
+  unassigned_count: number;
+  duration_ms: number;
+};
