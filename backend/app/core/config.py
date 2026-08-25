@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     # mặc định TẮT (plan 13 §3.5).
     CLASSIFY_FEWSHOT_ENABLED: bool = False
 
+    # --- Clustering trend (Phase 14, hằng số chốt cứng plan §3 Task 2) ---
+    CLUSTER_MIN_SIZE: int = 10        # min_cluster_size HDBSCAN (S4 sweep {5,10,15})
+    CLUSTER_WINDOW_DAYS: int = 30     # cửa sổ "hiện tại" cho trend
+    CLUSTER_SPIKE_RATIO: float = 2.0
+    CLUSTER_SPIKE_MIN_CURRENT: int = 5
+    CLUSTER_EMERGING_MIN: int = 3
+
     # --- Tracing (Langfuse Cloud EU) ---
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_SECRET_KEY: str = ""
