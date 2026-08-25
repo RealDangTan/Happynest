@@ -22,7 +22,7 @@
 |---|---|---|---|---|
 | UF-01 | `UF-01-information-architecture.md` | Sitemap route đầy đủ; ma trận role×screen; ánh xạ F1–F7 → screen; quy ước nav + URL params; inventory trạng thái dùng chung | ngay (nền cho UF-02..05) | ✅ xong 2026-08-25 |
 | UF-02 | `UF-02-specs-auth-feedback.md` | Login · Shell/Sidebar · Feedback list · Detail (+similar) · Import CSV — theo khuôn mẫu trên | trước giữa P1 | ✅ xong 2026-08-25 |
-| UF-03 | `UF-03-spec-analysis-runs.md` | Trang analysis: trigger, progress polling UX (interval, trạng thái failed/resume), results table | trước khi FE viết FE-04 | ☐ |
+| UF-03 | `UF-03-spec-analysis-runs.md` | Trang analysis: trigger, progress polling UX (interval, trạng thái failed/resume), results table | trước khi FE viết FE-04 | ✅ xong 2026-08-25 |
 | UF-04 | `UF-04-spec-hitl-review.md` | Queue pending; luồng approve/edit/reject; correction UI; **trạng thái mock "DEMO"** trước khi plan 13 thật; limitation không logout | TRƯỚC CUỐI T2 (chặn P2) | ☐ |
 | UF-05 | `UF-05-spec-clusters-insights-reports.md` | 3 trang analytics + dashboard PM; cách đọc emerging/spike/growth cho người không kỹ thuật | TRƯỚC CUỐI T4 (chặn P3/P4) | ☐ |
 
@@ -37,3 +37,4 @@
 - 2026-08-25 — tạo board + khuôn mẫu (đợt 1). — claude-code
 - 2026-08-25 — UF-01 xong (v1.0): sitemap khớp thực tế `frontend/app/`, role matrix chung 2 role, quy ước URL param = tên query API, inventory trạng thái + map badge. Lệch ghi nhận: `api-notes.md` KHÔNG tồn tại → UF bám `../api-checklist.md` (OQ-1 trong UF-01); root `/` còn placeholder template (OQ-3). — claude-code (session UF)
 - 2026-08-25 — UF-02 xong (v1.0): 5 màn auth+feedback theo khuôn mẫu; verify code BE 2026-08-25 — không filter `source`, sort cứng created_at DESC, `category` = containment chính xác trong JSONB. OQ mới: created_at picker (OQ-4), back-giữ-filter (OQ-5). — claude-code (session UF)
+- 2026-08-25 — UF-03 xong (v1.0): verify shape thật 3 endpoint analysis (`{run_id}` 201 ngay · RunProgressOut · results = FeedbackListOut lọc theo run); polling 4s chỉ khi running; run_id sống trên URL vì KHÔNG có endpoint list runs (OQ-6) + snapshot config không trả về (OQ-7). — claude-code (session UF)
