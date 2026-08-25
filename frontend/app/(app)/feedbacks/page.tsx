@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Settings2 } from "lucide-react";
+import { Settings2, ShieldCheck } from "lucide-react";
 import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks";
 import type { Feedback } from "@/lib/types";
 import { formatDate } from "@/lib/format";
@@ -241,14 +241,29 @@ function FeedbacksTable() {
       </div>
 
       {data.items.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
-            <EmptyDescription>
-              Nhập dữ liệu bằng nút bên trên hoặc bỏ bộ lọc.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        filters.reviewStatus === "pending" ? (
+          // Queue cạn là trạng thái tốt — khác Empty "chưa có dữ liệu".
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>Không có mục nào chờ duyệt</EmptyTitle>
+              <EmptyDescription className="flex flex-col items-center gap-3">
+                <span>Mọi phản hồi cần người duyệt đã được xử lý.</span>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/feedbacks">Xem tất cả phản hồi</Link>
+                </Button>
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
+              <EmptyDescription>
+                Nhập dữ liệu bằng nút bên trên hoặc bỏ bộ lọc.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )
       ) : (
         <>
           <Table>
@@ -372,7 +387,16 @@ export default function FeedbacksPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl">Phản hồi</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-heading text-2xl">Phản hồi</h1>
+          {/* Queue HITL — 1 click vào hàng chờ (UF-04 Màn 1). */}
+          <Button asChild variant="outline" size="sm">
+            <Link href="/feedbacks?review_status=pending">
+              <ShieldCheck data-icon="inline-start" />
+              Chờ duyệt
+            </Link>
+          </Button>
+        </div>
         <DataEntryDialog />
       </div>
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>
