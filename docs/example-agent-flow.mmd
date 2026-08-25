@@ -1,0 +1,109 @@
+flowchart TD
+
+    INPUT[
+        New Feedback Batch
+        + Historical Feedback
+        + Product Context
+    ]
+
+    STATE[
+        Shared VoC State
+        Feedback
+        Evidence
+        Insights
+        Decisions
+        History
+    ]
+
+    INPUT --> STATE
+
+    STATE --> AGENT[
+        🧠 VoC Reasoning Agent
+        LLM
+    ]
+
+    AGENT --> THINK[
+        Understand Current Situation
+        What do I know?
+        What is missing?
+        What should I do next?
+    ]
+
+    THINK --> ROUTER{
+        LLM chooses
+        next action
+    }
+
+    ROUTER -->|Need semantics| CLASSIFY[
+        Tool:
+        Semantic Classification
+    ]
+
+    ROUTER -->|Need patterns| CLUSTER[
+        Tool:
+        Embedding / Clustering
+    ]
+
+    ROUTER -->|Need historical context| RETRIEVE[
+        Tool:
+        Retrieve Past Cases
+    ]
+
+    ROUTER -->|Need metrics| ANALYTICS[
+        Tool:
+        Query / Calculate Metrics
+    ]
+
+    ROUTER -->|Enough evidence| SYNTHESIZE[
+        LLM:
+        Generate Insight
+        + Explain Evidence
+    ]
+
+    ROUTER -->|Uncertain| HUMAN[
+        👤 Ask Human
+        Clarify / Validate
+    ]
+
+    CLASSIFY --> STATE
+    CLUSTER --> STATE
+    RETRIEVE --> STATE
+    ANALYTICS --> STATE
+    HUMAN --> STATE
+
+    SYNTHESIZE --> CRITIC[
+        🧠 Critic / Reflection
+        Is evidence sufficient?
+        Any contradiction?
+    ]
+
+    CRITIC -->|No| AGENT
+    CRITIC -->|Yes| DECIDE[
+        LLM:
+        Prioritize
+        + Recommend Action
+    ]
+
+    DECIDE --> RISK{
+        Safety /
+        Business Boundary
+    }
+
+    RISK -->|Low consequence| EXECUTE[
+        Tool:
+        Create Draft / Update Status
+    ]
+
+    RISK -->|High consequence| APPROVAL[
+        👤 Human Approval
+    ]
+
+    APPROVAL -->|Approve| EXECUTE
+    APPROVAL -->|Reject / Edit| STATE
+
+    EXECUTE --> OBSERVE[
+        Observe Outcome
+        New Feedback / Metrics
+    ]
+
+    OBSERVE --> STATE
