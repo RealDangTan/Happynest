@@ -64,3 +64,5 @@ export type RunProgress = {
   started_at: string;
   completed_at: string | null;
 };
+
+export type CorrectionResponse = Feedback & { correction_recorded: boolean };
