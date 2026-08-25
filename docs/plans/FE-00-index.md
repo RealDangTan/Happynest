@@ -11,6 +11,7 @@
 | 01 | [FE-01-init-scaffold.md](FE-01-init-scaffold.md) | Node bump check; init shadcn vào `frontend/`; proxy rewrites; TanStack Query provider; `lib/api.ts` + Vitest | ✅ đã viết | Node ≥20.18.1 | ✅ xong 2026-08-25 |
 | 02 | [FE-02-auth-shell.md](FE-02-auth-shell.md) | Middleware guard; `/login`; shell Sidebar; hook `/auth/me` | ✅ đã viết | FE-01 | ✅ xong 2026-08-25 |
 | 03 | [FE-03-feedback-screens.md](FE-03-feedback-screens.md) | List + filters URL params; detail + similar; import CSV dialog | ✅ đã viết (JIT 2026-08-25) | FE-02 | ✅ xong 2026-08-25 |
+| 03b | [FE-03b-source-columns-csv-map.md](FE-03b-source-columns-csv-map.md) | Cải tiến theo feedback owner: cột bật/tắt localStorage; registry nguồn BE nhẹ + wizard đăng ký; CSV map cột + preview | ✅ đã viết (JIT 2026-08-25, duyệt qua [decisions](../decisions.md)) | FE-03 | ☐ |
 | 04 | FE-04-analysis-runs.md | Trigger run + progress polling + results table | trước khi code màn | FE-03 | ☐ |
 | 05 | FE-05-hitl-review-ui.md | Queue pending; Dialog edit/AlertDialog reject; mock rõ nhãn → swap thật khi 13 xong | đầu P2 | FE-04, UF-04, plan 13 | ☐ |
 | 06 | FE-06-analytics-pages.md | Clusters page (P3) → Insights + Reports + dashboard chart (P4) | đầu P3/P4 | FE-04, UF-05, plans 14–16 | ☐ |
