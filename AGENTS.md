@@ -10,16 +10,19 @@ Standing context for AI coding agents (Claude Code, Cursor, Codex, …) working 
 - **Dataset:** mixed Vietnamese–English (code-switching). All NLP choices assume this.
 - **Constraints:** 8 GB RAM dev machine · cheap VPS deploy target · deadline < 2 months from 2026-08-23.
 
-## ⚠️ CURRENT PHASE — Backend Foundation ONLY
+## ⚠️ CURRENT PHASE — Delivery: Frontend + Pipeline Completion (khai báo 2026-08-25)
 
-The active mission is documented in **[docs/plans/backend-foundation-execute-plan.md](docs/plans/backend-foundation-execute-plan.md)** — read it before writing any code and follow its milestone order exactly.
+Backend Foundation đã đóng 12/12 phase ✅ (bằng chứng: [docs/plans/00-index.md](docs/plans/00-index.md), [backend-foundation-report.md](docs/backend-foundation-report.md)). Owner khai báo giai đoạn tiếp theo cùng ngày — các mục từng out-of-scope sau đây CHÍNH THỨC IN SCOPE:
 
-Explicitly OUT OF SCOPE until a later phase is declared:
+- **Frontend** Next.js trong `frontend/` (shadcn/ui, preset `b4IdeDqtkJ`) — plan series mới trong `docs/plans/`
+- **4 nhóm route stub → production**: `GET /api/clusters`, `GET /api/insights`, `POST /api/reviews/{id}` + `POST /api/corrections/{id}` (HITL), `GET /api/reports/summary`
+- **Production LangGraph HITL graph + correction→few-shot loop** (spike S5 đã PASS làm bằng chứng khả thi)
 
-- Any frontend/UI code (Next.js comes later; leave `frontend/` untouched)
-- Clustering / trend / emerging-topic / insight production code
-- Production LangGraph graph and correction→few-shot loop
+Vẫn OUT OF SCOPE (không đổi):
+
 - **Docker of any kind — permanently banned** (dev = FastAPI native on Windows + **Supabase** managed PostgreSQL; prod = native Ubuntu VPS with systemd)
+
+Phạm vi chi tiết + phasing theo design spec & plan series đang soạn trong `docs/plans/`; lệch kế hoạch mới → entry dated vào `docs/decisions.md` như cũ.
 
 ## Locked stack
 
@@ -57,7 +60,7 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 │   ├── scripts/               # seed_users.py, import_csv.py
 │   └── tests/
 ├── scripts/spikes/            # S1–S6 validation scripts, kept as thesis evidence
-└── frontend/                  # placeholder only — do not touch this phase
+└── frontend/                  # ACTIVE từ 2026-08-25: Next.js app (shadcn/ui preset b4IdeDqtkJ)
 ```
 
 ## Environment contract
