@@ -24,7 +24,7 @@
 | UF-02 | `UF-02-specs-auth-feedback.md` | Login · Shell/Sidebar · Feedback list · Detail (+similar) · Import CSV — theo khuôn mẫu trên | trước giữa P1 | ✅ xong 2026-08-25 |
 | UF-03 | `UF-03-spec-analysis-runs.md` | Trang analysis: trigger, progress polling UX (interval, trạng thái failed/resume), results table | trước khi FE viết FE-04 | ✅ xong 2026-08-25 |
 | UF-04 | `UF-04-spec-hitl-review.md` | Queue pending; luồng approve/edit/reject; correction UI; ~~trạng thái mock "DEMO"~~ (hết hiệu lực — plan 13 BE xong 2026-08-25, spec bám API thật); limitation không logout | TRƯỚC CUỐI T2 (chặn P2) | ✅ xong 2026-08-25 |
-| UF-05 | `UF-05-spec-clusters-insights-reports.md` | 3 trang analytics + dashboard PM; cách đọc emerging/spike/growth cho người không kỹ thuật | TRƯỚC CUỐI T4 (chặn P3/P4) | ☐ |
+| UF-05 | `UF-05-spec-clusters-insights-reports.md` | 3 trang analytics + dashboard PM; cách đọc emerging/spike/growth cho người không kỹ thuật | TRƯỚC CUỐI T4 (chặn P3/P4) | ✅ xong 2026-08-25 (sớm ~3 tuần) |
 
 ## Quy tắc làm việc
 
@@ -39,3 +39,5 @@
 - 2026-08-25 — UF-02 xong (v1.0): 5 màn auth+feedback theo khuôn mẫu; verify code BE 2026-08-25 — không filter `source`, sort cứng created_at DESC, `category` = containment chính xác trong JSONB. OQ mới: created_at picker (OQ-4), back-giữ-filter (OQ-5). — claude-code (session UF)
 - 2026-08-25 — UF-03 xong (v1.0): verify shape thật 3 endpoint analysis (`{run_id}` 201 ngay · RunProgressOut · results = FeedbackListOut lọc theo run); polling 4s chỉ khi running; run_id sống trên URL vì KHÔNG có endpoint list runs (OQ-6) + snapshot config không trả về (OQ-7). — claude-code (session UF)
 - 2026-08-25 — UF-04 xong (v1.0): queue = filter pending, hành động tại detail, correction dialog; verify `schemas/hitl.py` — ReviewIn có `reason?`, CorrectionIn chỉ cập nhật field gửi khác null (không xoá nhãn về null được — OQ-9); yêu cầu mock DEMO của board bỏ vì plan 13 BE đã xong. OQ-8: có cho reviewer xem raw không. — claude-code (session UF)
+- 2026-08-25 — UF-05 xong (v1.0, sớm so hạn T4): 4 màn (clusters/insights/reports/dashboard) bám C1/C2/C4/C5/C6 + công thức trend plan 14; quy tắc hiển thị sentinel growth_ratio=9.99 → "Mới", priority null → ẩn; dashboard tái dùng C4 không phát minh endpoint; insight review_status display-only. OQ-10/11. — claude-code (session UF)
+- 2026-08-25 — **Board UF-01→05 HOÀN TẤT trong 1 phiên.** Session FE có thể dựa: FE-04 ← UF-03 · FE-05 ← UF-04 · FE-06 ← UF-05. Danh sách OPEN QUESTION gom về UF-01 (OQ-1..3), UF-02 (4–5), UF-03 (6–7), UF-04 (8–9), UF-05 (10–11). — claude-code (session UF)
