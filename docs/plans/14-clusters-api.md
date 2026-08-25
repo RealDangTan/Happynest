@@ -67,12 +67,12 @@ Thêm vào `Settings` (mỗi biến một dòng, default ghi rõ):
 
 **Files:** Create `backend/app/services/clustering.py`
 
-- [ ] Step 3.1: `load_embedded(db) -> tuple[list[Feedback], np.ndarray]`: SELECT feedbacks `embedding IS NOT NULL`; vector stack thành matrix float32. Row thiếu embedding bị loại — trả kèm `excluded_count` (contract C5 bắt buộc báo).
-- [ ] Step 3.2: `labels = HDBSCAN(metric="cosine", min_cluster_size=settings.CLUSTER_MIN_SIZE).fit_predict(X)`; label `-1` = noise → không gán cụm (giữ `cluster_id=NULL`, đếm vào unassigned).
-- [ ] Step 3.3: Naming LLM — **1 call duy nhất mỗi run** (kiềm chế tín dụng): gom tối đa 5 snippet đại diện/cụm (member `confidence` cao nhất, cắt 200 ký tự TỪ `sanitized_content`) → `chat_structured(NAMING_PROMPT, payload, NamingOut, call_type=LlmCallType.name_cluster)` với `NamingOut = {clusters: [{idx, name ≤80 ký tự, summary ≤300}]}`. Fallback KHÔNG tốn LLM: cụm nào LLM bỏ sót → `name=f"Cụm #{idx}"`, `summary` ghép từ top categories của cụm.
-- [ ] Step 3.4: Hàm tổng `run_clustering(db, settings) -> ClusteringRunStats` thực thi đúng thứ tự idempotent C5 **trong 1 transaction**:
+- [x] Step 3.1: `load_embedded(db) -> tuple[list[Feedback], np.ndarray]`: SELECT feedbacks `embedding IS NOT NULL`; vector stack thành matrix float32. Row thiếu embedding bị loại — trả kèm `excluded_count` (contract C5 bắt buộc báo).
+- [x] Step 3.2: `labels = HDBSCAN(metric="cosine", min_cluster_size=settings.CLUSTER_MIN_SIZE).fit_predict(X)`; label `-1` = noise → không gán cụm (giữ `cluster_id=NULL`, đếm vào unassigned).
+- [x] Step 3.3: Naming LLM — **1 call duy nhất mỗi run** (kiềm chế tín dụng): gom tối đa 5 snippet đại diện/cụm (member `confidence` cao nhất, cắt 200 ký tự TỪ `sanitized_content`) → `chat_structured(NAMING_PROMPT, payload, NamingOut, call_type=LlmCallType.name_cluster)` với `NamingOut = {clusters: [{idx, name ≤80 ký tự, summary ≤300}]}`. Fallback KHÔNG tốn LLM: cụm nào LLM bỏ sót → `name=f"Cụm #{idx}"`, `summary` ghép từ top categories của cụm.
+- [x] Step 3.4: Hàm tổng `run_clustering(db, settings) -> ClusteringRunStats` thực thi đúng thứ tự idempotent C5 **trong 1 transaction**:
   1. `DELETE FROM insights` (trước vì FK trỏ clusters) → 2. `DELETE FROM clusters` → 3. `UPDATE feedbacks SET cluster_id = NULL` → 4. INSERT cluster mới (trend theo Task 2 + name/summary Task 3) → 5. `UPDATE feedbacks SET cluster_id` cho member không phải noise → commit.
-- [ ] Step 3.5: Unit test: ma trận embedding giả lập 2 cụm + noise (seed cố định), mock `chat_structured` → assert số cụm, noise không có cluster_id, excluded_count đếm row thiếu vector, stats khớp. Mock LLM fail → fallback name vẫn đủ. Verify: `uv run pytest tests/test_clustering_unit.py -q` PASS. Commit: `feat(clustering): hdbscan cosine engine with llm naming and idempotent rebuild`
+- [x] Step 3.5: Unit test: ma trận embedding giả lập 2 cụm + noise (seed cố định), mock `chat_structured` → assert số cụm, noise không có cluster_id, excluded_count đếm row thiếu vector, stats khớp. Mock LLM fail → fallback name vẫn đủ. Verify: `uv run pytest tests/test_clustering_unit.py -q` PASS. Commit: `feat(clustering): hdbscan cosine engine with llm naming and idempotent rebuild`
 
 ### Task 4 — Hai endpoint thay stub
 
