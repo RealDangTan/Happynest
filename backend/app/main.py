@@ -8,6 +8,7 @@ Phase sau cắm vào khung này:
 - Phase 09: routes analysis
 """
 
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -15,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.routes import admin, analysis, auth, feedback
+from app.api.routes import admin, analysis, auth, feedback, review
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
@@ -30,12 +31,17 @@ async def lifespan(app: FastAPI):
     # — Stanza vi+en nặng ~1GB RAM, KHÔNG được tạo lại mỗi request.
     presidio_service.init_presidio()
     # Phase 13 (plan §3.5): tạo sớm 4 bảng checkpoint LangGraph (idempotent,
-    # ngoài filter Alembic). Lỗi không chặn boot — endpoint reviews tự báo lỗi
-    # khi gọi; giữ đúng triết lý health-degraded của app.
-    try:
-        await hitl_graph.asetup_once()
-    except Exception as exc:  # noqa: BLE001 — boot phải sống khi Supabase chập chờn
-        logger.error("checkpoint saver setup failed: %s", type(exc).__name__)
+    # ngoài filter Alembic). ⚠️ Chạy trong BACKGROUND THREAD, không await trực
+    # tiếp: lifespan Windows dùng ProactorEventLoop mà async psycopg chỉ chạy
+    # trên selector (quirk S5) — await ở đây nổ InterfaceError. Thread tự chạy
+    # asyncio.run trên selector loop riêng; request đầu nếu thread chưa xong
+    # cũng tự đảm bảo lại (thread-safe) nên không có race. Lỗi không chặn boot;
+    # giữ đúng triết lý health-degraded của app.
+    threading.Thread(
+        target=hitl_graph.ensure_checkpointer_ready,
+        name="hitl-checkpoint-setup",
+        daemon=True,
+    ).start()
     yield
     # Phase 07: flush batch trace Langfuse trước khi process thoát.
     tracing.flush()
@@ -110,6 +116,8 @@ def create_app() -> FastAPI:
     app.include_router(feedback.router)
     # Phase 09: tạo run batch + progress/results API.
     app.include_router(analysis.router)
+    # Phase 13: HITL — POST /reviews (graph interrupt/resume) + /corrections.
+    app.include_router(review.router)
 
     return app
 

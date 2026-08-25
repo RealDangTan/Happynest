@@ -10,8 +10,11 @@ sống sót restart process, resume bằng `Command(resume=…)` đúng như spi
 thao tác graph chạy trong event loop RIÊNG qua `asyncio.run(…, loop_factory=
 SelectorEventLoop)`, không đụng loop của uvicorn. Mỗi request mở saver riêng
 trên loop riêng (connection psycopg bám loop nơi nó được tạo — tái dùng saver
-toàn cục xuyên loop là lỗi kinh điển); `asetup_once()` của lifespan chỉ để
-tạo sớm 4 bảng checkpoint + bật flag bỏ qua setup lặp lại mỗi request.
+toàn cục xuyên loop là lỗi kinh điển); `ensure_checkpointer_ready()` tạo sớm
+4 bảng checkpoint ĐÚNG MỘT LẦN mỗi process — lifespan chỉ GỌI NÓ TRONG
+BACKGROUND THREAD vì lifespan Windows chạy trên ProactorEventLoop mà async
+psycopg không chịu (cùng gốc S5); request đầu tiên nếu chưa setup cũng tự gọi
+lại (thread-safe qua lock) trước khi vào graph.
 
 Idempotency node (crash giữa DB-commit và checkpoint-save ~9s WAN): hai INSERT
 log trong record_correction mang marker `_thread` trong JSONB — node bị chạy
@@ -25,12 +28,12 @@ prompt/log/state.
 import asyncio
 import logging
 import selectors
+import threading
 import uuid
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
-from sqlalchemy import func
 
 from app.db.session import SessionLocal
 from app.models.correction_example import CorrectionExample
@@ -164,7 +167,7 @@ def _log_review_and_correction(**kwargs: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _snapshot_of(fb: Feedback) -> dict[str, Any]:
+def snapshot_of(fb: Feedback) -> dict[str, Any]:
     """Nhãn + content TRƯỚC review — nguồn cho original_value/corrected_value."""
     snap: dict[str, Any] = {
         "categories": list(fb.categories) if fb.categories is not None else None,
@@ -185,7 +188,7 @@ def build_graph(checkpointer):
         fb = _load_feedback(uuid.UUID(state["feedback_id"]))
         if fb is None:
             raise LookupError(f"feedback {state['feedback_id']} không tồn tại")
-        snapshot = _snapshot_of(fb)
+        snapshot = snapshot_of(fb)
         # Lần đầu: raise GraphInterrupt TẠI ĐÂY (snapshot chưa kịp trả về state).
         # Lần resume: node chạy LẠI từ đầu (đọc lại row — vẫn giá trị pre-review
         # vì apply_action chưa hề chạy), interrupt() trả payload và đi tiếp.
@@ -221,7 +224,7 @@ def build_graph(checkpointer):
         tid = f"hitl-{state['feedback_id']}"
         fid = uuid.UUID(state["feedback_id"])
         snapshot = state["snapshot"]
-        post = _snapshot_of(_load_feedback(fid))  # trạng thái SAU apply_action
+        post = snapshot_of(_load_feedback(fid))  # trạng thái SAU apply_action
         if state["action"] == "edit":
             # Ngữ nghĩa chốt plan §3.2: edit → NHÃN GIỮ NGUYÊN từ snapshot,
             # kèm sanitized_content MỚI (ví dụ dương text-mới/nhãn-cũ cho few-shot).
@@ -261,6 +264,11 @@ def build_graph(checkpointer):
 # ---------------------------------------------------------------------------
 
 _SETUP_DONE = {"ok": False}
+_SETUP_LOCK = threading.Lock()
+
+
+class CheckpointUnavailable(Exception):
+    """Saver không kết nối được Supabase lúc setup — route chuyển 503."""
 
 
 def _conn_string() -> str:
@@ -281,15 +289,34 @@ def _run_on_selector_loop(coro_fn):
     )
 
 
-async def asetup_once() -> None:
-    """Lifespan gọi (await): tạo/idempotent 4 bảng checkpoint một lần lúc boot.
-    Connection mở + đóng ngay trong coroutine này — không giữ xuyên request."""
+async def _setup_coro() -> None:
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
     async with AsyncPostgresSaver.from_conn_string(_conn_string()) as saver:
         await saver.setup()
-    _SETUP_DONE["ok"] = True
-    logger.info("checkpoint saver setup OK (bảng checkpoint sẵn sàng)")
+
+
+def ensure_checkpointer_ready() -> bool:
+    """Tạo/idempotent 4 bảng checkpoint ĐÚNG MỘT lần mỗi process — thread-safe.
+
+    ⚠️ KHÔNG được gọi trực tiếp trên event loop của uvicorn: lifespan Windows
+    dùng ProactorEventLoop mà async psycopg chỉ chạy trên selector (S5) — vì
+    vậy hàm tự chạy `asyncio.run` trên selector loop RIÊNG và lifespan chỉ
+    gọi trong background thread (xem main.py). Trả True nếu sẵn sàng.
+    """
+    if _SETUP_DONE["ok"]:
+        return True
+    with _SETUP_LOCK:
+        if _SETUP_DONE["ok"]:
+            return True
+        try:
+            _run_on_selector_loop(_setup_coro)
+        except Exception as exc:  # noqa: BLE001 — caller quyết định fatal hay không
+            logger.error("checkpoint saver setup failed: %s", type(exc).__name__)
+            return False
+        _SETUP_DONE["ok"] = True
+        logger.info("checkpoint saver setup OK (bảng checkpoint sẵn sàng)")
+        return True
 
 
 def _pending_interrupts(snap) -> list:
@@ -324,7 +351,14 @@ def _next_graph_step(snap) -> str:
 def submit_review(feedback_id: uuid.UUID, reviewer_id: uuid.UUID, payload: dict) -> dict:
     """Chạy flow POST /api/reviews/{feedback_id}: đảm bảo thread đang đậu ở
     interrupt rồi resume bằng payload; trả state cuối (final_status...).
-    Raise ReviewAlreadyCompleted nếu thread đã hoàn tất."""
+    Raise ReviewAlreadyCompleted nếu thread đã hoàn tất,
+    CheckpointUnavailable nếu bảng checkpoint chưa dựng được (→ 503)."""
+    # Sync context (threadpool của route) — gọi TRƯỚC khi vào selector loop để
+    # request đầu không phải trả giá setup trong coroutine (~9s WAN × 2).
+    if not ensure_checkpointer_ready():
+        raise CheckpointUnavailable(
+            "Không kết nối được Supabase để dựng bảng checkpoint LangGraph."
+        )
 
     async def _flow() -> dict:
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver

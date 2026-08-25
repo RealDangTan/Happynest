@@ -1,7 +1,9 @@
 """Stub endpoints cho các giai đoạn sau execute-plan §7.
 
 Mỗi endpoint trả 501 kèm docstring giải thích phase nào làm gì.
-DoD Phase 12 sẽ rà lại các stub này còn nguyên (không bị triển khai sớm).
+Lịch sử: Phase 13 đã thay 2 stub reviews/corrections bằng routes thật
+(routes/review.py); file này còn 3 stub clusters/insights/reports cho
+P3/P4 (plans 14–16).
 """
 
 from fastapi import APIRouter, HTTPException
@@ -25,21 +27,6 @@ def list_insights():
     """STUB 501 — insight generation evidence-backed thuộc giai đoạn sau.
     Bảng `insights` đã có sẵn."""
     raise _not_implemented("GET /api/insights", "Cần insight engine (giai đoạn sau).")
-
-
-@router.post("/reviews/{feedback_id}")
-def submit_review(feedback_id: str):
-    """STUB 501 — HITL review flow (LangGraph interrupt) là giai đoạn sau.
-    Bảng `human_reviews` đã có sẵn; trigger rule `requires_human_review` đã
-    compute ở cột feedbacks từ Phase 05/07."""
-    raise _not_implemented("POST /api/reviews/{feedback_id}", "Cần HITL graph.")
-
-
-@router.post("/corrections/{feedback_id}")
-def submit_correction(feedback_id: str):
-    """STUB 501 — correction→few-shot loop là giai đoạn sau.
-    Bảng `correction_examples` đã có sẵn."""
-    raise _not_implemented("POST /api/corrections/{feedback_id}", "Cần correction loop.")
 
 
 @router.get("/reports/summary")

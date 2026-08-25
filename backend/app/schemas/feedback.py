@@ -11,7 +11,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import ReviewStatus, Severity
+from app.models.enums import AiIssue, ReviewStatus, Sentiment, Severity
 
 
 class FeedbackIn(BaseModel):
@@ -39,6 +39,10 @@ class FeedbackOut(BaseModel):
     pii_detected: bool  # Phase 06: metadata sanitize — không mang text PII
     severity: Severity | None
     categories: list[str] | None
+    # Phase 13: đủ bộ nhãn trong response để client thấy ngay kết quả
+    # /corrections (C3 "FeedbackOut cập nhật nhãn") mà không cần GET lại.
+    ai_issue: AiIssue | None
+    sentiment: Sentiment | None
     confidence: float | None
     requires_human_review: bool
     sanitized_content: str | None

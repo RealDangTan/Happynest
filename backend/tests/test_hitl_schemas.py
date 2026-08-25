@@ -89,6 +89,8 @@ def _fake_feedback() -> SimpleNamespace:
         pii_detected=True,
         severity="high",
         categories=["dịch thuật"],
+        ai_issue=None,
+        sentiment="negative",
         confidence=0.9,
         requires_human_review=True,
         sanitized_content="nội dung <PHONE_NUMBER>",
