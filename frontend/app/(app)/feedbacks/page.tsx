@@ -1,7 +1,8 @@
 "use client";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Settings2 } from "lucide-react";
 import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks";
 import type { Feedback } from "@/lib/types";
 import { formatDate } from "@/lib/format";
@@ -20,6 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +54,102 @@ const REVIEW_LABEL: Record<string, string> = {
   edited: "Đã sửa",
   rejected: "Đã loại",
 };
+export const SENTIMENT_LABEL: Record<string, string> = {
+  positive: "Tích cực",
+  negative: "Tiêu cực",
+  neutral: "Trung lập",
+  mixed: "Trộn",
+};
+export const AI_ISSUE_LABEL: Record<string, string> = {
+  hallucination: "Ảo giác",
+  inaccuracy: "Thiếu chính xác",
+  bias: "Thiên vị",
+  safety: "An toàn",
+  privacy: "Quyền riêng tư",
+  performance: "Hiệu năng",
+  other: "Khác",
+};
+
+// Cột bật/tắt được (FE-03b T3). Cột "Nội dung" cố định luôn hiển thị.
+type ColumnKey =
+  | "source"
+  | "created"
+  | "severity"
+  | "review"
+  | "sentiment"
+  | "ai_issue"
+  | "confidence"
+  | "pii";
+
+const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: "source", label: "Nguồn" },
+  { key: "created", label: "Ngày tạo" },
+  { key: "severity", label: "Mức độ" },
+  { key: "review", label: "Duyệt" },
+  { key: "sentiment", label: "Cảm xúc" },
+  { key: "ai_issue", label: "AI issue" },
+  { key: "confidence", label: "Confidence" },
+  { key: "pii", label: "PII" },
+];
+const DEFAULT_COLUMNS: ColumnKey[] = ["source", "created", "severity", "review"];
+const STORAGE_KEY = "feedbacks.columns";
+
+function readStoredColumns(): ColumnKey[] {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_COLUMNS;
+    const parsed = JSON.parse(raw) as string[];
+    const valid = parsed.filter((k) =>
+      ALL_COLUMNS.some((c) => c.key === k),
+    ) as ColumnKey[];
+    return valid.length > 0 ? valid : DEFAULT_COLUMNS;
+  } catch {
+    return DEFAULT_COLUMNS;
+  }
+}
+
+function ColumnVisibilityMenu({
+  visible,
+  onToggle,
+}: {
+  visible: ColumnKey[];
+  onToggle: (key: ColumnKey) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Settings2 data-icon="inline-start" />
+          Hiện thị cột
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Cột hiển thị</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {ALL_COLUMNS.map(({ key, label }) => (
+          <DropdownMenuCheckboxItem
+            key={key}
+            checked={visible.includes(key)}
+            onCheckedChange={() => onToggle(key)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {label}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function FeedbackCell({ fb }: { fb: Feedback }) {
+  return (
+    <TableCell className="max-w-md">
+      <Link href={`/feedbacks/${fb.id}`} className="block">
+        <span className="line-clamp-2">{fb.sanitized_content ?? "(trống)"}</span>
+      </Link>
+    </TableCell>
+  );
+}
 
 function FeedbacksTable() {
   const router = useRouter();
@@ -57,6 +162,30 @@ function FeedbacksTable() {
     category: sp.get("category") ?? undefined,
   };
   const { data, isPending, isError, error } = useFeedbacks(filters);
+
+  // localStorage chỉ đọc sau mount — tránh lệch hydration SSR.
+  const [visibleColumns, setVisibleColumns] =
+    useState<ColumnKey[]>(DEFAULT_COLUMNS);
+  useEffect(() => {
+    setVisibleColumns(readStoredColumns());
+  }, []);
+
+  function toggleColumn(key: ColumnKey) {
+    setVisibleColumns((prev) => {
+      const next = prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key];
+      if (next.length === 0) return prev; // không cho ẩn hết mọi cột phụ
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // storage bị chặn (private mode…) → vẫn đổi tạm trong phiên
+      }
+      return next;
+    });
+  }
+
+  const has = (key: ColumnKey) => visibleColumns.includes(key);
 
   function setParam(key: string, value: string | null) {
     const next = new URLSearchParams(sp.toString());
@@ -89,7 +218,7 @@ function FeedbacksTable() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Bộ lọc */}
+      {/* Bộ lọc + tuỳ biến cột */}
       <div className="flex flex-wrap items-center gap-2">
         <Select
           value={sp.get("severity") ?? "all"}
@@ -129,6 +258,9 @@ function FeedbacksTable() {
           defaultValue={sp.get("category") ?? ""}
           onBlur={(e) => setParam("category", e.target.value.trim() || null)}
         />
+        <div className="ml-auto">
+          <ColumnVisibilityMenu visible={visibleColumns} onToggle={toggleColumn} />
+        </div>
       </div>
 
       {data.items.length === 0 ? (
@@ -146,49 +278,86 @@ function FeedbacksTable() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[45%]">Nội dung</TableHead>
-                <TableHead>Nguồn</TableHead>
-                <TableHead>Ngày tạo</TableHead>
-                <TableHead>Mức độ</TableHead>
-                <TableHead>Duyệt</TableHead>
+                {has("source") && <TableHead>Nguồn</TableHead>}
+                {has("created") && <TableHead>Ngày tạo</TableHead>}
+                {has("severity") && <TableHead>Mức độ</TableHead>}
+                {has("review") && <TableHead>Duyệt</TableHead>}
+                {has("sentiment") && <TableHead>Cảm xúc</TableHead>}
+                {has("ai_issue") && <TableHead>AI issue</TableHead>}
+                {has("confidence") && <TableHead>Confidence</TableHead>}
+                {has("pii") && <TableHead>PII</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.items.map((fb: Feedback) => (
                 <TableRow key={fb.id} className="cursor-pointer">
-                  <TableCell className="max-w-md">
-                    <Link href={`/feedbacks/${fb.id}`} className="block">
-                      <span className="line-clamp-2">
-                        {fb.sanitized_content ?? "(trống)"}
-                      </span>
-                      {fb.pii_detected ? (
-                        <Badge variant="outline" className="mt-1">
-                          PII
+                  <FeedbackCell fb={fb} />
+                  {has("source") && <TableCell>{fb.source}</TableCell>}
+                  {has("created") && (
+                    <TableCell className="whitespace-nowrap">
+                      {formatDate(fb.created_at)}
+                    </TableCell>
+                  )}
+                  {has("severity") && (
+                    <TableCell>
+                      {fb.severity ? (
+                        <Badge
+                          variant={
+                            fb.severity === "critical" || fb.severity === "high"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {SEVERITY_LABEL[fb.severity]}
                         </Badge>
-                      ) : null}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{fb.source}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(fb.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    {fb.severity ? (
-                      <Badge
-                        variant={
-                          fb.severity === "critical" || fb.severity === "high"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {SEVERITY_LABEL[fb.severity]}
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {has("review") && (
+                    <TableCell>
+                      <Badge variant="outline">
+                        {REVIEW_LABEL[fb.review_status]}
                       </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{REVIEW_LABEL[fb.review_status]}</Badge>
-                  </TableCell>
+                    </TableCell>
+                  )}
+                  {has("sentiment") && (
+                    <TableCell>
+                      {fb.sentiment ? (
+                        <Badge variant="secondary">
+                          {SENTIMENT_LABEL[fb.sentiment]}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {has("ai_issue") && (
+                    <TableCell>
+                      {fb.ai_issue ? AI_ISSUE_LABEL[fb.ai_issue] : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {has("confidence") && (
+                    <TableCell className="whitespace-nowrap">
+                      {fb.confidence != null
+                        ? `${Math.round(fb.confidence * 100)}%`
+                        : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                    </TableCell>
+                  )}
+                  {has("pii") && (
+                    <TableCell>
+                      {fb.pii_detected ? (
+                        <Badge variant="outline">PII</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
