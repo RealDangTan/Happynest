@@ -342,9 +342,9 @@
 
 ### Task 3: Nhập dữ liệu — dialog thêm thủ công + import CSV
 
-**Files:** Create: `frontend/app/(app)/feedbacks/data-entry-dialog.tsx` · Modify: `page.tsx` (gắn nút) · `app/layout.tsx` (Toaster) · Add: `pnpm dlx shadcn@latest add dialog textarea sonner`
+**Files:** Create: `frontend/app/(app)/feedbacks/data-entry-dialog.tsx` · Modify: `page.tsx` (gắn nút) · `app/layout.tsx` (Toaster) · Add: `pnpm dlx shadcn@latest add dialog textarea sonner tabs`
 
-- [ ] **Step 1: Add components + mount Toaster** — trong `app/layout.tsx` (client-safe, đặt cạnh Providers):
+- [ ] **Step 1: Add components + mount Toaster** — trong `app/layout.tsx` (client-safe, đặt cạnh Providers): *(lệch thực thi 2026-08-25: lần đầu thiếu `tabs` trong lệnh add → build lỗi Module not found, đã bổ sung)*
   ```tsx
   import { Toaster } from "@/components/ui/sonner";
   // … trong <body>, sau </Providers>? — đặt TRONG body, ngoài Providers cũng được:
