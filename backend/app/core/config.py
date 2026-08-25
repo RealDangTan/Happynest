@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # --- Pipeline thresholds ---
     CLASSIFY_CONFIDENCE_REVIEW_BELOW: float = 0.60
     HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW: float = 0.75
+    # Phase 13 stretch: few-shot từ correction gần nhất — TĂNG chi phí token,
+    # mặc định TẮT (plan 13 §3.5).
+    CLASSIFY_FEWSHOT_ENABLED: bool = False
 
     # --- Tracing (Langfuse Cloud EU) ---
     LANGFUSE_PUBLIC_KEY: str = ""

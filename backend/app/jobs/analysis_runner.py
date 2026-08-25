@@ -37,8 +37,10 @@ from openai import APIError
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
+from app.models.correction_example import CorrectionExample
 from app.models.enums import ReviewStatus, RunStatus
 from app.models.feedback import Feedback
 from app.services.classifier import (
@@ -55,6 +57,9 @@ logger = logging.getLogger(__name__)
 #: Version pipeline snapshot vào analysis_runs khi tạo run — tăng khi đổi
 #: cấu trúc pipeline (thứ tự bước, công thức HITL…) để so sánh kết quả A/B.
 PIPELINE_VERSION = "v1"
+
+#: Phase 13 stretch: số correction gần nhất dùng làm few-shot khi bật.
+FEW_SHOT_LIMIT = 5
 
 #: Lỗi item-level: batch KHÔNG chết, chỉ ghi tóm tắt rồi bỏ qua item.
 _ITEM_ERRORS = (LLMStructureError, EmbeddingDimError, APIError)
@@ -82,6 +87,26 @@ def _pick_next(db: Session, run_id: uuid.UUID, attempted: set[uuid.UUID]):
     ).first()
 
 
+def _load_few_shot_examples(db: Session, limit: int = FEW_SHOT_LIMIT) -> list[dict]:
+    """Phase 13 stretch (plan §3.5): N correction gần nhất thành few-shot.
+
+    `text` lấy từ original_prediction["sanitized_content"] — ĐÃ sanitize nên
+    an toàn đưa vào prompt (PII boundary); row thiếu key bị bỏ qua.
+    """
+    rows = db.scalars(
+        select(CorrectionExample)
+        .order_by(CorrectionExample.created_at.desc())
+        .limit(limit)
+    ).all()
+    examples: list[dict] = []
+    for ex in rows:
+        text = (ex.original_prediction or {}).get("sanitized_content")
+        if not text:
+            continue
+        examples.append({"text": text, "label": ex.corrected_value})
+    return examples
+
+
 def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
     """Classify + HITL flag + embed MỘT item — KHÔNG commit (caller gộp commit
     với processed_count). Raise item-level error để caller ghi tóm tắt."""
@@ -93,8 +118,15 @@ def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
         fb.pii_entities = [e.model_dump() for e in result.entities]
 
     # 2. Classify (LLM) + trace metadata gắn feedback/run vào llm_call_logs.
+    # Few-shot chỉ khi env bật (chi phí token tăng) — correction loop phase 13.
+    few_shot = (
+        _load_few_shot_examples(db)
+        if get_settings().CLASSIFY_FEWSHOT_ENABLED
+        else None
+    )
     classification = classify_feedback(
         fb.sanitized_content,
+        few_shot=few_shot,
         feedback_id=fb.id,
         analysis_run_id=run.id,
     )
