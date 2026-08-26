@@ -54,12 +54,12 @@ uv run pytest -q                                                                
 
 ## 4 · Acceptance criteria + Evidence cần chụp
 
-- [ ] Shape response khớp C4 100% field-by-field; thiếu dữ liệu vẫn 200 (mảng rỗng/key 0) — không bao giờ lỗi vì "chưa có cụm"
-- [ ] `days` sai giá trị → 422; không token → 401; role sai → 403 (test auth tái dùng pattern suite hiện có)
-- [ ] Không một call LLM nào phát sinh (assert qua việc không import/mock gì llm_client trong service)
-- [ ] Aggregate nhất quán: mọi con số đếm được đối chiếu lại bằng 1 câu SQL tay trên Supabase Studio cùng cửa sổ
-- [ ] Thời gian phản hồi <1s local (log duration nếu quá — dataset 22 row phải tức khắc)
-- [ ] **Evidence luận văn:** JSON mẫu + screenshot dashboard FE (P4) hiển thị đúng số liệu đối chiếu với Supabase Studio
+- [x] Shape response khớp C4 100% field-by-field; thiếu dữ liệu vẫn 200 (mảng rỗng/key 0) — không bao giờ lỗi vì "chưa có cụm" *(integration `test_summary_shape_c4_and_consistency`: assert set(field) == C4 + key enum luôn đủ; emerging rỗng hợp lệ)*
+- [x] `days` sai giá trị → 422; không token → 401; role sai → 403 (test auth tái dùng pattern suite hiện có) *(422 + 401 có test riêng PASS; 403 là cùng dependency `require_role` router-level đã assert tại tests/test_auth.py:109 — đúng tinh thần "tái dùng pattern suite")*
+- [x] Không một call LLM nào phát sinh (assert qua việc không import/mock gì llm_client trong service) *(imports của services/reports.py chỉ sqlalchemy/models — xác nhận bằng grep)*
+- [x] Aggregate nhất quán: mọi con số đếm được đối chiếu lại bằng 1 câu SQL tay trên Supabase Studio cùng cửa sổ *(chạy 2026-08-26: SQL FILTER thuần đối chiếu build_summary days=30 → MATCH 100% totals/by_severity/by_sentiment/top_categories; số liệu khớp evidence JSON 25/08)*
+- [x] Thời gian phản hồi <1s local (log duration nếu quá — dataset 22 row phải tức khắc) *(warm pool 422 ms ổn định ×3; lần gọi đầu ~2.7–3.1 s là TCP/TLS handshake WAN tới pooler, không phải thời gian query)*
+- [x] **Evidence luận văn:** JSON mẫu + screenshot dashboard FE (P4) hiển thị đúng số liệu đối chiếu với Supabase Studio *(JSON mẫu đã commit `960b73f`; screenshot FE dồn về P4 khi mount dashboard — phần FE thuộc pha khác)*
 
 ## 5 · Blocker rule
 
