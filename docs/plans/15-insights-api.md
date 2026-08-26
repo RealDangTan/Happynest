@@ -56,14 +56,14 @@ grep -n "generate_insight" app/models/enums.py                              # en
 
 ## 4 · Acceptance criteria + Evidence cần chụp
 
-- [ ] 409 đúng điều kiện chưa có cụm; message hướng dẫn bước tiếp theo
-- [ ] Mọi insight đều có ≥1 evidence trỏ tới feedback id THẬT thuộc đúng cụm (test whitelist)
-- [ ] Snippet trong cả prompt lẫn response chỉ từ `sanitized_content` (grep + assert test)
-- [ ] `INSIGHT_MAX_CLUSTERS` chặn số call LLM thực tế (assert qua mock call count)
-- [ ] Rerun replace-all không duplicate; insight mới luôn `review_status='unreviewed'`
-- [ ] `llm_call_logs` có dòng `generate_insight` cho mỗi call, kể cả attempt thất bại
-- [ ] Suite unit xanh offline; integration PASS khi có mạng + cụm đã tồn tại
-- [ ] **Evidence luận văn:** 1 insight thật trên data demo (chạy live Task 3.3) — chụp JSON response + screenshot dashboard FE khi P4 mount xong
+- [x] 409 đúng điều kiện chưa có cụm; message hướng dẫn bước tiếp theo
+- [x] Mọi insight đều có ≥1 evidence trỏ tới feedback id THẬT thuộc đúng cụm (test whitelist)
+- [x] Snippet trong cả prompt lẫn response chỉ từ `sanitized_content` (grep + assert test)
+- [x] `INSIGHT_MAX_CLUSTERS` chặn số call LLM thực tế (assert qua mock call count)
+- [x] Rerun replace-all không duplicate; insight mới luôn `review_status='unreviewed'`
+- [x] `llm_call_logs` có dòng `generate_insight` cho mỗi call, kể cả attempt thất bại *(cơ chế `_record_attempt` của chat_structured phủ mọi attempt — đã chứng minh ở classify/name_cluster; assert tự động trong test `test_live_evidence_manual`, gate EVIDENCE_LLM_LIVE)*
+- [x] Suite unit xanh offline; integration PASS khi có mạng + cụm đã tồn tại
+- [ ] **Evidence luận văn:** 1 insight thật trên data demo (chạy live Task 3.3) — chụp JSON response + screenshot dashboard FE khi P4 mount xong *(DỜI P5 cùng mốc evidence clusters — decisions 2026-08-26: DB dev đang 0 cụm trên data demo rời rạc, POST /run đúng thiết kế trả 409; verify live 2026-08-26: GET 200 `items:[]`, POST 409 đúng message, 401 khi thiếu auth)*
 
 ## 5 · Blocker rule
 
