@@ -62,6 +62,14 @@ class Settings(BaseSettings):
     # chi phí LLM (spec §8 rủi ro "hết tín dụng") ---
     INSIGHT_MAX_CLUSTERS: int = 10
 
+    # --- Agent graph (Phase 19): biên an toàn chốt cứng plan §2 — router
+    # LLM tự do chọn bước nhưng bị khóa trong 2 trần này ---
+    AGENT_MAX_STEPS: int = 12              # vượt cap → buộc nhánh finish
+    AGENT_LLM_BUDGET_PER_RUN: int = 24     # COUNT llm_call_logs trước MỌI call tốn LLM
+    AGENT_TOP_CLUSTERS: int = 3            # số target tối đa mỗi run
+    AGENT_RISK_PRIORITY_THRESHOLD: float = 0.70   # risk gate: suggested_priority ≥
+    AGENT_RISK_SEVERITY_SHARE: float = 0.30       # risk gate: share(high,critical) ≥
+
     # --- Tracing (Langfuse Cloud EU) ---
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_SECRET_KEY: str = ""
