@@ -39,9 +39,9 @@ curl -s http://127.0.0.1:8000/api/clusters -b cookie.txt | head -c 400   # data 
 
 ### Task 1 — Khung `app/agents/tools/base.py`
 
-**Files:** Create `backend/app/agents/__init__.py` (rỗng), `backend/app/agents/tools/__init__.py`, `backend/app/agents/tools/base.py`
+**Files:** Create `backend/happynest_agent/__init__.py`, `backend/happynest_agent/tools/__init__.py`, `backend/happynest_agent/tools/base.py` *(lệch vị trí package — owner directive "một folder riêng", decisions 2026-08-26)*
 
-- [ ] Step 1.1: Định nghĩa hợp đồng tool:
+- [x] Step 1.1: Định nghĩa hợp đồng tool (`ToolInput` base bắt buộc `run_id` + `ToolSpec` + `TOOLS()`; registry partial qua `_build_registry()`):
   ```python
   class ToolSpec(BaseModel):
       name: str
@@ -52,7 +52,7 @@ curl -s http://127.0.0.1:8000/api/clusters -b cookie.txt | head -c 400   # data 
   def TOOLS() -> dict[str, ToolSpec]: ...   # gom registry từ 5 module con
   ```
   Mọi input schema bắt buộc có field `run_id: uuid.UUID` (để passthrough trace vào llm_call_logs khi tool chạm LLM).
-- [ ] Step 1.2: Smoke test import registry KHÔNG LỖI lúc này (registry mới trả dict rỗng/partial — đóng đủ 5 tên ở Task 6). Commit: `feat(agents): tool spec contract and registry skeleton`
+- [x] Step 1.2: Smoke test import registry KHÔNG LỖI lúc này (registry mới trả dict rỗng/partial — đóng đủ 5 tên ở Task 6). Commit: `feat(agents): tool spec contract and registry skeleton`
 
 ### Task 2 — Hai wrapper LLM: `classify_batch`, `embed_batch`
 
