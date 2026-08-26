@@ -15,6 +15,7 @@ import {
 } from "@/hooks/use-clusters";
 import type { ClusterItem } from "@/lib/types";
 import { formatRelative } from "@/lib/format";
+import { priorityLabel } from "@/lib/labels";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -91,13 +92,6 @@ function DictionaryPopover() {
       </PopoverContent>
     </Popover>
   );
-}
-
-/** Map gợi ý 0–1 → nhãn; ngưỡng thuần UI (spec UF-05). */
-function priorityLabel(p: number): string {
-  if (p >= 0.66) return "cao";
-  if (p >= 0.33) return "trung bình";
-  return "thấp";
 }
 
 /** Cạm bẫy sentinel 9.99: emerging hiển thị chữ "Mới", không hiện số. */

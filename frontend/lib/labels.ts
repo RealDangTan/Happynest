@@ -31,3 +31,10 @@ export const AI_ISSUE_LABEL: Record<AiIssue, string> = {
   performance: "Hiệu năng",
   other: "Khác",
 };
+
+/** Map gợi ý 0–1 → nhãn; ngưỡng thuần UI (spec UF-05). */
+export function priorityLabel(p: number): string {
+  if (p >= 0.66) return "cao";
+  if (p >= 0.33) return "trung bình";
+  return "thấp";
+}
