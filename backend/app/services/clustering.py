@@ -313,3 +313,24 @@ def compute_trend(
         "is_spike": is_spike,
         "suggested_priority": suggested_priority,
     }
+
+
+def sample_feedback_ids_by_cluster(
+    db: Session, limit: int = _SAMPLES_PER_CLUSTER
+) -> dict:
+    """≤`limit` member MỚI NHẤT mỗi cụm — 1 query, group python-side.
+
+    Dùng chung cho GET /api/clusters (C1) và mảng emerging của C4 — KHÔNG
+    copy-paste logic này (plan 16 §3 Task 1 Step 1.1).
+    """
+    pairs = db.execute(
+        select(Feedback.cluster_id, Feedback.id)
+        .where(Feedback.cluster_id.is_not(None))
+        .order_by(Feedback.created_at.desc())
+    ).all()
+    samples: dict = {}
+    for cluster_id, feedback_id in pairs:
+        bucket = samples.setdefault(cluster_id, [])
+        if len(bucket) < limit:
+            bucket.append(feedback_id)
+    return samples
