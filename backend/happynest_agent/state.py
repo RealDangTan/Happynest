@@ -27,6 +27,11 @@ class AgentState(TypedDict):
     steps_used: int
     # resume payload từ POST /runs/{id}/decision: {action, edited_*?, reason?}
     decision: dict[str, Any] | None
+    # --- bổ sung khi thực thi Task 2 so với danh sách plan §3.1.2 (đủ để
+    # conditional edges đọc được tín hiệu giữa các node) ---
+    route_decision: dict[str, Any] | None   # output node route: {next, rationale}
+    critic_result: str | None               # "pass" | "drop"
+    insights_created: Annotated[list[uuid.UUID], operator.add]  # insight ids đã persist
 
 
 def initial_state(run_id: uuid.UUID, targets: list[uuid.UUID]) -> AgentState:
@@ -42,4 +47,7 @@ def initial_state(run_id: uuid.UUID, targets: list[uuid.UUID]) -> AgentState:
         risk_level=None,
         steps_used=0,
         decision=None,
+        route_decision=None,
+        critic_result=None,
+        insights_created=[],
     )
