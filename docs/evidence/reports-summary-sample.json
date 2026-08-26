@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-08-25T18:38:12.976787Z",
+  "window_days": 30,
+  "totals": {
+    "feedback_count": 17,
+    "pending_review_count": 1,
+    "pii_detected_count": 4
+  },
+  "by_severity": {
+    "low": 4,
+    "medium": 8,
+    "high": 3,
+    "critical": 2
+  },
+  "by_sentiment": {
+    "positive": 2,
+    "neutral": 1,
+    "negative": 10,
+    "mixed": 4
+  },
+  "top_categories": [
+    {
+      "category": "hiệu năng",
+      "count": 5
+    },
+    {
+      "category": "dịch thuật",
+      "count": 3
+    },
+    {
+      "category": "cập nhật",
+      "count": 2
+    },
+    {
+      "category": "chatbot",
+      "count": 2
+    },
+    {
+      "category": "UI",
+      "count": 2
+    },
+    {
+      "category": "UX",
+      "count": 2
+    },
+    {
+      "category": "accuracy",
+      "count": 1
+    },
+    {
+      "category": "bảo mật",
+      "count": 1
+    },
+    {
+      "category": "battery drain",
+      "count": 1
+    },
+    {
+      "category": "biểu đồ",
+      "count": 1
+    }
+  ],
+  "emerging": []
+}

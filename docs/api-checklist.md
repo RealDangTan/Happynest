@@ -33,7 +33,7 @@ Chú thích:
 | ✅ | POST | `/api/clusters/run` | pm \| operations | Chạy lại toàn bộ clustering HDBSCAN cosine + LLM naming — idempotent trong 1 transaction (xoá insights cũ → clusters cũ → tạo mới), response C5 `{clusters_upserted, assigned_count, unassigned_count, duration_ms}` (plan 14) | ✅ | Nút "Tạo lại phân cụm" tại `/clusters` qua AlertDialog cảnh báo rebuild (`useRunClustering`), toast tổng kết C5 |
 | ✅ | GET | `/api/clusters` | pm \| operations | Danh sách cụm theo C1 (`sort=feedback_count\|growth_ratio\|recent`, kèm `sample_feedback_ids` ≤5); chưa từng run → `items: []`. Lưu ý: data demo hiện chưa có nhóm chủ đề thật → hay ra rỗng/noise cao (decisions 2026-08-26, dời evidence P5) | ✅ | Trang `/clusters` — card grid + sort URL param (`useClusters`); sentinel 9.99 hiển thị chữ "Mới" |
 | 🚧 | GET | `/api/insights` | (stub 501) | Chưa triển khai — insight generation evidence-backed (plan 15); bảng `insights` đã sẵn sàng | ⬜ | Trang `/insights` placeholder `frontend/app/(app)/insights/page.tsx` — BE cũng đang stub; FE-06b khi BE ship |
-| 🚧 | GET | `/api/reports/summary` | (stub 501) | Chưa triển khai — báo cáo tổng hợp cho PM (plans 14–16) | ⬜ | Trang `/reports` placeholder `frontend/app/(app)/reports/page.tsx` — BE cũng đang stub |
+| ✅ | GET | `/api/reports/summary` | pm \| operations | Báo cáo tổng hợp PM thuần SQL theo C4 — `?days=7\|30\|90` (khác → 422), cửa sổ event-time; `by_sentiment` có 4 key gồm `mixed` (decisions 2026-08-26); `emerging` rỗng khi chưa chạy clustering là hợp lệ. Response mẫu: `docs/evidence/reports-summary-sample.json`. Warm ~1.2s trên pooler cloud (RTT, không phải SQL — decisions cùng ngày) | ⬜ | Trang `/reports` placeholder `frontend/app/(app)/reports/page.tsx` — BE đã ship, FE nối khi FE-07 |
 
 ## Quy ước chung
 
