@@ -50,6 +50,8 @@ Kèm theo: commit ngay sau mỗi bước; trước khi ghi file chung `git statu
 
 Bổ sung 2026-08-26: lane thứ ba **session AGENT** sở hữu `docs/plans/17–20-*`, `backend/app/agents/`, `backend/scripts/generate_demo_dataset.py`, `backend/scripts/backfill_insight_embeddings.py` — hai lane còn lại chỉ đọc các vùng này. Lane AGENT KHÔNG thực thi migration khi một lane khác đang sửa `models/`/`alembic/` (phối hợp qua `docs/handoffs/`).
 
+Cập nhật 2026-08-26 (thực thi P6): lãnh thổ code agent đổi thành **`backend/happynest_agent/`** theo owner directive "một folder riêng để kiểm soát" — chi tiết decisions.md 2026-08-26. Các vùng còn lại của lane giữ nguyên.
+
 ## 3. Quy tắc viết plan just-in-time
 
 Mỗi plan viết trước pha phải theo đúng khuôn mẫu plan cũ của repo (như `09-analysis-runner-progress-api.md`):

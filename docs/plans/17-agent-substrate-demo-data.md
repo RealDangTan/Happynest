@@ -5,6 +5,8 @@
 
 ## 1 · Bối cảnh & hiện trạng (verify bằng lệnh thật khi mở phase, ghi kết quả vào đây)
 
+**Kết quả verify lúc mở phase 2026-08-26:** head = `0006` đúng dự kiến; suite xanh (66 passed baseline); `insights` KHÔNG có cột embedding (gap thật); `llm_call_type` chưa có 'route'/'critic'. Sau Task 1: upgrade/downgrade/upgrade sạch, DB xác nhận 3 bảng + 2 enum type + llm_call_type 6 values + insights đủ embedding triplet + `created_at`. Lệch: thêm `insights.created_at` (gap KPI plan 20) + package `happynest_agent` (owner directive) — decisions 2026-08-26.
+
 ```bash
 cd backend
 uv run alembic history | head -4     # kỳ vọng head = 0006_feedback_cluster_id (nếu đã trôi → chain revision xuống head THẬT)
@@ -43,7 +45,7 @@ psql-ish Supabase Studio: \dT llm_call_type → chưa có value 'route'/'critic'
 
 **Files:** Create `backend/alembic/versions/0007_agent_substrate.py`; Modify `backend/app/models/enums.py`, `backend/app/models/insight.py`; Create `backend/app/models/action_draft.py`, `backend/app/models/insight_review.py`, `backend/app/models/impact_check.py`; Modify `backend/app/models/__init__.py`
 
-- [ ] Step 1.1: `enums.py` thêm 2 class mirror pattern sẵn có + bổ sung `LlmCallType`:
+- [x] Step 1.1: `enums.py` thêm 2 class mirror pattern sẵn có + bổ sung `LlmCallType`:
   ```python
   class DraftKind(str, enum.Enum):
       draft_ticket = "draft_ticket"
@@ -59,15 +61,15 @@ psql-ish Supabase Studio: \dT llm_call_type → chưa có value 'route'/'critic'
       route = "route"
       critic = "critic"
   ```
-- [ ] Step 1.2: Revision `0007_agent_substrate` (down_revision = head THẬT lúc mở phase, hiện dự kiến `0006`):
+- [x] Step 1.2: Revision `0007_agent_substrate` (down_revision = head THẬT lúc mở phase, hiện dự kiến `0006`):
   - `op.add_column("insights", ...)` × 3: `embedding` (`Vector(1536)`, nullable), `embedding_model` (`String(100)` nullable), `embedding_dim` (`Integer` nullable) — mirror chính xác `feedbacks.py:64-66`.
   - `sa.Enum("draft_ticket","slack_message","report", name="draft_kind_enum")` + `sa.Enum("draft","exported", name="draft_status_enum")` (create_type).
   - Bảng `action_drafts`: `id` UUID pk default gen_random_uuid, `insight_id` FK insights.id **ON DELETE CASCADE**, `kind` draft_kind_enum NOT NULL, `body` Text NOT NULL, `status` draft_status_enum NOT NULL server_default 'draft', `created_at` timestamptz server_default now.
   - Bảng `insight_reviews` (mirror `models/human_review.py`): `id`, `insight_id` FK CASCADE, `original_value` JSONB NOT NULL, `edited_value` JSONB NULL, `action` **REVIEW_ACTION_ENUM có sẵn** (approve/edit/reject — tái dùng, không tạo enum mới), `reason` Text NULL, `reviewer_id` FK users.id, `created_at`.
   - Bảng `impact_checks`: `id`, `insight_id` FK **SET NULL**, `cluster_id` UUID NULL (không FK — lý do §1), `cluster_name` String(255) NOT NULL, `checked_at` timestamptz NOT NULL, `window_days` Integer NOT NULL, `before_count` Integer NOT NULL, `after_count` Integer NOT NULL, `delta_ratio` Float NULL, `created_at`. Index `ix_impact_checks_insight_id`.
   - `op.execute("ALTER TYPE llm_call_type ADD VALUE IF NOT EXISTS 'route'")` + tương tự `'critic'`. (PG17 cho ADD VALUE trong transaction miễn KHÔNG dùng giá trị mới trong cùng transaction — migration này chỉ ADD.)
-- [ ] Step 1.3: Models Python đồng bộ 100% với migration (mapped_column mirror feedback embedding triplet; 3 file model mới; export trong `__init__.py`). Verify import: `uv run python -c "from app.models.action_draft import ActionDraft; from app.models.insight_review import InsightReview; from app.models.impact_check import ImpactCheck"`.
-- [ ] Step 1.4: Verify hai chiều: `uv run alembic upgrade head` → Supabase Studio thấy 3 bảng + 3 cột + 2 enum mới; `uv run alembic downgrade -1` rồi `upgrade head` lại được (reversible — down_revision nối đúng). Commit: `feat(db): agent substrate — insights.embedding, action_drafts, insight_reviews, impact_checks`
+- [x] Step 1.3: Models Python đồng bộ 100% với migration (mapped_column mirror feedback embedding triplet; 3 file model mới; export trong `__init__.py`). Verify import: `uv run python -c "from app.models.action_draft import ActionDraft; from app.models.insight_review import InsightReview; from app.models.impact_check import ImpactCheck"`.
+- [x] Step 1.4: Verify hai chiều: `uv run alembic upgrade head` → Supabase Studio thấy 3 bảng + 3 cột + 2 enum mới; `uv run alembic downgrade -1` rồi `upgrade head` lại được (reversible — down_revision nối đúng). Commit: `feat(db): agent substrate — insights.embedding, action_drafts, insight_reviews, impact_checks` → đã commit `17a05f0`
 
 ### Task 2 — Generator bộ dữ liệu demo `scripts/generate_demo_dataset.py`
 
