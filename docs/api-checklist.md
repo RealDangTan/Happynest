@@ -2,12 +2,12 @@
 
 > **Quy tắc đồng bộ (Hard rule #10 — AGENTS.md):** thêm/sửa/xóa endpoint, đổi request/response schema hay auth → BẮT BUỘC cập nhật bảng dưới trong cùng commit; đổi phía FE (nối/sửa call API) cũng cập nhật 2 cột cuối. Agent tự đập vào checklist này, không cần nhắc.
 >
-> List này là **bản đồ nối FE ↔ BE** — đủ 16/16 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
+> List này là **bản đồ nối FE ↔ BE** — đủ 21/21 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
 
 Snapshot: 2026-08-26 · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`, `frontend/hooks/*`
 
 Chú thích:
-- **Trạng thái (BE):** ✅ production · 🚧 stub 501 (in-scope P3/P4, plans 14–16)
+- **Trạng thái (BE):** ✅ production · 🚧 stub 501 — *không còn dòng nào từ 2026-08-26: plans 14–16 đã thay hết stub*
 - **Trên FE:** ✅ đã nối · 🔶 đã có hook/API client nhưng chưa gắn UI · ⬜ chưa nối
 
 ## Bảng endpoint
@@ -32,7 +32,8 @@ Chú thích:
 | ✅ | POST | `/api/corrections/{feedback_id}` | pm \| operations | Sửa nhãn trực tiếp (thuần DB) trên feedback đã classify + ghi `CorrectionExample` nuôi few-shot loop | ✅ | Dialog "Sửa nhãn" cùng trang khi đã classify — `correction-dialog.tsx` (`useSubmitCorrection`) |
 | ✅ | POST | `/api/clusters/run` | pm \| operations | Chạy lại toàn bộ clustering HDBSCAN cosine + LLM naming — idempotent trong 1 transaction (xoá insights cũ → clusters cũ → tạo mới), response C5 `{clusters_upserted, assigned_count, unassigned_count, duration_ms}` (plan 14) | ✅ | Nút "Tạo lại phân cụm" tại `/clusters` qua AlertDialog cảnh báo rebuild (`useRunClustering`), toast tổng kết C5 |
 | ✅ | GET | `/api/clusters` | pm \| operations | Danh sách cụm theo C1 (`sort=feedback_count\|growth_ratio\|recent`, kèm `sample_feedback_ids` ≤5); chưa từng run → `items: []`. Lưu ý: data demo hiện chưa có nhóm chủ đề thật → hay ra rỗng/noise cao (decisions 2026-08-26, dời evidence P5) | ✅ | Trang `/clusters` — card grid + sort URL param (`useClusters`); sentinel 9.99 hiển thị chữ "Mới" |
-| 🚧 | GET | `/api/insights` | (stub 501) | Chưa triển khai — insight generation evidence-backed (plan 15); bảng `insights` đã sẵn sàng | ⬜ | Trang `/insights` placeholder `frontend/app/(app)/insights/page.tsx` — BE cũng đang stub; FE-06b khi BE ship |
+| ✅ | POST | `/api/insights/run` | pm \| operations | Sinh insight evidence-backed cho các cụm ưu tiên cao (`INSIGHT_MAX_CLUSTERS` cap, default 10) — replace-all idempotent; **409** "Chưa có cụm nào. Chạy POST /api/clusters/run trước." khi bảng clusters rỗng; response C6 `{insights_generated, duration_ms}` + `skipped` ngoài hợp đồng (được phép); LLM bịa evidence id → server whitelist lọc, rỗng → fallback 3 member ưu tiên cao (plan 15) | ⬜ | Trang `/insights` — nút "Sinh insight" nối khi FE-06b |
+| ✅ | GET | `/api/insights` | pm \| operations | Danh sách insight theo C2 — evidence_ids mở rộng thành `{feedback_id, snippet ≤200 từ sanitized_content (không bao giờ raw), severity, created_at}`, ≤5/insight; chưa từng run → `items: []`; `review_status` luôn `unreviewed` v1 (non-goal đổi trạng thái) | ⬜ | Trang `/insights` placeholder `frontend/app/(app)/insights/page.tsx` — BE đã ship, FE nối khi FE-06b |
 | ✅ | GET | `/api/reports/summary` | pm \| operations | Báo cáo tổng hợp PM thuần SQL theo C4 — `?days=7\|30\|90` (khác → 422), cửa sổ event-time; `by_sentiment` có 4 key gồm `mixed` (decisions 2026-08-26); `emerging` rỗng khi chưa chạy clustering là hợp lệ. Response mẫu: `docs/evidence/reports-summary-sample.json`. Warm ~1.2s trên pooler cloud (RTT, không phải SQL — decisions cùng ngày) | ⬜ | Trang `/reports` placeholder `frontend/app/(app)/reports/page.tsx` — BE đã ship, FE nối khi FE-07 |
 
 ## Quy ước chung

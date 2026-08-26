@@ -1,16 +1,17 @@
-"""Routes clusters + các stub còn lại — Phase 14 thay stub `/api/clusters`.
+"""Routes clusters/insights/reports — Phase 14–16 đã thay hết stub 501.
 
 Lịch sử file: gốc là stub 501 cho 3 nhóm endpoint giai đoạn sau (Phase 05).
 Phase 13 đã thay reviews/corrections bằng routes/review.py riêng. Phase 14
-thay stub /clusters bằng route thật (engine services/clustering.py); Phase 16
-thay stub /reports/summary bằng aggregate thuần SQL (services/reports.py).
-Chỉ còn /insights là stub chờ plan 15.
+thay stub /clusters bằng route thật (engine services/clustering.py); Phase 15
+thay stub /insights bằng engine services/insight.py; Phase 16 thay stub
+/reports/summary bằng aggregate thuần SQL (services/reports.py).
 
 Guard role pm|operations gắn ở TẦNG ROUTER như feedback router.
 """
 
 import time
 from datetime import datetime, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -18,9 +19,13 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_role
 from app.models.cluster import Cluster
+from app.models.feedback import Feedback
+from app.models.insight import Insight
 from app.schemas.cluster import ClusterOut, ClusterRunOut, ClustersListOut
+from app.schemas.insight import EvidenceOut, InsightsListOut, InsightsRunOut, InsightOut
 from app.schemas.report import ReportSummaryOut, SummaryWindow
 from app.services.clustering import run_clustering, sample_feedback_ids_by_cluster
+from app.services.insight import run_insights as run_insights_service
 from app.services.reports import build_summary
 
 router = APIRouter(
@@ -88,14 +93,77 @@ def list_clusters(
     )
 
 
-@router.get("/insights")
-def list_insights():
-    """STUB 501 — insight generation evidence-backed thuộc phase 15 (plan 15).
-    Bảng `insights` đã có sẵn."""
-    raise HTTPException(
-        status_code=501,
-        detail="GET /api/insights chưa triển khai. Cần insight engine (plan 15).",
+@router.post("/insights/run", status_code=status.HTTP_200_OK)
+def run_insights_endpoint(db: Session = Depends(get_db)) -> InsightsRunOut:
+    """Sinh insight cho các cụm ưu tiên cao — replace-all idempotent (C6).
+
+    409 khi chưa có cụm nào (SELECT 1 LIMIT 1, không phải exception) kèm hướng
+    dẫn bước tiếp theo. Field `skipped` ngoài hợp đồng C6 — được phép vì C6
+    không cấm field bổ sung (plan Step 3.1). Sync def như run_clusters.
+    """
+    has_cluster = db.execute(select(Cluster.id).limit(1)).first() is not None
+    if not has_cluster:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Chưa có cụm nào. Chạy POST /api/clusters/run trước.",
+        )
+    stats = run_insights_service(db)
+    return InsightsRunOut(
+        insights_generated=stats.insights_generated,
+        duration_ms=stats.duration_ms,
+        skipped=stats.skipped,
     )
+
+
+@router.get("/insights")
+def list_insights(db: Session = Depends(get_db)) -> InsightsListOut:
+    """Danh sách insight theo C2 — evidence_ids JSONB mở rộng thành object
+    {feedback_id, snippet≤200-từ-sanitized, severity, created_at}.
+
+    Chưa từng chạy /insights/run → items rỗng (200). Dẫn chứng trỏ feedback
+    đã bị xoá → bị bỏ khỏi mảng; >5 trong JSONB (không thể xảy ra do Task 2)
+    vẫn cắt còn 5 phòng thủ (Step 3.2).
+    """
+    rows = db.execute(select(Insight)).scalars().all()
+    if not rows:
+        return InsightsListOut(items=[])
+
+    id_lists: list[list[UUID]] = [
+        [UUID(s) for s in (r.evidence_ids or [])[:5]] for r in rows
+    ]
+    flat = [fid for ids in id_lists for fid in ids]
+    by_id: dict[UUID, Feedback] = {}
+    if flat:
+        fb_rows = db.execute(select(Feedback).where(Feedback.id.in_(flat))).scalars()
+        by_id = {fb.id: fb for fb in fb_rows}
+
+    items: list[InsightOut] = []
+    for row, ids in zip(rows, id_lists):
+        evidence = []
+        for fid in ids:
+            fb = by_id.get(fid)
+            if fb is None:
+                continue
+            evidence.append(
+                EvidenceOut(
+                    feedback_id=fb.id,
+                    snippet=(fb.sanitized_content or "")[:200],
+                    severity=getattr(fb.severity, "value", fb.severity),
+                    created_at=fb.created_at,
+                )
+            )
+        items.append(
+            InsightOut(
+                id=row.id,
+                cluster_id=row.cluster_id,
+                title=row.title,
+                summary=row.summary,
+                suggested_action=row.suggested_action,
+                review_status=getattr(row.review_status, "value", row.review_status),
+                evidence=evidence,
+            )
+        )
+    return InsightsListOut(items=items)
 
 
 @router.get("/reports/summary")
