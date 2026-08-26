@@ -31,8 +31,8 @@ grep -n "generate_insight" app/models/enums.py                              # en
 
 **Files:** Modify `backend/app/core/config.py`
 
-- [ ] Step 1.1: Thêm `INSIGHT_MAX_CLUSTERS: int = 10` vào Settings (đúng tên env contracts C6 quy định). Comment: cap số cụm xử lý mỗi lượt run để kiềm chế chi phí LLM (spec §8 rủi ro "hết tín dụng").
-- [ ] Step 1.2: Verify: unit test đọc default qua `get_settings()`; set env override được. Commit: `feat(insights): INSIGHT_MAX_CLUSTERS cost cap`
+- [x] Step 1.1: Thêm `INSIGHT_MAX_CLUSTERS: int = 10` vào Settings (đúng tên env contracts C6 quy định). Comment: cap số cụm xử lý mỗi lượt run để kiềm chế chi phí LLM (spec §8 rủi ro "hết tín dụng").
+- [x] Step 1.2: Verify: unit test đọc default qua `get_settings()`; set env override được. Commit: `feat(insights): INSIGHT_MAX_CLUSTERS cost cap` *(thực thi: test đọc qua `Settings(_env_file=None)` độc lập .env người dùng — deterministic hơn; TDD RED→GREEN)*
 
 ### Task 2 — Engine `services/insight.py`
 

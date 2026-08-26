@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     CLUSTER_SPIKE_MIN_CURRENT: int = 5
     CLUSTER_EMERGING_MIN: int = 3
 
+    # --- Insight engine (Phase 15): cap số cụm xử lý mỗi lượt run để kiềm chế
+    # chi phí LLM (spec §8 rủi ro "hết tín dụng") ---
+    INSIGHT_MAX_CLUSTERS: int = 10
+
     # --- Tracing (Langfuse Cloud EU) ---
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_SECRET_KEY: str = ""
