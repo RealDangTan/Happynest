@@ -75,14 +75,14 @@ psql-ish Supabase Studio: \dT llm_call_type → chưa có value 'route'/'critic'
 
 **Files:** Create `backend/scripts/generate_demo_dataset.py`
 
-- [ ] Step 2.1: CLI argparse: `--rows` (default 650), `--weeks` (default 6), `--out` (default `demo_dataset.csv`). Output CSV cột đúng schema import hiện có: `external_ref,source,created_at,raw_content` (UTF-8, LF).
-- [ ] Step 2.2: Thành phần dữ liệu (toàn bộ tiếng Việt trộn tiếng Anh kiểu code-switching, nội dung GIẢ hoàn toàn):
+- [x] Step 2.1: CLI argparse: `--rows` (default 650), `--weeks` (default 6), `--out` (default `demo_dataset.csv`). Output CSV cột đúng schema import hiện có: `external_ref,source,created_at,content` (UTF-8, LF). **Lệch so với chữ plan:** cột nội dung tên THẬT là `content` — `_REQUIRED_COLUMNS = ("source", "content")` trong `ingest_service.py`, không phải `raw_content`; thêm `--seed` (default 17) để dataset tái lập được cho luận văn.
+- [x] Step 2.2: Thành phần dữ liệu (toàn bộ tiếng Việt trộn tiếng Anh kiểu code-switching, nội dung GIẢ hoàn toàn):
   - **Baseline:** 5 chủ đề (vd: tốc độ phản hồi chậm, dịch thuật sai nghĩa, giọng đọc tự nhiên, giá gói premium, lỗi phát âm từ lạ) — mật độ đều ~50 row/chủ đề trải `--weeks` tuần (jitter ±2 ngày, giờ hành chính).
   - **Planted emerging:** ~40 row cùng 1 chủ đề ("không đăng nhập được bằng Google trên app mobile") dồn vào 5 NGÀY cuối timeline — phải đủ để phase 14 tính `is_emerging=true` (previous==0, current≥CLUSTER_EMERGING_MIN) và `is_spike`.
   - **Planted false alarm:** ~25 row 1 chủ đề ("email thông báo tới trễ") bung ở tuần giữa rồi TẮT hẳn 3 tuần cuối — dùng để demo đường REJECT (agent đề xuất escalate, người nhận ra không phải sự cố thật).
   - **PII giả có chủ đích:** ~15% row baseline nhét tên/email/số điện thoại giả (domain `.example`, đầu số 09xx) để `pii_detected>0` sau sanitize — demo badge PII.
   - `external_ref = f"demo-{i:05d}"` (tiền tố phục vụ cleanup); `source` luân version {app_review, email, web_form}; `created_at` ISO 8601.
-- [ ] Step 2.3: Verify offline trước khi import: chạy script → CSV đúng số dòng, parse lại bằng `csv.DictReader` không lỗi, mọi `created_at` nằm trong cửa sổ `--weeks`. Commit: `feat(scripts): demo dataset generator with planted emerging cluster and false alarm`
+- [x] Step 2.3: Verify offline trước khi import: chạy script → CSV đúng số dòng, parse lại bằng `csv.DictReader` không lỗi, mọi `created_at` nằm trong cửa sổ `--weeks`. **Kết quả thật:** 650 row OK; planted emerging = 40 row Google-login đúng 5 ngày cuối (08-21→26); false alarm = 25 row email-trễ bung 07-26→08-05 rồi tắt hẳn 3 tuần cuối; PII-like 88 row. Shape JSON: `docs/evidence/demo-dataset-shape.json`. Commit: `feat(scripts): demo dataset generator with planted emerging cluster and false alarm`
 
 ### Task 3 — Nạp dữ liệu + classify qua runner hiện có
 
