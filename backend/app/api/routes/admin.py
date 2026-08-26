@@ -2,14 +2,15 @@
 
 Lịch sử file: gốc là stub 501 cho 3 nhóm endpoint giai đoạn sau (Phase 05).
 Phase 13 đã thay reviews/corrections bằng routes/review.py riêng. Phase 14
-này thay stub /clusters bằng route thật (engine services/clustering.py);
-/insights và /reports/summary còn stub chờ plans 15–16.
+thay stub /clusters bằng route thật (engine services/clustering.py); Phase 16
+thay stub /reports/summary bằng aggregate thuần SQL (services/reports.py).
+Chỉ còn /insights là stub chờ plan 15.
 
 Guard role pm|operations gắn ở TẦNG ROUTER như feedback router.
 """
 
 import time
-from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -17,9 +18,10 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_role
 from app.models.cluster import Cluster
-from app.models.feedback import Feedback
 from app.schemas.cluster import ClusterOut, ClusterRunOut, ClustersListOut
-from app.services.clustering import run_clustering
+from app.schemas.report import ReportSummaryOut, SummaryWindow
+from app.services.clustering import run_clustering, sample_feedback_ids_by_cluster
+from app.services.reports import build_summary
 
 router = APIRouter(
     prefix="/api",
@@ -27,8 +29,6 @@ router = APIRouter(
     # Guard toàn router (kể cả stub còn lại): chỉ pm | operations.
     dependencies=[Depends(require_role("pm", "operations"))],
 )
-
-_SAMPLE_LIMIT = 5
 
 _SORT_COLUMNS = {
     "feedback_count": Cluster.feedback_count.desc(),
@@ -75,18 +75,8 @@ def list_clusters(
     if not clusters:
         return ClustersListOut(items=[])
 
-    # sample_feedback_ids: ≤5 member MỚI NHẤT mỗi cụm — 1 query duy nhất,
-    # group python-side (dataset ≤1500 nên rẻ hơn window function).
-    pairs = db.execute(
-        select(Feedback.cluster_id, Feedback.id)
-        .where(Feedback.cluster_id.is_not(None))
-        .order_by(Feedback.created_at.desc())
-    ).all()
-    samples: dict[UUID, list[UUID]] = {}
-    for cluster_id, feedback_id in pairs:
-        bucket = samples.setdefault(cluster_id, [])
-        if len(bucket) < _SAMPLE_LIMIT:
-            bucket.append(feedback_id)
+    # sample_feedback_ids: helper dùng chung với emerging của reports (C4)
+    samples = sample_feedback_ids_by_cluster(db)
 
     return ClustersListOut(
         items=[
@@ -109,9 +99,15 @@ def list_insights():
 
 
 @router.get("/reports/summary")
-def reports_summary():
-    """STUB 501 — báo cáo tổng hợp cho PM là phase 16 (plan 16, thuần SQL)."""
-    raise HTTPException(
-        status_code=501,
-        detail="GET /api/reports/summary chưa triển khai. Cần reports layer (plan 16).",
+def reports_summary(
+    days: SummaryWindow = SummaryWindow.W30,
+    db: Session = Depends(get_db),
+) -> ReportSummaryOut:
+    """Báo cáo tổng hợp PM thuần SQL (C4) trên cửa sổ event-time `days` ngày.
+
+    Giá trị `days` khác 7/30/90 → FastAPI tự 422; thiếu dữ liệu vẫn 200
+    (key 0 / mảng rỗng) — không bao giờ lỗi vì "chưa có cụm".
+    """
+    return ReportSummaryOut.model_validate(
+        build_summary(db, days=int(days), now=datetime.now(timezone.utc))
     )
