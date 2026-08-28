@@ -63,3 +63,30 @@ class ReportSummaryOut(BaseModel):
     by_sentiment: dict[str, int]     # positive/neutral/negative/mixed
     top_categories: list[TopCategoryItem]
     emerging: list[EmergingClusterItem]
+
+
+class ImpactSummary(BaseModel):
+    """Tổng hợp bảng impact_checks — closed-loop phase 20."""
+
+    checks_count: int
+    avg_delta_ratio: float | None  # None khi chưa đo insight nào
+
+
+class ReportKpisOut(BaseModel):
+    """Response GET /api/reports/kpis — KPI 3-latency thuần SQL (phase 20).
+
+    Median có thể None khi chưa đủ dữ liệu tạo mốc (vd chưa có draft nào) —
+    200 với null là hợp lệ, KHÔNG lỗi "chưa có cụm".
+    """
+
+    generated_at: datetime
+    time_to_listen_median_s: float | None
+    time_to_insight_median_s: float | None
+    time_to_action_median_s: float | None
+    insights_total: int
+    insights_with_action: int
+    pct_insight_with_action: float
+    hitl_count: int
+    auto_count: int
+    hitl_share: float
+    impact: ImpactSummary

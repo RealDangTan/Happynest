@@ -1,0 +1,651 @@
+external_ref,source,created_at,content
+demo-00000,app_review,2026-07-15T02:38:22+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Mình dùng bản iOS."
+demo-00001,email,2026-07-15T03:21:08+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Liên hệ mình nhé: Nguyễn Văn An, email mai42@gmail.example hoặc gọi 0953170355."
+demo-00002,web_form,2026-07-15T04:02:59+00:00,It mispronounces unusual names and technical terms badly. Xảy ra trên cả Android.
+demo-00003,app_review,2026-07-15T04:15:25+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Liên hệ mình nhé: Nguyễn Văn An, email hung47@gmail.example hoặc gọi 0971655688."
+demo-00004,email,2026-07-15T04:54:24+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00005,web_form,2026-07-15T08:55:22+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt.
+demo-00006,app_review,2026-07-15T09:05:33+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Mình dùng bản iOS. Liên hệ mình nhé: Trần Thị Bình, email mai29@gmail.example hoặc gọi 0986471719."
+demo-00007,email,2026-07-15T11:37:30+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Liên hệ mình nhé: Lê Hoàng Cương, email duc78@gmail.example hoặc gọi 0926174770."
+demo-00008,web_form,2026-07-15T12:29:26+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 7s."
+demo-00009,app_review,2026-07-15T13:58:40+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười.
+demo-00010,email,2026-07-16T02:03:35+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng."
+demo-00011,web_form,2026-07-16T02:09:06+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo. Mình dùng bản iOS."
+demo-00012,app_review,2026-07-16T03:59:21+00:00,It mispronounces unusual names and technical terms badly.
+demo-00013,email,2026-07-16T05:22:38+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Rất mong được sửa trong bản update tới."
+demo-00014,web_form,2026-07-16T06:09:43+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Liên hệ mình nhé: Phạm Mỹ Dung, email duc24@gmail.example hoặc gọi 0936259450."
+demo-00015,app_review,2026-07-16T06:18:46+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Phạm Mỹ Dung, email mai55@gmail.example hoặc gọi 0932000960."
+demo-00016,email,2026-07-16T08:06:31+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00017,web_form,2026-07-16T09:15:42+00:00,It mispronounces unusual names and technical terms badly.
+demo-00018,app_review,2026-07-16T09:30:30+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị."
+demo-00019,email,2026-07-16T09:34:51+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00020,web_form,2026-07-16T10:17:02+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Mình dùng bản iOS. Liên hệ mình nhé: Phạm Mỹ Dung, email duc55@gmail.example hoặc gọi 0936734555."
+demo-00021,app_review,2026-07-16T11:11:50+00:00,Premium price is too high for students like me.
+demo-00022,email,2026-07-16T11:16:38+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Rất mong được sửa trong bản update tới."
+demo-00023,web_form,2026-07-16T12:19:46+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị."
+demo-00024,app_review,2026-07-16T13:00:25+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00025,email,2026-07-17T03:10:05+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Mình dùng bản iOS."
+demo-00026,web_form,2026-07-17T04:10:56+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics."
+demo-00027,app_review,2026-07-17T06:30:40+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu."
+demo-00028,email,2026-07-17T06:53:16+00:00,"The response time is terrible, sometimes it takes 10 seconds to answer."
+demo-00029,web_form,2026-07-17T07:37:38+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Liên hệ mình nhé: Lê Hoàng Cương, email mai86@gmail.example hoặc gọi 0933180321."
+demo-00030,app_review,2026-07-17T08:48:53+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium. Mình dùng bản iOS.
+demo-00031,email,2026-07-17T09:13:21+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00032,web_form,2026-07-17T11:21:47+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Mình dùng bản iOS. Liên hệ mình nhé: Phạm Mỹ Dung, email duc99@gmail.example hoặc gọi 0987747015."
+demo-00033,app_review,2026-07-17T12:29:25+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Hy vọng đội ngũ xem sớm.
+demo-00034,email,2026-07-17T12:53:05+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00035,web_form,2026-07-17T13:37:03+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Mình dùng bản iOS."
+demo-00036,app_review,2026-07-17T13:58:31+00:00,Speed issue: câu nào cũng delay 9 giây mới hiện text. Xảy ra trên cả Android.
+demo-00037,email,2026-07-18T02:09:52+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Rất mong được sửa trong bản update tới."
+demo-00038,web_form,2026-07-18T02:14:24+00:00,"The voice sounds robotic, please make it more natural. Liên hệ mình nhé: Trần Thị Bình, email duc67@gmail.example hoặc gọi 0946603375."
+demo-00039,app_review,2026-07-18T02:39:15+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00040,email,2026-07-18T02:39:46+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Mình dùng bản iOS."
+demo-00041,web_form,2026-07-18T03:42:31+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00042,app_review,2026-07-18T04:56:09+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Phạm Mỹ Dung, email thao10@gmail.example hoặc gọi 0948044058."
+demo-00043,email,2026-07-18T05:32:50+00:00,Speed issue: câu nào cũng delay 35 giây mới hiện text. Mình dùng bản iOS.
+demo-00044,web_form,2026-07-18T05:46:03+00:00,"Giá gói premium cao quá so với tính năng đang có. Liên hệ mình nhé: Trần Thị Bình, email duc43@gmail.example hoặc gọi 0990460529."
+demo-00045,app_review,2026-07-18T06:30:33+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00046,email,2026-07-18T07:58:36+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Trần Thị Bình, email mai40@gmail.example hoặc gọi 0961461474."
+demo-00047,web_form,2026-07-18T09:13:49+00:00,Speed issue: câu nào cũng delay 44 giây mới hiện text. Xảy ra trên cả Android.
+demo-00048,app_review,2026-07-18T10:28:32+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Hy vọng đội ngũ xem sớm."
+demo-00049,email,2026-07-18T10:58:07+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00050,web_form,2026-07-18T11:22:36+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00051,app_review,2026-07-18T11:49:44+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Liên hệ mình nhé: Nguyễn Văn An, email thao21@gmail.example hoặc gọi 0969875160."
+demo-00052,email,2026-07-18T12:05:55+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Mình dùng bản iOS."
+demo-00053,web_form,2026-07-18T13:42:31+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Lê Hoàng Cương, email hung80@gmail.example hoặc gọi 0953832003."
+demo-00054,app_review,2026-07-18T13:43:10+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 33s."
+demo-00055,email,2026-07-19T03:16:43+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00056,web_form,2026-07-19T05:19:17+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00057,app_review,2026-07-19T05:35:08+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn."
+demo-00058,email,2026-07-19T05:39:13+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Đã thử reinstall mà vẫn vậy."
+demo-00059,web_form,2026-07-19T06:31:00+00:00,"App phản hồi cực chậm, đợi gần 28 giây mới ra kết quả. Mình dùng bản iOS."
+demo-00060,app_review,2026-07-19T06:38:33+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Xảy ra trên cả Android."
+demo-00061,email,2026-07-19T07:09:45+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 28s."
+demo-00062,web_form,2026-07-19T07:16:58+00:00,Premium price is too high for students like me. Hy vọng đội ngũ xem sớm.
+demo-00063,app_review,2026-07-19T07:43:51+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Xảy ra trên cả Android.
+demo-00064,email,2026-07-19T08:27:59+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo."
+demo-00065,web_form,2026-07-19T10:35:19+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Hy vọng đội ngũ xem sớm."
+demo-00066,app_review,2026-07-19T10:48:20+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 11s. Đã thử reinstall mà vẫn vậy."
+demo-00067,email,2026-07-19T11:30:20+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu."
+demo-00068,web_form,2026-07-19T11:37:00+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS.
+demo-00069,app_review,2026-07-19T12:05:11+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Hy vọng đội ngũ xem sớm."
+demo-00070,email,2026-07-19T12:19:03+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị."
+demo-00071,web_form,2026-07-20T03:02:51+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Đã thử reinstall mà vẫn vậy."
+demo-00072,app_review,2026-07-20T03:04:21+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Mình dùng bản iOS."
+demo-00073,email,2026-07-20T03:08:28+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00074,web_form,2026-07-20T04:41:12+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Liên hệ mình nhé: Phạm Mỹ Dung, email thao87@gmail.example hoặc gọi 0971871125."
+demo-00075,app_review,2026-07-20T05:27:44+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Mình dùng bản iOS. Liên hệ mình nhé: Phạm Mỹ Dung, email mai20@gmail.example hoặc gọi 0973895229."
+demo-00076,email,2026-07-20T05:27:45+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Trần Thị Bình, email thao81@gmail.example hoặc gọi 0962675551."
+demo-00077,web_form,2026-07-20T06:48:17+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng."
+demo-00078,app_review,2026-07-20T07:22:55+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Mình dùng bản iOS. Liên hệ mình nhé: Phạm Mỹ Dung, email mai41@gmail.example hoặc gọi 0912059929."
+demo-00079,email,2026-07-20T07:51:20+00:00,"The response time is terrible, sometimes it takes 24 seconds to answer. Rất mong được sửa trong bản update tới."
+demo-00080,web_form,2026-07-20T08:22:52+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe."
+demo-00081,app_review,2026-07-20T10:00:33+00:00,Speed issue: câu nào cũng delay 36 giây mới hiện text.
+demo-00082,email,2026-07-20T11:15:36+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Liên hệ mình nhé: Phạm Mỹ Dung, email duc98@gmail.example hoặc gọi 0945353738."
+demo-00083,web_form,2026-07-20T11:28:57+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00084,app_review,2026-07-20T11:36:12+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Nguyễn Văn An, email mai84@gmail.example hoặc gọi 0984243980."
+demo-00085,email,2026-07-20T11:54:57+00:00,Translation is wrong — it misunderstands my question half the time. Mình dùng bản iOS.
+demo-00086,web_form,2026-07-20T12:34:19+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Liên hệ mình nhé: Nguyễn Văn An, email mai17@gmail.example hoặc gọi 0985311257."
+demo-00087,app_review,2026-07-20T12:41:46+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Đã thử reinstall mà vẫn vậy."
+demo-00088,email,2026-07-20T13:28:58+00:00,"The response time is terrible, sometimes it takes 34 seconds to answer. Mình dùng bản iOS."
+demo-00089,web_form,2026-07-20T13:55:33+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Lê Hoàng Cương, email duc37@gmail.example hoặc gọi 0910516368."
+demo-00090,app_review,2026-07-20T13:56:47+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00091,email,2026-07-21T04:01:23+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00092,web_form,2026-07-21T04:12:46+00:00,It mispronounces unusual names and technical terms badly.
+demo-00093,app_review,2026-07-21T04:15:56+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Đã thử reinstall mà vẫn vậy."
+demo-00094,email,2026-07-21T04:22:41+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Đã thử reinstall mà vẫn vậy."
+demo-00095,web_form,2026-07-21T05:20:47+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium. Xảy ra trên cả Android.
+demo-00096,app_review,2026-07-21T06:31:58+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00097,email,2026-07-21T06:34:10+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00098,web_form,2026-07-21T08:01:50+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Đã thử reinstall mà vẫn vậy."
+demo-00099,app_review,2026-07-21T08:54:11+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Hy vọng đội ngũ xem sớm."
+demo-00100,email,2026-07-21T10:04:05+00:00,It mispronounces unusual names and technical terms badly. Mình dùng bản iOS.
+demo-00101,web_form,2026-07-21T10:36:12+00:00,Mispronunciation happens with acronyms longer than four letters. Mình dùng bản iOS.
+demo-00102,app_review,2026-07-21T13:32:04+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Mình dùng bản iOS."
+demo-00103,email,2026-07-21T13:52:03+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Hy vọng đội ngũ xem sớm."
+demo-00104,web_form,2026-07-22T02:54:09+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu."
+demo-00105,app_review,2026-07-22T03:57:18+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Hy vọng đội ngũ xem sớm."
+demo-00106,email,2026-07-22T05:17:55+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Liên hệ mình nhé: Nguyễn Văn An, email mai30@gmail.example hoặc gọi 0953654882."
+demo-00107,web_form,2026-07-22T06:13:04+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00108,app_review,2026-07-22T06:38:30+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00109,email,2026-07-22T07:57:42+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00110,web_form,2026-07-22T09:04:02+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Đã thử reinstall mà vẫn vậy.
+demo-00111,app_review,2026-07-22T10:01:27+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 24s. Xảy ra trên cả Android."
+demo-00112,email,2026-07-22T10:18:26+00:00,Mispronunciation happens with acronyms longer than four letters. Hy vọng đội ngũ xem sớm.
+demo-00113,web_form,2026-07-22T10:45:28+00:00,Premium price is too high for students like me.
+demo-00114,app_review,2026-07-22T11:18:32+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium. Rất mong được sửa trong bản update tới.
+demo-00115,email,2026-07-22T12:00:33+00:00,"Speed issue: câu nào cũng delay 22 giây mới hiện text. Xảy ra trên cả Android. Liên hệ mình nhé: Phạm Mỹ Dung, email mai58@gmail.example hoặc gọi 0962034169."
+demo-00116,web_form,2026-07-22T13:06:00+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Mình dùng bản iOS."
+demo-00117,app_review,2026-07-22T13:07:25+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00118,email,2026-07-22T13:17:15+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00119,web_form,2026-07-22T13:53:44+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Rất mong được sửa trong bản update tới.
+demo-00120,app_review,2026-07-23T03:05:07+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Mình dùng bản iOS.
+demo-00121,email,2026-07-23T03:57:10+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 46s."
+demo-00122,web_form,2026-07-23T04:30:40+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00123,app_review,2026-07-23T04:53:59+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Phạm Mỹ Dung, email hung74@gmail.example hoặc gọi 0924469876."
+demo-00124,email,2026-07-23T05:11:12+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00125,web_form,2026-07-23T06:22:05+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Phạm Mỹ Dung, email hung4@gmail.example hoặc gọi 0980171405."
+demo-00126,app_review,2026-07-23T06:59:04+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Hy vọng đội ngũ xem sớm."
+demo-00127,email,2026-07-23T08:07:51+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Liên hệ mình nhé: Lê Hoàng Cương, email mai87@gmail.example hoặc gọi 0990924773."
+demo-00128,web_form,2026-07-23T08:59:10+00:00,Giá gói premium cao quá so với tính năng đang có. Đã thử reinstall mà vẫn vậy.
+demo-00129,app_review,2026-07-23T10:13:52+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS.
+demo-00130,email,2026-07-23T11:03:00+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00131,web_form,2026-07-24T02:12:21+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Rất mong được sửa trong bản update tới."
+demo-00132,app_review,2026-07-24T02:54:39+00:00,Mispronunciation happens with acronyms longer than four letters. Mình dùng bản iOS.
+demo-00133,email,2026-07-24T03:15:37+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00134,web_form,2026-07-24T04:17:00+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS.
+demo-00135,app_review,2026-07-24T04:39:48+00:00,"The voice sounds robotic, please make it more natural. Hy vọng đội ngũ xem sớm."
+demo-00136,email,2026-07-24T05:37:06+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00137,web_form,2026-07-24T06:17:10+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00138,app_review,2026-07-24T06:50:14+00:00,"The voice sounds robotic, please make it more natural. Hy vọng đội ngũ xem sớm."
+demo-00139,email,2026-07-24T08:30:29+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Đã thử reinstall mà vẫn vậy."
+demo-00140,web_form,2026-07-24T09:16:03+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Đã thử reinstall mà vẫn vậy."
+demo-00141,app_review,2026-07-24T11:50:50+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Rất mong được sửa trong bản update tới."
+demo-00142,email,2026-07-24T13:46:31+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Đã thử reinstall mà vẫn vậy.
+demo-00143,web_form,2026-07-25T02:07:30+00:00,"App phản hồi cực chậm, đợi gần 47 giây mới ra kết quả. Rất mong được sửa trong bản update tới."
+demo-00144,app_review,2026-07-25T04:12:37+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00145,email,2026-07-25T05:14:48+00:00,"The response time is terrible, sometimes it takes 52 seconds to answer. Xảy ra trên cả Android."
+demo-00146,web_form,2026-07-25T05:22:49+00:00,"The response time is terrible, sometimes it takes 12 seconds to answer. Xảy ra trên cả Android."
+demo-00147,app_review,2026-07-25T06:12:47+00:00,"The response time is terrible, sometimes it takes 8 seconds to answer. Xảy ra trên cả Android."
+demo-00148,email,2026-07-25T07:18:36+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00149,web_form,2026-07-25T07:37:44+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng."
+demo-00150,app_review,2026-07-25T07:39:54+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00151,email,2026-07-25T07:56:31+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00152,web_form,2026-07-25T10:42:22+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Xảy ra trên cả Android. Liên hệ mình nhé: Trần Thị Bình, email mai25@gmail.example hoặc gọi 0941504946."
+demo-00153,app_review,2026-07-25T11:01:18+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00154,email,2026-07-25T11:31:19+00:00,Premium price is too high for students like me.
+demo-00155,web_form,2026-07-25T11:51:30+00:00,"Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Liên hệ mình nhé: Lê Hoàng Cương, email duc87@gmail.example hoặc gọi 0963309548."
+demo-00156,app_review,2026-07-25T12:17:26+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Rất mong được sửa trong bản update tới."
+demo-00157,email,2026-07-25T12:21:06+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng."
+demo-00158,web_form,2026-07-25T13:36:36+00:00,"The response time is terrible, sometimes it takes 28 seconds to answer. Mình dùng bản iOS."
+demo-00159,app_review,2026-07-26T02:31:29+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Rất mong được sửa trong bản update tới."
+demo-00160,email,2026-07-26T02:52:13+00:00,"Delayed email alerts make the workflow annoying, please fix the queue. Mình dùng bản iOS."
+demo-00161,web_form,2026-07-26T03:00:59+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng. Xảy ra trên cả Android."
+demo-00162,app_review,2026-07-26T05:01:44+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00163,email,2026-07-26T05:37:33+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Đã thử reinstall mà vẫn vậy."
+demo-00164,web_form,2026-07-26T07:20:12+00:00,"Email xác nhận giao dịch bị delay, đến tay khi nào không để ý nữa."
+demo-00165,app_review,2026-07-26T08:42:54+00:00,It mispronounces unusual names and technical terms badly.
+demo-00166,email,2026-07-26T10:02:42+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề."
+demo-00167,web_form,2026-07-26T10:18:29+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Rất mong được sửa trong bản update tới."
+demo-00168,app_review,2026-07-26T10:32:22+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Liên hệ mình nhé: Nguyễn Văn An, email mai35@gmail.example hoặc gọi 0962753371."
+demo-00169,email,2026-07-26T10:35:48+00:00,"Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Lê Hoàng Cương, email duc59@gmail.example hoặc gọi 0958385681."
+demo-00170,web_form,2026-07-26T10:41:04+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu."
+demo-00171,app_review,2026-07-26T11:45:30+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00172,email,2026-07-27T02:05:26+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00173,web_form,2026-07-27T02:42:13+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Rất mong được sửa trong bản update tới."
+demo-00174,app_review,2026-07-27T03:02:03+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa."
+demo-00175,email,2026-07-27T03:05:40+00:00,"The response time is terrible, sometimes it takes 37 seconds to answer. Mình dùng bản iOS."
+demo-00176,web_form,2026-07-27T03:58:29+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00177,app_review,2026-07-27T04:25:08+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Hy vọng đội ngũ xem sớm.
+demo-00178,email,2026-07-27T05:07:39+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00179,web_form,2026-07-27T05:36:13+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00180,app_review,2026-07-27T07:23:52+00:00,"Mail thông báo reset password tới trễ, ngồi chờ mãi không thấy. Hy vọng đội ngũ xem sớm."
+demo-00181,email,2026-07-27T10:18:07+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Mình dùng bản iOS."
+demo-00182,web_form,2026-07-27T11:49:48+00:00,It mispronounces unusual names and technical terms badly.
+demo-00183,app_review,2026-07-27T12:11:09+00:00,"Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS. Liên hệ mình nhé: Lê Hoàng Cương, email hung14@gmail.example hoặc gọi 0987474704."
+demo-00184,email,2026-07-27T12:24:06+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00185,web_form,2026-07-27T13:31:17+00:00,"The voice sounds robotic, please make it more natural. Rất mong được sửa trong bản update tới."
+demo-00186,app_review,2026-07-28T02:42:56+00:00,"Email xác nhận giao dịch bị delay, đến tay khi nào không để ý nữa."
+demo-00187,email,2026-07-28T02:59:58+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Đã thử reinstall mà vẫn vậy."
+demo-00188,web_form,2026-07-28T03:32:49+00:00,"Delayed email alerts make the workflow annoying, please fix the queue."
+demo-00189,app_review,2026-07-28T04:38:45+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Mình dùng bản iOS."
+demo-00190,email,2026-07-28T05:08:21+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Phạm Mỹ Dung, email thao80@gmail.example hoặc gọi 0958036171."
+demo-00191,web_form,2026-07-28T05:14:11+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Đã thử reinstall mà vẫn vậy."
+demo-00192,app_review,2026-07-28T06:40:46+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00193,email,2026-07-28T06:49:17+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00194,web_form,2026-07-28T08:13:24+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Mình dùng bản iOS."
+demo-00195,app_review,2026-07-28T08:18:31+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo."
+demo-00196,email,2026-07-28T08:25:58+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Rất mong được sửa trong bản update tới."
+demo-00197,web_form,2026-07-28T09:25:27+00:00,"App phản hồi cực chậm, đợi gần 25 giây mới ra kết quả. Mình dùng bản iOS. Liên hệ mình nhé: Nguyễn Văn An, email mai87@gmail.example hoặc gọi 0997242833."
+demo-00198,app_review,2026-07-28T09:34:23+00:00,It mispronounces unusual names and technical terms badly. Đã thử reinstall mà vẫn vậy.
+demo-00199,email,2026-07-28T09:37:25+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Xảy ra trên cả Android."
+demo-00200,web_form,2026-07-28T11:21:45+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Hy vọng đội ngũ xem sớm."
+demo-00201,app_review,2026-07-28T12:08:53+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00202,email,2026-07-28T12:24:02+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Xảy ra trên cả Android."
+demo-00203,web_form,2026-07-28T13:10:32+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Đã thử reinstall mà vẫn vậy."
+demo-00204,app_review,2026-07-28T13:35:27+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Hy vọng đội ngũ xem sớm.
+demo-00205,email,2026-07-29T03:43:29+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Mình dùng bản iOS."
+demo-00206,web_form,2026-07-29T05:15:16+00:00,"Mail thông báo reset password tới trễ, ngồi chờ mãi không thấy."
+demo-00207,app_review,2026-07-29T06:32:23+00:00,"App phản hồi cực chậm, đợi gần 45 giây mới ra kết quả."
+demo-00208,email,2026-07-29T07:03:27+00:00,Giá gói premium cao quá so với tính năng đang có. Mình dùng bản iOS.
+demo-00209,web_form,2026-07-29T07:20:18+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Xảy ra trên cả Android."
+demo-00210,app_review,2026-07-29T07:48:21+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Hy vọng đội ngũ xem sớm."
+demo-00211,email,2026-07-29T08:25:52+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00212,web_form,2026-07-29T08:59:24+00:00,"Mail thông báo reset password tới trễ, ngồi chờ mãi không thấy. Đã thử reinstall mà vẫn vậy."
+demo-00213,app_review,2026-07-29T09:16:59+00:00,"Notification emails arrive very late, sometimes an hour after the event. Rất mong được sửa trong bản update tới."
+demo-00214,email,2026-07-29T09:27:26+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Mình dùng bản iOS. Liên hệ mình nhé: Nguyễn Văn An, email mai46@gmail.example hoặc gọi 0997654096."
+demo-00215,web_form,2026-07-29T11:12:59+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt.
+demo-00216,app_review,2026-07-29T12:59:36+00:00,"Mail thông báo reset password tới trễ, ngồi chờ mãi không thấy."
+demo-00217,email,2026-07-29T13:54:21+00:00,"The response time is terrible, sometimes it takes 58 seconds to answer."
+demo-00218,web_form,2026-07-30T03:33:29+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo. Đã thử reinstall mà vẫn vậy."
+demo-00219,app_review,2026-07-30T03:54:08+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00220,email,2026-07-30T04:18:14+00:00,"Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Liên hệ mình nhé: Phạm Mỹ Dung, email mai3@gmail.example hoặc gọi 0965657350."
+demo-00221,web_form,2026-07-30T04:18:15+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00222,app_review,2026-07-30T05:29:08+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Hy vọng đội ngũ xem sớm."
+demo-00223,email,2026-07-30T06:11:29+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Hy vọng đội ngũ xem sớm."
+demo-00224,web_form,2026-07-30T07:02:00+00:00,Speed issue: câu nào cũng delay 52 giây mới hiện text. Rất mong được sửa trong bản update tới.
+demo-00225,app_review,2026-07-30T07:11:09+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00226,email,2026-07-30T09:14:28+00:00,"Thông báo qua email chậm kinh khủng, check spam cũng không thấy."
+demo-00227,web_form,2026-07-30T09:37:05+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Mình dùng bản iOS."
+demo-00228,app_review,2026-07-30T09:59:46+00:00,"The voice sounds robotic, please make it more natural. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Phạm Mỹ Dung, email mai4@gmail.example hoặc gọi 0990203288."
+demo-00229,email,2026-07-30T10:00:23+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Lê Hoàng Cương, email mai72@gmail.example hoặc gọi 0938392394."
+demo-00230,web_form,2026-07-30T10:12:29+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Mình dùng bản iOS. Liên hệ mình nhé: Nguyễn Văn An, email mai22@gmail.example hoặc gọi 0914800119."
+demo-00231,app_review,2026-07-30T12:13:51+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Hy vọng đội ngũ xem sớm."
+demo-00232,email,2026-07-30T13:00:07+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười.
+demo-00233,web_form,2026-07-30T13:40:45+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 57s. Đã thử reinstall mà vẫn vậy."
+demo-00234,app_review,2026-07-31T02:10:19+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Rất mong được sửa trong bản update tới."
+demo-00235,email,2026-07-31T02:22:27+00:00,"Delayed email alerts make the workflow annoying, please fix the queue. Đã thử reinstall mà vẫn vậy."
+demo-00236,web_form,2026-07-31T02:30:06+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 59s."
+demo-00237,app_review,2026-07-31T02:47:25+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Mình dùng bản iOS."
+demo-00238,email,2026-07-31T03:03:38+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00239,web_form,2026-07-31T04:14:32+00:00,"Translation is wrong — it misunderstands my question half the time. Liên hệ mình nhé: Phạm Mỹ Dung, email duc99@gmail.example hoặc gọi 0948144784."
+demo-00240,app_review,2026-07-31T04:34:38+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00241,email,2026-07-31T04:56:09+00:00,It mispronounces unusual names and technical terms badly. Hy vọng đội ngũ xem sớm.
+demo-00242,web_form,2026-07-31T05:10:39+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Mình dùng bản iOS."
+demo-00243,app_review,2026-07-31T05:17:30+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00244,email,2026-07-31T06:56:36+00:00,"Translation is wrong — it misunderstands my question half the time. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Lê Hoàng Cương, email hung40@gmail.example hoặc gọi 0996494254."
+demo-00245,web_form,2026-07-31T08:08:27+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00246,app_review,2026-07-31T09:08:01+00:00,"Notification emails arrive very late, sometimes an hour after the event. Xảy ra trên cả Android."
+demo-00247,email,2026-07-31T10:07:30+00:00,Premium price is too high for students like me. Rất mong được sửa trong bản update tới.
+demo-00248,web_form,2026-07-31T10:55:14+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Rất mong được sửa trong bản update tới."
+demo-00249,app_review,2026-07-31T10:59:23+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo. Xảy ra trên cả Android."
+demo-00250,email,2026-07-31T11:13:45+00:00,"Email notification latency tăng vọt từ sáng nay, giờ vẫn chậm."
+demo-00251,web_form,2026-07-31T11:38:39+00:00,"The response time is terrible, sometimes it takes 15 seconds to answer. Mình dùng bản iOS."
+demo-00252,app_review,2026-07-31T11:50:45+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng."
+demo-00253,email,2026-07-31T12:54:32+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Nguyễn Văn An, email mai5@gmail.example hoặc gọi 0991698799."
+demo-00254,web_form,2026-07-31T13:22:03+00:00,"App phản hồi cực chậm, đợi gần 8 giây mới ra kết quả. Rất mong được sửa trong bản update tới."
+demo-00255,app_review,2026-07-31T13:30:35+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Rất mong được sửa trong bản update tới.
+demo-00256,email,2026-08-01T04:06:15+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00257,web_form,2026-08-01T04:14:38+00:00,"Thông báo qua email chậm kinh khủng, check spam cũng không thấy. Mình dùng bản iOS."
+demo-00258,app_review,2026-08-01T05:02:03+00:00,Thư mời cộng tác gửi tới trễ mấy tiếng đồng hồ. Hy vọng đội ngũ xem sớm.
+demo-00259,email,2026-08-01T06:21:00+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Hy vọng đội ngũ xem sớm."
+demo-00260,web_form,2026-08-01T07:45:40+00:00,"It mispronounces unusual names and technical terms badly. Liên hệ mình nhé: Lê Hoàng Cương, email mai24@gmail.example hoặc gọi 0978809538."
+demo-00261,app_review,2026-08-01T10:38:47+00:00,It mispronounces unusual names and technical terms badly.
+demo-00262,email,2026-08-01T12:18:38+00:00,"The voice sounds robotic, please make it more natural."
+demo-00263,web_form,2026-08-01T12:21:16+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Xảy ra trên cả Android."
+demo-00264,app_review,2026-08-01T13:36:19+00:00,"Delayed email alerts make the workflow annoying, please fix the queue. Rất mong được sửa trong bản update tới."
+demo-00265,email,2026-08-02T02:36:44+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00266,web_form,2026-08-02T02:55:49+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Xảy ra trên cả Android."
+demo-00267,app_review,2026-08-02T03:10:04+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Mình dùng bản iOS."
+demo-00268,email,2026-08-02T03:28:54+00:00,"Email notification latency tăng vọt từ sáng nay, giờ vẫn chậm. Rất mong được sửa trong bản update tới."
+demo-00269,web_form,2026-08-02T04:29:21+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00270,app_review,2026-08-02T05:33:28+00:00,Giá gói premium cao quá so với tính năng đang có. Mình dùng bản iOS.
+demo-00271,email,2026-08-02T06:31:15+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn."
+demo-00272,web_form,2026-08-02T07:39:46+00:00,"Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Liên hệ mình nhé: Trần Thị Bình, email mai8@gmail.example hoặc gọi 0990944598."
+demo-00273,app_review,2026-08-02T07:40:25+00:00,It mispronounces unusual names and technical terms badly. Mình dùng bản iOS.
+demo-00274,email,2026-08-02T08:00:58+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn."
+demo-00275,web_form,2026-08-02T08:44:18+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo. Xảy ra trên cả Android."
+demo-00276,app_review,2026-08-02T08:51:11+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề."
+demo-00277,email,2026-08-02T09:08:27+00:00,"Notification emails arrive very late, sometimes an hour after the event. Hy vọng đội ngũ xem sớm."
+demo-00278,web_form,2026-08-02T09:52:22+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề."
+demo-00279,app_review,2026-08-02T10:04:59+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00280,email,2026-08-02T13:20:53+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Đã thử reinstall mà vẫn vậy."
+demo-00281,web_form,2026-08-03T02:58:19+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Đã thử reinstall mà vẫn vậy.
+demo-00282,app_review,2026-08-03T03:02:16+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00283,email,2026-08-03T04:09:51+00:00,"Notification emails arrive very late, sometimes an hour after the event. Hy vọng đội ngũ xem sớm."
+demo-00284,web_form,2026-08-03T05:34:16+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Hy vọng đội ngũ xem sớm."
+demo-00285,app_review,2026-08-03T05:58:53+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Hy vọng đội ngũ xem sớm."
+demo-00286,email,2026-08-03T06:06:58+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00287,web_form,2026-08-03T06:12:26+00:00,"The voice sounds robotic, please make it more natural."
+demo-00288,app_review,2026-08-03T06:16:30+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Rất mong được sửa trong bản update tới."
+demo-00289,email,2026-08-03T07:59:49+00:00,Giá gói premium cao quá so với tính năng đang có. Mình dùng bản iOS.
+demo-00290,web_form,2026-08-03T08:00:47+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Mình dùng bản iOS."
+demo-00291,app_review,2026-08-03T10:01:08+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Xảy ra trên cả Android."
+demo-00292,email,2026-08-03T10:01:46+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00293,web_form,2026-08-03T13:51:33+00:00,"Email notification latency tăng vọt từ sáng nay, giờ vẫn chậm. Mình dùng bản iOS."
+demo-00294,app_review,2026-08-04T02:01:05+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Đã thử reinstall mà vẫn vậy."
+demo-00295,email,2026-08-04T03:23:11+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Liên hệ mình nhé: Trần Thị Bình, email thao48@gmail.example hoặc gọi 0974515844."
+demo-00296,web_form,2026-08-04T03:33:31+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng. Xảy ra trên cả Android."
+demo-00297,app_review,2026-08-04T03:51:36+00:00,"Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Liên hệ mình nhé: Phạm Mỹ Dung, email duc69@gmail.example hoặc gọi 0959226081."
+demo-00298,email,2026-08-04T04:21:28+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Xảy ra trên cả Android."
+demo-00299,web_form,2026-08-04T04:21:43+00:00,"Notification emails arrive very late, sometimes an hour after the event. Đã thử reinstall mà vẫn vậy."
+demo-00300,app_review,2026-08-04T05:26:44+00:00,Thư mời cộng tác gửi tới trễ mấy tiếng đồng hồ. Mình dùng bản iOS.
+demo-00301,email,2026-08-04T06:03:03+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa."
+demo-00302,web_form,2026-08-04T06:21:23+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt.
+demo-00303,app_review,2026-08-04T06:29:34+00:00,"The response time is terrible, sometimes it takes 32 seconds to answer. Rất mong được sửa trong bản update tới."
+demo-00304,email,2026-08-04T07:06:01+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00305,web_form,2026-08-04T09:08:12+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Liên hệ mình nhé: Trần Thị Bình, email duc4@gmail.example hoặc gọi 0945514749."
+demo-00306,app_review,2026-08-04T10:23:47+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00307,email,2026-08-04T10:32:34+00:00,"App phản hồi cực chậm, đợi gần 22 giây mới ra kết quả. Rất mong được sửa trong bản update tới."
+demo-00308,web_form,2026-08-04T11:09:00+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Đã thử reinstall mà vẫn vậy."
+demo-00309,app_review,2026-08-04T11:12:24+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 12s. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Lê Hoàng Cương, email hung24@gmail.example hoặc gọi 0987103193."
+demo-00310,email,2026-08-04T11:22:31+00:00,"Thông báo qua email chậm kinh khủng, check spam cũng không thấy. Hy vọng đội ngũ xem sớm."
+demo-00311,web_form,2026-08-04T13:16:20+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00312,app_review,2026-08-04T13:49:21+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Rất mong được sửa trong bản update tới."
+demo-00313,email,2026-08-05T02:33:25+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00314,web_form,2026-08-05T02:58:33+00:00,"Delayed email alerts make the workflow annoying, please fix the queue."
+demo-00315,app_review,2026-08-05T03:59:18+00:00,"App phản hồi cực chậm, đợi gần 29 giây mới ra kết quả."
+demo-00316,email,2026-08-05T05:09:02+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Rất mong được sửa trong bản update tới."
+demo-00317,web_form,2026-08-05T05:27:13+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Mình dùng bản iOS.
+demo-00318,app_review,2026-08-05T05:45:09+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng. Liên hệ mình nhé: Lê Hoàng Cương, email hung41@gmail.example hoặc gọi 0931031070."
+demo-00319,email,2026-08-05T05:48:58+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Xảy ra trên cả Android."
+demo-00320,web_form,2026-08-05T06:01:18+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00321,app_review,2026-08-05T07:23:58+00:00,It mispronounces unusual names and technical terms badly. Rất mong được sửa trong bản update tới.
+demo-00322,email,2026-08-05T07:52:37+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Mình dùng bản iOS.
+demo-00323,web_form,2026-08-05T08:24:45+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Nguyễn Văn An, email mai92@gmail.example hoặc gọi 0958551862."
+demo-00324,app_review,2026-08-05T12:00:58+00:00,"Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Liên hệ mình nhé: Nguyễn Văn An, email hung4@gmail.example hoặc gọi 0912911544."
+demo-00325,email,2026-08-05T13:01:15+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười.
+demo-00326,web_form,2026-08-05T13:05:30+00:00,"Thông báo qua email chậm kinh khủng, check spam cũng không thấy. Hy vọng đội ngũ xem sớm."
+demo-00327,app_review,2026-08-05T13:28:31+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Xảy ra trên cả Android."
+demo-00328,email,2026-08-05T13:33:14+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn."
+demo-00329,web_form,2026-08-05T13:50:15+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Đã thử reinstall mà vẫn vậy."
+demo-00330,app_review,2026-08-06T03:54:44+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Xảy ra trên cả Android."
+demo-00331,email,2026-08-06T04:17:29+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Liên hệ mình nhé: Trần Thị Bình, email hung89@gmail.example hoặc gọi 0994306592."
+demo-00332,web_form,2026-08-06T05:00:52+00:00,Premium price is too high for students like me.
+demo-00333,app_review,2026-08-06T07:04:27+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn."
+demo-00334,email,2026-08-06T07:13:49+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Xảy ra trên cả Android."
+demo-00335,web_form,2026-08-06T09:28:00+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 13s. Rất mong được sửa trong bản update tới."
+demo-00336,app_review,2026-08-06T09:37:41+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00337,email,2026-08-06T10:14:14+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Đã thử reinstall mà vẫn vậy."
+demo-00338,web_form,2026-08-06T10:19:52+00:00,"The voice sounds robotic, please make it more natural."
+demo-00339,app_review,2026-08-07T02:09:02+00:00,"Mispronunciation happens with acronyms longer than four letters. Liên hệ mình nhé: Trần Thị Bình, email hung77@gmail.example hoặc gọi 0998500863."
+demo-00340,email,2026-08-07T02:58:03+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Mình dùng bản iOS.
+demo-00341,web_form,2026-08-07T04:20:24+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Liên hệ mình nhé: Trần Thị Bình, email thao99@gmail.example hoặc gọi 0927318928."
+demo-00342,app_review,2026-08-07T04:26:11+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt.
+demo-00343,email,2026-08-07T05:07:35+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00344,web_form,2026-08-07T05:23:56+00:00,"The voice sounds robotic, please make it more natural. Đã thử reinstall mà vẫn vậy."
+demo-00345,app_review,2026-08-07T06:01:44+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00346,email,2026-08-07T07:37:12+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00347,web_form,2026-08-07T08:31:12+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Liên hệ mình nhé: Nguyễn Văn An, email thao71@gmail.example hoặc gọi 0978755419."
+demo-00348,app_review,2026-08-07T09:26:34+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS.
+demo-00349,email,2026-08-07T10:45:34+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00350,web_form,2026-08-07T10:58:18+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00351,app_review,2026-08-07T11:20:40+00:00,"Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS. Liên hệ mình nhé: Phạm Mỹ Dung, email thao3@gmail.example hoặc gọi 0947251766."
+demo-00352,email,2026-08-07T11:53:42+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00353,web_form,2026-08-07T12:26:16+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00354,app_review,2026-08-07T13:06:01+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Hy vọng đội ngũ xem sớm."
+demo-00355,email,2026-08-08T03:20:31+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00356,web_form,2026-08-08T03:21:10+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Xảy ra trên cả Android."
+demo-00357,app_review,2026-08-08T05:01:16+00:00,Premium price is too high for students like me.
+demo-00358,email,2026-08-08T05:23:02+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn. Đã thử reinstall mà vẫn vậy."
+demo-00359,web_form,2026-08-08T05:48:18+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Phạm Mỹ Dung, email hung63@gmail.example hoặc gọi 0951307797."
+demo-00360,app_review,2026-08-08T06:03:34+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00361,email,2026-08-08T06:20:28+00:00,"The response time is terrible, sometimes it takes 38 seconds to answer. Xảy ra trên cả Android."
+demo-00362,web_form,2026-08-08T06:21:13+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Đã thử reinstall mà vẫn vậy.
+demo-00363,app_review,2026-08-08T06:57:45+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00364,email,2026-08-08T07:31:04+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Xảy ra trên cả Android."
+demo-00365,web_form,2026-08-08T07:53:14+00:00,Speed issue: câu nào cũng delay 54 giây mới hiện text. Mình dùng bản iOS.
+demo-00366,app_review,2026-08-08T08:24:39+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Hy vọng đội ngũ xem sớm."
+demo-00367,email,2026-08-08T09:05:37+00:00,"Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Nguyễn Văn An, email thao48@gmail.example hoặc gọi 0965225404."
+demo-00368,web_form,2026-08-08T09:23:14+00:00,"App phản hồi cực chậm, đợi gần 35 giây mới ra kết quả. Xảy ra trên cả Android."
+demo-00369,app_review,2026-08-08T10:29:21+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng. Mình dùng bản iOS. Liên hệ mình nhé: Lê Hoàng Cương, email duc77@gmail.example hoặc gọi 0949986907."
+demo-00370,email,2026-08-08T11:16:08+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười.
+demo-00371,web_form,2026-08-08T12:13:58+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị."
+demo-00372,app_review,2026-08-08T12:15:53+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00373,email,2026-08-08T12:51:01+00:00,"Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Lê Hoàng Cương, email mai41@gmail.example hoặc gọi 0961661226."
+demo-00374,web_form,2026-08-09T02:40:38+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00375,app_review,2026-08-09T05:02:51+00:00,"The voice sounds robotic, please make it more natural. Liên hệ mình nhé: Lê Hoàng Cương, email thao43@gmail.example hoặc gọi 0938496003."
+demo-00376,email,2026-08-09T08:19:10+00:00,Speed issue: câu nào cũng delay 20 giây mới hiện text.
+demo-00377,web_form,2026-08-09T08:52:32+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Rất mong được sửa trong bản update tới."
+demo-00378,app_review,2026-08-09T10:14:39+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 42s. Xảy ra trên cả Android."
+demo-00379,email,2026-08-09T10:48:11+00:00,"App phản hồi cực chậm, đợi gần 41 giây mới ra kết quả. Mình dùng bản iOS."
+demo-00380,web_form,2026-08-09T12:09:52+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00381,app_review,2026-08-09T12:40:49+00:00,Speed issue: câu nào cũng delay 57 giây mới hiện text. Hy vọng đội ngũ xem sớm.
+demo-00382,email,2026-08-09T13:45:34+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 28s."
+demo-00383,web_form,2026-08-09T13:58:29+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười.
+demo-00384,app_review,2026-08-10T02:29:28+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Mình dùng bản iOS."
+demo-00385,email,2026-08-10T02:44:37+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Xảy ra trên cả Android."
+demo-00386,web_form,2026-08-10T03:16:15+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Đã thử reinstall mà vẫn vậy."
+demo-00387,app_review,2026-08-10T03:49:06+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Xảy ra trên cả Android."
+demo-00388,email,2026-08-10T03:52:45+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00389,web_form,2026-08-10T04:21:19+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Xảy ra trên cả Android.
+demo-00390,app_review,2026-08-10T04:40:59+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Rất mong được sửa trong bản update tới."
+demo-00391,email,2026-08-10T04:54:09+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Xảy ra trên cả Android."
+demo-00392,web_form,2026-08-10T05:27:35+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Xảy ra trên cả Android. Liên hệ mình nhé: Trần Thị Bình, email hung92@gmail.example hoặc gọi 0930257141."
+demo-00393,app_review,2026-08-10T06:59:17+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Rất mong được sửa trong bản update tới."
+demo-00394,email,2026-08-10T07:00:57+00:00,"Mispronunciation happens with acronyms longer than four letters. Liên hệ mình nhé: Nguyễn Văn An, email mai51@gmail.example hoặc gọi 0950045716."
+demo-00395,web_form,2026-08-10T08:11:11+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn."
+demo-00396,app_review,2026-08-10T08:17:44+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Xảy ra trên cả Android."
+demo-00397,email,2026-08-10T08:34:25+00:00,Translation is wrong — it misunderstands my question half the time. Đã thử reinstall mà vẫn vậy.
+demo-00398,web_form,2026-08-10T10:25:17+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Xảy ra trên cả Android."
+demo-00399,app_review,2026-08-10T10:41:50+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Rất mong được sửa trong bản update tới.
+demo-00400,email,2026-08-10T11:26:38+00:00,"The voice sounds robotic, please make it more natural. Xảy ra trên cả Android."
+demo-00401,web_form,2026-08-10T11:50:44+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00402,app_review,2026-08-10T13:44:46+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Xảy ra trên cả Android."
+demo-00403,email,2026-08-11T04:13:45+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Rất mong được sửa trong bản update tới."
+demo-00404,web_form,2026-08-11T07:29:54+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe. Rất mong được sửa trong bản update tới."
+demo-00405,app_review,2026-08-11T09:46:44+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00406,email,2026-08-11T10:20:51+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00407,web_form,2026-08-11T10:35:51+00:00,"App phản hồi cực chậm, đợi gần 14 giây mới ra kết quả. Mình dùng bản iOS."
+demo-00408,app_review,2026-08-11T10:54:50+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn."
+demo-00409,email,2026-08-11T12:21:22+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn."
+demo-00410,web_form,2026-08-11T12:52:30+00:00,Mispronunciation happens with acronyms longer than four letters. Hy vọng đội ngũ xem sớm.
+demo-00411,app_review,2026-08-12T02:47:51+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề."
+demo-00412,email,2026-08-12T03:33:42+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Hy vọng đội ngũ xem sớm."
+demo-00413,web_form,2026-08-12T06:49:51+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00414,app_review,2026-08-12T07:48:21+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Mình dùng bản iOS."
+demo-00415,email,2026-08-12T07:53:34+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00416,web_form,2026-08-12T07:53:50+00:00,It mispronounces unusual names and technical terms badly. Mình dùng bản iOS.
+demo-00417,app_review,2026-08-12T08:40:22+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Đã thử reinstall mà vẫn vậy."
+demo-00418,email,2026-08-12T09:44:58+00:00,Premium price is too high for students like me. Đã thử reinstall mà vẫn vậy.
+demo-00419,web_form,2026-08-12T10:57:24+00:00,"The response time is terrible, sometimes it takes 10 seconds to answer."
+demo-00420,app_review,2026-08-12T11:23:22+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Đã thử reinstall mà vẫn vậy."
+demo-00421,email,2026-08-12T11:23:27+00:00,"The voice sounds robotic, please make it more natural. Rất mong được sửa trong bản update tới."
+demo-00422,web_form,2026-08-12T11:26:25+00:00,"It mispronounces unusual names and technical terms badly. Liên hệ mình nhé: Trần Thị Bình, email mai93@gmail.example hoặc gọi 0985452467."
+demo-00423,app_review,2026-08-12T12:04:49+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Trần Thị Bình, email mai7@gmail.example hoặc gọi 0965005040."
+demo-00424,email,2026-08-12T12:12:35+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00425,web_form,2026-08-12T12:22:19+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Liên hệ mình nhé: Lê Hoàng Cương, email hung13@gmail.example hoặc gọi 0995349086."
+demo-00426,app_review,2026-08-12T12:22:58+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Mình dùng bản iOS."
+demo-00427,email,2026-08-12T12:44:25+00:00,"App phản hồi cực chậm, đợi gần 16 giây mới ra kết quả."
+demo-00428,web_form,2026-08-13T02:51:23+00:00,It mispronounces unusual names and technical terms badly. Mình dùng bản iOS.
+demo-00429,app_review,2026-08-13T04:48:26+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00430,email,2026-08-13T05:16:26+00:00,Giá gói premium cao quá so với tính năng đang có. Hy vọng đội ngũ xem sớm.
+demo-00431,web_form,2026-08-13T06:36:59+00:00,Speed issue: câu nào cũng delay 22 giây mới hiện text.
+demo-00432,app_review,2026-08-13T06:37:30+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Hy vọng đội ngũ xem sớm."
+demo-00433,email,2026-08-13T06:42:19+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu."
+demo-00434,web_form,2026-08-13T07:11:03+00:00,"Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Liên hệ mình nhé: Nguyễn Văn An, email mai38@gmail.example hoặc gọi 0911913219."
+demo-00435,app_review,2026-08-13T07:29:05+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00436,email,2026-08-13T07:38:10+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00437,web_form,2026-08-13T07:57:30+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Mình dùng bản iOS. Liên hệ mình nhé: Lê Hoàng Cương, email duc74@gmail.example hoặc gọi 0946105359."
+demo-00438,app_review,2026-08-13T08:03:53+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt.
+demo-00439,email,2026-08-13T11:19:27+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium. Rất mong được sửa trong bản update tới.
+demo-00440,web_form,2026-08-13T11:40:57+00:00,It mispronounces unusual names and technical terms badly. Xảy ra trên cả Android.
+demo-00441,app_review,2026-08-13T13:54:19+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Rất mong được sửa trong bản update tới."
+demo-00442,email,2026-08-14T02:08:29+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị."
+demo-00443,web_form,2026-08-14T03:19:15+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Đã thử reinstall mà vẫn vậy."
+demo-00444,app_review,2026-08-14T03:35:19+00:00,"Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Lê Hoàng Cương, email hung84@gmail.example hoặc gọi 0936618792."
+demo-00445,email,2026-08-14T04:33:29+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Xảy ra trên cả Android."
+demo-00446,web_form,2026-08-14T04:33:54+00:00,Premium price is too high for students like me. Hy vọng đội ngũ xem sớm.
+demo-00447,app_review,2026-08-14T05:01:50+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Trần Thị Bình, email thao70@gmail.example hoặc gọi 0915907358."
+demo-00448,email,2026-08-14T07:20:59+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Rất mong được sửa trong bản update tới.
+demo-00449,web_form,2026-08-14T08:09:38+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00450,app_review,2026-08-14T08:22:15+00:00,"The response time is terrible, sometimes it takes 21 seconds to answer. Rất mong được sửa trong bản update tới."
+demo-00451,email,2026-08-14T09:15:19+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00452,web_form,2026-08-14T11:52:14+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Rất mong được sửa trong bản update tới.
+demo-00453,app_review,2026-08-14T12:40:30+00:00,It mispronounces unusual names and technical terms badly.
+demo-00454,email,2026-08-15T04:35:52+00:00,It mispronounces unusual names and technical terms badly. Hy vọng đội ngũ xem sớm.
+demo-00455,web_form,2026-08-15T06:10:14+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Hy vọng đội ngũ xem sớm."
+demo-00456,app_review,2026-08-15T11:56:39+00:00,Giá gói premium cao quá so với tính năng đang có. Hy vọng đội ngũ xem sớm.
+demo-00457,email,2026-08-15T12:12:32+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Liên hệ mình nhé: Lê Hoàng Cương, email duc38@gmail.example hoặc gọi 0998731132."
+demo-00458,web_form,2026-08-15T12:15:55+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Rất mong được sửa trong bản update tới."
+demo-00459,app_review,2026-08-15T12:39:32+00:00,Premium price is too high for students like me.
+demo-00460,email,2026-08-15T13:32:50+00:00,"Máy mạnh mạng ngon mà vẫn chậm, không hiểu bottleneck ở đâu. Đã thử reinstall mà vẫn vậy."
+demo-00461,web_form,2026-08-16T04:25:11+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo."
+demo-00462,app_review,2026-08-16T05:14:34+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 10s. Rất mong được sửa trong bản update tới."
+demo-00463,email,2026-08-16T05:22:25+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Rất mong được sửa trong bản update tới."
+demo-00464,web_form,2026-08-16T05:40:13+00:00,Translation is wrong — it misunderstands my question half the time. Xảy ra trên cả Android.
+demo-00465,app_review,2026-08-16T07:08:36+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe."
+demo-00466,email,2026-08-16T07:23:45+00:00,Translation is wrong — it misunderstands my question half the time. Mình dùng bản iOS.
+demo-00467,web_form,2026-08-16T07:36:01+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Rất mong được sửa trong bản update tới."
+demo-00468,app_review,2026-08-16T08:23:52+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Mình dùng bản iOS. Liên hệ mình nhé: Trần Thị Bình, email duc27@gmail.example hoặc gọi 0969035840."
+demo-00469,email,2026-08-16T09:59:28+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00470,web_form,2026-08-16T13:26:16+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Hy vọng đội ngũ xem sớm."
+demo-00471,app_review,2026-08-17T02:07:25+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Xảy ra trên cả Android."
+demo-00472,email,2026-08-17T02:13:22+00:00,"App phản hồi cực chậm, đợi gần 14 giây mới ra kết quả. Rất mong được sửa trong bản update tới."
+demo-00473,web_form,2026-08-17T03:14:52+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Xảy ra trên cả Android."
+demo-00474,app_review,2026-08-17T04:48:47+00:00,Mispronunciation happens with acronyms longer than four letters.
+demo-00475,email,2026-08-17T04:54:08+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Trần Thị Bình, email thao53@gmail.example hoặc gọi 0931324835."
+demo-00476,web_form,2026-08-17T06:26:05+00:00,"The response time is terrible, sometimes it takes 50 seconds to answer. Hy vọng đội ngũ xem sớm."
+demo-00477,app_review,2026-08-17T06:26:32+00:00,Giá gói premium cao quá so với tính năng đang có. Hy vọng đội ngũ xem sớm.
+demo-00478,email,2026-08-17T06:46:56+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Xảy ra trên cả Android."
+demo-00479,web_form,2026-08-17T06:57:09+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề."
+demo-00480,app_review,2026-08-17T07:02:55+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00481,email,2026-08-17T07:10:30+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng."
+demo-00482,web_form,2026-08-17T08:11:27+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Mình dùng bản iOS."
+demo-00483,app_review,2026-08-17T08:20:45+00:00,"The response time is terrible, sometimes it takes 12 seconds to answer."
+demo-00484,email,2026-08-17T09:32:30+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00485,web_form,2026-08-17T09:41:32+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Rất mong được sửa trong bản update tới.
+demo-00486,app_review,2026-08-17T10:40:21+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Liên hệ mình nhé: Trần Thị Bình, email mai7@gmail.example hoặc gọi 0984845350."
+demo-00487,email,2026-08-17T10:48:03+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Rất mong được sửa trong bản update tới."
+demo-00488,web_form,2026-08-17T12:22:34+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt.
+demo-00489,app_review,2026-08-17T12:27:56+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium. Rất mong được sửa trong bản update tới.
+demo-00490,email,2026-08-17T12:28:37+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Hy vọng đội ngũ xem sớm."
+demo-00491,web_form,2026-08-17T13:41:39+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn."
+demo-00492,app_review,2026-08-18T02:13:30+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Đã thử reinstall mà vẫn vậy."
+demo-00493,email,2026-08-18T02:25:55+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Xảy ra trên cả Android."
+demo-00494,web_form,2026-08-18T04:04:37+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Rất mong được sửa trong bản update tới.
+demo-00495,app_review,2026-08-18T04:10:45+00:00,"The voice sounds robotic, please make it more natural."
+demo-00496,email,2026-08-18T04:10:47+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00497,web_form,2026-08-18T05:07:02+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng."
+demo-00498,app_review,2026-08-18T05:22:50+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Rất mong được sửa trong bản update tới."
+demo-00499,email,2026-08-18T05:24:41+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00500,web_form,2026-08-18T05:35:44+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00501,app_review,2026-08-18T05:41:20+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00502,email,2026-08-18T09:04:48+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00503,web_form,2026-08-18T09:25:06+00:00,Translation is wrong — it misunderstands my question half the time. Mình dùng bản iOS.
+demo-00504,app_review,2026-08-18T09:35:16+00:00,Premium price is too high for students like me. Hy vọng đội ngũ xem sớm.
+demo-00505,email,2026-08-18T09:50:09+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00506,web_form,2026-08-18T10:31:36+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa."
+demo-00507,app_review,2026-08-18T11:04:28+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Rất mong được sửa trong bản update tới."
+demo-00508,email,2026-08-18T11:55:41+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Đã thử reinstall mà vẫn vậy."
+demo-00509,web_form,2026-08-18T12:01:54+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Liên hệ mình nhé: Nguyễn Văn An, email duc69@gmail.example hoặc gọi 0939803404."
+demo-00510,app_review,2026-08-18T12:13:12+00:00,Speed issue: câu nào cũng delay 58 giây mới hiện text.
+demo-00511,email,2026-08-18T13:11:49+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Hy vọng đội ngũ xem sớm."
+demo-00512,web_form,2026-08-18T13:35:42+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00513,app_review,2026-08-18T13:38:41+00:00,"Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Lê Hoàng Cương, email hung89@gmail.example hoặc gọi 0936473751."
+demo-00514,email,2026-08-19T02:28:45+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Trần Thị Bình, email duc10@gmail.example hoặc gọi 0973060020."
+demo-00515,web_form,2026-08-19T02:59:53+00:00,"The response time is terrible, sometimes it takes 13 seconds to answer."
+demo-00516,app_review,2026-08-19T03:32:13+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi."
+demo-00517,email,2026-08-19T03:42:46+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Mình dùng bản iOS."
+demo-00518,web_form,2026-08-19T05:29:55+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Đã thử reinstall mà vẫn vậy.
+demo-00519,app_review,2026-08-19T07:07:16+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Đã thử reinstall mà vẫn vậy."
+demo-00520,email,2026-08-19T07:10:21+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00521,web_form,2026-08-19T09:20:36+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Đã thử reinstall mà vẫn vậy.
+demo-00522,app_review,2026-08-19T09:33:19+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền. Hy vọng đội ngũ xem sớm."
+demo-00523,email,2026-08-19T12:19:11+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Đã thử reinstall mà vẫn vậy."
+demo-00524,web_form,2026-08-19T13:22:56+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00525,app_review,2026-08-19T13:39:12+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00526,email,2026-08-20T02:33:45+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00527,web_form,2026-08-20T02:59:15+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Xảy ra trên cả Android."
+demo-00528,app_review,2026-08-20T03:34:41+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 8s."
+demo-00529,email,2026-08-20T04:11:54+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề."
+demo-00530,web_form,2026-08-20T04:46:12+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics. Hy vọng đội ngũ xem sớm."
+demo-00531,app_review,2026-08-20T04:50:18+00:00,It mispronounces unusual names and technical terms badly.
+demo-00532,email,2026-08-20T04:57:23+00:00,Translation is wrong — it misunderstands my question half the time. Đã thử reinstall mà vẫn vậy.
+demo-00533,web_form,2026-08-20T05:34:02+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Trần Thị Bình, email duc82@gmail.example hoặc gọi 0945853634."
+demo-00534,app_review,2026-08-20T07:02:22+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn. Mình dùng bản iOS."
+demo-00535,email,2026-08-20T08:49:18+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Mình dùng bản iOS."
+demo-00536,web_form,2026-08-20T10:06:46+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00537,app_review,2026-08-20T10:28:28+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Xảy ra trên cả Android."
+demo-00538,email,2026-08-20T11:52:22+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS.
+demo-00539,web_form,2026-08-20T12:29:35+00:00,"So với đối thủ thì pricing đắt hơn hẳn, chưa thấy value tương xứng. Đã thử reinstall mà vẫn vậy."
+demo-00540,app_review,2026-08-20T13:53:58+00:00,"Lỗi phát âm từ Hán Việt, đọc 'tr'/'s' lẫn lộn khiến khó nghe."
+demo-00541,email,2026-08-21T02:43:33+00:00,"Nút Continue with Google nhấn không ăn, quay lại màn hình login mãi."
+demo-00542,web_form,2026-08-21T04:22:05+00:00,App mobile đăng nhập Google stuck ở màn hình trắng rồi timeout. Rất mong được sửa trong bản update tới.
+demo-00543,app_review,2026-08-21T04:27:11+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Xảy ra trên cả Android.
+demo-00544,email,2026-08-21T04:34:05+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium. Hy vọng đội ngũ xem sớm.
+demo-00545,web_form,2026-08-21T05:32:39+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation."
+demo-00546,app_review,2026-08-21T06:25:21+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00547,email,2026-08-21T06:36:31+00:00,"Translate mode cứ bị lỗi với câu dài, cắt ý và sai nghĩa. Xảy ra trên cả Android. Liên hệ mình nhé: Phạm Mỹ Dung, email mai5@gmail.example hoặc gọi 0995473534."
+demo-00548,web_form,2026-08-21T06:42:33+00:00,Can't login via Google OAuth on mobile since the latest update. Rất mong được sửa trong bản update tới.
+demo-00549,app_review,2026-08-21T06:54:42+00:00,Can't login via Google OAuth on mobile since the latest update. Xảy ra trên cả Android.
+demo-00550,email,2026-08-21T07:53:24+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Mình dùng bản iOS."
+demo-00551,web_form,2026-08-21T08:23:33+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm.
+demo-00552,app_review,2026-08-21T08:31:34+00:00,"Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS. Liên hệ mình nhé: Trần Thị Bình, email hung4@gmail.example hoặc gọi 0981859820."
+demo-00553,email,2026-08-21T09:25:55+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00554,web_form,2026-08-21T09:49:13+00:00,"Giá gói premium cao quá so với tính năng đang có. Liên hệ mình nhé: Lê Hoàng Cương, email thao28@gmail.example hoặc gọi 0918724312."
+demo-00555,app_review,2026-08-21T09:54:23+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Rất mong được sửa trong bản update tới."
+demo-00556,email,2026-08-21T10:35:14+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00557,web_form,2026-08-21T12:46:43+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào. Xảy ra trên cả Android. Liên hệ mình nhé: Nguyễn Văn An, email thao64@gmail.example hoặc gọi 0940111811."
+demo-00558,app_review,2026-08-21T13:03:30+00:00,"The response time is terrible, sometimes it takes 5 seconds to answer. Xảy ra trên cả Android."
+demo-00559,email,2026-08-21T13:03:31+00:00,Translation is wrong — it misunderstands my question half the time.
+demo-00560,web_form,2026-08-21T13:08:42+00:00,"Không đăng nhập được bằng Google trên app mobile, bấm nút nó báo lỗi ngay. Mình dùng bản iOS."
+demo-00561,app_review,2026-08-21T13:27:27+00:00,"Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì. Đã thử reinstall mà vẫn vậy. Liên hệ mình nhé: Phạm Mỹ Dung, email hung18@gmail.example hoặc gọi 0938676763."
+demo-00562,email,2026-08-22T02:21:40+00:00,"Không đăng nhập được bằng Google trên app mobile, bấm nút nó báo lỗi ngay."
+demo-00563,web_form,2026-08-22T03:42:34+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00564,app_review,2026-08-22T04:10:37+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00565,email,2026-08-22T05:44:10+00:00,Giá gói premium cao quá so với tính năng đang có. Đã thử reinstall mà vẫn vậy.
+demo-00566,web_form,2026-08-22T05:45:48+00:00,Price tăng lần thứ hai trong nửa năm mà feature chẳng thêm gì.
+demo-00567,app_review,2026-08-22T07:17:17+00:00,"Login bằng tài khoản Google bị văng ra ngoài, thử cả iOS lẫn Android vẫn lỗi. Hy vọng đội ngũ xem sớm."
+demo-00568,email,2026-08-22T07:24:50+00:00,Lỗi đăng nhập Google account trên app: vòng loading xoay rồi báo failed.
+demo-00569,web_form,2026-08-22T07:30:49+00:00,Premium price is too high for students like me. Hy vọng đội ngũ xem sớm.
+demo-00570,app_review,2026-08-22T08:11:01+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo. Hy vọng đội ngũ xem sớm."
+demo-00571,email,2026-08-22T09:18:55+00:00,Google sign-in fails on the mobile app — it shows an error popup every time. Đã thử reinstall mà vẫn vậy.
+demo-00572,web_form,2026-08-22T09:35:39+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười.
+demo-00573,app_review,2026-08-22T09:43:52+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo."
+demo-00574,email,2026-08-22T10:41:58+00:00,"Nghe giọng TTS cứ bị đứt quãng, không mượt như quảng cáo."
+demo-00575,web_form,2026-08-22T11:31:36+00:00,Translation is wrong — it misunderstands my question half the time. Rất mong được sửa trong bản update tới.
+demo-00576,app_review,2026-08-22T11:45:31+00:00,Premium price is too high for students like me. Xảy ra trên cả Android.
+demo-00577,email,2026-08-22T11:54:30+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Rất mong được sửa trong bản update tới."
+demo-00578,web_form,2026-08-22T12:02:03+00:00,"Không đăng nhập được bằng Google trên app mobile, bấm nút nó báo lỗi ngay. Mình dùng bản iOS."
+demo-00579,app_review,2026-08-22T12:24:59+00:00,Lỗi đăng nhập Google account trên app: vòng loading xoay rồi báo failed.
+demo-00580,email,2026-08-22T13:27:24+00:00,"Hỏi một câu đơn giản mà load mãi không xong, chậm quá chịu không nổi. Mình dùng bản iOS."
+demo-00581,web_form,2026-08-22T13:39:42+00:00,"Nâng cấp vip mà giới hạn query vẫn thấp, thấy không đáng tiền."
+demo-00582,app_review,2026-08-23T02:38:48+00:00,"Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Hy vọng đội ngũ xem sớm. Liên hệ mình nhé: Phạm Mỹ Dung, email mai23@gmail.example hoặc gọi 0934816160."
+demo-00583,email,2026-08-23T04:53:10+00:00,Tên riêng nước ngoài bị đọc kiểu Việt hóa rất buồn cười. Rất mong được sửa trong bản update tới.
+demo-00584,web_form,2026-08-23T04:58:33+00:00,App mobile đăng nhập Google stuck ở màn hình trắng rồi timeout.
+demo-00585,app_review,2026-08-23T04:59:56+00:00,"Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Liên hệ mình nhé: Nguyễn Văn An, email thao29@gmail.example hoặc gọi 0964473854."
+demo-00586,email,2026-08-23T05:14:24+00:00,"Hỏi tiếng Việt nó dịch sang tiếng Anh rồi trả lời, sai nghĩa loạn xị. Xảy ra trên cả Android."
+demo-00587,web_form,2026-08-23T05:44:04+00:00,"The voice sounds robotic, please make it more natural. Mình dùng bản iOS."
+demo-00588,app_review,2026-08-23T06:39:30+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00589,email,2026-08-23T09:14:42+00:00,"Login bằng tài khoản Google bị văng ra ngoài, thử cả iOS lẫn Android vẫn lỗi."
+demo-00590,web_form,2026-08-23T10:39:58+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa. Hy vọng đội ngũ xem sớm."
+demo-00591,app_review,2026-08-23T10:43:46+00:00,"Phát âm sai các từ chuyên ngành, ví dụ 'quaternion' đọc loạn."
+demo-00592,email,2026-08-23T11:40:11+00:00,App mobile đăng nhập Google stuck ở màn hình trắng rồi timeout. Rất mong được sửa trong bản update tới.
+demo-00593,web_form,2026-08-23T13:39:02+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Liên hệ mình nhé: Phạm Mỹ Dung, email duc95@gmail.example hoặc gọi 0935784242."
+demo-00594,app_review,2026-08-23T13:41:10+00:00,Giá gói premium cao quá so với tính năng đang có.
+demo-00595,email,2026-08-24T03:29:48+00:00,"Latency tăng hẳn sau bản cập nhật, mỗi câu hỏi phải đợi 38s. Đã thử reinstall mà vẫn vậy."
+demo-00596,web_form,2026-08-24T04:01:44+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Đã thử reinstall mà vẫn vậy.
+demo-00597,app_review,2026-08-24T05:54:49+00:00,"Intonation phẳng lì, đọc số điện thoại thì còn tệ hơn."
+demo-00598,email,2026-08-24T05:59:43+00:00,Giá gói premium cao quá so với tính năng đang có. Rất mong được sửa trong bản update tới.
+demo-00599,web_form,2026-08-24T06:09:27+00:00,Can't login via Google OAuth on mobile since the latest update.
+demo-00600,app_review,2026-08-24T06:49:21+00:00,Can't login via Google OAuth on mobile since the latest update.
+demo-00601,email,2026-08-24T07:55:36+00:00,"Nút Continue with Google nhấn không ăn, quay lại màn hình login mãi."
+demo-00602,web_form,2026-08-24T08:32:34+00:00,"Mispronunciation happens with acronyms longer than four letters. Rất mong được sửa trong bản update tới. Liên hệ mình nhé: Nguyễn Văn An, email duc88@gmail.example hoặc gọi 0960517503."
+demo-00603,app_review,2026-08-24T08:37:46+00:00,Translation is wrong — it misunderstands my question half the time. Xảy ra trên cả Android.
+demo-00604,email,2026-08-24T08:51:43+00:00,Đăng nhập Google trên app bị lỗi ngay sau khi chọn tài khoản. Xảy ra trên cả Android.
+demo-00605,web_form,2026-08-24T09:10:39+00:00,Can't login via Google OAuth on mobile since the latest update.
+demo-00606,app_review,2026-08-24T09:33:15+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Mình dùng bản iOS.
+demo-00607,email,2026-08-24T09:58:58+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Xảy ra trên cả Android."
+demo-00608,web_form,2026-08-24T10:37:29+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Rất mong được sửa trong bản update tới."
+demo-00609,app_review,2026-08-24T11:16:17+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Hy vọng đội ngũ xem sớm."
+demo-00610,email,2026-08-24T11:38:08+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu."
+demo-00611,web_form,2026-08-24T12:00:37+00:00,"Login bằng tài khoản Google bị văng ra ngoài, thử cả iOS lẫn Android vẫn lỗi."
+demo-00612,app_review,2026-08-24T12:18:25+00:00,App mobile đăng nhập Google stuck ở màn hình trắng rồi timeout.
+demo-00613,email,2026-08-24T12:25:18+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Rất mong được sửa trong bản update tới."
+demo-00614,web_form,2026-08-24T12:27:53+00:00,Premium price is too high for students like me. Mình dùng bản iOS.
+demo-00615,app_review,2026-08-24T12:38:06+00:00,Muốn trả rẻ hơn: nên có gói intermediate giữa free và premium.
+demo-00616,email,2026-08-24T12:51:23+00:00,"Đọc địa danh nước ngoài sai hết, cần cải thiện phần phonetics."
+demo-00617,web_form,2026-08-25T02:02:52+00:00,Sai nghĩa nặng: hỏi về refund mà nó hiểu thành return sản phẩm. Đã thử reinstall mà vẫn vậy.
+demo-00618,app_review,2026-08-25T02:12:09+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Hy vọng đội ngũ xem sớm.
+demo-00619,email,2026-08-25T02:22:32+00:00,"Voice pausing bị lạ, ngắt nghỉ sai chỗ làm mất nghĩa câu. Rất mong được sửa trong bản update tới."
+demo-00620,web_form,2026-08-25T02:27:15+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Đã thử reinstall mà vẫn vậy."
+demo-00621,app_review,2026-08-25T02:31:44+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00622,email,2026-08-25T03:51:12+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép.
+demo-00623,web_form,2026-08-25T05:52:49+00:00,"Sign in with Google returns error code 500 on app, web thì bình thường."
+demo-00624,app_review,2026-08-25T06:11:14+00:00,App mobile đăng nhập Google stuck ở màn hình trắng rồi timeout.
+demo-00625,email,2026-08-25T07:20:16+00:00,"Login bằng tài khoản Google bị văng ra ngoài, thử cả iOS lẫn Android vẫn lỗi. Mình dùng bản iOS."
+demo-00626,web_form,2026-08-25T08:20:36+00:00,Can't login via Google OAuth on mobile since the latest update.
+demo-00627,app_review,2026-08-25T08:33:16+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00628,email,2026-08-25T08:50:05+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00629,web_form,2026-08-25T08:55:30+00:00,"Nút Continue with Google nhấn không ăn, quay lại màn hình login mãi. Đã thử reinstall mà vẫn vậy."
+demo-00630,app_review,2026-08-25T08:57:44+00:00,"Từ viết tắt như API, SQL thì đọc ổn, nhưng từ hiếm thì sai pronunciation. Xảy ra trên cả Android."
+demo-00631,email,2026-08-25T09:24:13+00:00,"Không đăng nhập được bằng Google trên app mobile, bấm nút nó báo lỗi ngay. Mình dùng bản iOS."
+demo-00632,web_form,2026-08-25T10:23:12+00:00,App mobile đăng nhập Google stuck ở màn hình trắng rồi timeout.
+demo-00633,app_review,2026-08-25T10:46:43+00:00,"Nó hiểu nhầm từ đa nghĩa, dẫn đến câu trả lời sai meaning hoàn toàn. Hy vọng đội ngũ xem sớm."
+demo-00634,email,2026-08-25T11:17:47+00:00,Premium price is too high for students like me. Đã thử reinstall mà vẫn vậy.
+demo-00635,web_form,2026-08-25T11:59:53+00:00,Có nên giảm giá cho sinh viên không? Gói premium hơi sức ép. Mình dùng bản iOS.
+demo-00636,app_review,2026-08-25T12:02:40+00:00,Đăng nhập Google trên app bị lỗi ngay sau khi chọn tài khoản. Đã thử reinstall mà vẫn vậy.
+demo-00637,email,2026-08-25T12:08:30+00:00,Lỗi đăng nhập Google account trên app: vòng loading xoay rồi báo failed. Đã thử reinstall mà vẫn vậy.
+demo-00638,web_form,2026-08-25T12:14:51+00:00,"Mong thêm giọng miền Nam, giọng hiện tại nghe hơi cứng. Mình dùng bản iOS."
+demo-00639,app_review,2026-08-25T12:19:28+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Xảy ra trên cả Android."
+demo-00640,email,2026-08-25T12:42:27+00:00,"Bản dịch tiếng Việt đọc rất gượng, nhiều chỗ sai ngữ pháp luôn. Đã thử reinstall mà vẫn vậy."
+demo-00641,web_form,2026-08-25T12:42:34+00:00,"Giọng đọc nghe robot quá, không tự nhiên chút nào."
+demo-00642,app_review,2026-08-25T12:48:13+00:00,Can't login via Google OAuth on mobile since the latest update.
+demo-00643,email,2026-08-25T12:51:46+00:00,"Login bằng tài khoản Google bị văng ra ngoài, thử cả iOS lẫn Android vẫn lỗi."
+demo-00644,web_form,2026-08-25T13:25:08+00:00,"Trả lời châm chím, trong khi bản trước nhanh lắm. Chậm như rùa."
+demo-00645,app_review,2026-08-26T05:07:09+00:00,"Không đăng nhập được bằng Google trên app mobile, bấm nút nó báo lỗi ngay. Hy vọng đội ngũ xem sớm."
+demo-00646,email,2026-08-26T05:19:47+00:00,Giọng nữ nghe ổn nhưng giọng nam tự nhiên hơn thì tốt. Hy vọng đội ngũ xem sớm.
+demo-00647,web_form,2026-08-26T05:52:22+00:00,Premium price is too high for students like me.
+demo-00648,app_review,2026-08-26T06:27:16+00:00,"Dịch sai nghĩa câu hỏi của tôi, trả lời lệch hẳn chủ đề. Hy vọng đội ngũ xem sớm."
+demo-00649,email,2026-08-26T06:55:18+00:00,"Từ hôm qua không login được qua Google nữa, password login thì vẫn ok. Hy vọng đội ngũ xem sớm."

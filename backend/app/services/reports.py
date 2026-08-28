@@ -124,3 +124,111 @@ def build_summary(db: Session, days: int, now: datetime) -> dict:
         "top_categories": top_categories,
         "emerging": emerging,
     }
+
+
+# Pipeline phân biệt đường sản xuất (runner deterministic) với agent (phase 19)
+# — KPI time_to_listen chỉ đo đường classify sản xuất (plan 20 §3 Task 2.1).
+_AGENT_PIPELINE = "agent-router-v1"
+_FINALIZED = [ReviewStatus.approved, ReviewStatus.edited, ReviewStatus.rejected]
+
+
+def _median_seconds(db: Session, stmt) -> float | None:
+    """percentile_cont(0.5) trả None khi không có row nào — giữ nguyên là null."""
+    v = db.execute(stmt).scalar()
+    return round(float(v), 2) if v is not None else None
+
+
+def build_kpis(db: Session, now: datetime) -> dict:
+    """KPI 3-latency + tỉ lệ insight→action + HITL/auto + impact — THUẦN SQL.
+
+    Không một call LLM (điểm khác biệt luận văn, plan 20 §2). Mỗi dòng KPI là
+    1 aggregate riêng; median tính bằng PERCENTILE_CONT trên PG17. Bảng rỗng
+    → median None / count 0 — KHÔNG bao giờ lỗi "chưa có cụm".
+    """
+    from sqlalchemy import exists
+
+    from app.models.action_draft import ActionDraft
+    from app.models.analysis_run import AnalysisRun
+    from app.models.impact_check import ImpactCheck
+    from app.models.insight import Insight
+    from app.models.insight_review import InsightReview
+
+    # time_to_listen: feedback → run bắt đầu xử lý (classify sản xuất)
+    listen = _median_seconds(
+        db,
+        select(
+            func.percentile_cont(0.5).within_group(
+                func.extract("epoch", AnalysisRun.started_at - Feedback.created_at)
+            )
+        )
+        .join(AnalysisRun, Feedback.analysis_run_id == AnalysisRun.id)
+        .where(
+            AnalysisRun.pipeline_version != _AGENT_PIPELINE,
+            Feedback.categories.isnot(None),
+        ),
+    )
+
+    # time_to_insight: cụm last_seen → insight được sinh
+    to_insight = _median_seconds(
+        db,
+        select(
+            func.percentile_cont(0.5).within_group(
+                func.extract("epoch", Insight.created_at - Cluster.last_seen)
+            )
+        ).join(Cluster, Insight.cluster_id == Cluster.id),
+    )
+
+    # time_to_action: insight → ticket draft ĐẦU TIÊN (median theo insight);
+    # inner join tự loại insight chưa có draft → None khi chưa có draft nào
+    first_draft = (
+        select(
+            ActionDraft.insight_id.label("iid"),
+            func.min(ActionDraft.created_at).label("t"),
+        )
+        .group_by(ActionDraft.insight_id)
+        .subquery()
+    )
+    to_action = _median_seconds(
+        db,
+        select(
+            func.percentile_cont(0.5).within_group(
+                func.extract("epoch", first_draft.c.t - Insight.created_at)
+            )
+        ).join(Insight, first_draft.c.iid == Insight.id),
+    )
+
+    insights_total = int(db.scalar(select(func.count()).select_from(Insight)) or 0)
+    insights_with_action = int(
+        db.scalar(select(func.count(func.distinct(ActionDraft.insight_id)))) or 0
+    )
+
+    has_review = exists().where(InsightReview.insight_id == Insight.id)
+    finalized_base = select(func.count()).select_from(Insight).where(
+        Insight.review_status.in_(_FINALIZED)
+    )
+    hitl = int(db.scalar(finalized_base.where(has_review)) or 0)
+    auto = int(db.scalar(finalized_base.where(~has_review)) or 0)
+    finalized_n = hitl + auto
+
+    checks_count = int(db.scalar(select(func.count()).select_from(ImpactCheck)) or 0)
+    avg_delta = db.scalar(select(func.avg(ImpactCheck.delta_ratio)))
+
+    def _pct(numer: int, denom: int) -> float:
+        return round(numer / denom * 100, 2) if denom else 0.0
+
+    return {
+        "generated_at": now,
+        "time_to_listen_median_s": listen,
+        "time_to_insight_median_s": to_insight,
+        "time_to_action_median_s": to_action,
+        "insights_total": insights_total,
+        "insights_with_action": insights_with_action,
+        "pct_insight_with_action": _pct(insights_with_action, insights_total),
+        "hitl_count": hitl,
+        "auto_count": auto,
+        "hitl_share": _pct(hitl, finalized_n),
+        "impact": {
+            "checks_count": checks_count,
+            "avg_delta_ratio": round(float(avg_delta), 3) if avg_delta is not None else None,
+        },
+    }

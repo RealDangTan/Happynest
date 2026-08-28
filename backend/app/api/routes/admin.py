@@ -23,10 +23,10 @@ from app.models.feedback import Feedback
 from app.models.insight import Insight
 from app.schemas.cluster import ClusterOut, ClusterRunOut, ClustersListOut
 from app.schemas.insight import EvidenceOut, InsightsListOut, InsightsRunOut, InsightOut
-from app.schemas.report import ReportSummaryOut, SummaryWindow
+from app.schemas.report import ReportKpisOut, ReportSummaryOut, SummaryWindow
 from app.services.clustering import run_clustering, sample_feedback_ids_by_cluster
 from app.services.insight import run_insights as run_insights_service
-from app.services.reports import build_summary
+from app.services.reports import build_kpis, build_summary
 
 router = APIRouter(
     prefix="/api",
@@ -178,4 +178,15 @@ def reports_summary(
     """
     return ReportSummaryOut.model_validate(
         build_summary(db, days=int(days), now=datetime.now(timezone.utc))
+    )
+
+
+@router.get("/reports/kpis")
+def reports_kpis(db: Session = Depends(get_db)) -> ReportKpisOut:
+    """KPI 3-latency + closed-loop thuần SQL (phase 20) — KHÔNG đụng C4.
+
+    Bảng trống / chưa đo → median null, count 0 (200); sai role → 403
+    (guard router-level như summary)."""
+    return ReportKpisOut.model_validate(
+        build_kpis(db, now=datetime.now(timezone.utc))
     )
