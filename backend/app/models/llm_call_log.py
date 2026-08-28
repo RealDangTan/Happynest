@@ -21,9 +21,9 @@ class LlmCallLog(Base):
     analysis_run_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("analysis_runs.id"), nullable=True
     )
-    feedback_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("feedbacks.id"), nullable=True
-    )
+    # Truy vết call theo feedback — reference THUẦN (không FK): reshape 0008
+    # drop bảng feedbacks cũ nên FK gỡ; log lịch sử sống sót với id cũ orphan.
+    feedback_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
     call_type: Mapped[LlmCallType] = mapped_column(LLM_CALL_TYPE_ENUM, nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(20), nullable=False)
     model: Mapped[str] = mapped_column(String(100), nullable=False)

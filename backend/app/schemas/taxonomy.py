@@ -26,8 +26,8 @@ __all__ = [
 class Classification(BaseModel):
     """Kết quả classify một feedback đã sanitize.
 
-    `safety_issue` là cột riêng trên `feedbacks` từ revision 0004
-    (decisions.md 2026-08-24) vì công thức HITL cần truy vấn trực tiếp.
+    Output ghi vào `feedback.ai_analysis` JSONB (reshape 2026-08-28 — không
+    còn cột PG enum riêng; safety_issue nằm trong JSONB cùng các nhãn khác).
     """
 
     categories: list[str] = Field(min_length=1)

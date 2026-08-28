@@ -31,6 +31,7 @@ from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.main import app
 from app.models.enums import UserRole
+from app.models.product import Product
 from app.models.user import User
 
 # Mật khẩu TEST biết trước (khác fallback seed) để test login deterministic.
@@ -122,6 +123,29 @@ def seeded_users():
             assert row.password_hash.startswith("$argon2")
             assert row.role is role
     return users
+
+
+TEST_PRODUCT_NAME = "voc-test-product"
+
+
+@pytest.fixture(scope="session")
+def test_product():
+    """Product dùng chung cho mọi test seed feedback (plan 21: product_id NOT
+    NULL). Idempotent — test suite rerun không nhân bản; KHÔNG xoá khi teardown
+    (row 1 row vô hại, tránh race giữa các suite song song)."""
+    if not db_reachable():
+        pytest.skip(_SKIP_MSG)
+    with SessionLocal() as db:
+        product = db.query(Product).filter(Product.name == TEST_PRODUCT_NAME).first()
+        if product is None:
+            product = Product(
+                name=TEST_PRODUCT_NAME,
+                description="Product fixture cho test suite (plan 21).",
+            )
+            db.add(product)
+            db.commit()
+            db.refresh(product)
+        return product
 
 
 @pytest.fixture()

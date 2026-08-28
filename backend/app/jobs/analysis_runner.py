@@ -1,29 +1,31 @@
-"""Analysis runner — batch pipeline idempotent/resumable (plan 09, execute-plan §7).
+"""Analysis runner — batch pipeline idempotent/resumable (plan 09; reshape plan 21).
 
-Với mỗi feedback CHƯA xử lý: claim → classify (từ `sanitized_content`) →
-compute `requires_human_review` → embed → UPDATE row. **Commit từng item** —
+Với mỗi feedback CHƯA xử lý: claim → classify (từ `feedback_text`) →
+ghi `ai_analysis` JSONB → embed → UPDATE row. **Commit từng item** —
 crash giữa chừng không mất tiến độ.
 
 Hợp đồng khóa (§7):
     def run_analysis(run_id: uuid.UUID) -> None
 
-Semantics resume — QUYẾT ĐỊNH ĐÃ GHI docs/decisions.md 2026-08-24:
+Semantics resume — QUYẾT ĐỊNH ĐÃ GHI docs/decisions.md 2026-08-24 (giữ nguyên
+qua reshape):
 - Chọn **resume cùng run** (gọi lại `run_analysis(run_id)` trên run còn
   `running|failed`), KHÔNG tạo run mới. Một row run = một lô logic toàn bộ,
   `processed_count` monotonic xuyên qua crash.
 - Row "chưa xử lý" = `analysis_run_id IS NULL` (chưa ai claim) **HOẶC**
-  (`analysis_run_id = :run_id` và `categories IS NULL` — đã claim nhưng crash
-  trước khi classify xong). Marker "đã xử lý" là `categories IS NOT NULL`:
-  classifier luôn ghi categories (≥1 nhãn) trong cùng commit với mọi label
-  khác, nên đây là mốc all-or-nothing đáng tin.
+  (`analysis_run_id = :run_id` và `ai_analysis IS NULL` — đã claim nhưng crash
+  trước khi classify xong). Marker "đã xử lý" là `ai_analysis IS NOT NULL`:
+  classifier luôn ghi đủ bộ nhãn trong cùng commit, all-or-nothing đáng tin.
 - Item đã claim bởi run KHÁC không bao giờ bị lấy — không giành công việc.
 - Item lỗi item-level (`LLMStructureError`, embedding fail) bị bỏ qua TRONG
   cùng lượt chạy (không retry in-loop); gọi lại `run_analysis(run_id)` lần sau
-  sẽ nhặt lại đúng những item classify-chưa-xong đó. Item lỗi ở bước EMBED
-  đã có labels → không được nhặt lại (tránh classify trùng) → thiếu embedding
-  đến run sau nếu muốn vá (chấp nhận theo plan: "đã claim nên không retry").
+  sẽ nhặt lại đúng những item classify-chưa-xong đó.
 
-⚠️ PII boundary: log chỉ chứa id + loại lỗi — KHÔNG log raw/sanitized content.
+Reshape 2026-08-28: output classify ghi `ai_analysis` JSONB (topics/sentiment/
+severity/...) thay cho các cột phẳng; logic review_status/few-shot đã chết cùng
+feedback-level HITL — plan 23 sẽ đổi classifier sang taxonomy-aware.
+
+⚠️ PII boundary: log chỉ chứa id + loại lỗi — KHÔNG log raw/feedback_text.
 Exception text đi vào `analysis_runs.error` có thể chứa JSON do MODEL sinh ra
 TRÊN text đã sanitize → vẫn nằm trong biên an toàn.
 """
@@ -37,16 +39,13 @@ from openai import APIError
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
-from app.models.correction_example import CorrectionExample
-from app.models.enums import ReviewStatus, RunStatus
+from app.models.enums import RunStatus
 from app.models.feedback import Feedback
 from app.services.classifier import (
     PROMPT_VERSION,
     classify_feedback,
-    compute_requires_human_review,
 )
 from app.services.embedder import EmbeddingDimError, embed_one, store_embedding
 from app.services.llm_client import LLMStructureError
@@ -55,11 +54,9 @@ from app.services.presidio_service import sanitize
 logger = logging.getLogger(__name__)
 
 #: Version pipeline snapshot vào analysis_runs khi tạo run — tăng khi đổi
-#: cấu trúc pipeline (thứ tự bước, công thức HITL…) để so sánh kết quả A/B.
-PIPELINE_VERSION = "v1"
-
-#: Phase 13 stretch: số correction gần nhất dùng làm few-shot khi bật.
-FEW_SHOT_LIMIT = 5
+#: cấu trúc pipeline (thứ tự bước, shape output…) để so sánh kết quả A/B.
+#: v2 = reshape VoC OS (output ai_analysis JSONB).
+PIPELINE_VERSION = "v2"
 
 #: Lỗi item-level: batch KHÔNG chết, chỉ ghi tóm tắt rồi bỏ qua item.
 _ITEM_ERRORS = (LLMStructureError, EmbeddingDimError, APIError)
@@ -75,7 +72,7 @@ def _pick_next(db: Session, run_id: uuid.UUID, attempted: set[uuid.UUID]):
     """
     claimed_by_this_run_unprocessed = and_(
         Feedback.analysis_run_id == run_id,
-        Feedback.categories.is_(None),
+        Feedback.ai_analysis.is_(None),
     )
     stmt = select(Feedback).where(
         or_(Feedback.analysis_run_id.is_(None), claimed_by_this_run_unprocessed)
@@ -83,72 +80,42 @@ def _pick_next(db: Session, run_id: uuid.UUID, attempted: set[uuid.UUID]):
     if attempted:
         stmt = stmt.where(Feedback.id.not_in(attempted))
     return db.scalars(
-        stmt.order_by(Feedback.created_at, Feedback.id).limit(1)
+        stmt.order_by(Feedback.occurred_at, Feedback.id).limit(1)
     ).first()
 
 
-def _load_few_shot_examples(db: Session, limit: int = FEW_SHOT_LIMIT) -> list[dict]:
-    """Phase 13 stretch (plan §3.5): N correction gần nhất thành few-shot.
-
-    `text` lấy từ original_prediction["sanitized_content"] — ĐÃ sanitize nên
-    an toàn đưa vào prompt (PII boundary); row thiếu key bị bỏ qua.
-    """
-    rows = db.scalars(
-        select(CorrectionExample)
-        .order_by(CorrectionExample.created_at.desc())
-        .limit(limit)
-    ).all()
-    examples: list[dict] = []
-    for ex in rows:
-        text = (ex.original_prediction or {}).get("sanitized_content")
-        if not text:
-            continue
-        examples.append({"text": text, "label": ex.corrected_value})
-    return examples
-
-
 def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
-    """Classify + HITL flag + embed MỘT item — KHÔNG commit (caller gộp commit
-    với processed_count). Raise item-level error để caller ghi tóm tắt."""
+    """Classify + ghi `ai_analysis` + embed MỘT item — KHÔNG commit (caller gộp
+    commit với processed_count). Raise item-level error để caller ghi tóm tắt."""
     # 1. Text vào classifier PHẢI đã sanitize; row legacy chưa sanitize → làm tại chỗ.
-    if fb.sanitized_content is None:
+    if fb.feedback_text is None:
         result = sanitize(fb.raw_content)
-        fb.sanitized_content = result.sanitized_text
+        fb.feedback_text = result.sanitized_text
         fb.pii_detected = result.pii_detected
         fb.pii_entities = [e.model_dump() for e in result.entities]
 
     # 2. Classify (LLM) + trace metadata gắn feedback/run vào llm_call_logs.
-    # Few-shot chỉ khi env bật (chi phí token tăng) — correction loop phase 13.
-    few_shot = (
-        _load_few_shot_examples(db)
-        if get_settings().CLASSIFY_FEWSHOT_ENABLED
-        else None
-    )
     classification = classify_feedback(
-        fb.sanitized_content,
-        few_shot=few_shot,
+        fb.feedback_text,
         feedback_id=fb.id,
         analysis_run_id=run.id,
     )
 
-    # 3. Labels all-or-nothing (cùng 1 commit): categories là marker "đã xử lý".
-    fb.categories = classification.categories
-    fb.ai_issue = classification.ai_issue
-    fb.sentiment = classification.sentiment
-    fb.severity = classification.severity
-    fb.confidence = classification.confidence
-    fb.safety_issue = classification.safety_issue
-    fb.requires_human_review = compute_requires_human_review(
-        classification, pii_detected=fb.pii_detected
-    )
-    # Phase 13: row đủ điều kiện HITL vào ngay hàng chờ 'pending' — không thì
-    # POST /api/reviews không bao giờ thấy nó. Row thường giữ 'unreviewed'.
-    fb.review_status = (
-        ReviewStatus.pending if fb.requires_human_review else ReviewStatus.unreviewed
-    )
+    # 3. Ghi ai_analysis JSONB all-or-nothing (cùng 1 commit) — đây là marker
+    # "đã xử lý". safety_issue gộp vào JSONB (không còn cột riêng).
+    fb.ai_analysis = {
+        "topics": classification.categories,
+        "ai_issue": classification.ai_issue.value if classification.ai_issue else None,
+        "sentiment": classification.sentiment.value,
+        "severity": classification.severity.value,
+        "safety_issue": classification.safety_issue,
+        "confidence": classification.confidence,
+        "rationale": classification.rationale,
+        "analysis_version": "classifier-v1",
+    }
 
-    # 4. Embedding từ sanitized (PII boundary) — luôn kèm model + dim.
-    vector = embed_one(fb.sanitized_content)
+    # 4. Embedding từ feedback_text (PII boundary) — luôn kèm model + dim.
+    vector = embed_one(fb.feedback_text)
     store_embedding(db, fb, vector)
 
 

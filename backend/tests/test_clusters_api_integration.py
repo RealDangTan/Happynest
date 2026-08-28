@@ -1,11 +1,15 @@
-"""Integration test clusters API trên data demo thật — plan 14 §3 Task 4.
+"""Integration test clusters API — plan 14 §3 Task 4; reshape 2026-08-28.
 
 Chạy: `uv run pytest -m integration tests/test_clusters_api_integration.py -v`
 Cần Supabase reachable (autouse fixture sẽ SKIP khi offline) + LLM key cho
 call naming (2 lượt run = 2 call — đúng thiết kế kiềm chế tín dụng của plan).
 
-Dùng 22 row demo đã có embedding từ run `9c6687bc`; KHÔNG seed thêm row.
+Reshape: data demo cũ đã bị migration 0008 wipe → suite TỰ SEED 12 row demo
+(2 cụm tách biệt + vector tay, KHÔNG gọi embeddings API) rồi dọn sạch.
 """
+
+import math
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,6 +19,7 @@ from app.db.session import SessionLocal
 from app.models.cluster import Cluster
 from app.models.enums import UserRole
 from app.models.feedback import Feedback
+from app.services.embedder import store_embedding
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
 pytestmark = pytest.mark.integration
@@ -24,6 +29,9 @@ _C1_FIELDS = {
     "current_count", "previous_count", "growth_ratio", "is_emerging",
     "is_spike", "suggested_priority", "sample_feedback_ids",
 }
+
+_SEED_SOURCE = "test-clusters-api"
+_DIM = 1536
 
 
 def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
@@ -35,6 +43,41 @@ def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
 
+def _unit_vec(idx: int) -> list[float]:
+    raw = [0.0] * _DIM
+    raw[idx] = 1.0
+    return raw
+
+
+@pytest.fixture()
+def demo_rows(test_product):
+    """Seed 12 row có embedding tay (2 cụm × 6, vector đơn vị trực giao)."""
+    now = datetime.now(timezone.utc)
+    ids: list = []
+    with SessionLocal() as db:
+        for i in range(12):
+            fb = Feedback(
+                product_id=test_product.id,
+                source=_SEED_SOURCE,
+                source_record_id=f"clustersapi-{i:02d}",
+                occurred_at=now - timedelta(days=i % 5),
+                raw_content=f"noi dung demo {i} cho test clusters (khong PII)",
+                feedback_text=f"demo {i}",
+                ai_analysis={"topics": [f"topic-{i % 2}"], "severity": "low", "sentiment": "neutral"},
+            )
+            db.add(fb)
+            db.flush()
+            store_embedding(db, fb, _unit_vec(0 if i < 6 else 1))
+            ids.append(fb.id)
+        db.commit()
+    yield ids
+    with SessionLocal() as db:
+        db.query(Feedback).filter(Feedback.source == _SEED_SOURCE).delete(
+            synchronize_session=False
+        )
+        db.commit()
+
+
 def _embedded_count() -> int:
     with SessionLocal() as db:
         return db.scalar(
@@ -44,10 +87,10 @@ def _embedded_count() -> int:
         )
 
 
-def test_clusters_run_then_list_idempotent(client: TestClient) -> None:
+def test_clusters_run_then_list_idempotent(client: TestClient, demo_rows) -> None:
     auth = _login(client)
     embedded_total = _embedded_count()
-    assert embedded_total > 0, "data demo phải có sẵn embedding (run 9c6687bc)"
+    assert embedded_total >= 12, "seed phải tạo đủ row có embedding"
 
     # ---- Run 1: POST /api/clusters/run ----
     r1 = client.post("/api/clusters/run", headers=auth)

@@ -1,11 +1,11 @@
-"""Tests ingestion Phase 05 (05-feedback-ingestion.md §3.5).
+"""Tests ingestion — reshape VoC OS (plan 21).
 
 ⚠️ Marker `integration` — chạm DB Supabase DEV thật qua internet, chạy riêng:
 `uv run pytest tests/test_ingest.py -m integration`
 (quy ước marker do phase 08 thiết lập trong pyproject: mặc định `-m 'not integration'`).
 
 Dọn dẹp: mọi row tạo ra bị xóa ở teardown qua fixture `clean_feedbacks`
-(theo id hoặc external_ref tiền tố `fixture20-`/`badcsv-`) — không để rác
+(theo id hoặc source_record_id tiền tố `fixture20-`/`badcsv-`) — không để rác
 trong DB dev dùng chung.
 """
 
@@ -21,7 +21,7 @@ from sqlalchemy import or_
 from app.api.deps import require_role
 from app.db.session import SessionLocal
 from app.main import app
-from app.models.enums import ReviewStatus, Severity, UserRole
+from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
@@ -47,7 +47,7 @@ def _login_headers(client, role: UserRole) -> dict[str, str]:
 @pytest.fixture()
 def clean_feedbacks():
     """Thu id các row test tạo; teardown xóa cả theo id lẫn theo tiền tố
-    external_ref của fixture/bad-csv — kể từ lần chạy trước nếu còn sót."""
+    source_record_id của fixture/bad-csv — kể từ lần chạy trước nếu còn sót."""
     ids: list[uuid.UUID] = []
     yield ids
     prefixes = ["fixture20-", "badcsv-", "listtest-"]
@@ -55,7 +55,7 @@ def clean_feedbacks():
         db.query(Feedback).filter(
             or_(
                 Feedback.id.in_(ids or [uuid.uuid4()]),  # in_([]) là no-op an toàn hơn nhưng vẫn rõ ý
-                *[Feedback.external_ref.like(f"{p}%") for p in prefixes],
+                *[Feedback.source_record_id.like(f"{p}%") for p in prefixes],
             )
         ).delete(synchronize_session=False)
         db.commit()
@@ -65,7 +65,7 @@ def clean_feedbacks():
 
 
 class TestPostSingle:
-    def test_stores_fields_and_fallback_created_at(self, client, clean_feedbacks):
+    def test_stores_fields_and_fallback_occurred_at(self, client, clean_feedbacks):
         headers = _login_headers(client, UserRole.pm)
         content = "Ứng dụng hay nhưng hay lag khi dịch"
         before = datetime.now(timezone.utc)
@@ -76,31 +76,37 @@ class TestPostSingle:
         )
         assert response.status_code == 201, response.text
         body = response.json()
-        # Ranh giới PII: response mặc định KHÔNG chứa raw_content
+        # Ranh giới PII: response KHÔNG BAO GIỜ chứa raw_content (kể cả detail)
         assert "raw_content" not in body
-        # Phase 06: sanitize chạy ngay lúc ingest; text sạch → pass-through.
-        assert body["sanitized_content"] == content
+        # sanitize chạy ngay lúc ingest; text sạch → pass-through
+        assert body["feedback_text"] == content
         assert body["pii_detected"] is False
-        assert body["severity"] is None and body["categories"] is None
-        assert body["review_status"] == "unreviewed"
-        assert body["requires_human_review"] is False
+        assert body["ai_analysis"] is None
+        assert body["data"] == {} and body["source_meta"] == {}
         clean_feedbacks.append(uuid.UUID(body["id"]))
 
         with SessionLocal() as db:
             row = db.get(Feedback, uuid.UUID(body["id"]))
             assert row.raw_content == content  # lưu nguyên vẹn (DoD mục 3)
-            assert row.sanitized_content == content
-            # created_at thiếu → event time = now() lúc ingest (+dung sai WAN)
-            delta = abs((row.created_at - before).total_seconds())
-            assert delta < 180, f"created_at lệch {delta}s"
+            assert row.feedback_text == content
+            # occurred_at thiếu → event time = now() lúc ingest (+dung sai WAN)
+            delta = abs((row.occurred_at - before).total_seconds())
+            assert delta < 180, f"occurred_at lệch {delta}s"
             assert row.imported_at is not None
+            assert row.product_id is not None  # gắn product mặc định
+            assert row.import_id is None  # POST đơn lẻ không qua import lô
 
     def test_preserves_explicit_event_time(self, client, clean_feedbacks):
         headers = _login_headers(client, UserRole.operations)
         event_time = "2025-01-15T10:00:00+00:00"
         response = client.post(
             "/api/feedbacks",
-            json={"source": "survey", "content": "x", "created_at": event_time},
+            json={
+                "source": "survey",
+                "content": "x",
+                "occurred_at": event_time,
+                "source_record_id": "listtest-explicit-time",
+            },
             headers=headers,
         )
         assert response.status_code == 201, response.text
@@ -109,7 +115,8 @@ class TestPostSingle:
 
         with SessionLocal() as db:
             row = db.get(Feedback, fid)
-            assert row.created_at == datetime.fromisoformat(event_time)
+            assert row.occurred_at == datetime.fromisoformat(event_time)
+            assert row.source_record_id == "listtest-explicit-time"
 
 
 # --------------------------------------------------------------- import-csv
@@ -128,23 +135,27 @@ class TestImportCsv:
         report = response.json()
         assert report["imported"] == 20
         assert report["failed"] == 0 and report["errors"] == []
+        assert report["import_id"] is not None
 
         with SessionLocal() as db:
             count = (
                 db.query(Feedback)
-                .filter(Feedback.external_ref.like("fixture20-%"))
+                .filter(Feedback.source_record_id.like("fixture20-%"))
                 .count()
             )
             assert count == 20
             # UTF-8/BOM: dấu tiếng Việt không hỏng (DoD mixed VN-EN)
             row = (
                 db.query(Feedback)
-                .filter(Feedback.external_ref == "fixture20-02")
+                .filter(Feedback.source_record_id == "fixture20-02")
                 .one()
             )
             assert "Nguyễn Văn An" in row.raw_content
-            # created_at từ cột CSV được tôn trọng (event time, có offset +07:00)
-            assert row.created_at.utcoffset() is not None
+            # occurred_at từ cột CSV được tôn trọng (event time, có offset +07:00)
+            assert row.occurred_at.utcoffset() is not None
+            # legacy import gắn chung 1 Import row
+            assert row.import_id is not None
+            assert row.import_id == uuid.UUID(report["import_id"])
 
     def test_bad_rows_counted_not_aborted(self, client, clean_feedbacks):
         headers = _login_headers(client, UserRole.pm)
@@ -171,10 +182,36 @@ class TestImportCsv:
         with SessionLocal() as db:
             kept = (
                 db.query(Feedback)
-                .filter(Feedback.external_ref.like("badcsv-%"))
+                .filter(Feedback.source_record_id.like("badcsv-%"))
                 .count()
             )
             assert kept == 2  # dòng lỗi không cản dòng hợp lệ
+
+    def test_extra_columns_go_to_source_meta(self, client, clean_feedbacks):
+        headers = _login_headers(client, UserRole.pm)
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(["source", "content", "source_record_id", "occurred_at", "ticket_status"])
+        writer.writerow(
+            ["survey", "nội dung meta", "listtest-meta-1", "2026-01-01T00:00:00+00:00", "open"]
+        )
+        response = client.post(
+            "/api/feedbacks/import-csv",
+            files={"file": ("meta.csv", buffer.getvalue().encode(), "text/csv")},
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        fid = None
+        with SessionLocal() as db:
+            row = (
+                db.query(Feedback)
+                .filter(Feedback.source_record_id == "listtest-meta-1")
+                .one()
+            )
+            assert row.source_meta == {"ticket_status": "open"}
+            assert row.data == {}
+            fid = row.id
+        clean_feedbacks.append(fid)
 
     def test_non_csv_extension_rejected(self, client):
         headers = _login_headers(client, UserRole.pm)
@@ -190,7 +227,7 @@ class TestImportCsv:
 
 
 def _make_rows(client, headers, clean_feedbacks, n=3):
-    """Tạo n feedback gắn category độc lập 'listtest-cat' để filter không đụng
+    """Tạo n feedback gắn topic độc lập 'listtest-cat' để filter không đụng
     data thật trong DB dev."""
     ids = []
     for i in range(n):
@@ -199,7 +236,7 @@ def _make_rows(client, headers, clean_feedbacks, n=3):
             json={
                 "source": "in_app_form",
                 "content": f"row test filter {i}",
-                "external_ref": f"listtest-{uuid.uuid4().hex[:8]}",
+                "source_record_id": f"listtest-{uuid.uuid4().hex[:8]}",
             },
             headers=headers,
         )
@@ -215,17 +252,23 @@ class TestListAndDetail:
         headers = _login_headers(client, UserRole.pm)
         ids = _make_rows(client, headers, clean_feedbacks, n=3)
 
-        # Mô phỏng hậu classify: severity/categories/review_status là cột
-        # Phase 07/HITL điền — ingestion để NULL nên phải set trực tiếp DB.
-        # Cả 3 row cùng category để filter category cô lập chúng khỏi data thật.
+        # Mô phỏng hậu classify: severity/topics nằm trong ai_analysis JSONB —
+        # ingestion để NULL nên phải set trực tiếp DB. Cả 3 row cùng topic để
+        # filter cô lập chúng khỏi data thật.
         with SessionLocal() as db:
             for fid in ids:
-                db.get(Feedback, fid).categories = ["listtest-cat"]
-            db.get(Feedback, ids[0]).severity = Severity.critical
-            db.get(Feedback, ids[1]).review_status = ReviewStatus.approved
+                db.get(Feedback, fid).ai_analysis = {
+                    "topics": ["listtest-cat"],
+                    "sentiment": "negative",
+                    "severity": "medium",
+                }
+            db.get(Feedback, ids[0]).ai_analysis = {
+                **db.get(Feedback, ids[0]).ai_analysis,
+                "severity": "critical",
+            }
             db.commit()
 
-        base = {"category": "listtest-cat"}
+        base = {"topic": "listtest-cat"}
         full = client.get("/api/feedbacks", params=base, headers=headers).json()
         assert full["total"] == 3 and len(full["items"]) == 3
 
@@ -243,19 +286,17 @@ class TestListAndDetail:
         ).json()
         assert sev["total"] == 1 and sev["items"][0]["id"] == str(ids[0])
 
-        status_filter = client.get(
-            "/api/feedbacks",
-            params={**base, "review_status": "approved"},
-            headers=headers,
+        sen = client.get(
+            "/api/feedbacks", params={**base, "sentiment": "negative"}, headers=headers
         ).json()
-        assert status_filter["total"] == 1 and status_filter["items"][0]["id"] == str(ids[1])
+        assert sen["total"] == 3
 
     def test_limit_over_100_rejected(self, client):
         headers = _login_headers(client, UserRole.pm)
         response = client.get("/api/feedbacks", params={"limit": 101}, headers=headers)
         assert response.status_code == 422
 
-    def test_detail_hides_raw_by_default(self, client, clean_feedbacks):
+    def test_detail_never_exposes_raw(self, client, clean_feedbacks):
         headers = _login_headers(client, UserRole.pm)
         content = "SĐT tôi là 0987654321, đừng lộ"
         fid = uuid.UUID(
@@ -269,11 +310,8 @@ class TestListAndDetail:
 
         safe = client.get(f"/api/feedbacks/{fid}", headers=headers).json()
         assert "raw_content" not in safe
-
-        with_raw = client.get(
-            f"/api/feedbacks/{fid}", params={"include_raw": "true"}, headers=headers
-        ).json()
-        assert with_raw["raw_content"] == content
+        assert safe["feedback_text"] != content  # đã sanitize
+        assert "0987654321" not in safe["feedback_text"]
 
     def test_detail_404_unknown_id(self, client):
         headers = _login_headers(client, UserRole.pm)

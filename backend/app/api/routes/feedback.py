@@ -1,11 +1,10 @@
-"""Routes feedback.
+"""Routes feedback — reshape VoC OS (plan 21).
 
-Lịch sử file: Phase 08 (chạy trước 05 theo quyết định owner — xem
-docs/decisions.md 2026-08-24) dựng scaffold CHỈ với `/similar`; Phase 05
-(docs/plans/05-feedback-ingestion.md §3.3) MỞ RỘNG — không viết lại — với
-POST đơn lẻ, import-csv, list phân trang có filter, detail include_raw.
-Guard role pm|operations gắn ở TẦNG ROUTER nên `/similar` cũng được bảo vệ
-từ Phase 05 (trước đó tạm công khai ở dev theo entry Phase 08).
+Lịch sử: Phase 05/06/08 dựng POST/import-csv/list/detail/similar trên bảng
+phẳng cũ. Reshape 2026-08-28: mọi row gắn product (default = product đầu tiên
+cho tới khi FE có product switcher), JSONB zones thay các cột phẳng, toggle
+`?include_raw` chết cùng feedback-level HITL (raw KHÔNG BAO GIỜ ra response).
+Guard role pm|operations gắn ở TẦNG ROUTER.
 """
 
 import uuid
@@ -23,16 +22,19 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_role
-from app.models.enums import ReviewStatus, Severity
 from app.models.feedback import Feedback
 from app.schemas.feedback import (
     CsvImportReport,
-    FeedbackDetailOut,
     FeedbackIn,
     FeedbackListOut,
     FeedbackOut,
 )
-from app.services.ingest_service import import_csv_rows, iter_csv_dicts, ingest_one
+from app.services.ingest_service import (
+    get_default_product,
+    import_csv_rows,
+    iter_csv_dicts,
+    ingest_one,
+)
 
 router = APIRouter(
     prefix="/api",
@@ -48,8 +50,14 @@ _SNIPPET_CHARS = 200
 def create_feedback(
     item: FeedbackIn, session: Session = Depends(get_db)
 ) -> FeedbackOut:
-    """POST đơn lẻ — chỉ lưu raw_content; sanitized để Phase 06 điền."""
-    return FeedbackOut.model_validate(ingest_one(session, item))
+    """POST đơn lẻ — sanitize tại ingest; gắn product mặc định."""
+    try:
+        product = get_default_product(session)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    return FeedbackOut.model_validate(
+        ingest_one(session, item, product_id=product.id)
+    )
 
 
 @router.post("/feedbacks/import-csv")
@@ -58,41 +66,52 @@ def import_feedbacks_csv(
 ) -> CsvImportReport:
     """Import CSV multipart → report từng dòng lỗi, không abort toàn file.
 
-    Đọc qua `iter_csv_dicts` (utf-8-sig chống BOM Excel) — cùng đường với CLI.
+    Đường legacy (phase 21) — gắn product mặc định, cột ngoài core đi vào
+    `source_meta`. Phase 22 (LISTEN) sẽ thay bằng pipeline profiler → mapper
+    → Gate #1 với product schema.
     """
     if not (file.filename or "").lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="File phải có đuôi .csv.",
         )
-    report = import_csv_rows(session, iter_csv_dicts(file.file))
-    return report
+    try:
+        product = get_default_product(session)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    return import_csv_rows(session, iter_csv_dicts(file.file), product_id=product.id)
 
 
 @router.get("/feedbacks")
 def list_feedbacks(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    review_status: ReviewStatus | None = Query(default=None),
-    severity: Severity | None = Query(default=None),
-    category: str | None = Query(default=None, min_length=1),
+    product_id: uuid.UUID | None = Query(default=None),
+    severity: str | None = Query(default=None, min_length=1),
+    sentiment: str | None = Query(default=None, min_length=1),
+    topic: str | None = Query(default=None, min_length=1),
+    source: str | None = Query(default=None, min_length=1),
     session: Session = Depends(get_db),
 ) -> FeedbackListOut:
-    """List phân trang + filter. `category` match containment trong JSONB list
-    (`categories @> '["..."]'`); dataset ≤1500 nên chấp nhận full scan."""
+    """List phân trang + filter trên JSONB `ai_analysis` (severity/sentiment/
+    topic containment) và cột `source`. Dataset ≤1500 nên chấp nhận full scan."""
     conditions = []
-    if review_status is not None:
-        conditions.append(Feedback.review_status == review_status)
+    if product_id is not None:
+        conditions.append(Feedback.product_id == product_id)
     if severity is not None:
-        conditions.append(Feedback.severity == severity)
-    if category is not None:
-        conditions.append(Feedback.categories.contains([category]))
+        conditions.append(Feedback.ai_analysis["severity"].astext == severity)
+    if sentiment is not None:
+        conditions.append(Feedback.ai_analysis["sentiment"].astext == sentiment)
+    if topic is not None:
+        conditions.append(Feedback.ai_analysis["topics"].contains([topic]))
+    if source is not None:
+        conditions.append(Feedback.source == source)
 
     total = session.scalar(select(func.count()).select_from(Feedback).where(*conditions))
     rows = session.scalars(
         select(Feedback)
         .where(*conditions)
-        .order_by(Feedback.created_at.desc(), Feedback.id.desc())
+        .order_by(Feedback.occurred_at.desc(), Feedback.id.desc())
         .offset(offset)
         .limit(limit)
     ).all()
@@ -107,16 +126,14 @@ def list_feedbacks(
 @router.get("/feedbacks/{feedback_id}")
 def get_feedback(
     feedback_id: uuid.UUID,
-    include_raw: bool = Query(default=False),
     session: Session = Depends(get_db),
-) -> FeedbackOut | FeedbackDetailOut:
-    """Detail; mặc định KHÔNG kèm raw_content (ranh giới PII) — chỉ khi
-    `?include_raw=true` trả schema riêng chứa raw."""
+) -> FeedbackOut:
+    """Detail — `feedback_text` (đã sanitize) là dữ liệu phân tích; raw_content
+    KHÔNG BAO GIỜ nằm trong response (ranh giới PII)."""
     feedback = session.get(Feedback, feedback_id)
     if feedback is None:
         raise HTTPException(status_code=404, detail="Feedback không tồn tại.")
-    schema = FeedbackDetailOut if include_raw else FeedbackOut
-    return schema.model_validate(feedback)
+    return FeedbackOut.model_validate(feedback)
 
 
 @router.get("/feedbacks/{feedback_id}/similar")
@@ -138,8 +155,8 @@ def similar_feedbacks(
         raise HTTPException(
             status_code=409,
             detail=(
-                "Feedback này chưa có embedding. Chạy embed (Phase 09 analysis "
-                "hoặc embed_one thủ công) rồi thử lại."
+                "Feedback này chưa có embedding. Chạy phân tích (POST "
+                "/api/analysis/runs) rồi thử lại."
             ),
         )
 
@@ -155,9 +172,9 @@ def similar_feedbacks(
             """
             SELECT id::text          AS id,
                    source,
-                   sanitized_content,
+                   feedback_text,
                    1 - (embedding <=> CAST(:query_vec AS vector)) AS score
-            FROM feedbacks
+            FROM feedback
             WHERE id <> :id AND embedding IS NOT NULL
             ORDER BY embedding <=> CAST(:query_vec AS vector)
             LIMIT :k
@@ -171,8 +188,8 @@ def similar_feedbacks(
             "id": row["id"],
             "score": float(row["score"]),
             "source": row["source"],
-            # snippet từ sanitized_content (PII-safe); chưa sanitize → None.
-            "snippet": (row["sanitized_content"] or "")[:_SNIPPET_CHARS] or None,
+            # snippet từ feedback_text (PII-safe); chưa sanitize → None.
+            "snippet": (row["feedback_text"] or "")[:_SNIPPET_CHARS] or None,
         }
         for row in rows
     ]

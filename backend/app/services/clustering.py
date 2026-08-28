@@ -8,8 +8,8 @@ Kiến trúc tách lớp để unit test offline: `cluster_embeddings`,
 thuần Python/không DB; chỉ `run_clustering` chạm Session (được suite
 integration phủ trên data thật — plan §3 Task 4).
 
-⚠️ PII boundary: snippet trong payload naming cắt TỪ `sanitized_content` —
-`raw_content` không bao giờ ra khỏi biên sanitize (test assert ở
+⚠️ PII boundary: snippet trong payload naming cắt TỪ `feedback_text` (đã
+sanitize) — `raw_content` không bao giờ ra khỏi biên sanitize (test assert ở
 tests/test_clustering_unit.py).
 """
 
@@ -28,7 +28,6 @@ from app.core.logging import get_logger
 from app.models.cluster import Cluster
 from app.models.enums import LlmCallType
 from app.models.feedback import Feedback
-from app.models.insight import Insight
 from app.services.llm_client import LLMStructureError, chat_structured
 
 logger = get_logger(__name__)
@@ -114,19 +113,19 @@ def group_feedbacks(feedbacks: Sequence[Feedback], labels: np.ndarray) -> list[M
 
 
 def build_naming_payload(groups: Sequence[MemberGroup]) -> str:
-    """JSON payload naming: ≤5 snippet/cụm cắt từ sanitized_content (PII boundary)."""
+    """JSON payload naming: ≤5 snippet/cụm cắt từ feedback_text (PII boundary)."""
     import json
 
     payload = []
     for group in groups:
         ranked = sorted(
             group.members,
-            key=lambda m: m.confidence if m.confidence is not None else -1.0,
+            key=lambda m: (m.ai_analysis or {}).get("confidence") or -1.0,
             reverse=True,
         )
         snippets = []
         for m in ranked[:_SAMPLES_PER_CLUSTER]:
-            text = (m.sanitized_content or "").strip()
+            text = (m.feedback_text or "").strip()
             if text:
                 snippets.append(text[:_SNIPPET_CHARS])
         payload.append({"idx": group.label_idx, "samples": snippets})
@@ -134,12 +133,12 @@ def build_naming_payload(groups: Sequence[MemberGroup]) -> str:
 
 
 def _fallback_name(group: MemberGroup) -> tuple[str, str]:
-    """Fallback KHÔNG tốn LLM: tên đánh số + summary ghép top categories."""
+    """Fallback KHÔNG tốn LLM: tên đánh số + summary ghép top topics."""
     cats = Counter(
-        cat
+        topic
         for m in group.members
-        for cat in (m.categories or [])
-        if isinstance(cat, str)
+        for topic in ((m.ai_analysis or {}).get("topics") or [])
+        if isinstance(topic, str)
     )
     top = ", ".join(cat for cat, _ in cats.most_common(3))
     summary = (
@@ -178,9 +177,10 @@ def run_clustering(
 ) -> ClusteringRunStats:
     """Chạy trọn vòng clustering idempotent theo thứ tự C5, TRONG 1 transaction.
 
-    DELETE insights → DELETE clusters → NULL feedbacks.cluster_id → INSERT
-    cụm mới (trend + naming) → gán lại membership → commit. Lỗi giữa chừng →
-    rollback, DB về trạng thái cũ.
+    DELETE clusters → NULL feedback.cluster_id → INSERT cụm mới (trend +
+    naming) → gán lại membership → commit. Lỗi giữa chừng → rollback, DB về
+    trạng thái cũ. (Reshape 2026-08-28: không còn bảng insights để xoá trước —
+    insights mới sẽ đến ở plan 25 với FK riêng.)
     """
     settings = settings or get_settings()
     now = now or datetime.now(timezone.utc)
@@ -190,7 +190,6 @@ def run_clustering(
 
     if not feedbacks:
         # Không có vector nào: vẫn phải xoá sạch cụm cũ để trạng thái nhất quán
-        db.execute(delete(Insight))
         db.execute(delete(Cluster))
         db.execute(update(Feedback).values(cluster_id=None))
         db.commit()
@@ -217,7 +216,6 @@ def run_clustering(
     unassigned = len(feedbacks) - assigned
 
     # --- Rebuild idempotent trong 1 transaction (thứ tự C5) ---
-    db.execute(delete(Insight))          # insights FK trỏ clusters → xoá trước
     db.execute(delete(Cluster))
     db.execute(
         update(Feedback)
@@ -263,17 +261,17 @@ def run_clustering(
 def compute_trend(
     members: Sequence, now: datetime, settings: Settings
 ) -> dict:
-    """Tính trend fields cho 1 cụm từ members (duck-typed: created_at, severity).
-
-    Công thức chuẩn plan 14 §3 Task 2 — xem header module trước khi sửa.
+    """Tính trend fields cho 1 cụm từ members (duck-typed: occurred_at,
+    ai_analysis.severity). Công thức chuẩn plan 14 §3 Task 2 — xem header
+    module trước khi sửa.
     """
     window = timedelta(days=settings.CLUSTER_WINDOW_DAYS)
     current_cut = now - window          # [now−W, now]
     previous_cut = now - 2 * window     # [now−2W, now−W)
 
-    in_current = [m for m in members if current_cut <= m.created_at <= now]
+    in_current = [m for m in members if current_cut <= m.occurred_at <= now]
     in_previous = [
-        m for m in members if previous_cut <= m.created_at < current_cut
+        m for m in members if previous_cut <= m.occurred_at < current_cut
     ]
     current = len(in_current)
     previous = len(in_previous)
@@ -291,9 +289,11 @@ def compute_trend(
     )
     is_emerging = previous == 0 and current >= settings.CLUSTER_EMERGING_MIN
 
-    created = sorted(m.created_at for m in members)
+    created = sorted(m.occurred_at for m in members)
     high_critical = sum(
-        1 for m in members if getattr(m, "severity", None) in ("high", "critical")
+        1
+        for m in members
+        if (m.ai_analysis or {}).get("severity") in ("high", "critical")
     )
     suggested_priority = round(
         0.5 * min(len(members) / 50, 1)
@@ -326,7 +326,7 @@ def sample_feedback_ids_by_cluster(
     pairs = db.execute(
         select(Feedback.cluster_id, Feedback.id)
         .where(Feedback.cluster_id.is_not(None))
-        .order_by(Feedback.created_at.desc())
+        .order_by(Feedback.occurred_at.desc())
     ).all()
     samples: dict = {}
     for cluster_id, feedback_id in pairs:

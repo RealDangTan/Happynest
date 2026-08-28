@@ -7,14 +7,14 @@ Nguyên tắc an toàn chi phí: MỌI test trong file này đều có autouse f
 gắn FakeClassifier + fake embedder — không một call LLM/embeddings THẬT nào
 có thể phát sinh dù runner chạm phải row lạ trên DB dùng chung.
 
-Kịch bản chính theo plan §3.3:
-- Seed 10 feedbacks (created_at so le để ORDER BY created_at deterministic);
+Kịch bản chính theo plan §3.3 (điều chỉnh reshape 2026-08-28):
+- Seed 10 feedbacks (occurred_at so le để ORDER BY deterministic);
 - Crash giả lập ở item 5 (RuntimeError — ngoài `_ITEM_ERRORS` nên giết batch)
-  → run failed, 4 item có labels;
+  → run failed, 4 item có `ai_analysis`;
 - Gọi lại `run_analysis` CÙNG run (resume — quyết định ghi decisions.md
   2026-08-24) → 6 item còn lại xử lý, tổng classify success ĐÚNG = 10
   (không phải 14) — mỗi item được classify ĐÚNG MỘT LẦN;
-- requires_human_review khớp công thức HITL trên từng item mock;
+- `ai_analysis` JSONB khớp preset mock trên từng item;
 - processed_count monotonic (4 → 10, không vượt total).
 """
 
@@ -30,7 +30,7 @@ from app.db.session import SessionLocal
 from app.jobs import analysis_runner as runner_mod
 from app.jobs.analysis_runner import run_analysis
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import ReviewStatus, RunStatus
+from app.models.enums import RunStatus
 from app.models.feedback import Feedback
 from app.schemas.taxonomy import Classification
 from app.services import classifier as classifier_mod
@@ -64,8 +64,9 @@ def _cls(**overrides) -> Classification:
     return Classification.model_validate(base)
 
 
-#: Preset theo item: 2 & 7 confidence thấp → review; 4 & 9 critical → review;
-#: còn lại sạch (conf 0.9 ≥ mọi ngưỡng) → không review.
+#: Preset theo item: 2 & 7 confidence thấp; 4 & 9 critical; còn lại sạch.
+#: (Reshape: không còn công thức HITL per-item — preset chỉ phục vụ assert
+#: `ai_analysis` khớp mock trên từng item.)
 PRESET_LOWCONF = _cls(confidence=0.5)
 PRESET_CRITICAL = _cls(severity="critical")
 PRESET_CLEAN = _cls()
@@ -78,10 +79,6 @@ def _preset_for(item_no: int) -> Classification:
         7: PRESET_LOWCONF,
         9: PRESET_CRITICAL,
     }.get(item_no, PRESET_CLEAN)
-
-
-def _expected_review(item_no: int) -> bool:
-    return item_no in {2, 4, 7, 9}
 
 
 _ITEM_RE = re.compile(r"item (\d+)")
@@ -141,7 +138,7 @@ def fake_llm_embedder(monkeypatch):
 
 
 @pytest.fixture()
-def batch(fake_llm_embedder):
+def batch(fake_llm_embedder, test_product):
     """Seed 10 feedbacks + cách ly row lạ + dọn sạch sau test.
 
     Quarantine: DB dev DÙNG CHUNG — nếu tồn tại feedback chưa claim KHÔNG phải
@@ -152,7 +149,7 @@ def batch(fake_llm_embedder):
     with SessionLocal() as db:
         # dọn rác lần chạy trước (nếu teardown trước bị đứt)
         db.query(Feedback).filter(
-            Feedback.external_ref.like(f"{REF_PREFIX}%")
+            Feedback.source_record_id.like(f"{REF_PREFIX}%")
         ).delete(synchronize_session=False)
         db.commit()
 
@@ -178,17 +175,18 @@ def batch(fake_llm_embedder):
                 .values(analysis_run_id=qrun.id)
             )
 
-        # Seed đúng thứ tự created_at tăng dần → runner xử lý item 1..10.
+        # Seed đúng thứ tự occurred_at tăng dần → runner xử lý item 1..10.
         base = datetime.now(timezone.utc) - timedelta(hours=1)
         ids: list[uuid.UUID] = []
         for i in range(1, N_ITEMS + 1):
             fb = Feedback(
+                product_id=test_product.id,
                 source=SOURCE,
-                external_ref=f"{REF_PREFIX}{i:02d}",
+                source_record_id=f"{REF_PREFIX}{i:02d}",
                 # đã sanitize sẵn — runner KHÔNG phải gọi presidio (nhẹ, nhanh)
                 raw_content=f"Nội dung giả item {i} cho test runner (không PII)",
-                sanitized_content=f"sanitized item {i}",
-                created_at=base + timedelta(seconds=i),
+                feedback_text=f"sanitized item {i}",
+                occurred_at=base + timedelta(seconds=i),
             )
             db.add(fb)
             db.flush()
@@ -206,7 +204,7 @@ def batch(fake_llm_embedder):
                 .values(analysis_run_id=None)
             )
         db.query(Feedback).filter(
-            Feedback.external_ref.like(f"{REF_PREFIX}%")
+            Feedback.source_record_id.like(f"{REF_PREFIX}%")
         ).delete(synchronize_session=False)
         for rid in [*state["run_ids"], state["qrun_id"]]:
             run = db.get(AnalysisRun, rid)
@@ -251,10 +249,10 @@ def test_crash_then_resume_classifies_each_item_exactly_once(batch, fake_llm_emb
 
         rows = {i: db.get(Feedback, batch["ids"][i - 1]) for i in range(1, N_ITEMS + 1)}
         for i in range(1, 5):
-            assert rows[i].categories is not None, f"item {i} phải đã có labels"
+            assert rows[i].ai_analysis is not None, f"item {i} phải đã có labels"
             assert rows[i].embedding is not None
         for i in range(5, N_ITEMS + 1):
-            assert rows[i].categories is None, f"item {i} chưa được xử lý"
+            assert rows[i].ai_analysis is None, f"item {i} chưa được xử lý"
 
     processed_mid = run.processed_count
 
@@ -274,17 +272,12 @@ def test_crash_then_resume_classifies_each_item_exactly_once(batch, fake_llm_emb
         rows = {i: db.get(Feedback, batch["ids"][i - 1]) for i in range(1, N_ITEMS + 1)}
         for i in range(1, N_ITEMS + 1):
             r = rows[i]
-            assert r.categories == ["nhãn-test"]
-            assert r.severity.value == _preset_for(i).severity.value
-            assert r.confidence == pytest.approx(_preset_for(i).confidence)
-            # công thức HITL khớp kỳ vọng per-item (plan §3.3)
-            assert r.requires_human_review is _expected_review(i), f"item {i}"
-            # Phase 13 Task 1: row đủ điều kiện HITL phải được đẩy sang 'pending'
-            # (vào được hàng chờ review); row thường giữ 'unreviewed'.
-            expected_rs = (
-                ReviewStatus.pending if _expected_review(i) else ReviewStatus.unreviewed
-            )
-            assert r.review_status is expected_rs, f"review_status item {i}"
+            preset = _preset_for(i)
+            assert r.ai_analysis["topics"] == ["nhãn-test"]
+            assert r.ai_analysis["severity"] == preset.severity.value
+            assert r.ai_analysis["confidence"] == pytest.approx(preset.confidence)
+            assert r.ai_analysis["sentiment"] == preset.sentiment.value
+            assert r.ai_analysis["analysis_version"] == "classifier-v1"
             # embedding lưu KÈM model + dim — store_embedding THẬT đọc tên model
             # từ settings (fake chỉ thay embed_one), đúng hợp đồng plan 08.
             assert r.embedding_model == get_settings().EMBEDDING_MODEL
@@ -392,7 +385,7 @@ def test_runs_endpoints_create_progress_results(client, batch, monkeypatch):
     with SessionLocal() as db:
         db.execute(
             update(Feedback)
-            .where(Feedback.external_ref.like(f"{REF_PREFIX}%"))
+            .where(Feedback.source_record_id.like(f"{REF_PREFIX}%"))
             .values(analysis_run_id=rid)
         )
         db.commit()
@@ -405,7 +398,7 @@ def test_runs_endpoints_create_progress_results(client, batch, monkeypatch):
     assert {str(fid) for fid in batch["ids"]} <= got_ids
     for item in payload["items"]:
         if item["id"] in {str(fid) for fid in batch["ids"]}:
-            assert item["categories"] is None  # chưa ai phân loại
+            assert item["ai_analysis"] is None  # chưa ai phân loại
 
     assert client.get(f"/api/analysis/runs/{uuid.uuid4()}", headers=headers).status_code == 404
     # anon → 401 (guard router-level). LƯU Ý: client giữ cookie từ lúc login

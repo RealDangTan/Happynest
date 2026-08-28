@@ -26,20 +26,21 @@ def _needs_real_db():
 NOW = datetime(2026, 8, 26, 12, 0, tzinfo=timezone.utc)
 
 
-def _fb(external_ref: str, **kwargs) -> dict:
-    """Row seed tối giản trong cửa sổ; external_ref prefix rep-it- để nhận diện."""
+def _fb(ref: str, **kwargs) -> dict:
+    """Row seed tối giản trong cửa sổ; source_record_id prefix rep-it- để nhận diện."""
     base = {
-        "external_ref": f"rep-it-{external_ref}",
+        "product_id": None,  # fixture test_product điền
+        "source_record_id": f"rep-it-{ref}",
         "source": "unit-test",
-        "created_at": NOW - timedelta(days=1),
+        "occurred_at": NOW - timedelta(days=1),
         "raw_content": "raw unit test (không bao giờ ra khỏi biên sanitize)",
-        "sanitized_content": "sanitized unit test",
+        "feedback_text": "sanitized unit test",
     }
     base.update(kwargs)
     return base
 
 
-def test_totals_filters_and_window(db_session) -> None:
+def test_totals_filters_and_window(db_session, test_product) -> None:
     from app.models.feedback import Feedback
 
     # DB dev DÙNG CHUNG có sẵn row demo → mọi assertion so DELTA với baseline
@@ -47,22 +48,14 @@ def test_totals_filters_and_window(db_session) -> None:
 
     db_session.add_all(
         [
-            Feedback(**_fb("t1")),                                    # thường
-            Feedback(**_fb("t2", review_status="pending")),
-            Feedback(**_fb("t3", pii_detected=True)),
-            Feedback(
-                **_fb(
-                    "t4",
-                    review_status="pending",
-                    pii_detected=True,
-                )
-            ),
-            # ngoài cửa sổ days=7 → không được đếm dù pending + pii
+            Feedback(**_fb("t1", product_id=test_product.id)),                    # thường
+            Feedback(**_fb("t3", product_id=test_product.id, pii_detected=True)),
+            # ngoài cửa sổ days=7 → không được đếm dù pii
             Feedback(
                 **_fb(
                     "t5",
-                    created_at=NOW - timedelta(days=20),
-                    review_status="pending",
+                    product_id=test_product.id,
+                    occurred_at=NOW - timedelta(days=20),
                     pii_detected=True,
                 )
             ),
@@ -72,22 +65,22 @@ def test_totals_filters_and_window(db_session) -> None:
 
     out = build_summary(db_session, days=7, now=NOW)
     assert out["window_days"] == 7
-    assert out["totals"]["feedback_count"] == base["feedback_count"] + 4
-    assert out["totals"]["pending_review_count"] == base["pending_review_count"] + 2
-    assert out["totals"]["pii_detected_count"] == base["pii_detected_count"] + 2
+    assert out["totals"]["feedback_count"] == base["feedback_count"] + 2
+    assert out["totals"]["pii_detected_count"] == base["pii_detected_count"] + 1
 
 
-def test_by_enums_null_excluded_and_zero_keys_kept(db_session) -> None:
+def test_by_enums_null_excluded_and_zero_keys_kept(db_session, test_product) -> None:
     from app.models.feedback import Feedback
 
     base_out = build_summary(db_session, days=30, now=NOW)
 
     db_session.add_all(
         [
-            Feedback(**_fb("s1", severity="low", sentiment="negative")),
-            Feedback(**_fb("s2", severity="critical", sentiment="mixed")),
-            Feedback(**_fb("s3", sentiment="positive")),      # severity NULL → loại
-            Feedback(**_fb("s4", severity="high")),           # sentiment NULL → loại
+            Feedback(**_fb("s1", product_id=test_product.id, ai_analysis={"severity": "low", "sentiment": "negative", "topics": []})),
+            Feedback(**_fb("s2", product_id=test_product.id, ai_analysis={"severity": "critical", "sentiment": "mixed", "topics": []})),
+            Feedback(**_fb("s3", product_id=test_product.id, ai_analysis={"sentiment": "positive"})),  # severity thiếu → 0
+            Feedback(**_fb("s4", product_id=test_product.id, ai_analysis={"severity": "high"})),       # sentiment thiếu → 0
+            Feedback(**_fb("s5", product_id=test_product.id, ai_analysis=None)),  # chưa classify → loại
         ]
     )
     db_session.flush()
@@ -106,7 +99,7 @@ def test_by_enums_null_excluded_and_zero_keys_kept(db_session) -> None:
     assert out["by_sentiment"]["neutral"] == base_out["by_sentiment"]["neutral"]
 
 
-def test_top_categories_merges_duplicates_and_orders(db_session) -> None:
+def test_top_categories_merges_duplicates_and_orders(db_session, test_product) -> None:
     from app.models.feedback import Feedback
 
     base_cats = {
@@ -117,15 +110,16 @@ def test_top_categories_merges_duplicates_and_orders(db_session) -> None:
     db_session.add_all(
         [
             # topic-a x3, topic-b x2 — đủ nặng để KHÔNG bị LIMIT 10 cắt
-            # (DB dev chung có sẵn nhiều category đếm-1 cạnh tranh)
-            Feedback(**_fb("c1", categories=["rep-it-topic-a", "rep-it-topic-a", "rep-it-topic-b"])),
-            Feedback(**_fb("c2", categories=["rep-it-topic-a", "rep-it-topic-b"])),
-            Feedback(**_fb("c3", categories=None)),               # json-null không nổ query
+            # (DB dev chung có sẵn nhiều topic đếm-1 cạnh tranh)
+            Feedback(**_fb("c1", product_id=test_product.id, ai_analysis={"topics": ["rep-it-topic-a", "rep-it-topic-a", "rep-it-topic-b"]})),
+            Feedback(**_fb("c2", product_id=test_product.id, ai_analysis={"topics": ["rep-it-topic-a", "rep-it-topic-b"]})),
+            Feedback(**_fb("c3", product_id=test_product.id, ai_analysis=None)),  # json-null không nổ query
             Feedback(
                 **_fb(
                     "c4",
-                    categories=["rep-it-old-topic"],
-                    created_at=NOW - timedelta(days=60),          # ngoài cửa sổ
+                    product_id=test_product.id,
+                    ai_analysis={"topics": ["rep-it-old-topic"]},
+                    occurred_at=NOW - timedelta(days=60),         # ngoài cửa sổ
                 )
             ),
         ]
@@ -139,7 +133,7 @@ def test_top_categories_merges_duplicates_and_orders(db_session) -> None:
     assert "rep-it-old-topic" not in cats   # prefix unique + ngoài cửa sổ → bị loại hẳn
 
 
-def test_emerging_shape_sub_c1_with_samples(db_session) -> None:
+def test_emerging_shape_sub_c1_with_samples(db_session, test_product) -> None:
     import uuid
 
     from app.models.cluster import Cluster
@@ -161,7 +155,8 @@ def test_emerging_shape_sub_c1_with_samples(db_session) -> None:
     )
     db_session.add(cluster)
     members = [
-        Feedback(**_fb(f"e{i}", cluster_id=cluster.id)) for i in range(7)
+        Feedback(**_fb(f"e{i}", product_id=test_product.id, cluster_id=cluster.id))
+        for i in range(7)
     ]
     quiet = Cluster(  # cụm thường — KHÔNG emerging/spike → không vào mảng
         id=uuid.uuid4(),

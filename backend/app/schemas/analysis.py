@@ -2,8 +2,7 @@
 
 Progress trả superset của plan ({status, processed_count, total_count, error})
 thêm id + mốc thời gian — cần cho UI poll hiển thị timeline. Results TÁI DỤNG
-`FeedbackListOut` (đã chứa labels + severity + confidence +
-requires_human_review) lọc theo `analysis_run_id`.
+`FeedbackListOut` (chứa ai_analysis JSONB) lọc theo `analysis_run_id`.
 """
 
 from datetime import datetime

@@ -67,17 +67,18 @@ EXPECTED_ORDER = ["B", "C", "E", "D"]  # similarity giảm dần quanh A
 
 
 @pytest.fixture()
-def sim_ids():
+def sim_ids(test_product):
     """Insert 5 feedback fake kèm embedding tay qua store_embedding; dọn sạch sau."""
     ids: dict[str, uuid.UUID] = {}
     now = datetime.now(timezone.utc)
     with SessionLocal() as db:
         for name, vec in VECS.items():
             fb = Feedback(
+                product_id=test_product.id,
                 source=SOURCE,
-                created_at=now,
+                occurred_at=now,
                 raw_content=f"fake noi dung {name} cho test similarity (khong PII)",
-                sanitized_content=f"sanitized {name}",
+                feedback_text=f"sanitized {name}",
             )
             db.add(fb)
             db.flush()  # lấy id trước khi gắn vector
@@ -133,14 +134,15 @@ def test_similarity_rank_order(client, sim_ids, ops_headers):
     assert item_b["snippet"] == "sanitized B"[:200]
 
 
-def test_similar_missing_embedding_409(client, ops_headers):
+def test_similar_missing_embedding_409(client, test_product, ops_headers):
     now = datetime.now(timezone.utc)
     with SessionLocal() as db:
         fb = Feedback(
+            product_id=test_product.id,
             source=SOURCE,
-            created_at=now,
+            occurred_at=now,
             raw_content="fake chua co embedding",
-            sanitized_content="sanitized",
+            feedback_text="sanitized",
         )
         db.add(fb)
         db.commit()

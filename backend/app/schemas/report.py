@@ -1,11 +1,14 @@
-"""Pydantic schemas cho reports API — Phase 16 (contract C4).
+"""Pydantic schemas cho reports API — reshape VoC OS (plan 21).
 
 Không field nào chứa text feedback — chỉ con số, id và ids mẫu trong
 emerging (shape con của C1, đúng ranh giới PII).
+
+Reshape: `pending_review_count` chết cùng feedback-level HITL; severity/
+sentiment/categories đọc từ `ai_analysis` JSONB (pipeline điền).
 """
 
 from datetime import datetime
-from enum import Enum, IntEnum
+from enum import IntEnum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -22,7 +25,6 @@ class SummaryWindow(IntEnum):
 
 class SummaryTotals(BaseModel):
     feedback_count: int
-    pending_review_count: int
     pii_detected_count: int
 
 
@@ -63,30 +65,3 @@ class ReportSummaryOut(BaseModel):
     by_sentiment: dict[str, int]     # positive/neutral/negative/mixed
     top_categories: list[TopCategoryItem]
     emerging: list[EmergingClusterItem]
-
-
-class ImpactSummary(BaseModel):
-    """Tổng hợp bảng impact_checks — closed-loop phase 20."""
-
-    checks_count: int
-    avg_delta_ratio: float | None  # None khi chưa đo insight nào
-
-
-class ReportKpisOut(BaseModel):
-    """Response GET /api/reports/kpis — KPI 3-latency thuần SQL (phase 20).
-
-    Median có thể None khi chưa đủ dữ liệu tạo mốc (vd chưa có draft nào) —
-    200 với null là hợp lệ, KHÔNG lỗi "chưa có cụm".
-    """
-
-    generated_at: datetime
-    time_to_listen_median_s: float | None
-    time_to_insight_median_s: float | None
-    time_to_action_median_s: float | None
-    insights_total: int
-    insights_with_action: int
-    pct_insight_with_action: float
-    hitl_count: int
-    auto_count: int
-    hitl_share: float
-    impact: ImpactSummary

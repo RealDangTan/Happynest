@@ -1,28 +1,28 @@
-"""Pydantic schemas cho ingestion feedback — Phase 05 (05-feedback-ingestion.md §3.1).
+"""Pydantic schemas cho feedback — reshape VoC OS (plan 21).
 
-Ranh giới PII: `raw_content` KHÔNG nằm trong `FeedbackOut` mặc định — chỉ lộ
-qua `FeedbackDetailOut` khi query param `include_raw=true`. Mọi response khác
-(list, POST, import) chỉ trả metadata + `sanitized_content` (còn NULL giai
-đoạn này, Phase 06 điền).
+Ranh giới PII: `raw_content` KHÔNG BAO GIỜ nằm trong response nào — kể cả
+detail (toggle `?include_raw` cũ đã chết cùng feedback-level HITL; reviewer
+cần text → `feedback_text` đã sanitize là dữ liệu phân tích hợp lệ).
 """
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import AiIssue, ReviewStatus, Sentiment, Severity
-
 
 class FeedbackIn(BaseModel):
-    """Body POST /api/feedbacks. `created_at` = EVENT TIME (thời điểm phản hồi
-    diễn ra theo nguồn cung cấp); thiếu → service gán now() lúc ingest.
-    Phân biệt với `imported_at` do DB server_default gán."""
+    """Body POST /api/feedbacks. `occurred_at` = EVENT TIME (thời điểm phản hồi
+    diễn ra theo nguồn cung cấp); thiếu → service gán now() lúc ingest."""
 
     source: str = Field(min_length=1, max_length=100)
     content: str = Field(min_length=1)
-    external_ref: str | None = Field(default=None, max_length=255)
-    created_at: datetime | None = None
+    source_record_id: str | None = Field(default=None, max_length=255)
+    occurred_at: datetime | None = None
+    # Phân tích cấp product đi kèm khi nhập tay (LISTEN sau này điền từ mapping)
+    data: dict[str, Any] = Field(default_factory=dict)
+    source_meta: dict[str, Any] = Field(default_factory=dict)
 
 
 class FeedbackOut(BaseModel):
@@ -31,27 +31,18 @@ class FeedbackOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    product_id: UUID
+    import_id: UUID | None
     source: str
-    external_ref: str | None
-    created_at: datetime
+    source_record_id: str | None
+    occurred_at: datetime
     imported_at: datetime
-    review_status: ReviewStatus
-    pii_detected: bool  # Phase 06: metadata sanitize — không mang text PII
-    severity: Severity | None
-    categories: list[str] | None
-    # Phase 13: đủ bộ nhãn trong response để client thấy ngay kết quả
-    # /corrections (C3 "FeedbackOut cập nhật nhãn") mà không cần GET lại.
-    ai_issue: AiIssue | None
-    sentiment: Sentiment | None
-    confidence: float | None
-    requires_human_review: bool
-    sanitized_content: str | None
-
-
-class FeedbackDetailOut(FeedbackOut):
-    """FeedbackOut + raw_content — CHỈ dùng cho GET detail `?include_raw=true`."""
-
-    raw_content: str
+    feedback_text: str | None
+    pii_detected: bool
+    data: dict[str, Any]
+    source_meta: dict[str, Any]
+    ai_analysis: dict[str, Any] | None
+    created_at: datetime
 
 
 class FeedbackListOut(BaseModel):
@@ -72,3 +63,4 @@ class CsvImportReport(BaseModel):
     imported: int
     failed: int
     errors: list[CsvImportError]
+    import_id: UUID | None = None

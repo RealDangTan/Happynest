@@ -1,14 +1,18 @@
-"""Classifier v1 — phân loại feedback đã sanitize bằng LLM + công thức HITL.
+"""Classifier v1 — phân loại feedback đã sanitize bằng LLM.
 
 Prompt version hóa (`PROMPT_VERSION`): prompt kém trên sample thật → ra v2,
 KHÔNG sửa v1 — giữ khả năng so sánh A/B theo plan §6.
 
-⚠️ PII boundary: `classify_feedback` chỉ nhận `sanitized_text`. Raw content
+Reshape VoC OS 2026-08-28: công thức `compute_requires_human_review` bị
+BỎ cùng feedback-level HITL (routes/review.py đã strip) — output ghi thẳng
+`feedback.ai_analysis` JSONB ở runner; plan 23 sẽ đổi output sang taxonomy-
+aware (topics khớp bảng taxonomies).
+
+⚠️ PII boundary: `classify_feedback` chỉ nhận text ĐÃ sanitize. Raw content
 không bao giờ đi qua hàm này vào prompt/log/trace.
 """
 
-from app.core.config import get_settings
-from app.models.enums import LlmCallType, Severity
+from app.models.enums import LlmCallType
 from app.schemas.taxonomy import Classification
 from app.services.llm_client import chat_structured
 
@@ -63,27 +67,4 @@ def classify_feedback(
         prompt_version=PROMPT_VERSION,
         feedback_id=feedback_id,
         analysis_run_id=analysis_run_id,
-    )
-
-
-def compute_requires_human_review(
-    classification: Classification, pii_detected: bool
-) -> bool:
-    """Công thức HITL — decisions.md 2026-08-24 (mở rộng locked formula §1):
-
-    severity==critical OR safety_issue OR pii_detected
-      OR confidence < CLASSIFY_CONFIDENCE_REVIEW_BELOW
-      OR (severity in {high, critical} AND confidence < HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW)
-    """
-    settings = get_settings()
-    return bool(
-        classification.severity == Severity.critical
-        or classification.safety_issue
-        or pii_detected
-        or classification.confidence < settings.CLASSIFY_CONFIDENCE_REVIEW_BELOW
-        or (
-            classification.severity in (Severity.high, Severity.critical)
-            and classification.confidence
-            < settings.HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW
-        )
     )

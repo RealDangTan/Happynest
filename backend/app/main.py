@@ -16,11 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.routes import admin, agent, analysis, auth, feedback, review, sources
+from app.api.routes import admin, analysis, auth, feedback, products
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
-from app.services import hitl_graph, llm_client, presidio_service, tracing
+from app.services import graph_runtime, llm_client, presidio_service, tracing
 
 logger = get_logger(__name__)
 
@@ -30,16 +30,15 @@ async def lifespan(app: FastAPI):
     # Phase 06 neo TẠI ĐÂY: khởi tạo Presidio analyzer singleton (instantiated once)
     # — Stanza vi+en nặng ~1GB RAM, KHÔNG được tạo lại mỗi request.
     presidio_service.init_presidio()
-    # Phase 13 (plan §3.5): tạo sớm 4 bảng checkpoint LangGraph (idempotent,
-    # ngoài filter Alembic). ⚠️ Chạy trong BACKGROUND THREAD, không await trực
-    # tiếp: lifespan Windows dùng ProactorEventLoop mà async psycopg chỉ chạy
-    # trên selector (quirk S5) — await ở đây nổ InterfaceError. Thread tự chạy
-    # asyncio.run trên selector loop riêng; request đầu nếu thread chưa xong
-    # cũng tự đảm bảo lại (thread-safe) nên không có race. Lỗi không chặn boot;
-    # giữ đúng triết lý health-degraded của app.
+    # Tạo sớm 4 bảng checkpoint LangGraph (idempotent, ngoài filter Alembic) —
+    # dùng chung cho graph HITL (hiện none sau strip; UNDERSTAND plan 25 tái sử
+    # dụng). ⚠️ Chạy trong BACKGROUND THREAD, không await trực tiếp: lifespan
+    # Windows dùng ProactorEventLoop mà async psycopg chỉ chạy trên selector
+    # (quirk S5) — await ở đây nổ InterfaceError. Thread tự chạy asyncio.run
+    # trên selector loop riêng; lỗi không chặn boot (health-degraded philosophy).
     threading.Thread(
-        target=hitl_graph.ensure_checkpointer_ready,
-        name="hitl-checkpoint-setup",
+        target=graph_runtime.ensure_checkpointer_ready,
+        name="langgraph-checkpoint-setup",
         daemon=True,
     ).start()
     yield
@@ -116,12 +115,8 @@ def create_app() -> FastAPI:
     app.include_router(feedback.router)
     # Phase 09: tạo run batch + progress/results API.
     app.include_router(analysis.router)
-    # Phase 13: HITL — POST /reviews (graph interrupt/resume) + /corrections.
-    app.include_router(review.router)
-    # FE-03b: sources registry (decisions 2026-08-25).
-    app.include_router(sources.router)
-    # Phase 19: agent router — POST /runs + GET /runs/{id} + decision HITL.
-    app.include_router(agent.router)
+    # Plan 21 (VoC OS reshape): products = workspace scoping.
+    app.include_router(products.router)
 
     return app
 

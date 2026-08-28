@@ -1,12 +1,14 @@
-"""Bộ Python enum ánh xạ 9 native PG enum types (execute-plan §6).
+"""Bộ Python enum ánh xạ native PG enum types.
 
-Bộ giá trị ai_issue_enum / sentiment_enum chốt theo entry dated
-2026-08-24 trong docs/decisions.md (= đề xuất khởi điểm plan §3.5).
-Đổi sau này phải ALTER TYPE ADD VALUE qua migration mới — không sửa tay.
+Re-plan VoC OS 2026-08-28 (decisions.md): reshape 0008 DROP các enum cũ
+(ai_issue_enum, sentiment_enum, severity_enum, review_status, review_action,
+draft_kind, draft_status) — sentiment/severity/business labels giờ sống TRONG
+`feedback.ai_analysis` JSONB dưới dạng string. Các Python enum giữ lại làm
+validation giá trị khi ghi/đọc JSONB, KHÔNG còn cột PG enum tương ứng.
 
-Phase 07 phải nhất quán với bộ này qua schemas/taxonomy.py.
-Migration 0007 (agent substrate) bổ sung draft_kind/draft_status và 2
-value 'route'/'critic' của llm_call_type.
+Enum PG còn sống: user_role (0001), run_status + llm_call_type (0002),
+import_status_enum (0008). Đổi bộ giá trị phải ALTER TYPE ADD VALUE qua
+migration mới — không sửa tay.
 """
 
 import enum
@@ -20,6 +22,8 @@ class UserRole(str, enum.Enum):
 
 
 class AiIssue(str, enum.Enum):
+    """Giá trị JSONB `ai_analysis.ai_issue` — validation thuần, không PG column."""
+
     hallucination = "hallucination"
     inaccuracy = "inaccuracy"
     bias = "bias"
@@ -30,6 +34,8 @@ class AiIssue(str, enum.Enum):
 
 
 class Sentiment(str, enum.Enum):
+    """Giá trị JSONB `ai_analysis.sentiment` — chỉ validation, không PG column."""
+
     positive = "positive"
     negative = "negative"
     neutral = "neutral"
@@ -37,24 +43,12 @@ class Sentiment(str, enum.Enum):
 
 
 class Severity(str, enum.Enum):
+    """Giá trị JSONB `ai_analysis.severity`."""
+
     low = "low"
     medium = "medium"
     high = "high"
     critical = "critical"
-
-
-class ReviewStatus(str, enum.Enum):
-    unreviewed = "unreviewed"
-    pending = "pending"
-    approved = "approved"
-    edited = "edited"
-    rejected = "rejected"
-
-
-class ReviewAction(str, enum.Enum):
-    approve = "approve"
-    edit = "edit"
-    reject = "reject"
 
 
 class RunStatus(str, enum.Enum):
@@ -68,24 +62,18 @@ class LlmCallType(str, enum.Enum):
     embed = "embed"
     name_cluster = "name_cluster"
     generate_insight = "generate_insight"
-    # agent-router graph (phase 19): router node + critic reflection.
-    # KHÔNG có 'tool_call' — tool không-LLM không thuộc bảng llm call logs
-    # (decisions 2026-08-26).
+    # value 'route'/'critic' đã ADD vào PG type ở 0007; graph cũ bị strip
+    # 2026-08-28 — value giữ nguyên trong type (ADD VALUE không đảo được),
+    # UNDERSTAND mới (plan 25) sẽ ADD value riêng.
     route = "route"
     critic = "critic"
 
 
-class DraftKind(str, enum.Enum):
-    """Loại artifact draft mà agent sinh ra để người copy-paste (plan 19)."""
-
-    draft_ticket = "draft_ticket"
-    slack_message = "slack_message"
-    report = "report"
-
-
-class DraftStatus(str, enum.Enum):
-    draft = "draft"
-    exported = "exported"
+class ImportStatus(str, enum.Enum):
+    pending = "pending"
+    mapping_review = "mapping_review"
+    imported = "imported"
+    failed = "failed"
 
 
 def _pg(py_enum: type[enum.Enum], type_name: str) -> SaEnum:
@@ -99,12 +87,6 @@ def _pg(py_enum: type[enum.Enum], type_name: str) -> SaEnum:
 
 
 USER_ROLE_ENUM = _pg(UserRole, "user_role")
-AI_ISSUE_ENUM = _pg(AiIssue, "ai_issue_enum")
-SENTIMENT_ENUM = _pg(Sentiment, "sentiment_enum")
-SEVERITY_ENUM = _pg(Severity, "severity_enum")
-REVIEW_STATUS_ENUM = _pg(ReviewStatus, "review_status")
-REVIEW_ACTION_ENUM = _pg(ReviewAction, "review_action")
 RUN_STATUS_ENUM = _pg(RunStatus, "run_status")
 LLM_CALL_TYPE_ENUM = _pg(LlmCallType, "llm_call_type")
-DRAFT_KIND_ENUM = _pg(DraftKind, "draft_kind_enum")
-DRAFT_STATUS_ENUM = _pg(DraftStatus, "draft_status_enum")
+IMPORT_STATUS_ENUM = _pg(ImportStatus, "import_status_enum")

@@ -88,7 +88,7 @@ def get_run_results(
     rows = session.scalars(
         select(Feedback)
         .where(*conditions)
-        .order_by(Feedback.created_at, Feedback.id)
+        .order_by(Feedback.occurred_at, Feedback.id)
         .offset(offset)
         .limit(limit)
     ).all()

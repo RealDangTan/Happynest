@@ -17,7 +17,7 @@ _C4_FIELDS = {
     "generated_at", "window_days", "totals", "by_severity",
     "by_sentiment", "top_categories", "emerging",
 }
-_C4_TOTALS = {"feedback_count", "pending_review_count", "pii_detected_count"}
+_C4_TOTALS = {"feedback_count", "pii_detected_count"}
 _EMERGING_SUB_C1 = {
     "id", "name", "summary", "feedback_count", "first_seen", "last_seen",
     "current_count", "previous_count", "growth_ratio", "is_emerging",
@@ -66,19 +66,58 @@ def test_summary_shape_c4_and_consistency(client: TestClient) -> None:
         assert len(item["sample_feedback_ids"]) <= 5
 
 
-def test_summary_window_changes_results(client: TestClient) -> None:
-    """days=7 vs days=90 phải khác nhau trên dataset có spread ngày."""
-    auth = _login(client)
-    r7 = client.get("/api/reports/summary", params={"days": 7}, headers=auth)
-    r90 = client.get("/api/reports/summary", params={"days": 90}, headers=auth)
-    assert r7.status_code == r90.status_code == 200, f"{r7.text} / {r90.text}"
+def test_summary_window_changes_results(client: TestClient, test_product) -> None:
+    """days=7 vs days=90 phải khác nhau — suite tự seed 2 row spread ngày
+    (reshape 2026-08-28: data demo cũ đã bị migration 0008 wipe)."""
+    from datetime import datetime, timedelta, timezone
 
-    b7, b90 = r7.json(), r90.json()
-    assert b7["window_days"] == 7 and b90["window_days"] == 90
-    # cửa sổ hẹp hơn → tổng không bao giờ lớn hơn
-    assert b7["totals"]["feedback_count"] <= b90["totals"]["feedback_count"]
-    # data demo có row ngoài 7 ngày (spread thật) → khác nhau thật sự
-    assert b7["totals"]["feedback_count"] < b90["totals"]["feedback_count"]
+    from sqlalchemy import or_
+
+    from app.db.session import SessionLocal
+    from app.models.feedback import Feedback
+
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add_all(
+            [
+                Feedback(
+                    product_id=test_product.id,
+                    source="test-reports-api",
+                    source_record_id="reportsapi-recent",
+                    occurred_at=now,                      # trong days=7
+                    raw_content="recent row (khong PII)",
+                    feedback_text="recent row",
+                ),
+                Feedback(
+                    product_id=test_product.id,
+                    source="test-reports-api",
+                    source_record_id="reportsapi-old",
+                    occurred_at=now - timedelta(days=20),  # ngoài 7, trong 90
+                    raw_content="old row (khong PII)",
+                    feedback_text="old row",
+                ),
+            ]
+        )
+        db.commit()
+
+    try:
+        auth = _login(client)
+        r7 = client.get("/api/reports/summary", params={"days": 7}, headers=auth)
+        r90 = client.get("/api/reports/summary", params={"days": 90}, headers=auth)
+        assert r7.status_code == r90.status_code == 200, f"{r7.text} / {r90.text}"
+
+        b7, b90 = r7.json(), r90.json()
+        assert b7["window_days"] == 7 and b90["window_days"] == 90
+        # cửa sổ hẹp hơn → tổng không bao giờ lớn hơn
+        assert b7["totals"]["feedback_count"] <= b90["totals"]["feedback_count"]
+        # row cũ (20 ngày) nằm trong 90 nhưng ngoài 7 → khác nhau thật sự
+        assert b7["totals"]["feedback_count"] < b90["totals"]["feedback_count"]
+    finally:
+        with SessionLocal() as db:
+            db.query(Feedback).filter(
+                or_(Feedback.source_record_id.like("reportsapi-%"))
+            ).delete(synchronize_session=False)
+            db.commit()
 
 
 def test_summary_param_guards(client: TestClient) -> None:

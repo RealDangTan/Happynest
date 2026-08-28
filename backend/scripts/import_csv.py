@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.db.session import SessionLocal  # noqa: E402
 from app.services.ingest_service import (  # noqa: E402
+    get_default_product,
     import_csv_rows,
     iter_csv_dicts,
 )
@@ -29,7 +30,8 @@ def main() -> int:
         return 2
 
     with args.csv_path.open("rb") as f, SessionLocal() as session:
-        report = import_csv_rows(session, iter_csv_dicts(f))
+        product = get_default_product(session)
+        report = import_csv_rows(session, iter_csv_dicts(f), product_id=product.id)
 
     print(f"✅ Imported: {report.imported}")
     print(f"⚠️  Failed:   {report.failed}")

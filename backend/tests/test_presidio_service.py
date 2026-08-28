@@ -151,22 +151,22 @@ class TestIngestWiring:
             content = "Liên hệ tran.van.b@example.com hoặc 0987654321 để được hỗ trợ"
             response = client.post(
                 "/api/feedbacks",
-                json={"source": "app_review", "content": content, "external_ref": f"piiwire-{uuid.uuid4().hex[:8]}"},
+                json={"source": "app_review", "content": content, "source_record_id": f"piiwire-{uuid.uuid4().hex[:8]}"},
                 headers=headers,
             )
             assert response.status_code == 201, response.text
             body = response.json()
             # API mặc định: sanitized visible, raw KHÔNG
             assert body["pii_detected"] is True
-            assert body["sanitized_content"] != content
-            assert "@example.com" not in body["sanitized_content"]
+            assert body["feedback_text"] != content
+            assert "@example.com" not in body["feedback_text"]
 
             with SessionLocal() as db:
                 row = db.get(Feedback, uuid.UUID(body["id"]))
                 assert row.pii_detected is True
                 assert row.raw_content == content
-                assert row.sanitized_content != row.raw_content
-                assert "0987654321" not in (row.sanitized_content or "")
+                assert row.feedback_text != row.raw_content
+                assert "0987654321" not in (row.feedback_text or "")
                 # entities metadata-only trong JSONB
                 assert row.pii_entities
                 for entity in row.pii_entities:
@@ -174,6 +174,6 @@ class TestIngestWiring:
         finally:
             with SessionLocal() as db:
                 db.query(Feedback).filter(
-                    or_(Feedback.external_ref.like("piiwire-%"))
+                    or_(Feedback.source_record_id.like("piiwire-%"))
                 ).delete(synchronize_session=False)
                 db.commit()

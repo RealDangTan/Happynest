@@ -1,9 +1,11 @@
-"""Unit tests Phase 07 — classifier + fallback chain + HITL + llm_call_logs.
+"""Unit tests Phase 07 — classifier + fallback chain + llm_call_logs.
 
 Nguyên tắc: KHÔNG network (fake OpenAI client), KHÔNG đụng Supabase dev
 (row-log test dùng sqlite in-memory qua `session_factory` inject của
 chat_structured). Tracing thật bị vô hiệu hóa bằng autouse fixture — kill-switch
 được test riêng ở cuối file với settings monkeypatch.
+
+Reshape 2026-08-28: test công thức HITL đã bỏ cùng feedback-level HITL.
 """
 
 import json
@@ -22,7 +24,6 @@ from app.services import llm_client, tracing
 from app.services.classifier import (
     PROMPT_VERSION,
     classify_feedback,
-    compute_requires_human_review,
 )
 from app.services.llm_client import LLMStructureError
 
@@ -187,67 +188,6 @@ def test_three_invalid_outputs_exhaust_retries_and_raise(monkeypatch, no_real_tr
 
     with pytest.raises(LLMStructureError):
         classify_feedback("App chậm.")
-
-
-# ---------------------------------------------------------------------------
-# HITL formula — phủ từng nhánh (decisions.md 2026-08-24)
-# ---------------------------------------------------------------------------
-
-def _classification(**overrides) -> Classification:
-    base = dict(
-        categories=["khác"],
-        ai_issue=None,
-        sentiment="neutral",
-        severity="low",
-        safety_issue=False,
-        confidence=0.95,
-        rationale="ok",
-    )
-    base.update(overrides)
-    return Classification.model_validate(base)
-
-
-def test_hitl_critical_severity():
-    assert compute_requires_human_review(_classification(severity="critical"), False)
-
-
-def test_hitl_safety_issue_flag():
-    assert compute_requires_human_review(_classification(safety_issue=True), False)
-
-
-def test_hitl_pii_detected_branch():
-    assert compute_requires_human_review(_classification(), True)
-
-
-def test_hitl_low_confidence_below_global_threshold():
-    # 0.5 < CLASSIFY_CONFIDENCE_REVIEW_BELOW (.env = 0.60) dù severity medium
-    assert compute_requires_human_review(
-        _classification(severity="medium", confidence=0.5), False
-    )
-
-
-def test_hitl_high_severity_low_confidence_new_branch():
-    # Nhánh mới: high/critical + conf < HIGH_SEVERITY threshold (0.75)
-    # — conf 0.7 vẫn trên ngưỡng chung 0.60 nhưng vẫn bị đẩy review
-    assert compute_requires_human_review(
-        _classification(severity="high", confidence=0.70), False
-    )
-
-
-def test_hitl_negative_case_medium_confident_clean():
-    s = get_settings()
-    conf = max(s.CLASSIFY_CONFIDENCE_REVIEW_BELOW, s.HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW) + 0.05
-    assert not compute_requires_human_review(
-        _classification(severity="medium", confidence=conf), False
-    )
-
-
-def test_hitl_negative_case_high_confident_above_high_threshold():
-    s = get_settings()
-    conf = s.HIGH_SEVERITY_CONFIDENCE_REVIEW_BELOW + 0.05
-    assert not compute_requires_human_review(
-        _classification(severity="high", confidence=conf), False
-    )
 
 
 # ---------------------------------------------------------------------------

@@ -46,8 +46,8 @@ ENGINE_SETTINGS_STUB = SimpleNamespace(
 
 def _member(days_ago: float, severity: str | None = None) -> SimpleNamespace:
     return SimpleNamespace(
-        created_at=NOW - timedelta(days=days_ago), severity=severity,
-        categories=None,
+        occurred_at=NOW - timedelta(days=days_ago),
+        ai_analysis={"severity": severity} if severity else None,
     )
 
 
@@ -67,8 +67,8 @@ def test_branch_spike() -> None:
     assert t["is_emerging"] is False
     # 0.5·min(15/50,1)=0.15 · +0.3 spike · +0.2·(3/15)=0.04 → 0.49
     assert t["suggested_priority"] == 0.49
-    assert t["first_seen"] == min(m.created_at for m in members)
-    assert t["last_seen"] == max(m.created_at for m in members)
+    assert t["first_seen"] == min(m.occurred_at for m in members)
+    assert t["last_seen"] == max(m.occurred_at for m in members)
 
 
 def test_branch_emerging() -> None:
@@ -129,8 +129,8 @@ def _toy_matrix() -> tuple[list[SimpleNamespace], np.ndarray]:
     noise = rng.uniform(0.2, 0.8, size=(4, _DIM))   # 4 < min_cluster_size
     X = np.asarray(vecs + list(noise), dtype=np.float32)
     rows = [
-        _fb(i, v, sanitized_content=f"sanitized {i}", raw_content="RAW",
-            confidence=0.9, categories=["cat"], created_at=NOW, severity=None)
+        _fb(i, v, feedback_text=f"sanitized {i}", raw_content="RAW",
+            ai_analysis={"confidence": 0.9, "topics": ["cat"]}, occurred_at=NOW)
         for i, v in enumerate(X)
     ]
     return rows, X
@@ -172,7 +172,7 @@ def test_naming_payload_sanitized_only() -> None:
     """PII boundary: payload naming KHÔNG bao giờ chứa raw_content."""
     rows, _ = _toy_matrix()
     rows[0].raw_content = "SĐT thật 0901234567 của Nguyễn Văn A"
-    rows[0].sanitized_content = "sanitized an toàn"
+    rows[0].feedback_text = "sanitized an toàn"
     groups = [clustering.MemberGroup(label_idx=0, members=rows[:6])]
     payload = build_naming_payload(groups)
     data = json.loads(payload)
@@ -196,13 +196,13 @@ def test_apply_names_happy_path_covers_all() -> None:
 def test_apply_names_llm_fail_falls_back_without_cost() -> None:
     """LLStructureError → mọi nhóm có tên fallback, không còn phụ thuộc LLM."""
     rows, X = _toy_matrix()
-    for r in rows:                             # mọi member cùng categories →
-        r.categories = ["performance", "bug"]  # summary nào cũng ghép được top
+    for r in rows:                                 # mọi member cùng topics →
+        r.ai_analysis = {"topics": ["performance", "bug"]}  # summary nào cũng ghép được top
     groups = group_feedbacks(rows, cluster_embeddings(X, ENGINE_SETTINGS_STUB))
     apply_names(groups, None)                  # nhánh LLM fail hoàn toàn
     for g in groups:
         assert g.name.startswith("Cụm #")
-        assert "performance" in g.summary      # summary ghép top categories
+        assert "performance" in g.summary      # summary ghép top topics
 
 
 def test_apply_names_partial_coverage_fills_gap() -> None:
@@ -226,8 +226,8 @@ def test_run_clustering_end_to_end_with_mocks(monkeypatch) -> None:
 
     now = datetime.now(tz.utc)
     rows, X = _toy_matrix()
-    rows.append(_fb(999, None, sanitized_content="x", raw_content="y",
-                    confidence=None, categories=None, created_at=now, severity=None))
+    rows.append(_fb(999, None, feedback_text="x", raw_content="y",
+                    ai_analysis=None, occurred_at=now))
 
     class _Result:
         def scalars(self):
