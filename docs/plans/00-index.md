@@ -76,20 +76,34 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 - [x] 11 Test suite polish
 - [x] 12 DoD sweep
 
-## 5. Series Agent module (17–20) — khai báo 2026-08-26
+## 5. Series Agent module (17–20) — khai báo 2026-08-26 — ⚠️ SUPERSEDED 2026-08-28
 
-> Bổ sung sau khi backend foundation đóng. Số 13–16 đã bị series delivery chiếm trước đó (xem decisions 2026-08-25/26) → agent module đánh số **17–20**, đăng ký như pha **P6** của [`delivery-execute-plan.md`](delivery-execute-plan.md). **Phase 09 KHÔNG superseded** — runner deterministic vẫn là đường sản xuất; agent là tầng điều tra trên cụm (`pipeline_version='agent-router-v1'` phân biệt trong `analysis_runs`).
+> **SUPERSEDED:** Re-plan VoC OS 2026-08-28 (xem [decisions.md](../decisions.md) cùng ngày) — kiến trúc mới LISTEN → UNDERSTAND → ACT thay thế thiết kế này. Series 17–19 đã commit (8d935a3..26f35c8) nhưng code sẽ bị strip theo quyết định "strip & rewrite"; series thực thi mới là **[21–27](21-27-voc-os-index.md)**. Bảng dưới giữ lại làm bằng chứng lịch sử.
 
 | # | File | Phạm vi | Blocked by | Status |
 |---|---|---|---|---|
-| 17 | [17-agent-substrate-demo-data.md](17-agent-substrate-demo-data.md) | Migration 0007 (insights.embedding, action_drafts, insight_reviews, impact_checks, enum route/critic) + dataset demo ~650 row planted spike/false-alarm | head migration ổn định | ⬜ |
-| 18 | [18-agent-toolbox.md](18-agent-toolbox.md) | 5 tool deterministic + registry cho router + backfill insight embeddings | 17, phase 14 Task 3–4 | ⬜ |
-| 19 | [19-agent-graph-hitl.md](19-agent-graph-hitl.md) | LangGraph fully LLM-routed (router node) + budget cap + critic + risk gate + interrupt/resume + `/api/agent/*` | 18 | ⬜ |
-| 20 | [20-closed-loop-kpis-demo.md](20-closed-loop-kpis-demo.md) | Impact check closed-loop + `GET /api/reports/kpis` (thuần SQL) + demo script + align success story | 17 (Task 1–2 độc lập); 19 (demo trọn) | ⬜ |
+| 17 | [17-agent-substrate-demo-data.md](17-agent-substrate-demo-data.md) | Migration 0007 (insights.embedding, action_drafts, insight_reviews, impact_checks, enum route/critic) + dataset demo ~650 row planted spike/false-alarm | head migration ổn định | ⚠️ code committed, SUPERSEDED |
+| 18 | [18-agent-toolbox.md](18-agent-toolbox.md) | 5 tool deterministic + registry cho router + backfill insight embeddings | 17, phase 14 Task 3–4 | ⚠️ code committed, SUPERSEDED |
+| 19 | [19-agent-graph-hitl.md](19-agent-graph-hitl.md) | LangGraph fully LLM-routed (router node) + budget cap + critic + risk gate + interrupt/resume + `/api/agent/*` | 18 | ⚠️ code committed, SUPERSEDED |
+| 20 | [20-closed-loop-kpis-demo.md](20-closed-loop-kpis-demo.md) | Impact check closed-loop + `GET /api/reports/kpis` (thuần SQL) + demo script + align success story | 17 (Task 1–2 độc lập); 19 (demo trọn) | ⚠️ KPI committed (95c59dd), SUPERSEDED |
+
+## 6. Series VoC OS rewrite (21–27) — khai báo 2026-08-28
+
+> Nguồn thiết kế: [`../VoC Agent Operating System — Technical Implementation Plan.md`](../VoC%20Agent%20Operating%20System%20—%20Technical%20Implementation%20Plan.md). Quy tắc §3 phía trên áp dụng nguyên vẹn. Chi tiết: [21-27-voc-os-index.md](21-27-voc-os-index.md).
+
+| # | File | Phạm vi | Blocked by | Status |
+|---|---|---|---|---|
+| 21 | [21-voc-core-reshape.md](21-voc-core-reshape.md) | Migration 0008 destructive: products, imports, feedback JSONB zones + strip hitl_graph/review/agent/sources/insights cũ | — | ⬜ |
+| 22 | [22-listen-schema-intelligence.md](22-listen-schema-intelligence.md) | Migration 0009 product_schemas + profiler + LLM mapper + Gate #1 + Supabase Storage raw | 21 | ⬜ |
+| 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | Migration 0010 taxonomies + emerging themes + ai_analysis JSONB reshape + runner thích ứng | 21 | ⬜ |
+| 24 | [24-analytics-engine.md](24-analytics-engine.md) | 9 MVP tools + query compiler (validate theo product schema, không SQL tự do) | 22, 23 | ⬜ |
+| 25 | [25-understand-agent.md](25-understand-agent.md) | Migration 0011 evidence + insights mới + UNDERSTAND graph (planner/evaluator/synthesizer) + Gate #2 | 24 | ⬜ |
+| 26 | [26-act-agent.md](26-act-agent.md) | Migration 0012 actions + ACT agent + priority formula + matrix + Gate #3 | 25 | ⬜ |
+| 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | Migration 0013 decision_logs + KPIs LISTEN/UNDERSTAND/ACT + DoD sweep + docs | 21–26 | ⬜ |
 
 ```text
-17 ── 18 ── 19 ── 20 (Task 1–2 của 20 chỉ cần 17)
- └── phase 14 engine clusters phải xong trước 18
+21 ── 22 ─┬─ 24 ── 25 ── 26 ── 27
+ └───────┴─ 23 ──┘
 ```
 
 Quy tắc áp dụng nguyên bộ quy tắc §3 phía trên (inline, không subagent, PII boundary, lệch → decisions). Các series khác: FE xem [`FE-00-index.md`](FE-00-index.md), UF xem [`UF-00-index.md`](UF-00-index.md).

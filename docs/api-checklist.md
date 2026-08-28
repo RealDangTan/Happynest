@@ -6,6 +6,8 @@
 
 Snapshot: 2026-08-26 · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`, `frontend/hooks/*`
 
+> ⚠️ **RE-PLAN 2026-08-28:** series 21–27 ([`plans/21-27-voc-os-index.md`](plans/21-27-voc-os-index.md)) sẽ viết lại surface BE theo kiến trúc VoC OS (products/imports/schema, taxonomy, UNDERSTAND/ACT agents, actions + matrix). Bảng dưới là state TRƯỚC re-plan; các phase 21–27 tự cập nhật bảng này trong cùng commit của mình. Endpoint dưới đây có thể bị drop/đổi giữa chừng (feedback-level review, corrections, sources, agent cũ) — xem [`plans/00-index.md`](plans/00-index.md) §5 SUPERSEDED.
+
 Chú thích:
 - **Trạng thái (BE):** ✅ production · 🚧 stub 501 — *không còn dòng nào từ 2026-08-26: plans 14–16 đã thay hết stub*
 - **Trên FE:** ✅ đã nối · 🔶 đã có hook/API client nhưng chưa gắn UI · ⬜ chưa nối
