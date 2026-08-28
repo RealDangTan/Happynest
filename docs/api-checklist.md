@@ -2,9 +2,9 @@
 
 > **Quy tắc đồng bộ (Hard rule #10 — AGENTS.md):** thêm/sửa/xóa endpoint, đổi request/response schema hay auth → BẮT BUỘC cập nhật bảng dưới trong cùng commit; đổi phía FE (nối/sửa call API) cũng cập nhật 2 cột cuối. Agent tự đập vào checklist này, không cần nhắc.
 >
-> List này là **bản đồ nối FE ↔ BE** — đủ 24/24 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
+> List này là **bản đồ nối FE ↔ BE** — đủ 26/26 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
 
-Snapshot: 2026-08-26 · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`, `frontend/hooks/*`
+Snapshot: 2026-08-28 · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`, `frontend/hooks/*`
 
 > ⚠️ **RE-PLAN 2026-08-28:** series 21–27 ([`plans/21-27-voc-os-index.md`](plans/21-27-voc-os-index.md)) sẽ viết lại surface BE theo kiến trúc VoC OS (products/imports/schema, taxonomy, UNDERSTAND/ACT agents, actions + matrix). Bảng dưới là state TRƯỚC re-plan; các phase 21–27 tự cập nhật bảng này trong cùng commit của mình. Endpoint dưới đây có thể bị drop/đổi giữa chừng (feedback-level review, corrections, sources, agent cũ) — xem [`plans/00-index.md`](plans/00-index.md) §5 SUPERSEDED.
 
@@ -17,7 +17,9 @@ Chú thích:
 | Trạng thái | Method | Endpoint | Auth | Tác dụng | Trên FE | Vị trí trên FE |
 |---|---|---|---|---|---|---|
 | ✅ | GET | `/api/health` | public | Health check: DB (`SELECT 1`), `structured_output_mode`, LLM/embedding model, `pii_mode` | ⬜ | — (chỉ cần khi debug deploy) |
-| ✅ | POST | `/api/auth/token` | public | Đăng nhập (OAuth2 password form, username = email) → JWT vào cookie httpOnly SameSite=Lax + `TokenOut` body | ✅ | Trang `/login` — `frontend/app/login/page.tsx` |
+| ✅ | POST | `/api/auth/token` | public | Đăng nhập (OAuth2 password form, username = email) → JWT vào cookie httpOnly SameSite=Lax + `TokenOut` body | ✅ | Trang `/login` — `frontend/app/login/page.tsx`; gọi lại sau đăng ký ở `frontend/app/register/page.tsx` |
+| ✅ | POST | `/api/auth/register` | public | Đăng ký email/mật khẩu → `201 UserOut` role `operations`; trùng email 409; sai dạng/mật khẩu ngắn 422 | ✅ | Trang `/register` — `frontend/app/register/page.tsx` |
+| ✅ | POST | `/api/auth/logout` | public (idempotent) | Xoá cookie `access_token` (Max-Age=0) → 204 | ✅ | Menu avatar sidebar footer — `frontend/app/(app)/layout.tsx` |
 | ✅ | GET | `/api/auth/me` | cookie/Bearer | Thông tin user hiện tại (email, role) | ✅ | Guard toàn khu `(app)` + header — `frontend/app/(app)/layout.tsx` (hook `useMe`) |
 | ✅ | POST | `/api/feedbacks` | pm \| operations | Ingest 1 feedback đơn lẻ → 201 (chỉ lưu `raw_content`; sanitize chạy ở pipeline) | ✅ | Dialog "Nhập liệu" trong trang Feedbacks — `frontend/app/(app)/feedbacks/data-entry-dialog.tsx` |
 | ✅ | POST | `/api/feedbacks/import-csv` | pm \| operations | Import CSV multipart (utf-8-sig chống BOM Excel) → `CsvImportReport` lỗi theo dòng, không abort cả file | ✅ | Cùng dialog trên (tab import CSV) — `data-entry-dialog.tsx` |

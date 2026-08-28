@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/register"];
 
 export function middleware(req: NextRequest) {
   const hasSession = req.cookies.has("access_token");
@@ -11,7 +11,7 @@ export function middleware(req: NextRequest) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-  if (hasSession && pathname === "/login") {
+  if (hasSession && (pathname === "/login" || pathname === "/register")) {
     const url = req.nextUrl.clone();
     url.pathname = "/feedbacks";
     return NextResponse.redirect(url);

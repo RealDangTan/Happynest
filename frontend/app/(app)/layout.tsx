@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sidebar,
   SidebarContent,
@@ -18,9 +20,19 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useMe } from "@/hooks/use-me";
+import { apiFetch } from "@/lib/api";
 import {
   LayoutDashboard,
+  LogOut,
   MessageSquareText,
   Activity,
   Layers,
@@ -44,8 +56,18 @@ const PHASE_LABEL: Record<string, string> = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const me = useMe();
+  const queryClient = useQueryClient();
   const initials = (me.data?.email ?? "?").slice(0, 2).toUpperCase();
+
+  const logout = useMutation({
+    mutationFn: () => apiFetch("/api/auth/logout", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.clear();
+      router.replace("/login");
+    },
+  });
 
   return (
     <SidebarProvider>
@@ -73,17 +95,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="p-3">
-          <div className="flex items-center gap-2">
-            <Avatar className="size-8">
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm">{me.data?.email ?? "…"}</p>
-            </div>
-            {me.data ? (
-              <Badge variant="secondary">{me.data.role}</Badge>
-            ) : null}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Avatar className="size-8">
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">{me.data?.email ?? "…"}</p>
+              </div>
+              {me.data ? (
+                <Badge variant="secondary">{me.data.role}</Badge>
+              ) : null}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-56">
+              <DropdownMenuLabel className="truncate">
+                {me.data?.email ?? "…"}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={logout.isPending}
+                onSelect={() => logout.mutate()}
+              >
+                <LogOut data-icon="inline-start" />
+                Đăng xuất
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -12,9 +13,11 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api";
+import { GoogleIcon } from "@/components/google-icon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,6 +56,15 @@ export default function LoginPage() {
           <CardDescription>Đăng nhập để tiếp tục</CardDescription>
         </CardHeader>
         <CardContent>
+          <Button variant="ghost" type="button" className="w-full" disabled title="Sắp có">
+            <GoogleIcon data-icon="inline-start" />
+            Đăng nhập với Google
+          </Button>
+          <div className="my-4 flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">hoặc dùng email</span>
+            <Separator className="flex-1" />
+          </div>
           <form
             className="flex flex-col gap-4"
             onSubmit={(e) => {
@@ -97,6 +109,12 @@ export default function LoginPage() {
               Đăng nhập
             </Button>
           </form>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Chưa có tài khoản?{" "}
+            <Link href="/register" className="text-foreground underline underline-offset-4">
+              Đăng ký
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </main>
