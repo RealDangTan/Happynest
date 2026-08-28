@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     AGENT_RISK_PRIORITY_THRESHOLD: float = 0.70   # risk gate: suggested_priority ≥
     AGENT_RISK_SEVERITY_SHARE: float = 0.30       # risk gate: share(high,critical) ≥
 
+    # --- Closed-loop impact (Phase 20): cửa sổ đo trước/sau mốc ticket draft ---
+    IMPACT_WINDOW_DAYS: int = 7
+
     # --- Tracing (Langfuse Cloud EU) ---
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_SECRET_KEY: str = ""
