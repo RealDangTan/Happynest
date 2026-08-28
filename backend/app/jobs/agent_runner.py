@@ -197,7 +197,12 @@ def _execute_in_thread(run_id: uuid.UUID, targets: list[uuid.UUID]) -> None:
     """Thân thread nền — NUỐT mọi exception sau khi ghi vào row run."""
     try:
         logger.info("agent run %s bắt đầu với %d target.", run_id, len(targets))
-        _flow_start(run_id, targets)
+        result = _flow_start(run_id, targets)
+        if "__interrupt__" in result:
+            # graph đậu ở await_approval — run GIỮ trạng thái running, người
+            # duyệt quyết qua POST /decision rồi resume mới được tính hoàn tất
+            logger.info("agent run %s đậu ở interrupt — chờ decision.", run_id)
+            return
         _mark_completed(run_id)
         logger.info("agent run %s hoàn tất.", run_id)
     except Exception as exc:  # noqa: BLE001 — job chết không nổ process
@@ -205,15 +210,20 @@ def _execute_in_thread(run_id: uuid.UUID, targets: list[uuid.UUID]) -> None:
         _mark_failed(run_id, exc)
 
 
-def start_agent_run(db: Session) -> AnalysisRun:
+def start_agent_run(
+    db: Session, *, targets: list[uuid.UUID] | None = None
+) -> AnalysisRun:
     """Tạo row run + spawn thread nền; trả row NGAY (caller serialize ra response).
 
-    Targets rỗng → vẫn tạo run nhưng completed ngay với note trong error
-    (plan §3.2: 'rỗng → run completed ngay với note') — client thấy kết quả
-    dứt khoát thay vì poll vô vọng.
+    ``targets`` None → tự chọn bằng select_targets (route truyền sẵn list để
+    tránh query 2 lần). Rỗng → vẫn tạo run nhưng completed ngay với note trong
+    error (plan §3.2: 'rỗng → run completed ngay với note') — client thấy kết
+    quả dứt khoát thay vì poll vô vọng.
     """
     settings = get_settings()
-    targets = select_targets(db)
+    if targets is None:
+        targets = select_targets(db)
+    targets = list(targets)
     run = AnalysisRun(
         pipeline_version=PIPELINE_VERSION,
         llm_model=settings.LLM_MODEL,
@@ -275,5 +285,9 @@ def resume_with_decision(
     if phase == "interrupted":
         # reviewer_id gắn vào payload ngay tại đây — node apply_decision đọc
         # state, không tin payload client tự khai tác giả.
-        return _flow_resume(run_id, {**payload, "reviewer_id": str(reviewer_id)})
-    return _flow_continue(run_id)
+        result = _flow_resume(run_id, {**payload, "reviewer_id": str(reviewer_id)})
+    else:  # mid-flight — crash sau interrupt, payload đã nằm checkpoint
+        result = _flow_continue(run_id)
+    if "__interrupt__" not in result:
+        _mark_completed(run_id)
+    return result

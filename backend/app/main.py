@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.routes import admin, analysis, auth, feedback, review, sources
+from app.api.routes import admin, agent, analysis, auth, feedback, review, sources
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
@@ -120,6 +120,8 @@ def create_app() -> FastAPI:
     app.include_router(review.router)
     # FE-03b: sources registry (decisions 2026-08-25).
     app.include_router(sources.router)
+    # Phase 19: agent router — POST /runs + GET /runs/{id} + decision HITL.
+    app.include_router(agent.router)
 
     return app
 
