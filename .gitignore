@@ -27,3 +27,4 @@ Thumbs.db
 
 # Log server evidence cục bộ (docs/evidence/hitl-checkpoint-resume.md)
 backend/evidence-server-*.log
+"cookie.txt"  
