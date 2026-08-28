@@ -29,5 +29,6 @@ from app.models import (  # noqa: E402,F401
     import_,
     llm_call_log,
     product,
+    product_schema,
     user,
 )

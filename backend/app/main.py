@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.routes import admin, analysis, auth, feedback, products
+from app.api.routes import admin, analysis, auth, feedback, imports, products
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
@@ -117,6 +117,8 @@ def create_app() -> FastAPI:
     app.include_router(analysis.router)
     # Plan 21 (VoC OS reshape): products = workspace scoping.
     app.include_router(products.router)
+    # Plan 22 (LISTEN): imports pipeline + Gate #1 mapping review.
+    app.include_router(imports.router)
 
     return app
 

@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     AGENT_RISK_PRIORITY_THRESHOLD: float = 0.70   # risk gate: suggested_priority ≥
     AGENT_RISK_SEVERITY_SHARE: float = 0.30       # risk gate: share(high,critical) ≥
 
+    # --- LISTEN import (plan 22): raw CSV lưu DISK local (decisions
+    # 2026-08-28 — chưa có Supabase Storage credentials) ---
+    IMPORT_STORAGE_DIR: str = "storage/imports"
+
     # --- Closed-loop impact (Phase 20): cửa sổ đo trước/sau mốc ticket draft ---
     IMPACT_WINDOW_DAYS: int = 7
 

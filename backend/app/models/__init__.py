@@ -6,6 +6,7 @@ from app.models.feedback import Feedback
 from app.models.import_ import Import
 from app.models.llm_call_log import LlmCallLog
 from app.models.product import Product
+from app.models.product_schema import ProductSchema
 from app.models.user import User
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "Import",
     "LlmCallLog",
     "Product",
+    "ProductSchema",
     "User",
 ]

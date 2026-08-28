@@ -4,6 +4,8 @@ Lịch sử: Phase 05/06/08 dựng POST/import-csv/list/detail/similar trên b�
 phẳng cũ. Reshape 2026-08-28: mọi row gắn product (default = product đầu tiên
 cho tới khi FE có product switcher), JSONB zones thay các cột phẳng, toggle
 `?include_raw` chết cùng feedback-level HITL (raw KHÔNG BAO GIỜ ra response).
+Phase 22: route import-csv CHUYỂN sang `POST /api/imports` (LISTEN pipeline
+profiler → mapper → Gate #1); POST đơn lẻ giữ nguyên cho nhập tay.
 Guard role pm|operations gắn ở TẦNG ROUTER.
 """
 
@@ -12,10 +14,8 @@ import uuid
 from fastapi import (
     APIRouter,
     Depends,
-    File,
     HTTPException,
     Query,
-    UploadFile,
     status,
 )
 from sqlalchemy import func, select, text
@@ -24,17 +24,11 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_role
 from app.models.feedback import Feedback
 from app.schemas.feedback import (
-    CsvImportReport,
     FeedbackIn,
     FeedbackListOut,
     FeedbackOut,
 )
-from app.services.ingest_service import (
-    get_default_product,
-    import_csv_rows,
-    iter_csv_dicts,
-    ingest_one,
-)
+from app.services.ingest_service import get_default_product, ingest_one
 
 router = APIRouter(
     prefix="/api",
@@ -58,28 +52,6 @@ def create_feedback(
     return FeedbackOut.model_validate(
         ingest_one(session, item, product_id=product.id)
     )
-
-
-@router.post("/feedbacks/import-csv")
-def import_feedbacks_csv(
-    file: UploadFile = File(...), session: Session = Depends(get_db)
-) -> CsvImportReport:
-    """Import CSV multipart → report từng dòng lỗi, không abort toàn file.
-
-    Đường legacy (phase 21) — gắn product mặc định, cột ngoài core đi vào
-    `source_meta`. Phase 22 (LISTEN) sẽ thay bằng pipeline profiler → mapper
-    → Gate #1 với product schema.
-    """
-    if not (file.filename or "").lower().endswith(".csv"):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="File phải có đuôi .csv.",
-        )
-    try:
-        product = get_default_product(session)
-    except LookupError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    return import_csv_rows(session, iter_csv_dicts(file.file), product_id=product.id)
 
 
 @router.get("/feedbacks")

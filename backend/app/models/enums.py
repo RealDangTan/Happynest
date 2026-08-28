@@ -67,6 +67,8 @@ class LlmCallType(str, enum.Enum):
     # UNDERSTAND mới (plan 25) sẽ ADD value riêng.
     route = "route"
     critic = "critic"
+    # LISTEN schema mapper (plan 22) — ADD VALUE qua migration 0009.
+    schema_map = "schema_map"
 
 
 class ImportStatus(str, enum.Enum):

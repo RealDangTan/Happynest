@@ -1,16 +1,16 @@
-"""Tests ingestion — reshape VoC OS (plan 21).
+"""Tests ingestion POST đơn lẻ — reshape VoC OS (plan 21) + plan 22.
 
 ⚠️ Marker `integration` — chạm DB Supabase DEV thật qua internet, chạy riêng:
 `uv run pytest tests/test_ingest.py -m integration`
-(quy ước marker do phase 08 thiết lập trong pyproject: mặc định `-m 'not integration'`).
+
+Phase 22: route `/feedbacks/import-csv` đã chuyển sang LISTEN pipeline
+(`POST /api/imports` + Gate #1) — flow CSV test ở `test_imports_listen.py`.
 
 Dọn dẹp: mọi row tạo ra bị xóa ở teardown qua fixture `clean_feedbacks`
-(theo id hoặc source_record_id tiền tố `fixture20-`/`badcsv-`) — không để rác
-trong DB dev dùng chung.
+(theo id hoặc source_record_id tiền tố `listtest-`) — không để rác trong DB
+dev dùng chung.
 """
 
-import csv
-import io
 import uuid
 from datetime import datetime, timezone
 
@@ -26,8 +26,6 @@ from app.models.feedback import Feedback
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
 pytestmark = pytest.mark.integration
-
-FIXTURE_CSV = "tests/fixtures/feedback_sample_20.csv"
 
 
 # ---------------------------------------------------------------- helpers
@@ -47,10 +45,10 @@ def _login_headers(client, role: UserRole) -> dict[str, str]:
 @pytest.fixture()
 def clean_feedbacks():
     """Thu id các row test tạo; teardown xóa cả theo id lẫn theo tiền tố
-    source_record_id của fixture/bad-csv — kể từ lần chạy trước nếu còn sót."""
+    source_record_id của test — kể từ lần chạy trước nếu còn sót."""
     ids: list[uuid.UUID] = []
     yield ids
-    prefixes = ["fixture20-", "badcsv-", "listtest-"]
+    prefixes = ["listtest-"]
     with SessionLocal() as db:
         db.query(Feedback).filter(
             or_(
@@ -117,110 +115,6 @@ class TestPostSingle:
             row = db.get(Feedback, fid)
             assert row.occurred_at == datetime.fromisoformat(event_time)
             assert row.source_record_id == "listtest-explicit-time"
-
-
-# --------------------------------------------------------------- import-csv
-
-
-class TestImportCsv:
-    def test_full_fixture_20_rows(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.pm)
-        with open(FIXTURE_CSV, "rb") as f:
-            response = client.post(
-                "/api/feedbacks/import-csv",
-                files={"file": ("feedback_sample_20.csv", f, "text/csv")},
-                headers=headers,
-            )
-        assert response.status_code == 200, response.text
-        report = response.json()
-        assert report["imported"] == 20
-        assert report["failed"] == 0 and report["errors"] == []
-        assert report["import_id"] is not None
-
-        with SessionLocal() as db:
-            count = (
-                db.query(Feedback)
-                .filter(Feedback.source_record_id.like("fixture20-%"))
-                .count()
-            )
-            assert count == 20
-            # UTF-8/BOM: dấu tiếng Việt không hỏng (DoD mixed VN-EN)
-            row = (
-                db.query(Feedback)
-                .filter(Feedback.source_record_id == "fixture20-02")
-                .one()
-            )
-            assert "Nguyễn Văn An" in row.raw_content
-            # occurred_at từ cột CSV được tôn trọng (event time, có offset +07:00)
-            assert row.occurred_at.utcoffset() is not None
-            # legacy import gắn chung 1 Import row
-            assert row.import_id is not None
-            assert row.import_id == uuid.UUID(report["import_id"])
-
-    def test_bad_rows_counted_not_aborted(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.pm)
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(["source", "content", "external_ref", "created_at"])
-        writer.writerow(["survey", "dòng hợp lệ 1", "badcsv-1", "2026-01-01T00:00:00+00:00"])
-        writer.writerow(["", "thiếu source", "badcsv-x", ""])  # dòng 3 lỗi
-        writer.writerow(["email", "ngày sai format", "badcsv-y", "01/02/2026"])  # dòng 4 lỗi
-        writer.writerow(["app_review", "dòng hợp lệ 2", "badcsv-2", ""])
-
-        response = client.post(
-            "/api/feedbacks/import-csv",
-            files={"file": ("messy.csv", buffer.getvalue().encode(), "text/csv")},
-            headers=headers,
-        )
-        assert response.status_code == 200, response.text
-        report = response.json()
-        assert report["imported"] == 2
-        assert report["failed"] == 2
-        assert {e["row"] for e in report["errors"]} == {3, 4}
-        assert all(e["reason"] for e in report["errors"])
-
-        with SessionLocal() as db:
-            kept = (
-                db.query(Feedback)
-                .filter(Feedback.source_record_id.like("badcsv-%"))
-                .count()
-            )
-            assert kept == 2  # dòng lỗi không cản dòng hợp lệ
-
-    def test_extra_columns_go_to_source_meta(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.pm)
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(["source", "content", "source_record_id", "occurred_at", "ticket_status"])
-        writer.writerow(
-            ["survey", "nội dung meta", "listtest-meta-1", "2026-01-01T00:00:00+00:00", "open"]
-        )
-        response = client.post(
-            "/api/feedbacks/import-csv",
-            files={"file": ("meta.csv", buffer.getvalue().encode(), "text/csv")},
-            headers=headers,
-        )
-        assert response.status_code == 200, response.text
-        fid = None
-        with SessionLocal() as db:
-            row = (
-                db.query(Feedback)
-                .filter(Feedback.source_record_id == "listtest-meta-1")
-                .one()
-            )
-            assert row.source_meta == {"ticket_status": "open"}
-            assert row.data == {}
-            fid = row.id
-        clean_feedbacks.append(fid)
-
-    def test_non_csv_extension_rejected(self, client):
-        headers = _login_headers(client, UserRole.pm)
-        response = client.post(
-            "/api/feedbacks/import-csv",
-            files={"file": ("not_csv.txt", b"hello", "text/plain")},
-            headers=headers,
-        )
-        assert response.status_code == 422
 
 
 # ------------------------------------------------------------ list + detail
