@@ -72,6 +72,8 @@ class LlmCallType(str, enum.Enum):
     plan = "plan"
     evaluate = "evaluate"
     synthesize = "synthesize"
+    # ACT agent (plan 26) — ADD VALUE qua migration 0012.
+    act_generate = "act_generate"
 
 
 class InsightReviewAction(str, enum.Enum):
@@ -81,6 +83,19 @@ class InsightReviewAction(str, enum.Enum):
     edit = "edit"
     investigate_more = "investigate_more"
     reject = "reject"
+
+
+class BusinessFunction(str, enum.Enum):
+    """8 business functions cố định (VoC OS §45) — migration 0012."""
+
+    MARKETING = "MARKETING"
+    LEGAL = "LEGAL"
+    DESIGN = "DESIGN"
+    FINANCE = "FINANCE"
+    ENGINEERING = "ENGINEERING"
+    OPERATION = "OPERATION"
+    SALES = "SALES"
+    SUPPORT = "SUPPORT"
 
 
 class ImportStatus(str, enum.Enum):
@@ -105,3 +120,4 @@ RUN_STATUS_ENUM = _pg(RunStatus, "run_status")
 LLM_CALL_TYPE_ENUM = _pg(LlmCallType, "llm_call_type")
 IMPORT_STATUS_ENUM = _pg(ImportStatus, "import_status_enum")
 INSIGHT_REVIEW_ACTION_ENUM = _pg(InsightReviewAction, "insight_review_action")
+BUSINESS_FUNCTION_ENUM = _pg(BusinessFunction, "business_function")

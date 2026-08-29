@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.api.routes import (
+    actions,
     admin,
     agent,
     analysis,
@@ -132,6 +133,8 @@ def create_app() -> FastAPI:
     app.include_router(taxonomies.router)
     # Plan 25: UNDERSTAND agent + Gate #2 + insights (shape mới).
     app.include_router(agent.router)
+    # Plan 26: ACT layer + Gate #3 (actions + priority matrix).
+    app.include_router(actions.router)
 
     return app
 

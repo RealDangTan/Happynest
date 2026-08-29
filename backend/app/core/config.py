@@ -76,6 +76,14 @@ class Settings(BaseSettings):
     UNDERSTAND_MAX_ITERATIONS: int = 8
     UNDERSTAND_LLM_BUDGET_PER_RUN: int = 18  # COUNT llm_call_logs (plan+evaluate+synthesize)
 
+    # --- ACT priority formula (VoC OS §49, plan 26) — weights configurable,
+    # công thức DETERMINISTIC ở services/act_agent.py; đổi weight qua env ---
+    PRIORITY_WEIGHT_IMPACT: float = 0.4
+    PRIORITY_WEIGHT_URGENCY: float = 0.3
+    PRIORITY_WEIGHT_CONFIDENCE: float = 0.2
+    PRIORITY_WEIGHT_EFFORT: float = 0.1
+    ACT_RELEVANCE_THRESHOLD: float = 0.5  # relevance ≥ → sinh candidate action
+
     # --- LISTEN import (plan 22): raw CSV lưu DISK local (decisions
     # 2026-08-28 — chưa có Supabase Storage credentials) ---
     IMPORT_STORAGE_DIR: str = "storage/imports"

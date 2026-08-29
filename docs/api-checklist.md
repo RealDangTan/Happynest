@@ -2,7 +2,7 @@
 
 > **Quy tắc đồng bộ (Hard rule #10 — AGENTS.md):** thêm/sửa/xóa endpoint, đổi request/response schema hay auth → BẮT BUỘC cập nhật bảng dưới trong cùng commit; đổi phía FE (nối/sửa call API) cũng cập nhật 2 cột cuối. Agent tự đập vào checklist này, không cần nhắc.
 >
-> List này là **bản đồ nối FE ↔ BE** — đủ 27/27 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
+> List này là **bản đồ nối FE ↔ BE** — đủ 31/31 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
 
 Snapshot: 2026-08-28 (phase 22 — LISTEN) · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**` (🔶 = đã nối nhưng shape/API đổi sau reshape — series FE mới sẽ nối lại)
 
@@ -51,6 +51,10 @@ Chú thích:
 | ✅ | GET | `/api/agent/runs/{run_id}` | pm \| operations | Trạng thái run (AnalysisRun: status/error/snapshot) + `pending_approval` chứa interrupt payload `{insight, evidence, options}` khi graph đậu chờ human | ⬜ | — |
 | ✅ | POST | `/api/agent/runs/{run_id}/decision` | pm \| operations | **Gate #2 (VoC OS §43):** `approve` \| `edit` (`edited_insight` re-sanitize) \| `investigate_more` (graph quay lại planner, insight status=investigating) \| `reject`; reviewer_id từ token. 404 thread chưa start · 409 thread completed · 503 checkpoint down | ⬜ | — |
 | ✅ | GET | `/api/insights` | pm \| operations | Insights shape MỚI: finding/finding_confidence tách hypothesis (§41), affected_context/impact/limitations, evidence mở rộng thành `{evidence_id, statement, source_tool}` (§38); filter `?product_id=` `?status_filter=` | ⬜ | — |
+| ✅ | POST | `/api/insights/{insight_id}/actions/generate` | pm \| operations | **ACT (plan 26):** LLM routing 8 business functions (relevance ≥ `ACT_RELEVANCE_THRESHOLD` → candidate) + estimates + priority deterministic → `{actions_created, functions_skipped}`; **409** nếu insight chưa approved/edited (§44); idempotent — action đã human-touch giữ nguyên | ⬜ | — (FE Act series sau) |
+| ✅ | GET | `/api/insights/{insight_id}/actions` | pm \| operations | Portfolio actions (sort priority desc) + `matrix` grouping quadrant theo X=effort, Y=impact (quick_wins/strategic_investments/low_priority/reconsider — §50) | ⬜ | — |
+| ✅ | POST | `/api/insights/{insight_id}/actions` | pm \| operations | Human tự thêm action → 201, priority tính cùng công thức deterministic, status `accepted` | ⬜ | — |
+| ✅ | PATCH | `/api/actions/{action_id}` | pm \| operations | **Gate #3 (VoC OS §51–52):** human override scores → ghi `human_*` (agent value GIỮ NGUYÊN làm evaluation data) + `override_reason`; priority TÍNH LẠI deterministic từ effective values; status edited/accepted/rejected | ⬜ | — |
 
 **Đã drop (phase 21) — trở lại shape mới ở plans 22/25/26/27:** `/api/sources` (GET/POST/PATCH) · `/api/reviews/{id}` · `/api/corrections/{id}` · `/api/insights/run` · `/api/insights` · `/api/reports/kpis` · `/api/agent/runs` + status/decision.
 

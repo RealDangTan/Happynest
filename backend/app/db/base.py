@@ -23,6 +23,7 @@ class Base(DeclarativeBase):
 # Import models CUỐI file (tránh circular) để đăng ký đủ bảng vào metadata.
 # noqa: E402,F401 — import có chủ đích, không dùng trực tiếp tại đây.
 from app.models import (  # noqa: E402,F401
+    action,
     analysis_run,
     cluster,
     evidence,

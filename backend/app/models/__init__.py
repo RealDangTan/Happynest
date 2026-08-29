@@ -1,5 +1,6 @@
 """Models package — import module nào là bảng đó đăng ký vào Base.metadata."""
 
+from app.models.action import Action
 from app.models.analysis_run import AnalysisRun
 from app.models.cluster import Cluster
 from app.models.evidence import Evidence
@@ -14,6 +15,7 @@ from app.models.taxonomy import Taxonomy
 from app.models.user import User
 
 __all__ = [
+    "Action",
     "AnalysisRun",
     "Cluster",
     "Evidence",
