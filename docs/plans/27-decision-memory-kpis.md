@@ -1,6 +1,8 @@
 # Plan 27 — Decision Memory, Evaluation KPIs, DoD Sweep
 
 > Nguồn thiết kế: VoC OS plan §52–53, §65–67 · Migration **0013** · Blocked by: 21–26.
+>
+> **Lệch thực thi 2026-08-28:** (1) E2E script `scripts/e2e_voc_flow.py` ĐÃ VIẾT nhưng chạy full-flow tốn LLM thật (mapping + classify + synthesize) — dành cho buổi demo với key còn tín dụng, KHÔNG chạy trong session tự động (quy tắc tín dụng §1). (2) KPI `mapping_accepted` đo từ decision_logs Gate #1 (mọi import qua gate đều human-approved → direct acceptance phản ánh qua tỷ lệ import vào đúng schema ở phase sau nếu cần chi tiết hơn).
 
 ## Mục tiêu
 

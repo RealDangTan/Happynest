@@ -65,3 +65,38 @@ class ReportSummaryOut(BaseModel):
     by_sentiment: dict[str, int]     # positive/neutral/negative/mixed
     top_categories: list[TopCategoryItem]
     emerging: list[EmergingClusterItem]
+
+
+class ImpactSummary(BaseModel):
+    """Tổng hợp bảng impact_checks — closed-loop (plan 27)."""
+
+    checks_count: int
+    avg_delta_ratio: float | None
+
+
+class ReportKpisOut(BaseModel):
+    """Response GET /api/reports/kpis — 3-latency + evaluation 3 gate (plan 27).
+
+    Thuần SQL; median có thể None khi chưa đủ data — 200 với null là hợp lệ.
+    """
+
+    generated_at: datetime
+    time_to_listen_median_s: float | None
+    time_to_insight_median_s: float | None
+    time_to_action_median_s: float | None
+    insights_total: int
+    insights_with_action: int
+    pct_insight_with_action: float
+    insight_hitl_count: int
+    insight_auto_count: int
+    insight_evidence_grounding_pct: float
+    mapping_total: int
+    mapping_accepted: int
+    actions_total: int
+    actions_accepted: int
+    pct_action_accepted: float
+    actions_overridden: int
+    impact_agreement: float | None
+    effort_agreement: float | None
+    matrix_displacement_avg: float | None
+    impact: ImpactSummary

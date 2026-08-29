@@ -457,6 +457,24 @@ def apply_decision(state: UnderstandState) -> dict[str, Any]:
             )
             db.commit()
 
+            # Decision memory (§52–53, plan 27) — agent draft vs human quyết
+            from app.models.enums import DecisionSubject
+            from app.services.decision_log import log_decision
+
+            log_decision(
+                db,
+                product_id=insight.product_id,
+                subject_type=DecisionSubject.insight,
+                subject_id=insight_id,
+                agent_value=original,
+                human_value={
+                    "action": action,
+                    "edited_insight": decision.get("edited_insight"),
+                },
+                reason=decision.get("reason"),
+                reviewer_id=reviewer_id,
+            )
+
     if action == "investigate_more":
         # quay lại planner với feedback — clear draft, tăng iteration
         return {

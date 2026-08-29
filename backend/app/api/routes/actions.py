@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_role
+from app.api.deps import get_current_user, get_db, require_role
 from app.models.action import Action
 from app.models.enums import BusinessFunction
 from app.models.insight import Insight
@@ -112,7 +112,10 @@ def add_human_action(
 
 @router.patch("/actions/{action_id}")
 def update_action(
-    action_id: uuid.UUID, body: ActionUpdateIn, db: Session = Depends(get_db)
+    action_id: uuid.UUID,
+    body: ActionUpdateIn,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ) -> ActionOut:
     """Gate #3: human edit scores/action — agent values giữ nguyên (§52)."""
     action = db.get(Action, action_id)
@@ -143,4 +146,30 @@ def update_action(
         action.status = "edited"
     db.commit()
     db.refresh(action)
+
+    # Decision memory (§52–53, plan 27): agent estimates vs human override
+    from app.models.enums import DecisionSubject
+    from app.services.decision_log import log_decision
+
+    log_decision(
+        db,
+        product_id=db.get(Insight, action.insight_id).product_id,
+        subject_type=DecisionSubject.action,
+        subject_id=action.id,
+        agent_value={
+            "impact": action.impact,
+            "effort": action.effort,
+            "urgency": action.urgency,
+            "confidence": action.confidence,
+            "priority_score": None,
+        },
+        human_value={
+            "human_impact": action.human_impact,
+            "human_effort": action.human_effort,
+            "human_urgency": action.human_urgency,
+            "status": action.status,
+        },
+        reason=action.override_reason,
+        reviewer_id=user.id,
+    )
     return ActionOut.model_validate(action)

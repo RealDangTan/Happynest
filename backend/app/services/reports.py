@@ -127,3 +127,192 @@ def build_summary(db: Session, days: int, now: datetime) -> dict:
         "top_categories": top_categories,
         "emerging": emerging,
     }
+
+
+# ---------------------------------------------------------------------------
+# KPIs — 3 latency + evaluation metrics 3 HITL gate (VoC OS §65–67, plan 27)
+# ---------------------------------------------------------------------------
+
+_UNDERSTAND_PIPELINE = "understand-v1"
+
+_FINAL_INSIGHT_STATUS = ("approved", "edited", "rejected")
+
+
+def _median_seconds(db: Session, stmt) -> float | None:
+    """percentile_cont(0.5) trả None khi không có row nào — giữ nguyên là null."""
+    v = db.execute(stmt).scalar()
+    return round(float(v), 2) if v is not None else None
+
+
+def build_kpis(db: Session, now: datetime) -> dict:
+    """KPI thuần SQL (plan 27 Task 3): 3 latency + LISTEN/UNDERSTAND/ACT eval.
+
+    Không một call LLM. Bảng rỗng / chưa đo → median None, count 0 (200).
+    """
+    from sqlalchemy import exists
+
+    from app.models.action import Action
+    from app.models.analysis_run import AnalysisRun
+    from app.models.decision_log import DecisionLog
+    from app.models.enums import DecisionSubject
+    from app.models.feedback import Feedback
+    from app.models.impact_check import ImpactCheck
+    from app.models.insight import Insight
+
+    # --- 3 latency (median theo PERCENTILE_CONT) ---
+    listen = _median_seconds(
+        db,
+        select(
+            func.percentile_cont(0.5).within_group(
+                func.extract("epoch", AnalysisRun.started_at - Feedback.occurred_at)
+            )
+        )
+        .select_from(Feedback)
+        .join(AnalysisRun, Feedback.analysis_run_id == AnalysisRun.id)
+        .where(
+            AnalysisRun.pipeline_version != _UNDERSTAND_PIPELINE,
+            Feedback.ai_analysis.isnot(None),
+        ),
+    )
+    to_insight = _median_seconds(
+        db,
+        select(
+            func.percentile_cont(0.5).within_group(
+                func.extract("epoch", Insight.created_at - AnalysisRun.started_at)
+            )
+        )
+        .select_from(Insight)
+        .join(AnalysisRun, Insight.run_id == AnalysisRun.id),
+    )
+    first_action = (
+        select(
+            Action.insight_id.label("iid"),
+            func.min(Action.created_at).label("t"),
+        )
+        .group_by(Action.insight_id)
+        .subquery()
+    )
+    to_action = _median_seconds(
+        db,
+        select(
+            func.percentile_cont(0.5).within_group(
+                func.extract("epoch", first_action.c.t - Insight.created_at)
+            )
+        )
+        .select_from(first_action)
+        .join(Insight, first_action.c.iid == Insight.id),
+    )
+
+    insights_total = int(db.scalar(select(func.count()).select_from(Insight)) or 0)
+    insights_with_action = int(
+        db.scalar(select(func.count(func.distinct(Action.insight_id)))) or 0
+    )
+
+    # --- UNDERSTAND eval (§66): approval/edit/reject + evidence grounding ---
+    has_review = exists().where(DecisionLog.subject_id == Insight.id)
+    finalized_base = select(func.count()).select_from(Insight).where(
+        Insight.status.in_(_FINAL_INSIGHT_STATUS)
+    )
+    insight_hitl = int(db.scalar(finalized_base.where(has_review)) or 0)
+    insight_auto = int(db.scalar(finalized_base.where(~has_review)) or 0)
+    grounded = int(
+        db.scalar(
+            select(func.count())
+            .select_from(Insight)
+            .where(func.jsonb_array_length(Insight.evidence) > 0)
+        )
+        or 0
+    )
+
+    # --- LISTEN eval (§65): mapping acceptance/edit rate từ decision_logs ---
+    mapping_base = select(func.count()).select_from(DecisionLog).where(
+        DecisionLog.subject_type == DecisionSubject.schema_mapping
+    )
+    mapping_total = int(db.scalar(mapping_base) or 0)
+    mapping_accepted = int(
+        db.scalar(
+            mapping_base.where(DecisionLog.human_value["gate1_auto_imported"].is_(None))
+        )
+        or 0
+    )  # mọi import qua Gate #1 đều là human-approved — direct acceptance = 100%
+
+    # --- ACT eval (§67): acceptance/edit rate + agreement + displacement ---
+    actions_total = int(db.scalar(select(func.count()).select_from(Action)) or 0)
+    actions_accepted = int(
+        db.scalar(
+            select(func.count())
+            .select_from(Action)
+            .where(Action.status.in_(["accepted", "edited"]))
+        )
+        or 0
+    )
+    overridden = int(
+        db.scalar(
+            select(func.count())
+            .select_from(Action)
+            .where(Action.human_impact.isnot(None))
+        )
+        or 0
+    )
+    # impact agreement: 1 − |agent − human| / 10 (mean trên action bị override)
+    impact_agreement = db.scalar(
+        select(
+            func.avg(
+                1 - func.abs(Action.impact - Action.human_impact) / 10.0
+            )
+        ).where(Action.human_impact.isnot(None))
+    )
+    effort_agreement = db.scalar(
+        select(
+            func.avg(
+                1 - func.abs(Action.effort - Action.human_effort) / 10.0
+            )
+        ).where(Action.human_effort.isnot(None))
+    )
+    # matrix displacement: khoảng cách Euclid (impact, effort) agent vs human —
+    # trục chưa bị override dùng COALESCE(human, agent) (chỉ 1 trục cũng đo được)
+    displacement = db.scalar(
+        select(
+            func.avg(
+                func.sqrt(
+                    func.pow(Action.impact - func.coalesce(Action.human_impact, Action.impact), 2)
+                    + func.pow(Action.effort - func.coalesce(Action.human_effort, Action.effort), 2)
+                )
+            )
+        ).where(Action.human_impact.isnot(None) | Action.human_effort.isnot(None))
+    )
+
+    checks_count = int(db.scalar(select(func.count()).select_from(ImpactCheck)) or 0)
+    avg_delta = db.scalar(select(func.avg(ImpactCheck.delta_ratio)))
+
+    def _pct(numer: int, denom: int) -> float:
+        return round(numer / denom * 100, 2) if denom else 0.0
+
+    def _r3(v) -> float | None:
+        return round(float(v), 3) if v is not None else None
+
+    return {
+        "generated_at": now,
+        "time_to_listen_median_s": listen,
+        "time_to_insight_median_s": to_insight,
+        "time_to_action_median_s": to_action,
+        "insights_total": insights_total,
+        "insights_with_action": insights_with_action,
+        "pct_insight_with_action": _pct(insights_with_action, insights_total),
+        "insight_hitl_count": insight_hitl,
+        "insight_auto_count": insight_auto,
+        "insight_evidence_grounding_pct": _pct(grounded, insights_total),
+        "mapping_total": mapping_total,
+        "mapping_accepted": mapping_accepted,
+        "actions_total": actions_total,
+        "actions_accepted": actions_accepted,
+        "pct_action_accepted": _pct(actions_accepted, actions_total),
+        "actions_overridden": overridden,
+        "impact_agreement": _r3(impact_agreement),
+        "effort_agreement": _r3(effort_agreement),
+        "matrix_displacement_avg": _r3(displacement),
+        "impact": {
+            "checks_count": checks_count,
+            "avg_delta_ratio": _r3(avg_delta),
+        },
+    }

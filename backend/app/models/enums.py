@@ -98,6 +98,15 @@ class BusinessFunction(str, enum.Enum):
     SUPPORT = "SUPPORT"
 
 
+class DecisionSubject(str, enum.Enum):
+    """Unified decision memory (VoC OS §52–53) — migration 0013."""
+
+    schema_mapping = "schema_mapping"
+    taxonomy = "taxonomy"
+    insight = "insight"
+    action = "action"
+
+
 class ImportStatus(str, enum.Enum):
     pending = "pending"
     mapping_review = "mapping_review"
@@ -121,3 +130,4 @@ LLM_CALL_TYPE_ENUM = _pg(LlmCallType, "llm_call_type")
 IMPORT_STATUS_ENUM = _pg(ImportStatus, "import_status_enum")
 INSIGHT_REVIEW_ACTION_ENUM = _pg(InsightReviewAction, "insight_review_action")
 BUSINESS_FUNCTION_ENUM = _pg(BusinessFunction, "business_function")
+DECISION_SUBJECT_ENUM = _pg(DecisionSubject, "decision_subject")

@@ -13,8 +13,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_role
+from app.api.deps import get_current_user, get_db, require_role
 from app.models.import_ import Import
+from app.models.user import User
 from app.schemas.import_ import (
     ImportApplyReport,
     ImportListOut,
@@ -119,6 +120,7 @@ def decide_import_mapping(
     body: MappingDecisionIn,
     default_source: str | None = Query(default=None, max_length=100),
     session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> ImportApplyReport:
     """Gate #1 (VoC OS §12): human chốt mapping → import thực thi MỘT LẦN.
 
@@ -130,7 +132,11 @@ def decide_import_mapping(
         raise HTTPException(status_code=404, detail="Import không tồn tại.")
     try:
         report = apply_mapping_decision(
-            session, import_row, body.decisions, default_source=default_source
+            session,
+            import_row,
+            body.decisions,
+            default_source=default_source,
+            reviewer_id=user.id,
         )
     except ImportStateError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))

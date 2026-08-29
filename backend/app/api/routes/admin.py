@@ -18,9 +18,13 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_role
 from app.models.cluster import Cluster
 from app.schemas.cluster import ClusterOut, ClusterRunOut, ClustersListOut
-from app.schemas.report import ReportSummaryOut, SummaryWindow
+from app.schemas.report import (
+    ReportKpisOut,
+    ReportSummaryOut,
+    SummaryWindow,
+)
 from app.services.clustering import run_clustering, sample_feedback_ids_by_cluster
-from app.services.reports import build_summary
+from app.services.reports import build_kpis, build_summary
 
 router = APIRouter(
     prefix="/api",
@@ -99,4 +103,14 @@ def reports_summary(
     """
     return ReportSummaryOut.model_validate(
         build_summary(db, days=int(days), now=datetime.now(timezone.utc))
+    )
+
+
+@router.get("/reports/kpis")
+def reports_kpis(db: Session = Depends(get_db)) -> ReportKpisOut:
+    """KPI 3-latency + evaluation 3 HITL gate (VoC OS §65–67) — thuần SQL.
+
+    Bảng trống / chưa đo → median null, count 0 (200)."""
+    return ReportKpisOut.model_validate(
+        build_kpis(db, now=datetime.now(timezone.utc))
     )

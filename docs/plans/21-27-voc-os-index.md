@@ -29,7 +29,7 @@
 | 24 | [24-analytics-engine.md](24-analytics-engine.md) | 8 MVP tools + query compiler (tool 9 dời plan 25) | — | 22, 23 | ✅ 2026-08-28 |
 | 25 | [25-understand-agent.md](25-understand-agent.md) | evidence + insights mới + UNDERSTAND graph + Gate #2 | 0011 | 24 | ✅ 2026-08-28 |
 | 26 | [26-act-agent.md](26-act-agent.md) | actions + ACT agent + priority matrix + Gate #3 | 0012 | 25 | ✅ 2026-08-28 |
-| 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | decision_logs + KPIs 3 gate + DoD sweep | 0013 | 21–26 | ⬜ |
+| 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | decision_logs + KPIs 3 gate + DoD sweep | 0013 | 21–26 | ✅ 2026-08-28 |
 
 ```text
 21 ── 22 ─┬─ 24 ── 25 ── 26 ── 27
@@ -54,4 +54,10 @@
 - [x] 24 Analytics engine
 - [x] 25 UNDERSTAND agent
 - [x] 26 ACT agent
-- [ ] 27 Decision memory + KPIs + DoD
+- [x] 27 Decision memory + KPIs + DoD
+
+## 5. Kết quả series (2026-08-28)
+
+- 7/7 phase đóng; migrations 0008–0013 chain sạch trên Supabase; suite 115 test xanh (43 unit + 72 integration).
+- BE surface mới: products/schema/coverage, imports + Gate #1, taxonomies governance, analytics tools (nội bộ), UNDERSTAND agent + Gate #2, ACT agent + Gate #3, reports kpis 3 gate, decision_logs.
+- E2E script (`scripts/e2e_voc_flow.py`) sẵn sàng cho buổi demo (cần LLM thật). FE rewrite = series mới (FE IA §63 tài liệu nguồn).

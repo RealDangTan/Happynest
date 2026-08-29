@@ -206,6 +206,7 @@ def apply_mapping_decision(
     decisions: list[MappingDecisionItem],
     *,
     default_source: str | None = None,
+    reviewer_id=None,
 ) -> dict:
     """Gate #1: chốt mapping → (tùy) activate schema version mới → import rows.
 
@@ -302,6 +303,23 @@ def apply_mapping_decision(
     import_row.row_count = imported
     import_row.status = ImportStatus.imported
     db.commit()
+
+    # Decision memory (§52–53, plan 27): log Gate #1 — agent proposal vs human
+    try:
+        from app.models.enums import DecisionSubject
+        from app.services.decision_log import log_decision
+
+        log_decision(
+            db,
+            product_id=import_row.product_id,
+            subject_type=DecisionSubject.schema_mapping,
+            subject_id=import_row.id,
+            agent_value=proposal.model_dump(),
+            human_value={"decisions": [d.model_dump() for d in decisions]},
+            reviewer_id=reviewer_id,
+        )
+    except Exception:  # noqa: BLE001 — memory không được phá flow
+        db.rollback()
 
     return {
         "imported": imported,
