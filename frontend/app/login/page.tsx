@@ -56,7 +56,7 @@ export default function LoginPage() {
         <CardHeader className="justify-items-center gap-1 text-center">
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/Logo-white.png" alt="" className="size-7" />
+            <img src="/assets/Logo-white.png" alt="" className="size-6" />
             <CardTitle>Happynest</CardTitle>
           </div>
           <CardDescription>Đăng nhập để tiếp tục</CardDescription>
