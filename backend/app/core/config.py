@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     MAX_RAW_FEEDBACK_PER_TOOL: int = 30
     MAX_TOTAL_VERBATIMS: int = 80
     UNDERSTAND_MAX_ITERATIONS: int = 8
+    UNDERSTAND_LLM_BUDGET_PER_RUN: int = 18  # COUNT llm_call_logs (plan+evaluate+synthesize)
 
     # --- LISTEN import (plan 22): raw CSV lưu DISK local (decisions
     # 2026-08-28 — chưa có Supabase Storage credentials) ---

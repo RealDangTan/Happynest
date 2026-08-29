@@ -63,12 +63,24 @@ class LlmCallType(str, enum.Enum):
     name_cluster = "name_cluster"
     generate_insight = "generate_insight"
     # value 'route'/'critic' đã ADD vào PG type ở 0007; graph cũ bị strip
-    # 2026-08-28 — value giữ nguyên trong type (ADD VALUE không đảo được),
-    # UNDERSTAND mới (plan 25) sẽ ADD value riêng.
+    # 2026-08-28 — value giữ nguyên trong type (ADD VALUE không đảo được).
     route = "route"
     critic = "critic"
     # LISTEN schema mapper (plan 22) — ADD VALUE qua migration 0009.
     schema_map = "schema_map"
+    # UNDERSTAND graph (plan 25) — ADD VALUE qua migration 0011.
+    plan = "plan"
+    evaluate = "evaluate"
+    synthesize = "synthesize"
+
+
+class InsightReviewAction(str, enum.Enum):
+    """Gate #2 (VoC OS §43) — investigating_more KHÔNG kết thúc insight."""
+
+    approve = "approve"
+    edit = "edit"
+    investigate_more = "investigate_more"
+    reject = "reject"
 
 
 class ImportStatus(str, enum.Enum):
@@ -92,3 +104,4 @@ USER_ROLE_ENUM = _pg(UserRole, "user_role")
 RUN_STATUS_ENUM = _pg(RunStatus, "run_status")
 LLM_CALL_TYPE_ENUM = _pg(LlmCallType, "llm_call_type")
 IMPORT_STATUS_ENUM = _pg(ImportStatus, "import_status_enum")
+INSIGHT_REVIEW_ACTION_ENUM = _pg(InsightReviewAction, "insight_review_action")

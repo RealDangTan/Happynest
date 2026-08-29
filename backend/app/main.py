@@ -16,7 +16,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.routes import admin, analysis, auth, feedback, imports, products, taxonomies
+from app.api.routes import (
+    admin,
+    agent,
+    analysis,
+    auth,
+    feedback,
+    imports,
+    products,
+    taxonomies,
+)
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
@@ -121,6 +130,8 @@ def create_app() -> FastAPI:
     app.include_router(imports.router)
     # Plan 23: taxonomy governance (canonical + emerging themes).
     app.include_router(taxonomies.router)
+    # Plan 25: UNDERSTAND agent + Gate #2 + insights (shape mới).
+    app.include_router(agent.router)
 
     return app
 

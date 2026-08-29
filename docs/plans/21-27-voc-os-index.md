@@ -27,7 +27,7 @@
 | 22 | [22-listen-schema-intelligence.md](22-listen-schema-intelligence.md) | product_schemas + profiler + LLM mapper + Gate #1 | 0009 | 21 | ✅ 2026-08-28 |
 | 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | taxonomies + emerging themes + ai_analysis reshape + runner | 0010 | 21 | ✅ 2026-08-28 |
 | 24 | [24-analytics-engine.md](24-analytics-engine.md) | 8 MVP tools + query compiler (tool 9 dời plan 25) | — | 22, 23 | ✅ 2026-08-28 |
-| 25 | [25-understand-agent.md](25-understand-agent.md) | evidence + insights mới + UNDERSTAND graph + Gate #2 | 0011 | 24 | ⬜ |
+| 25 | [25-understand-agent.md](25-understand-agent.md) | evidence + insights mới + UNDERSTAND graph + Gate #2 | 0011 | 24 | ✅ 2026-08-28 |
 | 26 | [26-act-agent.md](26-act-agent.md) | actions + ACT agent + priority matrix + Gate #3 | 0012 | 25 | ⬜ |
 | 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | decision_logs + KPIs 3 gate + DoD sweep | 0013 | 21–26 | ⬜ |
 
@@ -52,6 +52,6 @@
 - [x] 22 LISTEN schema intelligence
 - [x] 23 Taxonomy + semantic
 - [x] 24 Analytics engine
-- [ ] 25 UNDERSTAND agent
+- [x] 25 UNDERSTAND agent
 - [ ] 26 ACT agent
 - [ ] 27 Decision memory + KPIs + DoD

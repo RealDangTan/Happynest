@@ -25,8 +25,11 @@ class Base(DeclarativeBase):
 from app.models import (  # noqa: E402,F401
     analysis_run,
     cluster,
+    evidence,
     feedback,
     import_,
+    insight,
+    insight_review,
     llm_call_log,
     product,
     product_schema,

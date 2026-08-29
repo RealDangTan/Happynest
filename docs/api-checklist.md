@@ -2,7 +2,7 @@
 
 > **Quy tắc đồng bộ (Hard rule #10 — AGENTS.md):** thêm/sửa/xóa endpoint, đổi request/response schema hay auth → BẮT BUỘC cập nhật bảng dưới trong cùng commit; đổi phía FE (nối/sửa call API) cũng cập nhật 2 cột cuối. Agent tự đập vào checklist này, không cần nhắc.
 >
-> List này là **bản đồ nối FE ↔ BE** — đủ 22/22 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
+> List này là **bản đồ nối FE ↔ BE** — đủ 27/27 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
 
 Snapshot: 2026-08-28 (phase 22 — LISTEN) · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**` (🔶 = đã nối nhưng shape/API đổi sau reshape — series FE mới sẽ nối lại)
 
@@ -47,6 +47,10 @@ Chú thích:
 | ✅ | POST | `/api/clusters/run` | pm \| operations | Chạy lại toàn bộ clustering HDBSCAN cosine + LLM naming — idempotent trong 1 transaction (C5) | ✅ | Nút "Tạo lại phân cụm" tại `/clusters` |
 | ✅ | GET | `/api/clusters` | pm \| operations | Danh sách cụm theo C1 (`sort=feedback_count\|growth_ratio\|recent`, kèm `sample_feedback_ids` ≤5) | ✅ | Trang `/clusters` — giữ nguyên hợp đồng |
 | ✅ | GET | `/api/reports/summary` | pm \| operations | Báo cáo tổng hợp PM thuần SQL theo C4 — `?days=7\|30\|90`; severity/sentiment/topics đọc từ `ai_analysis` JSONB; `totals` bỏ `pending_review_count` | 🔶 | Trang `/reports` + `/dashboard` — totals shape đổi |
+| ✅ | POST | `/api/agent/runs` | pm \| operations | **UNDERSTAND (plan 25):** trigger investigation `{product_id, question, trigger_type?}` → 200 `{run_id}` ngay; graph LangGraph chạy nền (planner → tool từ registry → record evidence → evaluator → synthesizer, budget `UNDERSTAND_LLM_BUDGET_PER_RUN=18` call, MAX_ITERATIONS=8) tới interrupt Gate #2 | ⬜ | — (FE Understand series sau) |
+| ✅ | GET | `/api/agent/runs/{run_id}` | pm \| operations | Trạng thái run (AnalysisRun: status/error/snapshot) + `pending_approval` chứa interrupt payload `{insight, evidence, options}` khi graph đậu chờ human | ⬜ | — |
+| ✅ | POST | `/api/agent/runs/{run_id}/decision` | pm \| operations | **Gate #2 (VoC OS §43):** `approve` \| `edit` (`edited_insight` re-sanitize) \| `investigate_more` (graph quay lại planner, insight status=investigating) \| `reject`; reviewer_id từ token. 404 thread chưa start · 409 thread completed · 503 checkpoint down | ⬜ | — |
+| ✅ | GET | `/api/insights` | pm \| operations | Insights shape MỚI: finding/finding_confidence tách hypothesis (§41), affected_context/impact/limitations, evidence mở rộng thành `{evidence_id, statement, source_tool}` (§38); filter `?product_id=` `?status_filter=` | ⬜ | — |
 
 **Đã drop (phase 21) — trở lại shape mới ở plans 22/25/26/27:** `/api/sources` (GET/POST/PATCH) · `/api/reviews/{id}` · `/api/corrections/{id}` · `/api/insights/run` · `/api/insights` · `/api/reports/kpis` · `/api/agent/runs` + status/decision.
 

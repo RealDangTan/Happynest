@@ -68,6 +68,11 @@ class InspectClusterInput(BaseModel):
     cluster_id: str = Field(pattern=r"^[0-9a-fA-F-]{36}$")
 
 
+class SearchSimilarCasesInput(BaseModel):
+    query: str = Field(min_length=1, max_length=1000)
+    k: int = Field(default=3, ge=1, le=10)
+
+
 # ------------------------------------------------------------------ helpers
 
 
@@ -328,6 +333,43 @@ def inspect_cluster(db: Session, product_id: uuid.UUID, inp: InspectClusterInput
     }
 
 
+def search_similar_cases(db: Session, product_id: uuid.UUID, inp: SearchSimilarCasesInput) -> dict:
+    """VoC OS §30 tool 9: precedent retrieval — kNN trên insights.embedding
+    (organizational memory; insights chỉ tồn tại sau Gate #2 approve/edit)."""
+    from app.models.insight import Insight
+
+    k = inp.k
+    vector = embed_one(inp.query)
+    rows = db.execute(
+        select(
+            Insight.id,
+            Insight.title,
+            Insight.finding,
+            Insight.status,
+            (1 - Insight.embedding.cosine_distance(vector)).label("score"),
+        )
+        .where(
+            Insight.product_id == product_id,
+            Insight.embedding.is_not(None),
+            Insight.status.in_(["approved", "edited"]),
+        )
+        .order_by(Insight.embedding.cosine_distance(vector))
+        .limit(k)
+    ).all()
+    return {
+        "cases": [
+            {
+                "insight_id": str(r.id),
+                "title": r.title,
+                "finding": r.finding[:300],
+                "status": r.status,
+                "score": round(float(r.score), 4),
+            }
+            for r in rows
+        ]
+    }
+
+
 # ---------------------------------------------------------------- registry
 
 
@@ -356,6 +398,6 @@ TOOLS: dict[str, ToolSpec] = {
         ToolSpec("semantic_search", "Cosine kNN over feedback embeddings, filtered and capped", SemanticSearchInput, semantic_search),
         ToolSpec("representative_feedback", "Diverse representative verbatims interleaved by source", RepresentativeInput, representative_feedback),
         ToolSpec("inspect_cluster", "Stored trend fields plus live member/severity metrics of one cluster", InspectClusterInput, inspect_cluster),
-        # search_similar_cases (tool 9) đăng ký ở plan 25 khi bảng insights tồn tại.
+        ToolSpec("search_similar_cases", "Retrieve similar past insights (precedents) by semantic similarity", SearchSimilarCasesInput, search_similar_cases),
     ]
 }
