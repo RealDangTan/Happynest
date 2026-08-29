@@ -16,13 +16,18 @@ from app.models.enums import LlmCallType
 from app.schemas.taxonomy import Classification
 from app.services.llm_client import chat_structured
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 
-SYSTEM_PROMPT_V1 = """Bạn là chuyên gia phân loại phản hồi người dùng về một sản phẩm có tính năng AI. \
+_TAXONOMY_BLOCK = """Taxonomy hiện có của product (ưu tiên DÙNG ĐÚNG tên này cho categories):
+{taxonomy}
+Nếu không topic nào khớp, đề xuất TỐI ĐA 2 tên topic mới ngắn gọn (sẽ vào hàng \
+chờ emerging theme chờ human duyệt) — KHÔNG tự chế hàng loạt tên mới."""
+
+SYSTEM_PROMPT_V2 = """Bạn là chuyên gia phân loại phản hồi người dùng về một sản phẩm có tính năng AI. \
 Văn phong làm việc: tiếng Việt, trộn thuật ngữ kỹ thuật tiếng Anh là bình thường.
 
 Nhiệm vụ: với MỖI feedback, trả về JSON object gồm:
-- categories: 1..n nhãn chủ đề tự do (vd: "dịch thuật", "hiệu năng", "đăng nhập", "UI", "xuất file")
+- categories: 1..n nhãn chủ đề (ưu tiên khớp taxonomy product; topic mới chỉ khi không khớp)
 - ai_issue: loại vấn đề AI nếu có — một trong hallucination | inaccuracy | bias | safety | privacy | performance | other; null nếu không phải vấn đề của AI
 - sentiment: positive | negative | neutral | mixed
 - severity: mức nghiêm trọng theo rubric:
@@ -41,16 +46,19 @@ def classify_feedback(
     sanitized_text: str,
     few_shot: list[dict] | None = None,
     *,
+    taxonomy_names: list[str] | None = None,
     feedback_id=None,
     analysis_run_id=None,
 ) -> Classification:
     """Phân loại một feedback ĐÃ SANITIZE thành `Classification`.
 
-    `few_shot`: list dict {"text": str, "label": Classification-like dict} —
-    param tồn tại từ v1 để loop correction (phase sau) cắm vào mà không đổi chữ ký.
+    `taxonomy_names`: taxonomy canonical+emerging active của product (plan 23)
+    — prompt ưu tiên khớp taxonomy; topic mới chỉ đề xuất khi không khớp.
 
-    `feedback_id`/`analysis_run_id` (Phase 09 thêm): passthrough metadata vào
-    llm_call_logs/Langfuse để truy vết call theo run — không đổi hành vi phân loại.
+    `few_shot`: list dict {"text": str, "label": Classification-like dict}.
+
+    `feedback_id`/`analysis_run_id`: passthrough metadata vào llm_call_logs/
+    Langfuse để truy vết call theo run — không đổi hành vi phân loại.
     """
     user_parts: list[str] = []
     for ex in few_shot or []:
@@ -58,10 +66,14 @@ def classify_feedback(
             f"Ví dụ:\nFeedback: {ex['text']}\nPhân loại mong muốn: "
             f"{ex['label']}\n"
         )
+    if taxonomy_names:
+        user_parts.append(
+            _TAXONOMY_BLOCK.format(taxonomy=", ".join(taxonomy_names))
+        )
     user_parts.append(f"Feedback cần phân loại:\n{sanitized_text}")
     return chat_structured(
-        SYSTEM_PROMPT_V1,
-        "\n".join(user_parts),
+        SYSTEM_PROMPT_V2,
+        "\n\n".join(user_parts),
         Classification,
         call_type=LlmCallType.classify,
         prompt_version=PROMPT_VERSION,

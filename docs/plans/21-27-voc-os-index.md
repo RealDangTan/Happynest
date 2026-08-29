@@ -25,7 +25,7 @@
 |---|---|---|---|---|---|
 | 21 | [21-voc-core-reshape.md](21-voc-core-reshape.md) | products + imports + feedback JSONB zones + strip code chết | 0008 (destructive) | — | ✅ 2026-08-28 |
 | 22 | [22-listen-schema-intelligence.md](22-listen-schema-intelligence.md) | product_schemas + profiler + LLM mapper + Gate #1 | 0009 | 21 | ✅ 2026-08-28 |
-| 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | taxonomies + emerging themes + ai_analysis reshape + runner | 0010 | 21 | ⬜ |
+| 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | taxonomies + emerging themes + ai_analysis reshape + runner | 0010 | 21 | ✅ 2026-08-28 |
 | 24 | [24-analytics-engine.md](24-analytics-engine.md) | 9 MVP tools + query compiler | — | 22, 23 | ⬜ |
 | 25 | [25-understand-agent.md](25-understand-agent.md) | evidence + insights mới + UNDERSTAND graph + Gate #2 | 0011 | 24 | ⬜ |
 | 26 | [26-act-agent.md](26-act-agent.md) | actions + ACT agent + priority matrix + Gate #3 | 0012 | 25 | ⬜ |
@@ -50,7 +50,7 @@
 
 - [x] 21 Core reshape
 - [x] 22 LISTEN schema intelligence
-- [ ] 23 Taxonomy + semantic
+- [x] 23 Taxonomy + semantic
 - [ ] 24 Analytics engine
 - [ ] 25 UNDERSTAND agent
 - [ ] 26 ACT agent

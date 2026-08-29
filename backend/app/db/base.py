@@ -30,5 +30,6 @@ from app.models import (  # noqa: E402,F401
     llm_call_log,
     product,
     product_schema,
+    taxonomy,
     user,
 )

@@ -7,6 +7,7 @@ from app.models.import_ import Import
 from app.models.llm_call_log import LlmCallLog
 from app.models.product import Product
 from app.models.product_schema import ProductSchema
+from app.models.taxonomy import Taxonomy
 from app.models.user import User
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "LlmCallLog",
     "Product",
     "ProductSchema",
+    "Taxonomy",
     "User",
 ]

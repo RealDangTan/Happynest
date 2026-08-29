@@ -32,6 +32,7 @@ from app.jobs.analysis_runner import run_analysis
 from app.models.analysis_run import AnalysisRun
 from app.models.enums import RunStatus
 from app.models.feedback import Feedback
+from app.models.taxonomy import Taxonomy
 from app.schemas.taxonomy import Classification
 from app.services import classifier as classifier_mod
 from app.models.enums import UserRole
@@ -206,6 +207,10 @@ def batch(fake_llm_embedder, test_product):
         db.query(Feedback).filter(
             Feedback.source_record_id.like(f"{REF_PREFIX}%")
         ).delete(synchronize_session=False)
+        # plan 23: runner accumulate emerging theme — dọn taxonomy test tạo
+        db.query(Taxonomy).filter(Taxonomy.name == "nhãn-test").delete(
+            synchronize_session=False
+        )
         for rid in [*state["run_ids"], state["qrun_id"]]:
             run = db.get(AnalysisRun, rid)
             if run is not None:
@@ -277,7 +282,7 @@ def test_crash_then_resume_classifies_each_item_exactly_once(batch, fake_llm_emb
             assert r.ai_analysis["severity"] == preset.severity.value
             assert r.ai_analysis["confidence"] == pytest.approx(preset.confidence)
             assert r.ai_analysis["sentiment"] == preset.sentiment.value
-            assert r.ai_analysis["analysis_version"] == "classifier-v1"
+            assert r.ai_analysis["analysis_version"] == "classifier-v2-taxonomy"
             # embedding lưu KÈM model + dim — store_embedding THẬT đọc tên model
             # từ settings (fake chỉ thay embed_one), đúng hợp đồng plan 08.
             assert r.embedding_model == get_settings().EMBEDDING_MODEL

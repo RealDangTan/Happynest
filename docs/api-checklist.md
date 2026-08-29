@@ -29,6 +29,9 @@ Chú thích:
 | ✅ | GET | `/api/products/{product_id}/schema/versions` | pm \| operations | Toàn bộ version schema (mới nhất trước) + active_version | ⬜ | — |
 | ✅ | GET | `/api/products/{product_id}/schema/coverage` | pm \| operations | Coverage per product field từ `data` JSONB (VoC OS §19) — `records_with_field/total` | ⬜ | — |
 | ✅ | POST | `/api/feedbacks` | pm \| operations | Ingest 1 feedback đơn lẻ — sanitize tại ingest, gắn product mặc định + JSONB zones (`data`, `source_meta`) | 🔶 | Dialog "Nhập liệu" trang Feedbacks — response shape mới (feedback_text/occurred_at/data) |
+| ✅ | GET | `/api/taxonomies` | pm \| operations | Tree taxonomy product (`?product_id=`, filter `?status_filter=`) — canonical + emerging (VoC OS §20) | ⬜ | — |
+| ✅ | GET | `/api/taxonomies/review` | pm \| operations | Hàng chờ emerging theme `pending_review` (accumulate evidence — §21) | ⬜ | — |
+| ✅ | POST | `/api/taxonomies/review/{taxonomy_id}` | pm \| operations | **Human Gate taxonomy:** `approve` (lên canonical) \| `merge` (`merge_into_id` bắt buộc — feedback topics redirect) \| `reject`. 409 node không ở pending_review; 422 merge thiếu target | ⬜ | — |
 | ❌ | POST | `/api/feedbacks/import-csv` | — | **ĐÃ BỎ phase 22** — thay bằng `POST /api/imports` (LISTEN pipeline) | ❌ | Route không còn tồn tại |
 | ✅ | GET | `/api/imports` | pm \| operations | List import lô (status: pending/mapping_review/imported/failed) | ⬜ | — |
 | ✅ | POST | `/api/imports` | pm \| operations | **LISTEN (plan 22):** upload CSV multipart → lưu raw (disk — decisions 2026-08-28) → deterministic profile → LLM schema mapping proposal → 201 `ImportOut` status `mapping_review`. 409 khi product đang có import chờ review; 422 sai đuôi; 502 LLM fail | ⬜ | — (FE Mapping Review series sau) |

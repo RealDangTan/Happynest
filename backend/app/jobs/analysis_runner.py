@@ -43,6 +43,7 @@ from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
 from app.models.enums import RunStatus
 from app.models.feedback import Feedback
+from app.services import taxonomy_service
 from app.services.classifier import (
     PROMPT_VERSION,
     classify_feedback,
@@ -84,9 +85,15 @@ def _pick_next(db: Session, run_id: uuid.UUID, attempted: set[uuid.UUID]):
     ).first()
 
 
-def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
-    """Classify + ghi `ai_analysis` + embed MỘT item — KHÔNG commit (caller gộp
-    commit với processed_count). Raise item-level error để caller ghi tóm tắt."""
+def _process_item(
+    db: Session,
+    run: AnalysisRun,
+    fb: Feedback,
+    taxonomy_cache: dict[uuid.UUID, list[str]],
+) -> None:
+    """Classify + ghi `ai_analysis` + emerging theme + embed MỘT item — KHÔNG
+    commit (caller gộp commit với processed_count). Raise item-level error để
+    caller ghi tóm tắt."""
     # 1. Text vào classifier PHẢI đã sanitize; row legacy chưa sanitize → làm tại chỗ.
     if fb.feedback_text is None:
         result = sanitize(fb.raw_content)
@@ -94,14 +101,22 @@ def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
         fb.pii_detected = result.pii_detected
         fb.pii_entities = [e.model_dump() for e in result.entities]
 
-    # 2. Classify (LLM) + trace metadata gắn feedback/run vào llm_call_logs.
+    # 2. Taxonomy của product (cache per run — plan 23: classify ưu tiên khớp
+    # taxonomy; topic lạ accumulate vào emerging theme queue).
+    if fb.product_id not in taxonomy_cache:
+        taxonomy_cache[fb.product_id] = taxonomy_service.get_taxonomy_names(
+            db, fb.product_id
+        )
+
+    # 3. Classify (LLM) + trace metadata gắn feedback/run vào llm_call_logs.
     classification = classify_feedback(
         fb.feedback_text,
+        taxonomy_names=taxonomy_cache[fb.product_id],
         feedback_id=fb.id,
         analysis_run_id=run.id,
     )
 
-    # 3. Ghi ai_analysis JSONB all-or-nothing (cùng 1 commit) — đây là marker
+    # 4. Ghi ai_analysis JSONB all-or-nothing (cùng 1 commit) — đây là marker
     # "đã xử lý". safety_issue gộp vào JSONB (không còn cột riêng).
     fb.ai_analysis = {
         "topics": classification.categories,
@@ -111,10 +126,19 @@ def _process_item(db: Session, run: AnalysisRun, fb: Feedback) -> None:
         "safety_issue": classification.safety_issue,
         "confidence": classification.confidence,
         "rationale": classification.rationale,
-        "analysis_version": "classifier-v1",
+        "analysis_version": "classifier-v2-taxonomy",
     }
 
-    # 4. Embedding từ feedback_text (PII boundary) — luôn kèm model + dim.
+    # 5. Emerging theme flow (VoC OS §21): topic lạ → accumulate vào hàng chờ
+    # pending_review — KHÔNG tự mutate canonical taxonomy.
+    taxonomy_service.accumulate_emerging(
+        db,
+        fb.product_id,
+        classification.categories,
+        taxonomy_names=taxonomy_cache[fb.product_id],
+    )
+
+    # 6. Embedding từ feedback_text (PII boundary) — luôn kèm model + dim.
     vector = embed_one(fb.feedback_text)
     store_embedding(db, fb, vector)
 
@@ -136,6 +160,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
         attempted: set[uuid.UUID] = set()
         errors: list[str] = []
         processed_this_pass = 0
+        taxonomy_cache: dict[uuid.UUID, list[str]] = {}
 
         try:
             while True:
@@ -149,7 +174,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
                 db.commit()
 
                 try:
-                    _process_item(db, run, fb)
+                    _process_item(db, run, fb, taxonomy_cache)
                 except _ITEM_ERRORS as exc:
                     # Hủy trạng thái bán-phanh trên fb (vd. sanitize đã ghi nhưng
                     # classify chưa) để không bị autoflush sang query kế tiếp.

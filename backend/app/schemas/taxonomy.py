@@ -86,3 +86,42 @@ if _schema_keys != _model_keys:  # pragma: no cover — chỉ nổ khi sửa cod
     raise RuntimeError(
         f"taxonomy drift: schema={sorted(_schema_keys)} vs model={sorted(_model_keys)}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Governance (plan 23 — VoC OS §20–21)
+# ---------------------------------------------------------------------------
+
+from datetime import datetime  # noqa: E402
+from uuid import UUID  # noqa: E402
+
+from pydantic import BaseModel, ConfigDict, Field  # noqa: E402
+
+
+class TaxonomyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    product_id: UUID
+    parent_id: UUID | None
+    name: str
+    description: str | None
+    kind: str
+    status: str
+    evidence_count: int
+    first_seen: datetime | None
+    last_seen: datetime | None
+    created_at: datetime
+
+
+class TaxonomyListOut(BaseModel):
+    items: list[TaxonomyOut]
+    total: int
+
+
+class TaxonomyReviewActionIn(BaseModel):
+    """POST /api/taxonomies/review/{id} — human quyết emerging theme (§21)."""
+
+    action: str = Field(pattern="^(approve|merge|reject)$")
+    merge_into_id: UUID | None = None  # bắt buộc khi action=merge
+    reason: str | None = Field(default=None, max_length=500)
