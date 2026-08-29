@@ -81,8 +81,12 @@ export default function RegisterPage() {
     <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
       <AuthVideoBackground />
       <Card className="w-full max-w-sm bg-black/90 backdrop-blur-md dark">
-        <CardHeader>
-          <CardTitle>Happynest</CardTitle>
+        <CardHeader className="justify-items-center gap-1 text-center">
+          <div className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/Logo-white.png" alt="" className="size-8" />
+            <CardTitle>Happynest</CardTitle>
+          </div>
           <CardDescription>Tạo tài khoản mới</CardDescription>
         </CardHeader>
         <CardContent>
