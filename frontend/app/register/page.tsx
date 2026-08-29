@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { CircleAlert, TriangleAlert } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api";
+import { mapAuthError, type AuthAlert } from "@/lib/auth-errors";
 import { GoogleIcon } from "@/components/google-icon";
 import { AuthVideoBackground } from "@/components/auth-video-background";
 
@@ -34,19 +36,23 @@ export default function RegisterPage() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        signal: AbortSignal.timeout(15000),
       });
       if (!res.ok) throw await ApiError.from(res);
       return res.json();
     },
     onSuccess: async () => {
       // Đăng ký xong tự đăng nhập luôn — dùng lại OAuth2 password flow.
-      await fetch("/api/auth/token", {
+      // Auto-login hụt thì về /login để người dùng đăng nhập thủ công,
+      // thay vì đá vào /feedbacks rồi bị middleware bounce về login không lời.
+      const res = await fetch("/api/auth/token", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ username: email.trim().toLowerCase(), password }),
+        signal: AbortSignal.timeout(15000),
       });
-      router.replace("/feedbacks");
+      router.replace(res.ok ? "/feedbacks" : "/login");
       router.refresh();
     },
   });
@@ -65,16 +71,16 @@ export default function RegisterPage() {
     register.mutate();
   }
 
-  const apiErrMsg =
-    register.error instanceof ApiError && register.error.status === 409
-      ? "Email này đã được đăng ký."
-      : String((register.error as ApiError | null)?.message ?? "");
-  const errMsg = formError ?? apiErrMsg;
+  const registerAlert: AuthAlert | null = formError
+    ? { variant: "warning", title: "Thông tin chưa hợp lệ", description: formError }
+    : register.error
+      ? mapAuthError(register.error)
+      : null;
 
   return (
     <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
       <AuthVideoBackground />
-      <Card className="w-full max-w-sm bg-card/90 backdrop-blur-md">
+      <Card className="w-full max-w-sm bg-black/90 backdrop-blur-md dark">
         <CardHeader>
           <CardTitle>Happynest</CardTitle>
           <CardDescription>Tạo tài khoản mới</CardDescription>
@@ -91,48 +97,49 @@ export default function RegisterPage() {
           </div>
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
-              <Field data-invalid={errMsg ? true : undefined}>
+              <Field data-invalid={registerAlert ? true : undefined}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
                   type="email"
                   autoComplete="email"
                   required
-                  aria-invalid={errMsg ? true : undefined}
+                  aria-invalid={registerAlert ? true : undefined}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
-              <Field data-invalid={errMsg ? true : undefined}>
+              <Field data-invalid={registerAlert ? true : undefined}>
                 <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
                 <Input
                   id="password"
                   type="password"
                   autoComplete="new-password"
                   required
-                  aria-invalid={errMsg ? true : undefined}
+                  aria-invalid={registerAlert ? true : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <FieldDescription>Tối thiểu 8 ký tự.</FieldDescription>
               </Field>
-              <Field data-invalid={errMsg ? true : undefined}>
+              <Field data-invalid={registerAlert ? true : undefined}>
                 <FieldLabel htmlFor="confirm-password">Xác nhận mật khẩu</FieldLabel>
                 <Input
                   id="confirm-password"
                   type="password"
                   autoComplete="new-password"
                   required
-                  aria-invalid={errMsg ? true : undefined}
+                  aria-invalid={registerAlert ? true : undefined}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </Field>
             </FieldGroup>
-            {errMsg ? (
-              <Alert variant="destructive">
-                <AlertTitle>Đăng ký thất bại</AlertTitle>
-                <AlertDescription>{errMsg}</AlertDescription>
+            {registerAlert ? (
+              <Alert variant={registerAlert.variant}>
+                {registerAlert.variant === "destructive" ? <CircleAlert /> : <TriangleAlert />}
+                <AlertTitle>{registerAlert.title}</AlertTitle>
+                <AlertDescription>{registerAlert.description}</AlertDescription>
               </Alert>
             ) : null}
             <Button type="submit" disabled={register.isPending}>
