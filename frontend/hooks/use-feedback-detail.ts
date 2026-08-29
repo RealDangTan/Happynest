@@ -3,6 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Feedback } from "@/lib/types";
 
+export type SimilarFeedback = {
+  id: string;
+  score: number;
+  source: string;
+  snippet: string | null;
+};
+
 export function useFeedbackDetail(id: string) {
   return useQuery({
     queryKey: ["feedback", id],
@@ -16,7 +23,7 @@ export function useSimilarFeedbacks(id: string) {
     queryKey: ["similar", id],
     queryFn: async () => {
       try {
-        return await apiFetch<(Feedback & { score: number })[]>(
+        return await apiFetch<SimilarFeedback[]>(
           `/api/feedbacks/${id}/similar?k=5`,
         );
       } catch (e) {

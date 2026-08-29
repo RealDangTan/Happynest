@@ -5,9 +5,10 @@ import type { FeedbackListResponse } from "@/lib/types";
 
 export type FeedbackListParams = {
   page: number;
-  reviewStatus?: string;
   severity?: string;
-  category?: string;
+  sentiment?: string;
+  topic?: string;
+  source?: string;
 };
 
 const PAGE_SIZE = 20;
@@ -16,9 +17,10 @@ function toQuery(p: FeedbackListParams): string {
   const q = new URLSearchParams();
   q.set("limit", String(PAGE_SIZE));
   q.set("offset", String((p.page - 1) * PAGE_SIZE));
-  if (p.reviewStatus) q.set("review_status", p.reviewStatus);
   if (p.severity) q.set("severity", p.severity);
-  if (p.category) q.set("category", p.category);
+  if (p.sentiment) q.set("sentiment", p.sentiment);
+  if (p.topic) q.set("topic", p.topic);
+  if (p.source) q.set("source", p.source);
   return q.toString();
 }
 

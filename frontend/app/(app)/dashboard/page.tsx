@@ -51,8 +51,6 @@ export default function DashboardPage() {
   // khớp 1:1 và cache share giữa hai trang (spec Màn 4).
   const summary = useReportSummary(30)
 
-  const pending = summary.data?.totals.pending_review_count ?? 0
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -64,20 +62,18 @@ export default function DashboardPage() {
         ) : null}
       </div>
 
-      {/* Shortcut hành động: chỉ mời làm việc khi CÓ việc (pending > 0) */}
+      {/* Shortcut hành động */}
       <div className="flex flex-wrap gap-2">
-        {pending > 0 ? (
-          <Button asChild>
-            <Link href="/feedbacks?review_status=pending">
-              <ClipboardList data-icon="inline-start" />
-              Xử lý {pending} mục chờ duyệt
-            </Link>
-          </Button>
-        ) : null}
-        <Button asChild variant={pending > 0 ? "outline" : "default"}>
+        <Button asChild>
           <Link href="/analysis">
             <PlayCircle data-icon="inline-start" />
             Chạy phân tích mới
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/feedbacks">
+            <ClipboardList data-icon="inline-start" />
+            Nhập / import phản hồi
           </Link>
         </Button>
       </div>

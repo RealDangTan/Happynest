@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useFeedbackDetail, useSimilarFeedbacks } from "@/hooks/use-feedback-detail";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { REVIEW_LABEL, SEVERITY_LABEL } from "@/lib/labels";
+import { SEVERITY_LABEL, SENTIMENT_LABEL } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,8 +22,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { ReviewActions } from "./review-actions";
-import { CorrectionDialog } from "./correction-dialog";
 
 export default function FeedbackDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,65 +50,102 @@ export default function FeedbackDetailPage() {
     );
 
   const d = fb.data;
+  const ai = d.ai_analysis;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link href="/feedbacks">← Danh sách</Link>
         </Button>
-        {d.categories != null ? (
-          <CorrectionDialog d={d} />
-        ) : null}
       </div>
-      {d.review_status === "pending" ? <ReviewActions d={d} /> : null}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle>Phản hồi · {d.source}</CardTitle>
-            {d.severity ? (
+            {ai?.severity ? (
               <Badge
                 variant={
-                  d.severity === "critical" || d.severity === "high"
+                  ai.severity === "critical" || ai.severity === "high"
                     ? "destructive"
                     : "secondary"
                 }
               >
-                {SEVERITY_LABEL[d.severity]}
+                {SEVERITY_LABEL[ai.severity]}
               </Badge>
             ) : null}
-            <Badge variant="outline">{REVIEW_LABEL[d.review_status]}</Badge>
+            {ai?.sentiment ? (
+              <Badge variant="secondary">{SENTIMENT_LABEL[ai.sentiment]}</Badge>
+            ) : null}
             {d.pii_detected ? <Badge variant="outline">Phát hiện PII</Badge> : null}
+            {!ai ? <Badge variant="outline">Chưa phân tích</Badge> : null}
           </div>
           <CardDescription>
-            {formatDate(d.created_at)}
-            {d.external_ref ? ` · ${d.external_ref}` : ""}
+            {formatDate(d.occurred_at)}
+            {d.source_record_id ? ` · ${d.source_record_id}` : ""}
+            {d.import_id ? ` · import ${d.import_id.slice(0, 8)}…` : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="whitespace-pre-wrap text-sm leading-relaxed">
-            {d.sanitized_content ?? "(nội dung trống)"}
+            {d.feedback_text ?? "(chưa có nội dung đã sanitize)"}
           </p>
+          {ai?.rationale ? (
+            <p className="text-xs text-muted-foreground">
+              AI: {ai.rationale}{" "}
+              {ai.analysis_version ? `(${ai.analysis_version})` : ""}
+            </p>
+          ) : null}
           <Separator />
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm sm:grid-cols-[10rem_1fr]">
-            <dt className="text-muted-foreground">AI issue</dt>
-            <dd>{d.ai_issue ?? "—"}</dd>
-            <dt className="text-muted-foreground">Sentiment</dt>
-            <dd>{d.sentiment ?? "—"}</dd>
-            <dt className="text-muted-foreground">Confidence</dt>
-            <dd>{d.confidence != null ? `${Math.round(d.confidence * 100)}%` : "—"}</dd>
-            <dt className="text-muted-foreground">Categories</dt>
+            <dt className="text-muted-foreground">Chủ đề</dt>
             <dd className="flex flex-wrap gap-1">
-              {(d.categories ?? []).length > 0
-                ? d.categories!.map((c) => (
-                    <Badge key={c} variant="secondary">
-                      {c}
+              {(ai?.topics ?? []).length > 0
+                ? ai!.topics!.map((t) => (
+                    <Badge key={t} variant="secondary">
+                      {t}
                     </Badge>
                   ))
                 : "—"}
             </dd>
-            <dt className="text-muted-foreground">Cần người duyệt</dt>
-            <dd>{d.requires_human_review ? "Có" : "Không"}</dd>
+            <dt className="text-muted-foreground">Confidence</dt>
+            <dd>{ai?.confidence != null ? `${Math.round(ai.confidence * 100)}%` : "—"}</dd>
+            <dt className="text-muted-foreground">An toàn</dt>
+            <dd>{ai?.safety_issue ? "⚠ Có vấn đề an toàn" : "—"}</dd>
           </dl>
+
+          {Object.keys(d.data).length > 0 ? (
+            <>
+              <Separator />
+              <div>
+                <h3 className="mb-2 text-sm font-medium">Product data</h3>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
+                  {Object.entries(d.data).map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-muted-foreground">{k}</dt>
+                      <dd>{String(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </>
+          ) : null}
+
+          {Object.keys(d.source_meta).length > 0 ? (
+            <>
+              <Separator />
+              <div>
+                <h3 className="mb-2 text-sm font-medium">Nguồn metadata</h3>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
+                  {Object.entries(d.source_meta).map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-muted-foreground">{k}</dt>
+                      <dd>{String(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -136,7 +171,7 @@ export default function FeedbackDetailPage() {
                   className="flex items-start justify-between gap-4 rounded-lg border p-3 hover:bg-accent"
                 >
                   <span className="line-clamp-2 flex-1 text-sm">
-                    {s.sanitized_content}
+                    {s.snippet}
                   </span>
                   <Badge variant="secondary">{Math.round(s.score * 100)}%</Badge>
                 </Link>

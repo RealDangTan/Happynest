@@ -1,16 +1,18 @@
 "use client";
-import { useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import Papa from "papaparse";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  Field,
-  FieldGroup,
-  FieldDescription,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -26,220 +29,306 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Spinner } from "@/components/ui/spinner";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { ImportCsvResult } from "@/lib/types";
+import { ApiError } from "@/lib/api";
+import type {
+  HumanMappingAction,
+  ImportApplyReport,
+  MappingDecision,
+  MappingItem,
+} from "@/lib/types";
 import {
-  CANON_HEADERS,
-  guessAll,
-  TARGETS,
-  type TargetField,
-} from "@/lib/csv-mapping";
+  useCreateImport,
+  useDecideMapping,
+  useGetMapping,
+} from "@/hooks/use-imports";
+import { useProducts } from "@/hooks/use-products";
 
-// FE-03b T4: chuẩn hoá raw CSV phía client — map cột file sang trường chuẩn
-// rồi serialize lại đúng header endpoint cũ (BE import KHÔNG đổi).
+type Step = "pick" | "review" | "done";
+
+const DECISION_LABEL: Record<string, string> = {
+  MAP: "MAP",
+  PROMOTE: "PROMOTE (field mới)",
+  SOURCE_META: "SOURCE_META",
+  IGNORE: "IGNORE",
+  AMBIGUOUS: "AMBIGUOUS — cần bạn quyết",
+};
+
+/** Màu badge theo độ tin cậy của proposal LLM. */
+function confidenceVariant(c: number): "default" | "secondary" | "destructive" {
+  if (c >= 0.8) return "default";
+  if (c >= 0.5) return "secondary";
+  return "destructive";
+}
 
 export function CsvImportWizard({ onImported }: { onImported: () => void }) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<"pick" | "map">("pick");
+  const products = useProducts();
+  const [step, setStep] = useState<Step>("pick");
   const [file, setFile] = useState<File | null>(null);
-  const [fields, setFields] = useState<string[]>([]);
-  const [rows, setRows] = useState<Record<string, string>[]>([]);
-  const [mapping, setMapping] = useState<Partial<Record<TargetField, string>>>({});
-  const [result, setResult] = useState<ImportCsvResult | null>(null);
+  const [importId, setImportId] = useState<string | null>(null);
+  const [report, setReport] = useState<ImportApplyReport | null>(null);
 
-  function reset() {
-    setStep("pick");
-    setFile(null);
-    setFields([]);
-    setRows([]);
-    setMapping({});
-    setResult(null);
-    if (fileRef.current) fileRef.current.value = "";
-  }
+  // Gate #1 state: action human chọn per source_field
+  const [actions, setActions] = useState<
+    Record<string, { action: HumanMappingAction; targetKey?: string }>
+  >({});
 
-  function parseFile(f: File) {
-    // Dataset demo ≤1500 rows — parse cả file vào bộ nhớ là đủ.
-    Papa.parse<Record<string, string>>(f, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (res) => {
-        const parsedFields = res.meta.fields ?? [];
-        if (parsedFields.length === 0 || res.data.length === 0) {
-          toast.error("File rỗng hoặc không đọc được header CSV.");
-          return;
-        }
-        setFile(f);
-        setFields(parsedFields);
-        setRows(res.data);
-        setMapping(guessAll(parsedFields));
-        setResult(null);
-        setStep("map");
-      },
-      error: (err) =>
-        toast.error(`Không đọc được file: ${err.message}`),
-    });
-  }
+  const createImport = useCreateImport();
+  const mapping = useGetMapping(importId);
+  const decide = useDecideMapping();
 
-  const importCsv = useMutation({
-    mutationFn: async (payload: File) => {
-      const fd = new FormData();
-      fd.append("file", payload);
-      // KHÔNG set Content-Type tay — trình duyệt tự thêm boundary multipart.
-      return apiFetch<ImportCsvResult>("/api/feedbacks/import-csv", {
-        method: "POST",
-        body: fd,
-      });
-    },
-    onSuccess: (r) => {
-      toast.success(`Import xong: ${r.imported} dòng mới, ${r.failed} lỗi.`);
-      setResult(r);
-      onImported();
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Lỗi không rõ"),
-  });
+  const productId =
+    (products.data?.items ?? [])[0]?.id ?? "";
 
-  const missingRequired = TARGETS.filter(
-    (t) => t.required && !mapping[t.key],
+  const defaultActionFor = (m: MappingItem): HumanMappingAction =>
+    m.decision === "AMBIGUOUS" ? "ignore" : "approve";
+
+  const items = mapping.data?.mappings ?? [];
+  const allDecided = useMemo(
+    () => items.every((m) => actions[m.source_field]?.action),
+    [items, actions],
   );
 
-  function transformRow(row: Record<string, string>): Record<string, string> {
-    return Object.fromEntries(
-      TARGETS.map(({ key }) => {
-        const col = mapping[key];
-        return [key, (col ? row[col] : "") ?? ""];
-      }),
+  function startUpload() {
+    if (!file) {
+      toast.error("Hãy chọn file CSV.");
+      return;
+    }
+    if (!productId) {
+      toast.error("Chưa có product nào — tạo product trước.");
+      return;
+    }
+    createImport.mutate(
+      { file, productId },
+      {
+        onSuccess: (imp) => {
+          setImportId(imp.id);
+          setStep("review");
+        },
+        onError: (e) =>
+          toast.error(e instanceof ApiError ? e.message : "Upload thất bại"),
+      },
     );
   }
 
-  function doImport() {
-    if (!file) return;
-    const canonical = Papa.unparse({
-      fields: CANON_HEADERS,
-      data: rows.map(transformRow).map((r) => CANON_HEADERS.map((h) => r[h])),
-    });
-    importCsv.mutate(new File([canonical], `mapped-${file.name}`, { type: "text/csv" }));
+  function submitDecisions() {
+    if (!importId) return;
+    const decisions: MappingDecision[] = items.map((m) => ({
+      source_field: m.source_field,
+      action: actions[m.source_field]?.action ?? defaultActionFor(m),
+      ...(actions[m.source_field]?.targetKey
+        ? { target_key: actions[m.source_field].targetKey }
+        : {}),
+    }));
+    decide.mutate(
+      { importId, decisions },
+      {
+        onSuccess: (rep) => {
+          setReport(rep);
+          setStep("done");
+          onImported();
+        },
+        onError: (e) =>
+          toast.error(e instanceof ApiError ? e.message : "Import thất bại"),
+      },
+    );
   }
 
+  // ---------------------------------------------------------------- step 1
   if (step === "pick") {
     return (
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const f = fileRef.current?.files?.[0];
-          if (f) parseFile(f);
-        }}
-      >
-        <Field>
-          <FieldLabel htmlFor="csv-file">File CSV *</FieldLabel>
-          <Input ref={fileRef} id="csv-file" type="file" accept=".csv,text/csv" required />
-          <FieldDescription>
-            Bước 1/2 — sau khi chọn file bạn sẽ map cột của file sang trường chuẩn
-            (không cần sửa file trước khi đưa lên).
-          </FieldDescription>
-        </Field>
-        <Button type="submit">Phân tích file</Button>
-      </form>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
-        Bước 2/2 — file <b>{file?.name}</b>: {rows.length} dòng,{" "}
-        {fields.length} cột. Gán cột file sang trường chuẩn:
-      </p>
-      <FieldGroup>
-        {TARGETS.map(({ key, label, required }) => (
-          <Field key={key}>
-            <FieldLabel htmlFor={`map-${key}`}>
-              {label}
-              {required ? " *" : ""}
-            </FieldLabel>
-            <Select
-              value={mapping[key] ?? "__none__"}
-              onValueChange={(v) =>
-                setMapping((m) => ({ ...m, [key]: v === "__none__" ? undefined : v }))
-              }
-            >
-              <SelectTrigger id={`map-${key}`} className="w-full">
-                <SelectValue placeholder="— Bỏ qua —" />
+      <div className="flex flex-col gap-4">
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="import-file">File CSV *</FieldLabel>
+            <Input
+              id="import-file"
+              type="file"
+              accept=".csv"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Product đích</FieldLabel>
+            <Select value={productId} onValueChange={() => undefined}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Product…" />
               </SelectTrigger>
               <SelectContent>
-                {!required ? (
-                  <SelectItem value="__none__">— Bỏ qua —</SelectItem>
-                ) : null}
-                {fields.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {f}
+                {(products.data?.items ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              AI sẽ đọc profile từng cột và đề xuất cách map vào product schema —
+              bạn duyệt trước khi dữ liệu được nạp.
+            </p>
           </Field>
-        ))}
-      </FieldGroup>
-
-      {/* Preview 5 dòng đầu đã transform */}
-      <div className="overflow-x-auto rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {CANON_HEADERS.map((h) => (
-                <TableHead key={h}>{h}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.slice(0, 5).map((row, i) => {
-              const t = transformRow(row);
-              return (
-                <TableRow key={i}>
-                  {CANON_HEADERS.map((h) => (
-                    <TableCell key={h} className="max-w-[12rem] truncate">
-                      {t[h] || (
-                        <span className="text-muted-foreground">(trống)</span>
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {result ? (
-        <div className="rounded-md border p-3 text-sm">
-          <p>
-            Đã nhập: <b>{result.imported}</b> · Lỗi: <b>{result.failed}</b>
-          </p>
-          {result.errors.length > 0 ? (
-            <ul className="mt-2 max-h-32 overflow-auto text-muted-foreground">
-              {result.errors.map((er) => (
-                <li key={er.row}>
-                  Dòng {er.row}: {er.reason}
-                </li>
-              ))}
-            </ul>
+        </FieldGroup>
+        <Button onClick={startUpload} disabled={createImport.isPending}>
+          {createImport.isPending ? (
+            <Spinner data-icon="inline-start" />
           ) : null}
-        </div>
-      ) : null}
-
-      <div className="flex justify-between gap-2">
-        <Button variant="ghost" onClick={reset}>
-          ← Chọn file khác
+          Phân tích &amp; đề xuất mapping
         </Button>
-        {result ? null : (
-          <Button onClick={doImport} disabled={missingRequired.length > 0 || importCsv.isPending}>
-            {importCsv.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {missingRequired.length > 0
-              ? `Thiếu map: ${missingRequired.map((t) => t.label).join(", ")}`
-              : `Import ${rows.length} dòng`}
-          </Button>
-        )}
       </div>
-    </div>
+    );
+  }
+
+  // ---------------------------------------------------------------- step 2
+  if (step === "review") {
+    return (
+      <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
+        {mapping.isPending ? <Spinner /> : null}
+        {mapping.data ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cột CSV</TableHead>
+                <TableHead>Đề xuất AI</TableHead>
+                <TableHead>Tin cậy</TableHead>
+                <TableHead>Quyết định của bạn</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((m) => {
+                const act = actions[m.source_field]?.action;
+                return (
+                  <TableRow key={m.source_field}>
+                    <TableCell className="font-medium">
+                      {m.source_field}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span>{DECISION_LABEL[m.decision] ?? m.decision}</span>
+                        {m.target ? (
+                          <span className="text-xs text-muted-foreground">
+                            → {m.target}
+                          </span>
+                        ) : null}
+                        {m.candidate ? (
+                          <span className="text-xs text-muted-foreground">
+                            → field mới: {m.candidate.key} ({m.candidate.type})
+                          </span>
+                        ) : null}
+                        <span className="text-xs text-muted-foreground">
+                          {m.reason}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={confidenceVariant(m.confidence)}>
+                        {Math.round(m.confidence * 100)}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Select
+                          value={act ?? defaultActionFor(m)}
+                          onValueChange={(v) =>
+                            setActions((prev) => ({
+                              ...prev,
+                              [m.source_field]: {
+                                action: v as HumanMappingAction,
+                                targetKey: prev[m.source_field]?.targetKey,
+                              },
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="approve">Duyệt đề xuất</SelectItem>
+                            <SelectItem value="remap">Map sang field khác…</SelectItem>
+                            <SelectItem value="demote">Để source metadata</SelectItem>
+                            <SelectItem value="ignore">Bỏ qua cột</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {actions[m.source_field]?.action === "remap" ? (
+                          <Input
+                            placeholder="key đích (vd: app_version)"
+                            value={actions[m.source_field]?.targetKey ?? ""}
+                            onChange={(e) =>
+                              setActions((prev) => ({
+                                ...prev,
+                                [m.source_field]: {
+                                  action: "remap",
+                                  targetKey: e.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        ) : null}
+
+        {items.some((m) => m.decision === "AMBIGUOUS") ? (
+          <Alert>
+            <AlertTitle>Có cột AMBIGUOUS</AlertTitle>
+            <AlertDescription>
+              AI không chắc nghĩa của một số cột (ví dụ cột “score” — CSAT hay
+              NPS?). Hãy chọn “Bỏ qua” hoặc “Map sang field khác…” cho các cột
+              này — hệ thống không cho phép duyệt máy móc.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setStep("pick")}>
+            ← Chọn file khác
+          </Button>
+          <Button onClick={submitDecisions} disabled={!allDecided || decide.isPending}>
+            {decide.isPending ? <Spinner data-icon="inline-start" /> : null}
+            Duyệt &amp; import
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------- step 3
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Import hoàn tất</CardTitle>
+        <CardDescription>
+          {report
+            ? `Đã nạp ${report.imported} dòng (lỗi: ${report.failed}) — schema v${report.schema_version ?? "?"}.`
+            : "Không có kết quả."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {report && report.errors.length > 0 ? (
+          <div className="max-h-40 overflow-y-auto rounded-md border p-2 text-xs">
+            {report.errors.map((e) => (
+              <p key={e.row}>
+                Dòng {e.row}: {e.reason}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        <Button
+          variant="outline"
+          onClick={() => {
+            setStep("pick");
+            setFile(null);
+            setImportId(null);
+            setReport(null);
+            setActions({});
+          }}
+        >
+          Import file khác
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

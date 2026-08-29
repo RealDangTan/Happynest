@@ -2,22 +2,16 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ReportSummary } from "@/lib/types"
 
-/** 3 stat tile tổng hợp — DÙNG CHUNG /reports và /dashboard để số liệu
- * khớp 1:1 giữa hai trang (AC dashboard). Tile "Chờ duyệt" là link thẳng
- * vào queue review. */
+/** 2 stat tile tổng hợp — DÙNG CHUNG /reports và /dashboard để số liệu
+ * khớp 1:1 giữa hai trang. */
 export function ReportTiles({ totals }: { totals: ReportSummary["totals"] }) {
   const tiles: { label: string; value: number; href?: string }[] = [
     { label: "Tổng phản hồi", value: totals.feedback_count },
-    {
-      label: "Chờ duyệt",
-      value: totals.pending_review_count,
-      href: "/feedbacks?review_status=pending",
-    },
     { label: "Phát hiện PII", value: totals.pii_detected_count },
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2">
       {tiles.map((t) => {
         const body = (
           <CardContent className="flex flex-col gap-1">

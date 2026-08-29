@@ -2,16 +2,11 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Settings2, ShieldCheck } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks";
 import type { Feedback } from "@/lib/types";
 import { formatDate } from "@/lib/format";
-import {
-  AI_ISSUE_LABEL,
-  REVIEW_LABEL,
-  SENTIMENT_LABEL,
-  SEVERITY_LABEL,
-} from "@/lib/labels";
+import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels";
 import {
   Table,
   TableBody,
@@ -47,28 +42,26 @@ import {
 } from "@/components/ui/empty";
 import { DataEntryDialog } from "./data-entry-dialog";
 
-// Cột bật/tắt được (FE-03b T3). Cột "Nội dung" cố định luôn hiển thị.
+// Cột bật/tắt được. Cột "Nội dung" cố định luôn hiển thị.
 type ColumnKey =
   | "source"
-  | "created"
+  | "occurred"
   | "severity"
-  | "review"
   | "sentiment"
-  | "ai_issue"
+  | "topics"
   | "confidence"
   | "pii";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "source", label: "Nguồn" },
-  { key: "created", label: "Ngày tạo" },
+  { key: "occurred", label: "Thời điểm" },
   { key: "severity", label: "Mức độ" },
-  { key: "review", label: "Duyệt" },
   { key: "sentiment", label: "Cảm xúc" },
-  { key: "ai_issue", label: "AI issue" },
+  { key: "topics", label: "Chủ đề" },
   { key: "confidence", label: "Confidence" },
   { key: "pii", label: "PII" },
 ];
-const DEFAULT_COLUMNS: ColumnKey[] = ["source", "created", "severity", "review"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["source", "occurred", "severity", "topics"];
 const STORAGE_KEY = "feedbacks.columns";
 
 function readStoredColumns(): ColumnKey[] {
@@ -122,7 +115,7 @@ function FeedbackCell({ fb }: { fb: Feedback }) {
   return (
     <TableCell className="max-w-md">
       <Link href={`/feedbacks/${fb.id}`} className="block">
-        <span className="line-clamp-2">{fb.sanitized_content ?? "(trống)"}</span>
+        <span className="line-clamp-2">{fb.feedback_text ?? "(chưa phân tích)"}</span>
       </Link>
     </TableCell>
   );
@@ -134,9 +127,10 @@ function FeedbacksTable() {
   const page = Math.max(1, Number(sp.get("page") ?? "1") || 1);
   const filters = {
     page,
-    reviewStatus: sp.get("review_status") ?? undefined,
     severity: sp.get("severity") ?? undefined,
-    category: sp.get("category") ?? undefined,
+    sentiment: sp.get("sentiment") ?? undefined,
+    topic: sp.get("topic") ?? undefined,
+    source: sp.get("source") ?? undefined,
   };
   const { data, isPending, isError, error } = useFeedbacks(filters);
 
@@ -201,7 +195,7 @@ function FeedbacksTable() {
           value={sp.get("severity") ?? "all"}
           onValueChange={(v) => setParam("severity", v === "all" ? null : v)}
         >
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-40">
             <SelectValue placeholder="Mức độ" />
           </SelectTrigger>
           <SelectContent>
@@ -214,15 +208,15 @@ function FeedbacksTable() {
           </SelectContent>
         </Select>
         <Select
-          value={sp.get("review_status") ?? "all"}
-          onValueChange={(v) => setParam("review_status", v === "all" ? null : v)}
+          value={sp.get("sentiment") ?? "all"}
+          onValueChange={(v) => setParam("sentiment", v === "all" ? null : v)}
         >
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Trạng thái" />
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Cảm xúc" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Mọi trạng thái</SelectItem>
-            {Object.entries(REVIEW_LABEL).map(([v, l]) => (
+            <SelectItem value="all">Mọi cảm xúc</SelectItem>
+            {Object.entries(SENTIMENT_LABEL).map(([v, l]) => (
               <SelectItem key={v} value={v}>
                 {l}
               </SelectItem>
@@ -230,10 +224,16 @@ function FeedbacksTable() {
           </SelectContent>
         </Select>
         <Input
-          placeholder="Lọc theo category…"
-          className="w-52"
-          defaultValue={sp.get("category") ?? ""}
-          onBlur={(e) => setParam("category", e.target.value.trim() || null)}
+          placeholder="Lọc theo chủ đề (topic)…"
+          className="w-48"
+          defaultValue={sp.get("topic") ?? ""}
+          onBlur={(e) => setParam("topic", e.target.value.trim() || null)}
+        />
+        <Input
+          placeholder="Lọc theo nguồn…"
+          className="w-44"
+          defaultValue={sp.get("source") ?? ""}
+          onBlur={(e) => setParam("source", e.target.value.trim() || null)}
         />
         <div className="ml-auto">
           <ColumnVisibilityMenu visible={visibleColumns} onToggle={toggleColumn} />
@@ -241,29 +241,15 @@ function FeedbacksTable() {
       </div>
 
       {data.items.length === 0 ? (
-        filters.reviewStatus === "pending" ? (
-          // Queue cạn là trạng thái tốt — khác Empty "chưa có dữ liệu".
-          <Empty>
-            <EmptyHeader>
-              <EmptyTitle>Không có mục nào chờ duyệt</EmptyTitle>
-              <EmptyDescription className="flex flex-col items-center gap-3">
-                <span>Mọi phản hồi cần người duyệt đã được xử lý.</span>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/feedbacks">Xem tất cả phản hồi</Link>
-                </Button>
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <Empty>
-            <EmptyHeader>
-              <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
-              <EmptyDescription>
-                Nhập dữ liệu bằng nút bên trên hoặc bỏ bộ lọc.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
+            <EmptyDescription>
+              Nhập dữ liệu bằng nút bên trên (thủ công hoặc import CSV qua
+              LISTEN) hoặc bỏ bộ lọc.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <>
           <Table>
@@ -271,87 +257,90 @@ function FeedbacksTable() {
               <TableRow>
                 <TableHead className="w-[45%]">Nội dung</TableHead>
                 {has("source") && <TableHead>Nguồn</TableHead>}
-                {has("created") && <TableHead>Ngày tạo</TableHead>}
+                {has("occurred") && <TableHead>Thời điểm</TableHead>}
                 {has("severity") && <TableHead>Mức độ</TableHead>}
-                {has("review") && <TableHead>Duyệt</TableHead>}
                 {has("sentiment") && <TableHead>Cảm xúc</TableHead>}
-                {has("ai_issue") && <TableHead>AI issue</TableHead>}
+                {has("topics") && <TableHead>Chủ đề</TableHead>}
                 {has("confidence") && <TableHead>Confidence</TableHead>}
                 {has("pii") && <TableHead>PII</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((fb: Feedback) => (
-                <TableRow key={fb.id} className="cursor-pointer">
-                  <FeedbackCell fb={fb} />
-                  {has("source") && <TableCell>{fb.source}</TableCell>}
-                  {has("created") && (
-                    <TableCell className="whitespace-nowrap">
-                      {formatDate(fb.created_at)}
-                    </TableCell>
-                  )}
-                  {has("severity") && (
-                    <TableCell>
-                      {fb.severity ? (
-                        <Badge
-                          variant={
-                            fb.severity === "critical" || fb.severity === "high"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {SEVERITY_LABEL[fb.severity]}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  )}
-                  {has("review") && (
-                    <TableCell>
-                      <Badge variant="outline">
-                        {REVIEW_LABEL[fb.review_status]}
-                      </Badge>
-                    </TableCell>
-                  )}
-                  {has("sentiment") && (
-                    <TableCell>
-                      {fb.sentiment ? (
-                        <Badge variant="secondary">
-                          {SENTIMENT_LABEL[fb.sentiment]}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  )}
-                  {has("ai_issue") && (
-                    <TableCell>
-                      {fb.ai_issue ? AI_ISSUE_LABEL[fb.ai_issue] : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  )}
-                  {has("confidence") && (
-                    <TableCell className="whitespace-nowrap">
-                      {fb.confidence != null
-                        ? `${Math.round(fb.confidence * 100)}%`
-                        : (
+              {data.items.map((fb: Feedback) => {
+                const ai = fb.ai_analysis;
+                return (
+                  <TableRow key={fb.id} className="cursor-pointer">
+                    <FeedbackCell fb={fb} />
+                    {has("source") && <TableCell>{fb.source}</TableCell>}
+                    {has("occurred") && (
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(fb.occurred_at)}
+                      </TableCell>
+                    )}
+                    {has("severity") && (
+                      <TableCell>
+                        {ai?.severity ? (
+                          <Badge
+                            variant={
+                              ai.severity === "critical" || ai.severity === "high"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {SEVERITY_LABEL[ai.severity]}
+                          </Badge>
+                        ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
-                    </TableCell>
-                  )}
-                  {has("pii") && (
-                    <TableCell>
-                      {fb.pii_detected ? (
-                        <Badge variant="outline">PII</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
+                      </TableCell>
+                    )}
+                    {has("sentiment") && (
+                      <TableCell>
+                        {ai?.sentiment ? (
+                          <Badge variant="secondary">
+                            {SENTIMENT_LABEL[ai.sentiment]}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    )}
+                    {has("topics") && (
+                      <TableCell className="max-w-48">
+                        {ai?.topics?.length ? (
+                          <div className="flex flex-wrap gap-1">
+                            {ai.topics.slice(0, 3).map((t) => (
+                              <Badge key={t} variant="outline">
+                                {t}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    )}
+                    {has("confidence") && (
+                      <TableCell className="whitespace-nowrap">
+                        {ai?.confidence != null
+                          ? `${Math.round(ai.confidence * 100)}%`
+                          : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                      </TableCell>
+                    )}
+                    {has("pii") && (
+                      <TableCell>
+                        {fb.pii_detected ? (
+                          <Badge variant="outline">PII</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           <div className="flex items-center justify-between">
@@ -387,16 +376,7 @@ export default function FeedbacksPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="font-heading text-2xl">Phản hồi</h1>
-          {/* Queue HITL — 1 click vào hàng chờ (UF-04 Màn 1). */}
-          <Button asChild variant="outline" size="sm">
-            <Link href="/feedbacks?review_status=pending">
-              <ShieldCheck data-icon="inline-start" />
-              Chờ duyệt
-            </Link>
-          </Button>
-        </div>
+        <h1 className="font-heading text-2xl">Phản hồi</h1>
         <DataEntryDialog />
       </div>
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>

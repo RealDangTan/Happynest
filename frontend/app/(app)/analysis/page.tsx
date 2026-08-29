@@ -12,8 +12,6 @@ import {
 } from "@/hooks/use-analysis";
 import type { Feedback } from "@/lib/types";
 import {
-  AI_ISSUE_LABEL,
-  REVIEW_LABEL,
   SENTIMENT_LABEL,
   SEVERITY_LABEL,
 } from "@/lib/labels";
@@ -127,64 +125,55 @@ function RunResults({ runId }: { runId: string }) {
             <TableHead className="w-[45%]">Nội dung</TableHead>
             <TableHead>Nguồn</TableHead>
             <TableHead>Mức độ</TableHead>
-            <TableHead>Duyệt</TableHead>
             <TableHead>Cảm xúc</TableHead>
-            <TableHead>AI issue</TableHead>
             <TableHead>Confidence</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {results.data.items.map((fb: Feedback) => (
-            <TableRow key={fb.id} className="cursor-pointer">
-              <TableCell className="max-w-md">
-                <Link href={`/feedbacks/${fb.id}`} className="block">
-                  <span className="line-clamp-2">
-                    {fb.sanitized_content ?? "(trống)"}
-                  </span>
-                </Link>
-              </TableCell>
-              <TableCell>{fb.source}</TableCell>
-              <TableCell>
-                {fb.severity ? (
-                  <Badge
-                    variant={
-                      fb.severity === "critical" || fb.severity === "high"
-                        ? "destructive"
-                        : "secondary"
-                    }
-                  >
-                    {SEVERITY_LABEL[fb.severity]}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground">…đang xử lý</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline">{REVIEW_LABEL[fb.review_status]}</Badge>
-              </TableCell>
-              <TableCell>
-                {fb.sentiment ? (
-                  SENTIMENT_LABEL[fb.sentiment]
-                ) : (
-                  <span className="text-muted-foreground">…đang xử lý</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {fb.ai_issue ? (
-                  AI_ISSUE_LABEL[fb.ai_issue]
-                ) : (
-                  <span className="text-muted-foreground">…đang xử lý</span>
-                )}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {fb.confidence != null
-                  ? `${Math.round(fb.confidence * 100)}%`
-                  : (
+          {results.data.items.map((fb: Feedback) => {
+            const ai = fb.ai_analysis;
+            return (
+              <TableRow key={fb.id} className="cursor-pointer">
+                <TableCell className="max-w-md">
+                  <Link href={`/feedbacks/${fb.id}`} className="block">
+                    <span className="line-clamp-2">
+                      {fb.feedback_text ?? "(trống)"}
+                    </span>
+                  </Link>
+                </TableCell>
+                <TableCell>{fb.source}</TableCell>
+                <TableCell>
+                  {ai?.severity ? (
+                    <Badge
+                      variant={
+                        ai.severity === "critical" || ai.severity === "high"
+                          ? "destructive"
+                          : "secondary"
+                      }
+                    >
+                      {SEVERITY_LABEL[ai.severity]}
+                    </Badge>
+                  ) : (
                     <span className="text-muted-foreground">…đang xử lý</span>
                   )}
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+                <TableCell>
+                  {ai?.sentiment ? (
+                    SENTIMENT_LABEL[ai.sentiment]
+                  ) : (
+                    <span className="text-muted-foreground">…đang xử lý</span>
+                  )}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {ai?.confidence != null
+                    ? `${Math.round(ai.confidence * 100)}%`
+                    : (
+                      <span className="text-muted-foreground">…đang xử lý</span>
+                    )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
       <div className="flex items-center justify-between">

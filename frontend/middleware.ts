@@ -6,14 +6,16 @@ export function middleware(req: NextRequest) {
   const hasSession = req.cookies.has("access_token");
   const { pathname } = req.nextUrl;
 
-  if (!hasSession && !PUBLIC_PATHS.includes(pathname)) {
+  // Logged-in users never see auth/landing pages — everything funnels to the app.
+  if (hasSession && (PUBLIC_PATHS.includes(pathname) || pathname === "/")) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
-  if (hasSession && (pathname === "/login" || pathname === "/register")) {
+  // Anonymous users get the public landing, never bare app routes or /login.
+  if (!hasSession && !PUBLIC_PATHS.includes(pathname)) {
     const url = req.nextUrl.clone();
-    url.pathname = "/feedbacks";
+    url.pathname = "/landing";
     return NextResponse.redirect(url);
   }
   return NextResponse.next();
