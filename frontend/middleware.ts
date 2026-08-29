@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/login", "/register", "/landing"];
 
 export function middleware(req: NextRequest) {
   const hasSession = req.cookies.has("access_token");
@@ -20,5 +20,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|assets).*)"],
 };

@@ -18,6 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api";
 import { GoogleIcon } from "@/components/google-icon";
+import { AuthVideoBackground } from "@/components/auth-video-background";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,8 +50,9 @@ export default function LoginPage() {
       : String((login.error as ApiError | null)?.message ?? "");
 
   return (
-    <main className="flex min-h-svh items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
+    <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
+      <AuthVideoBackground />
+      <Card className="w-full max-w-sm bg-card/90 backdrop-blur-md">
         <CardHeader>
           <CardTitle>Happynest</CardTitle>
           <CardDescription>Đăng nhập để tiếp tục</CardDescription>
