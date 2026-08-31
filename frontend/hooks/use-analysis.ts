@@ -6,7 +6,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import type { FeedbackListResponse, RunProgress } from "@/lib/types";
+import type {
+  AnalysisCostPreview,
+  AnalysisScope,
+  FeedbackListResponse,
+  RunListResponse,
+  RunProgress,
+} from "@/lib/types";
 
 export const RUN_RESULTS_PAGE_SIZE = 20;
 
@@ -42,12 +48,57 @@ export function useRunResults(runId: string | null, page: number) {
   });
 }
 
+export function useRuns() {
+  return useQuery({
+    queryKey: ["analysis", "runs"],
+    queryFn: () => apiFetch<RunListResponse>("/api/analysis/runs?limit=50"),
+    refetchInterval: 4000,
+    staleTime: 0,
+  });
+}
+
+export function useAnalysisPreview() {
+  return useMutation({
+    mutationFn: (scope: AnalysisScope) =>
+      apiFetch<AnalysisCostPreview>("/api/analysis/runs/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scope),
+      }),
+  });
+}
+
 export function useTriggerRun() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      apiFetch<{ run_id: string }>("/api/analysis/runs", { method: "POST" }),
+    mutationFn: ({
+      scope,
+      confirmedItemCount,
+    }: {
+      scope: AnalysisScope;
+      confirmedItemCount: number;
+    }) =>
+      apiFetch<{ run_id: string }>("/api/analysis/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...scope,
+          confirmed_item_count: confirmedItemCount,
+        }),
+      }),
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: ["analysis"] }),
+  });
+}
+
+export function useCancelRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (runId: string) =>
+      apiFetch<RunProgress>(`/api/analysis/runs/${runId}/cancel`, { method: "POST" }),
+    onSuccess: (_, runId) => {
+      void qc.invalidateQueries({ queryKey: ["analysis", "run", runId] });
+      void qc.invalidateQueries({ queryKey: ["analysis", "runs"] });
+    },
   });
 }

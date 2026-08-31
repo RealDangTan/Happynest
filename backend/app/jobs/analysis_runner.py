@@ -36,7 +36,7 @@ import uuid
 from datetime import datetime, timezone
 
 from openai import APIError
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
@@ -47,8 +47,14 @@ from app.services import taxonomy_service
 from app.services.classifier import (
     PROMPT_VERSION,
     classify_feedback,
+    classify_feedback_batch,
 )
-from app.services.embedder import EmbeddingDimError, embed_one, store_embedding
+from app.services.embedder import (
+    EmbeddingDimError,
+    embed_one,
+    embed_texts,
+    store_embedding,
+)
 from app.services.llm_client import LLMStructureError
 from app.services.presidio_service import sanitize
 
@@ -71,18 +77,58 @@ def _pick_next(db: Session, run_id: uuid.UUID, attempted: set[uuid.UUID]):
     `attempted` = id đã thử trong LƯỢT gọi hiện tại — loại ra để item vừa lỗi
     không bị chọn lại ngay (chặn vòng lặp vô hạn trong một lượt chạy).
     """
-    claimed_by_this_run_unprocessed = and_(
+    stmt = select(Feedback).where(
         Feedback.analysis_run_id == run_id,
         Feedback.ai_analysis.is_(None),
-    )
-    stmt = select(Feedback).where(
-        or_(Feedback.analysis_run_id.is_(None), claimed_by_this_run_unprocessed)
     )
     if attempted:
         stmt = stmt.where(Feedback.id.not_in(attempted))
     return db.scalars(
         stmt.order_by(Feedback.occurred_at, Feedback.id).limit(1)
     ).first()
+
+
+def _pick_chunk(
+    db: Session,
+    run_id: uuid.UUID,
+    attempted: set[uuid.UUID],
+    chunk_size: int,
+) -> list[Feedback]:
+    stmt = select(Feedback).where(
+        Feedback.analysis_run_id == run_id,
+        Feedback.ai_analysis.is_(None),
+    )
+    if attempted:
+        stmt = stmt.where(Feedback.id.not_in(attempted))
+    return list(
+        db.scalars(
+            stmt.order_by(Feedback.occurred_at, Feedback.id).limit(chunk_size)
+        ).all()
+    )
+
+
+def _release_unprocessed(db: Session, run_id: uuid.UUID) -> None:
+    db.execute(
+        update(Feedback)
+        .where(
+            Feedback.analysis_run_id == run_id,
+            Feedback.ai_analysis.is_(None),
+        )
+        .values(analysis_run_id=None)
+    )
+
+
+def _classification_json(classification) -> dict:
+    return {
+        "topics": classification.categories,
+        "ai_issue": classification.ai_issue.value if classification.ai_issue else None,
+        "sentiment": classification.sentiment.value,
+        "severity": classification.severity.value,
+        "safety_issue": classification.safety_issue,
+        "confidence": classification.confidence,
+        "rationale": classification.rationale,
+        "analysis_version": "classifier-v2-taxonomy",
+    }
 
 
 def _process_item(
@@ -118,16 +164,7 @@ def _process_item(
 
     # 4. Ghi ai_analysis JSONB all-or-nothing (cùng 1 commit) — đây là marker
     # "đã xử lý". safety_issue gộp vào JSONB (không còn cột riêng).
-    fb.ai_analysis = {
-        "topics": classification.categories,
-        "ai_issue": classification.ai_issue.value if classification.ai_issue else None,
-        "sentiment": classification.sentiment.value,
-        "severity": classification.severity.value,
-        "safety_issue": classification.safety_issue,
-        "confidence": classification.confidence,
-        "rationale": classification.rationale,
-        "analysis_version": "classifier-v2-taxonomy",
-    }
+    fb.ai_analysis = _classification_json(classification)
 
     # 5. Emerging theme flow (VoC OS §21): topic lạ → accumulate vào hàng chờ
     # pending_review — KHÔNG tự mutate canonical taxonomy.
@@ -141,6 +178,44 @@ def _process_item(
     # 6. Embedding từ feedback_text (PII boundary) — luôn kèm model + dim.
     vector = embed_one(fb.feedback_text)
     store_embedding(db, fb, vector)
+
+
+def _process_chunk(
+    db: Session,
+    run: AnalysisRun,
+    rows: list[Feedback],
+    taxonomy_cache: dict[uuid.UUID, list[str]],
+) -> None:
+    """One classify call + one embedding-array call for a true batch chunk."""
+    for fb in rows:
+        if fb.feedback_text is None:
+            result = sanitize(fb.raw_content)
+            fb.feedback_text = result.sanitized_text
+            fb.pii_detected = result.pii_detected
+            fb.pii_entities = [entity.model_dump() for entity in result.entities]
+        if fb.product_id not in taxonomy_cache:
+            taxonomy_cache[fb.product_id] = taxonomy_service.get_taxonomy_names(
+                db, fb.product_id
+            )
+    taxonomy_names = taxonomy_cache[rows[0].product_id]
+    classified = classify_feedback_batch(
+        [(fb.id, fb.feedback_text or "") for fb in rows],
+        taxonomy_names=taxonomy_names,
+        analysis_run_id=run.id,
+    )
+    vectors = embed_texts([fb.feedback_text or "" for fb in rows])
+    if len(vectors) != len(rows):
+        raise EmbeddingDimError("Embedding batch response count mismatch.")
+    for fb, vector in zip(rows, vectors, strict=True):
+        classification = classified[fb.id]
+        fb.ai_analysis = _classification_json(classification)
+        taxonomy_service.accumulate_emerging(
+            db,
+            fb.product_id,
+            classification.categories,
+            taxonomy_names=taxonomy_names,
+        )
+        store_embedding(db, fb, vector)
 
 
 def run_analysis(run_id: uuid.UUID) -> None:
@@ -164,28 +239,46 @@ def run_analysis(run_id: uuid.UUID) -> None:
 
         try:
             while True:
-                fb = _pick_next(db, run.id, attempted)
-                if fb is None:
+                db.refresh(run)
+                if run.cancel_requested_at is not None:
+                    _release_unprocessed(db, run.id)
+                    run.status = RunStatus.cancelled
+                    run.completed_at = datetime.now(timezone.utc)
+                    db.commit()
+                    return
+
+                rows = (
+                    [_pick_next(db, run.id, attempted)]
+                    if run.mode != "batch"
+                    else _pick_chunk(db, run.id, attempted, run.chunk_size)
+                )
+                rows = [row for row in rows if row is not None]
+                if not rows:
                     break
 
-                # Claim NGAY (+commit): crash sau claim vẫn resume được vì các
-                # lượt sau chỉ nhận row chưa claim hoặc claim-bởi-run-này-chưa-xong.
-                fb.analysis_run_id = run.id
-                db.commit()
-
                 try:
-                    _process_item(db, run, fb, taxonomy_cache)
+                    if run.mode == "batch":
+                        _process_chunk(db, run, rows, taxonomy_cache)
+                    else:
+                        _process_item(db, run, rows[0], taxonomy_cache)
                 except _ITEM_ERRORS as exc:
-                    # Hủy trạng thái bán-phanh trên fb (vd. sanitize đã ghi nhưng
-                    # classify chưa) để không bị autoflush sang query kế tiếp.
                     db.rollback()
-                    attempted.add(fb.id)
-                    short = f"{fb.id}: {type(exc).__name__}: {exc}"
+                    failed_ids = [row.id for row in rows]
+                    db.execute(
+                        update(Feedback)
+                        .where(Feedback.id.in_(failed_ids))
+                        .values(analysis_run_id=None)
+                    )
+                    attempted.update(failed_ids)
+                    run = db.get(AnalysisRun, run_id)
+                    run.failed_count += len(failed_ids)
+                    short = f"{','.join(map(str, failed_ids))}: {type(exc).__name__}: {exc}"
                     errors.append(short[:300])
-                    logger.warning("item %s lỗi (bỏ qua): %s", fb.id, type(exc).__name__)
+                    logger.warning("chunk %s lỗi (unclaim): %s", failed_ids, type(exc).__name__)
                     # Fallback plan §6: >50% BATCH lỗi (mẫu số = total_count
                     # snapshot lúc tạo run) → dừng sớm, status failed.
-                    if len(errors) * 2 > max(run.total_count, 1):
+                    if run.failed_count * 2 > max(run.total_count, 1):
+                        _release_unprocessed(db, run.id)
                         run.error = _join_errors(errors)
                         run.status = RunStatus.failed
                         run.completed_at = datetime.now(timezone.utc)
@@ -196,10 +289,10 @@ def run_analysis(run_id: uuid.UUID) -> None:
                         return
                     continue
 
-                attempted.add(fb.id)
-                run.processed_count += 1  # monotonic; commit chung bên dưới
+                attempted.update(row.id for row in rows)
+                run.processed_count += len(rows)
                 db.commit()
-                processed_this_pass += 1
+                processed_this_pass += len(rows)
 
             run.status = RunStatus.completed
             run.completed_at = datetime.now(timezone.utc)

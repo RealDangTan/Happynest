@@ -25,11 +25,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Feedback } from "@/lib/types";
 import { CsvImportWizard } from "./csv-import-wizard";
+import { useActivity } from "@/components/activity/activity-provider";
 
 export function DataEntryDialog() {
   const router = useRouter();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const activity = useActivity();
 
   function refreshList() {
     void qc.invalidateQueries({ queryKey: ["feedbacks"] });
@@ -139,7 +141,11 @@ export function DataEntryDialog() {
           </TabsContent>
 
           <TabsContent value="csv">
-            <CsvImportWizard onImported={refreshList} />
+            <CsvImportWizard onProfiled={(importId) => {
+              setOpen(false);
+              void qc.invalidateQueries({ queryKey: ["imports"] });
+              activity.openImport(importId);
+            }} />
           </TabsContent>
         </Tabs>
       </DialogContent>

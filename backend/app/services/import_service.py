@@ -12,7 +12,7 @@ pipeline. LLM mapper chỉ thấy PROFILE, không thấy data raw (VoC OS §7).
 import csv
 import io
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -36,6 +36,35 @@ class ImportStateError(Exception):
     """Import không ở trạng thái mapping_review — route chuyển 409."""
 
 
+ACTIVE_IMPORT_STATUSES = (
+    ImportStatus.profile_ready,
+    ImportStatus.mapping_generating,
+    ImportStatus.mapping_review,
+    ImportStatus.importing,
+)
+
+MAPPING_STALE_AFTER = timedelta(minutes=5)
+
+
+def profile_csv_for_import(raw: bytes) -> tuple[list[dict], int]:
+    """Build the persisted/prompt-safe profile without invoking an LLM.
+
+    The profiler needs raw values for deterministic type/cardinality metrics,
+    but every sample is sanitized before the profile leaves this boundary.
+    """
+    profiles = profile_csv_bytes(raw)
+    reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig")))
+    source_row_count = sum(1 for _ in reader)
+    if source_row_count == 0:
+        raise ValueError("CSV không có dòng dữ liệu.")
+    for profile in profiles:
+        profile["sample_values"] = [
+            sanitize(str(value)).sanitized_text
+            for value in profile.get("sample_values", [])
+        ]
+    return profiles, source_row_count
+
+
 # ------------------------------------------------------------------ storage
 
 
@@ -56,7 +85,109 @@ def load_raw_import(storage_path: str) -> bytes:
     return Path(storage_path).read_bytes()
 
 
+def cancel_import_file(import_row: Import, *, storage_root: Path | None = None) -> None:
+    """Delete one raw upload without allowing path traversal outside storage."""
+    if import_row.status not in {
+        ImportStatus.profile_ready,
+        ImportStatus.mapping_review,
+        ImportStatus.failed,
+    }:
+        value = getattr(import_row.status, "value", import_row.status)
+        raise ValueError(f"Import status '{value}' cannot be cancelled.")
+    if import_row.storage_path:
+        root = (storage_root or _storage_dir()).resolve()
+        target = Path(import_row.storage_path).resolve()
+        if target != root and root not in target.parents:
+            raise ValueError("Import file is outside configured storage root.")
+        target.unlink(missing_ok=True)
+        import_row.storage_path = None
+    import_row.status = ImportStatus.cancelled
+
+
 # ------------------------------------------------------------- proposal
+
+
+def stage_import(
+    db: Session,
+    product_id: uuid.UUID,
+    raw: bytes,
+    *,
+    original_filename: str | None = None,
+) -> Import:
+    """Persist a deterministic, sanitized profile; never invoke an LLM."""
+    active = (
+        db.query(Import.id)
+        .filter(
+            Import.product_id == product_id,
+            Import.status.in_(ACTIVE_IMPORT_STATUSES),
+        )
+        .first()
+    )
+    if active is not None:
+        raise ImportStateError("active_import_exists")
+
+    profiles, source_row_count = profile_csv_for_import(raw)
+    import_row = Import(
+        product_id=product_id,
+        source_type="csv",
+        status=ImportStatus.profile_ready,
+        original_filename=(original_filename or "upload.csv")[:255],
+        source_row_count=source_row_count,
+        column_profiles=profiles,
+    )
+    db.add(import_row)
+    db.flush()
+    import_row.storage_path = save_raw_import(raw, import_row.id)
+    db.commit()
+    db.refresh(import_row)
+    return import_row
+
+
+def begin_mapping_proposal(
+    db: Session,
+    import_row: Import,
+    *,
+    now: datetime | None = None,
+) -> None:
+    """Atomically claim the paid mapping job; reclaim a stale claim after 5m."""
+    current = now or datetime.now(UTC)
+    reclaimable = (
+        import_row.status == ImportStatus.mapping_generating
+        and import_row.mapping_started_at is not None
+        and current - import_row.mapping_started_at >= MAPPING_STALE_AFTER
+    )
+    if import_row.status != ImportStatus.profile_ready and not reclaimable:
+        value = getattr(import_row.status, "value", import_row.status)
+        raise ValueError(f"Import status '{value}' cannot start mapping.")
+    import_row.status = ImportStatus.mapping_generating
+    import_row.mapping_started_at = current
+    import_row.error = None
+    db.commit()
+
+
+def execute_mapping_background(import_id: uuid.UUID) -> None:
+    """Run the explicit paid mapper in its own DB session."""
+    from app.db.session import SessionLocal
+
+    with SessionLocal() as db:
+        import_row = db.get(Import, import_id)
+        if import_row is None or import_row.status != ImportStatus.mapping_generating:
+            return
+        try:
+            schema = schema_registry.get_active_schema(db, import_row.product_id)
+            existing = schema_registry.core_fields_for_llm() + schema_registry.schema_fields(schema)
+            proposal = build_mapping_proposal(existing, import_row.column_profiles or [])
+            import_row.mapping_proposal = proposal.model_dump()
+            import_row.status = ImportStatus.mapping_review
+            import_row.error = None
+            db.commit()
+        except Exception as exc:  # noqa: BLE001 — retry returns to free gate
+            db.rollback()
+            import_row = db.get(Import, import_id)
+            if import_row is not None:
+                import_row.status = ImportStatus.profile_ready
+                import_row.error = f"{type(exc).__name__}: {exc}"[:2000]
+                db.commit()
 
 
 def start_import(db: Session, product_id: uuid.UUID, raw: bytes) -> Import:
@@ -200,18 +331,16 @@ def _resolve_effective(
     return final_map, {k: None for k in meta_fields}
 
 
-def apply_mapping_decision(
+def begin_mapping_decision(
     db: Session,
     import_row: Import,
     decisions: list[MappingDecisionItem],
-    *,
-    default_source: str | None = None,
-    reviewer_id=None,
-) -> dict:
-    """Gate #1: chốt mapping → (tùy) activate schema version mới → import rows.
+) -> tuple[dict[str, str], dict[str, None]]:
+    """Gate #1 phase 1 (NHANH — không đụng rows): validate + chốt mapping +
+    set status=importing. Caller spawn background task `execute_import` sau.
 
-    Per-row error không abort file (precedent Phase 05); raw PII sanitize tại
-    ingest. Trả report {imported, failed, errors, schema_version}.
+    Import phải đang mapping_review; AMBIGUOUS không được approve; 2 cột cùng
+    target bị chặn; bắt buộc có cột MAP vào feedback_text.
     """
     if import_row.status != ImportStatus.mapping_review:
         raise ImportStateError(
@@ -220,6 +349,25 @@ def apply_mapping_decision(
     proposal = get_proposal(import_row)
     final_map, meta_fields = _resolve_effective(db, import_row.product_id, proposal, decisions)
 
+    # Claim NGAY: trạng thái importing chặn double-submit + background chạy.
+    import_row.status = ImportStatus.importing
+    db.commit()
+    return final_map, meta_fields
+
+
+def execute_import(
+    db: Session,
+    import_row: Import,
+    final_map: dict[str, str],
+    meta_fields: dict[str, None],
+    *,
+    default_source: str | None = None,
+) -> dict:
+    """Gate #1 phase 2 (CHẬM — sanitize từng row): parse CSV + nạp feedback.
+
+    Chạy trong BACKGROUND TASK (session riêng của task). Ghi report vào
+    `imports.report` để FE poll; status → imported | failed.
+    """
     active = schema_registry.get_active_schema(db, import_row.product_id)
     product_field_keys = {
         t for t in final_map.values() if t not in schema_registry.CORE_KEYS
@@ -232,77 +380,144 @@ def apply_mapping_decision(
 
     imported = 0
     errors: list[dict] = []
-    for offset, row in enumerate(reader, start=2):
-        # source_field → value (strip; DictReader trả None cho dòng ngắn)
-        # — phủ CẢ meta_fields vì demote/SOURCE_META không nằm trong final_map.
-        mapped_sources = set(final_map) | set(meta_fields)
-        values = {
-            src: ("" if row.get(src) is None else str(row[src]).strip())
-            for src in mapped_sources
-        }
+    try:
+        for offset, row in enumerate(reader, start=2):
+            # source_field → value (strip; DictReader trả None cho dòng ngắn)
+            # — phủ CẢ meta_fields vì demote/SOURCE_META không nằm trong final_map.
+            mapped_sources = set(final_map) | set(meta_fields)
+            values = {
+                src: ("" if row.get(src) is None else str(row[src]).strip())
+                for src in mapped_sources
+            }
 
-        text_col = next(
-            (s for s, t in final_map.items() if t == "feedback_text"), None
-        )
-        content = values.get(text_col, "")
-        if not content:
-            errors.append({"row": offset, "reason": "Cột feedback_text rỗng/thiếu."})
-            continue
-
-        occurred_at: datetime | None = None
-        occurred_col = next(
-            (s for s, t in final_map.items() if t == "occurred_at"), None
-        )
-        if occurred_col and values.get(occurred_col):
-            try:
-                occurred_at = datetime.fromisoformat(values[occurred_col])
-            except ValueError:
-                errors.append(
-                    {"row": offset, "reason": f"occurred_at sai ISO 8601: {values[occurred_col]!r}"}
-                )
+            text_col = next(
+                (s for s, t in final_map.items() if t == "feedback_text"), None
+            )
+            content = values.get(text_col, "")
+            if not content:
+                errors.append({"row": offset, "reason": "Cột feedback_text rỗng/thiếu."})
                 continue
 
-        source_col = next((s for s, t in final_map.items() if t == "source"), None)
-        source = (
-            values.get(source_col) if source_col and values.get(source_col) else None
-        ) or default_source or import_row.source_type
-
-        record_id_col = next(
-            (s for s, t in final_map.items() if t == "source_record_id"), None
-        )
-
-        data = {
-            t: values[s]
-            for s, t in final_map.items()
-            if t in product_field_keys and values[s] != ""
-        }
-        source_meta = {s: values[s] for s in meta_fields if values[s] != ""}
-
-        result = sanitize(content)
-        db.add(
-            Feedback(
-                product_id=import_row.product_id,
-                import_id=import_row.id,
-                source=source[:100],
-                source_record_id=(
-                    values.get(record_id_col) or None
-                )
-                if record_id_col
-                else None,
-                occurred_at=occurred_at or datetime.now(timezone.utc),
-                raw_content=content,
-                feedback_text=result.sanitized_text,
-                pii_detected=result.pii_detected,
-                pii_entities=[e.model_dump() for e in result.entities],
-                data=data,
-                source_meta=source_meta,
+            occurred_at: datetime | None = None
+            occurred_col = next(
+                (s for s, t in final_map.items() if t == "occurred_at"), None
             )
-        )
-        imported += 1
+            if occurred_col and values.get(occurred_col):
+                try:
+                    occurred_at = datetime.fromisoformat(values[occurred_col])
+                except ValueError:
+                    errors.append(
+                        {"row": offset, "reason": f"occurred_at sai ISO 8601: {values[occurred_col]!r}"}
+                    )
+                    continue
 
-    import_row.row_count = imported
-    import_row.status = ImportStatus.imported
-    db.commit()
+            source_col = next((s for s, t in final_map.items() if t == "source"), None)
+            source = (
+                values.get(source_col) if source_col and values.get(source_col) else None
+            ) or default_source or import_row.source_type
+
+            record_id_col = next(
+                (s for s, t in final_map.items() if t == "source_record_id"), None
+            )
+
+            data = {
+                t: values[s]
+                for s, t in final_map.items()
+                if t in product_field_keys and values[s] != ""
+            }
+            source_meta = {s: values[s] for s in meta_fields if values[s] != ""}
+
+            result = sanitize(content)
+            db.add(
+                Feedback(
+                    product_id=import_row.product_id,
+                    import_id=import_row.id,
+                    source=source[:100],
+                    source_record_id=(
+                        values.get(record_id_col) or None
+                    )
+                    if record_id_col
+                    else None,
+                    occurred_at=occurred_at or datetime.now(timezone.utc),
+                    raw_content=content,
+                    feedback_text=result.sanitized_text,
+                    pii_detected=result.pii_detected,
+                    pii_entities=[e.model_dump() for e in result.entities],
+                    data=data,
+                    source_meta=source_meta,
+                )
+            )
+            imported += 1
+
+        import_row.row_count = imported
+        import_row.status = ImportStatus.imported
+        report = {
+            "imported": imported,
+            "failed": len(errors),
+            "errors": errors,
+            "schema_version": active.version if active else None,
+            "import_id": str(import_row.id),
+        }
+        import_row.report = report
+        db.commit()
+        return report
+    except Exception as exc:  # noqa: BLE001 — lô hỏng nặng → failed + report
+        db.rollback()
+        import_row.status = ImportStatus.failed
+        import_row.error = f"{type(exc).__name__}: {exc}"[:2000]
+        import_row.report = {
+            "imported": imported,
+            "failed": len(errors),
+            "errors": errors,
+            "import_id": str(import_row.id),
+            "fatal": f"{type(exc).__name__}: {exc}"[:500],
+        }
+        db.commit()
+        raise
+
+
+def execute_import_background(
+    import_id: uuid.UUID,
+    final_map: dict[str, str],
+    meta_fields: dict[str, None],
+    *,
+    default_source: str | None = None,
+) -> None:
+    """Wrapper cho FastAPI BackgroundTasks — mở session RIÊNG của task.
+
+    execute_import tự set failed + report khi lỗi; wrapper chỉ nuốt exception
+    để BackgroundTasks không nổ process.
+    """
+    from app.db.session import SessionLocal
+
+    with SessionLocal() as db:
+        import_row = db.get(Import, import_id)
+        if import_row is None:
+            return
+        try:
+            execute_import(
+                db, import_row, final_map, meta_fields, default_source=default_source
+            )
+        except Exception:  # noqa: BLE001 — status/report đã ghi trong execute_import
+            pass
+
+
+def apply_mapping_decision(
+    db: Session,
+    import_row: Import,
+    decisions: list[MappingDecisionItem],
+    *,
+    default_source: str | None = None,
+    reviewer_id=None,
+) -> dict:
+    """Gate #1 phiên bản SYNC (test + CLI dùng; API route dùng begin+execute).
+
+    = begin_mapping_decision + execute_import trong 1 lần gọi.
+    """
+    final_map, meta_fields = begin_mapping_decision(db, import_row, decisions)
+    report = execute_import(
+        db, import_row, final_map, meta_fields, default_source=default_source
+    )
 
     # Decision memory (§52–53, plan 27): log Gate #1 — agent proposal vs human
     try:
@@ -314,17 +529,11 @@ def apply_mapping_decision(
             product_id=import_row.product_id,
             subject_type=DecisionSubject.schema_mapping,
             subject_id=import_row.id,
-            agent_value=proposal.model_dump(),
+            agent_value=import_row.mapping_proposal,
             human_value={"decisions": [d.model_dump() for d in decisions]},
             reviewer_id=reviewer_id,
         )
     except Exception:  # noqa: BLE001 — memory không được phá flow
         db.rollback()
 
-    return {
-        "imported": imported,
-        "failed": len(errors),
-        "errors": errors,
-        "schema_version": active.version if active else None,
-        "import_id": import_row.id,
-    }
+    return report

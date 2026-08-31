@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -18,6 +18,15 @@ class AnalysisRun(Base):
     llm_model: Mapped[str] = mapped_column(String(100), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(20), nullable=False)
     embedding_model: Mapped[str] = mapped_column(String(100), nullable=False)
+    import_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("imports.id"), nullable=True, index=True
+    )
+    mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    chunk_size: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

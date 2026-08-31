@@ -1,0 +1,230 @@
+{
+  "main": {
+    "id": "f24f1f090529cd7e",
+    "type": "split",
+    "children": [
+      {
+        "id": "bb6bd404cb22f543",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7ece7025581ade31",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "plans/00-index.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "00-index"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "84ff4655ec509739",
+    "type": "split",
+    "children": [
+      {
+        "id": "f9b892001a51626f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0baa8d03144096b8",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "e9b2c252f203c275",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "eb38493e7c17efcb",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "cf0e5199fc5ae69a",
+    "type": "split",
+    "children": [
+      {
+        "id": "e111c12a178424cd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "16c83f3cdf503c34",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "plans/16-reports-summary.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "bf7afeadc960c387",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "plans/16-reports-summary.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "3a89837f2d1e6901",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "57f75dfa01e948d2",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "2129950261991787",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "plans/16-reports-summary.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "7ece7025581ade31",
+  "lastOpenFiles": [
+    "handoffs/2026-08-26-claude-code-p4-full-package.md",
+    "handoffs/2026-08-26-claude-code-p4-full-package.md.tmp.35376.9c1382bed433",
+    "plans/FE-06b-insights-reports-dashboard.md.tmp.35376.c11d9a3103d3",
+    "plans/FE-00-index.md.tmp.35376.13e0bda11e26",
+    "plans/FE-00-index.md.tmp.35376.359aba79508d",
+    "api-checklist.md.tmp.35376.ef18e4179639",
+    "plans/FE-06b-insights-reports-dashboard.md",
+    "plans/FE-06b-insights-reports-dashboard.md.tmp.35376.f3262e217ab1",
+    "evidence/demo-dataset-shape.json",
+    "api-checklist.md.tmp.35376.923f5c5337ed",
+    "api-checklist.md.tmp.35376.17cdab3d43fb",
+    "handoffs/2026-08-26-claude-code-phase16-ac-verify.md",
+    "api-checklist.md.tmp.35376.94101d11c1fa",
+    "plans/16-reports-summary.md",
+    "plans/15-insights-api.md",
+    "plans/13-hitl-langgraph.md",
+    "plans/12-definition-of-done-sweep.md",
+    "plans/11-test-suite-polish.md",
+    "plans/10-spikes-late-s4-s5.md",
+    "plans/04-auth-rbac.md",
+    "plans/03-repo-skeleton-models-migrations.md",
+    "plans/00-index.md",
+    "handoffs/2026-08-24-claude-code-phase03-db-skeleton.md",
+    "evidence/hitl-checkpoint-resume.md",
+    "backend-foundation-report.md",
+    "ai-agent-success-story.md",
+    "plans/delivery-execute-plan.md",
+    "plans/delivery-design-spec.md",
+    "plans/18-agent-toolbox.md",
+    "plans/FE-06-clusters-page.md",
+    "plans/01-preconditions-environment.md",
+    "handoffs/2026-08-26-claude-code-agent-series-plans-17-20.md",
+    "plans/UF-01-information-architecture.md",
+    "plans/20-closed-loop-kpis-demo.md",
+    "plans/19-agent-graph-hitl.md",
+    "plans/FE-05-hitl-review-ui.md"
+  ]
+}

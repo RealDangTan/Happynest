@@ -48,19 +48,55 @@ export type Product = {
 
 export type ProductListResponse = { items: Product[]; total: number };
 
-export type ImportStatus = "pending" | "mapping_review" | "imported" | "failed";
+export type ImportStatus =
+  | "pending"
+  | "profile_ready"
+  | "mapping_generating"
+  | "mapping_review"
+  | "importing"
+  | "imported"
+  | "failed"
+  | "cancelled";
 
 export type ImportRecord = {
   id: string;
   product_id: string;
   source_type: string;
   storage_path: string | null;
+  original_filename: string | null;
   mapping_version: string | null;
   schema_version: number | null;
   status: ImportStatus;
   row_count: number | null;
+  source_row_count: number | null;
+  column_profiles: ColumnProfile[] | null;
+  report: ImportApplyReport | null;
+  mapping_started_at: string | null;
   error: string | null;
   created_at: string;
+};
+
+export type ColumnProfile = {
+  name: string;
+  detected_type?: string;
+  null_ratio?: number;
+  unique_ratio?: number;
+  sample_values?: string[];
+  [key: string]: unknown;
+};
+
+export type ImportPreview = {
+  id: string;
+  original_filename: string | null;
+  source_row_count: number;
+  column_profiles: ColumnProfile[];
+};
+
+export type ImportListResponse = {
+  items: ImportRecord[];
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 export type CandidateField = {
@@ -110,7 +146,7 @@ export type ImportApplyReport = {
 
 // ------------------------------------------------------------------ analysis
 
-export type RunStatus = "running" | "completed" | "failed";
+export type RunStatus = "running" | "completed" | "failed" | "cancelled";
 
 export type RunProgress = {
   id: string;
@@ -124,6 +160,55 @@ export type RunProgress = {
   llm_model: string;
   prompt_version: string;
   embedding_model: string;
+  import_id: string | null;
+  mode: "selected" | "batch" | null;
+  chunk_size: number;
+  failed_count: number;
+  cancel_requested_at: string | null;
+};
+
+export type RunListResponse = { items: RunProgress[]; total: number };
+
+export type SelectedAnalysisScope = {
+  mode: "selected";
+  import_id: string;
+  feedback_ids: string[];
+};
+
+export type BatchAnalysisScope = {
+  mode: "batch";
+  import_id: string;
+};
+
+export type AnalysisScope = SelectedAnalysisScope | BatchAnalysisScope;
+
+export type AnalysisCostPreview = {
+  eligible_count: number;
+  selected_count: number;
+  remaining_count: number;
+  estimated_input_tokens: number;
+  logical_classify_requests: number;
+  logical_embedding_requests: number;
+  max_provider_attempts: number;
+  chunk_size: number;
+};
+
+export type ActivityState =
+  | "idle"
+  | "needs_attention"
+  | "running"
+  | "failed"
+  | "completed";
+
+export type ActivityRef =
+  | { kind: "import"; id: string }
+  | { kind: "run"; id: string };
+
+export type ActivitySummary = {
+  state: ActivityState;
+  attentionCount: number;
+  runningCount: number;
+  primaryActivity: ActivityRef | null;
 };
 
 // ------------------------------------------------------------------ insights (UNDERSTAND shape)

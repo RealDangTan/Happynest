@@ -1,0 +1,94 @@
+INFO:     Started server process [17536]
+INFO:     Waiting for application startup.
+2026-08-26 16:36:32,423 INFO     presidio-analyzer Loaded recognizer: EmailRecognizer
+2026-08-26 16:36:32,423 INFO     presidio-analyzer Loaded recognizer: UrlRecognizer
+2026-08-26 16:36:32,423 INFO     presidio-analyzer Loaded recognizer: IpRecognizer
+2026-08-26 16:36:32,423 INFO     presidio-analyzer Loaded recognizer: VN Email Recognizer
+2026-08-26 16:36:32,423 INFO     presidio-analyzer Loaded recognizer: VN Phone Recognizer
+2026-08-26 16:36:32,423 INFO     presidio-analyzer Loaded recognizer: VN CCCD Recognizer
+2026-08-26 16:36:32 INFO: Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+2026-08-26 16:36:32,479 INFO     stanza Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.14.0.json:   0%|          | 0.00/56.4k [00:00<?, ?B/s]Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.14.0.json: 131kB [00:00, 1.28MB/s]                    Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.14.0.json: 457kB [00:00, 4.35MB/s]
+2026-08-26 16:36:33 INFO: Downloaded file to D:\stanza_resources\resources.json
+2026-08-26 16:36:33,351 INFO     stanza Downloaded file to D:\stanza_resources\resources.json
+2026-08-26 16:36:34 INFO: Loading these models for language: vi (Vietnamese):
+==========================
+| Processor | Package    |
+--------------------------
+| tokenize  | vtb        |
+| pos       | vtb_charlm |
+| lemma     | identity   |
+| ner       | vlsp       |
+==========================
+
+2026-08-26 16:36:34,107 INFO     stanza Loading these models for language: vi (Vietnamese):
+==========================
+| Processor | Package    |
+--------------------------
+| tokenize  | vtb        |
+| pos       | vtb_charlm |
+| lemma     | identity   |
+| ner       | vlsp       |
+==========================
+
+2026-08-26 16:36:34 INFO: Using device: cpu
+2026-08-26 16:36:34,108 INFO     stanza Using device: cpu
+2026-08-26 16:36:34 INFO: Loading: tokenize
+2026-08-26 16:36:34,108 INFO     stanza Loading: tokenize
+2026-08-26 16:36:36 INFO: Loading: pos
+2026-08-26 16:36:36,508 INFO     stanza Loading: pos
+2026-08-26 16:36:38 INFO: Loading: lemma
+2026-08-26 16:36:38,138 INFO     stanza Loading: lemma
+2026-08-26 16:36:38 INFO: Loading: ner
+2026-08-26 16:36:38,138 INFO     stanza Loading: ner
+2026-08-26 16:36:40 INFO: Done loading processors!
+2026-08-26 16:36:40,346 INFO     stanza Done loading processors!
+2026-08-26 16:36:40 INFO: Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+2026-08-26 16:36:40,387 INFO     stanza Checking for updates to resources.json in case models have been updated.  Note: this behavior can be turned off with download_method=None or download_method=DownloadMethod.REUSE_RESOURCES
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.14.0.json:   0%|          | 0.00/56.4k [00:00<?, ?B/s]Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.14.0.json: 131kB [00:00, 1.01MB/s]                    Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.14.0.json: 457kB [00:00, 3.44MB/s]
+2026-08-26 16:36:40 INFO: Downloaded file to D:\stanza_resources\resources.json
+2026-08-26 16:36:40,979 INFO     stanza Downloaded file to D:\stanza_resources\resources.json
+2026-08-26 16:36:41 WARNING: Language en package default expects mwt, which has been added
+2026-08-26 16:36:41,003 WARNING  stanza Language en package default expects mwt, which has been added
+2026-08-26 16:36:41 INFO: Loading these models for language: en (English):
+=========================================
+| Processor | Package                   |
+-----------------------------------------
+| tokenize  | combined_nocharlm         |
+| mwt       | combined                  |
+| pos       | combined_charlm           |
+| lemma     | combined_nocharlm         |
+| ner       | ontonotes-ww-multi_charlm |
+=========================================
+
+2026-08-26 16:36:41,659 INFO     stanza Loading these models for language: en (English):
+=========================================
+| Processor | Package                   |
+-----------------------------------------
+| tokenize  | combined_nocharlm         |
+| mwt       | combined                  |
+| pos       | combined_charlm           |
+| lemma     | combined_nocharlm         |
+| ner       | ontonotes-ww-multi_charlm |
+=========================================
+
+2026-08-26 16:36:41 INFO: Using device: cpu
+2026-08-26 16:36:41,659 INFO     stanza Using device: cpu
+2026-08-26 16:36:41 INFO: Loading: tokenize
+2026-08-26 16:36:41,659 INFO     stanza Loading: tokenize
+2026-08-26 16:36:41 INFO: Loading: mwt
+2026-08-26 16:36:41,668 INFO     stanza Loading: mwt
+2026-08-26 16:36:41 INFO: Loading: pos
+2026-08-26 16:36:41,679 INFO     stanza Loading: pos
+2026-08-26 16:36:43 INFO: Loading: lemma
+2026-08-26 16:36:43,552 INFO     stanza Loading: lemma
+2026-08-26 16:36:43 INFO: Loading: ner
+2026-08-26 16:36:43,583 INFO     stanza Loading: ner
+2026-08-26 16:36:46 INFO: Done loading processors!
+2026-08-26 16:36:46,032 INFO     stanza Done loading processors!
+2026-08-26 16:36:46,038 INFO     presidio-analyzer Created NLP engine: stanza. Loaded models: ['vi', 'en']
+2026-08-26 16:36:46,038 INFO     presidio-analyzer Loaded recognizer: Stanza Vi PERSON
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.

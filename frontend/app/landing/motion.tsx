@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { MARKETING_NAV } from "@/lib/marketing-content";
 import {
   useEffect,
   useRef,
@@ -7,6 +9,39 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+
+export function HeroVideo({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    video.playbackRate = 0.5;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      video.pause();
+      return;
+    }
+    void video.play().catch(() => undefined);
+  }, []);
+
+  return (
+    <video
+      ref={ref}
+      className="hn-hero-video"
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-hidden
+      onLoadedMetadata={(event) => {
+        event.currentTarget.playbackRate = 0.5;
+      }}
+    >
+      <source src={src} type="video/webm" />
+    </video>
+  );
+}
 
 export function Reveal({
   children,
@@ -225,30 +260,60 @@ export function LandingNav() {
   return (
     <header className={`hn-nav ${scrolled ? "hn-nav-scrolled" : ""}`}>
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <a href="#" className="flex items-center gap-2">
-          <BirdSvg size={20} />
-          <span className="hn-pixel text-sm tracking-widest text-[var(--hn-ivory)]">
+        <a href="/landing" className="flex items-center gap-2" aria-label="Happynest home">
+          <Image
+            src="/assets/Logo-white.png"
+            alt=""
+            width={24}
+            height={24}
+            className="size-6 object-contain"
+            priority
+          />
+          <span className="hn-brand text-lg text-[var(--hn-ivory)]">
             happynest
           </span>
         </a>
         <div className="hidden items-center gap-6 md:flex">
-          <a href="#how-it-works" className="hn-link text-sm">
-            How it works
-          </a>
-          <a href="#signals" className="hn-link text-sm">
-            Signals
-          </a>
-          <a href="#why" className="hn-link text-sm">
-            Why Happynest
-          </a>
-          <a href="#proof" className="hn-link text-sm">
-            Proof
-          </a>
+          {MARKETING_NAV.map((item) => (
+            <a key={item.href} href={item.href} className="hn-link text-sm">
+              {item.label}
+            </a>
+          ))}
         </div>
-        <a href="#" className="hn-btn !px-4 !py-2 text-sm">
+        <a href="/login" className="hn-btn !px-4 !py-2 text-sm">
           Open the nest
         </a>
       </nav>
     </header>
+  );
+}
+
+export function PublicFooter() {
+  return (
+    <footer className="hn-footer">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 md:grid-cols-[1fr_auto]">
+        <div>
+          <a href="/landing" className="inline-flex items-center gap-3" aria-label="Happynest home">
+            <Image src="/assets/Logo-white.png" alt="" width={28} height={28} className="size-7 object-contain" />
+            <span className="hn-brand text-xl">happynest</span>
+          </a>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--hn-stone)]">
+            Evidence-backed Voice-of-Customer intelligence for AI product teams,
+            with people at every decision gate.
+          </p>
+        </div>
+        <nav aria-label="Footer" className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm sm:grid-cols-3">
+          {[...MARKETING_NAV, { label: "Q&A", href: "/qna" }, { label: "Legal", href: "/legal" }].map((item) => (
+            <a key={item.href} href={item.href} className="hn-link">
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+      <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-3 border-t border-[var(--hn-olive)] px-4 pt-6 text-xs text-[var(--hn-stone)] sm:flex-row sm:items-center sm:justify-between">
+        <p>© 2026 Happynest · Undergraduate thesis prototype</p>
+        <p className="hn-pixel text-[9px] tracking-widest">LISTEN · UNDERSTAND · ACT</p>
+      </div>
+    </footer>
   );
 }

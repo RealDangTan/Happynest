@@ -169,7 +169,26 @@ def _upload(client, auth, monkeypatch, proposal, _env, rows=None, product_id=Non
         _env["import_ids"].append(uuid.UUID(body["id"]))
         if body.get("storage_path"):
             _env["files"].append(body["storage_path"])
+        assert body["status"] == "profile_ready"
+        proposal_resp = client.post(
+            f"/api/imports/{body['id']}/mapping/proposal", headers=auth
+        )
+        assert proposal_resp.status_code == 202, proposal_resp.text
+        return client.get(f"/api/imports/{body['id']}", headers=auth)
     return resp
+
+
+def _decide(client, auth, import_id: str, body: dict) -> dict:
+    response = client.post(
+        f"/api/imports/{import_id}/mapping/decision",
+        json=body,
+        headers=auth,
+    )
+    assert response.status_code == 202, response.text
+    detail = client.get(f"/api/imports/{import_id}", headers=auth)
+    assert detail.status_code == 200
+    assert detail.json()["status"] == "imported", detail.text
+    return detail.json()["report"]
 
 
 def _approve_all(mapping_json: dict, action: str = "approve") -> dict:
@@ -184,7 +203,7 @@ def _approve_all(mapping_json: dict, action: str = "approve") -> dict:
 def test_first_import_bootstraps_schema_and_imports(client, monkeypatch, _env):
     auth = _login(client)
     resp = _upload(client, auth, monkeypatch, _FIRST_PROPOSAL, _env)
-    assert resp.status_code == 201, resp.text
+    assert resp.status_code == 200, resp.text
     imp = resp.json()
     assert imp["status"] == "mapping_review"
     assert imp["storage_path"]
@@ -194,13 +213,7 @@ def test_first_import_bootstraps_schema_and_imports(client, monkeypatch, _env):
         "message", "date", "plan", "build", "agent_name", "junk_id", "ext_id",
     }
 
-    dec = client.post(
-        f"/api/imports/{imp['id']}/mapping/decision",
-        json=_approve_all(mapping),
-        headers=auth,
-    )
-    assert dec.status_code == 200, dec.text
-    report = dec.json()
+    report = _decide(client, auth, imp["id"], _approve_all(mapping))
     assert report["imported"] == 2 and report["failed"] == 0
     assert report["schema_version"] == 1
 
@@ -238,13 +251,14 @@ def test_first_import_bootstraps_schema_and_imports(client, monkeypatch, _env):
 def test_second_import_maps_into_existing_schema(client, monkeypatch, _env):
     auth = _login(client)
     r1 = _upload(client, auth, monkeypatch, _FIRST_PROPOSAL, _env)
-    assert r1.status_code == 201
-    dec = client.post(
-        f"/api/imports/{r1.json()['id']}/mapping/decision",
-        json=_approve_all(client.get(f"/api/imports/{r1.json()['id']}/mapping", headers=auth).json()),
-        headers=auth,
+    assert r1.status_code == 200
+    report = _decide(
+        client,
+        auth,
+        r1.json()["id"],
+        _approve_all(client.get(f"/api/imports/{r1.json()['id']}/mapping", headers=auth).json()),
     )
-    assert dec.status_code == 200 and dec.json()["schema_version"] == 1
+    assert report["schema_version"] == 1
 
     # Import 2: cùng cột, tên khác → MAP vào schema hiện có, KHÔNG promote
     rows = [
@@ -257,16 +271,11 @@ def test_second_import_maps_into_existing_schema(client, monkeypatch, _env):
         },
     ]
     resp = _upload(client, auth, monkeypatch, _REMAP_PROPOSAL, _env, rows=rows)
-    assert resp.status_code == 201
+    assert resp.status_code == 200
     mapping = client.get(f"/api/imports/{resp.json()['id']}/mapping", headers=auth).json()
-    dec2 = client.post(
-        f"/api/imports/{resp.json()['id']}/mapping/decision",
-        json=_approve_all(mapping),
-        headers=auth,
-    )
-    assert dec2.status_code == 200, dec2.text
+    report2 = _decide(client, auth, resp.json()["id"], _approve_all(mapping))
     # §13: schema KHÔNG mở rộng khi concept đã có
-    assert dec2.json()["schema_version"] == 1
+    assert report2["schema_version"] == 1
 
     with SessionLocal() as db:
         row = db.scalars(
@@ -282,7 +291,7 @@ def test_ambiguous_cannot_be_approved(client, monkeypatch, _env):
         {"message": "Ổn", "score": "5", "ext_id": "listen-amb-1"},
     ]
     resp = _upload(client, auth, monkeypatch, _AMBIGUOUS_PROPOSAL, _env, rows=rows)
-    assert resp.status_code == 201
+    assert resp.status_code == 200
     mapping = client.get(f"/api/imports/{resp.json()['id']}/mapping", headers=auth).json()
     # approve máy móc AMBIGUOUS → 422
     dec = client.post(
@@ -298,19 +307,14 @@ def test_ambiguous_cannot_be_approved(client, monkeypatch, _env):
             {"source_field": "score", "action": "demote"},
         ]
     }
-    dec2 = client.post(
-        f"/api/imports/{resp.json()['id']}/mapping/decision",
-        json=body,
-        headers=auth,
-    )
-    assert dec2.status_code == 200, dec2.text
-    assert dec2.json()["imported"] == 1
+    report = _decide(client, auth, resp.json()["id"], body)
+    assert report["imported"] == 1
 
 
 def test_decision_must_cover_all_fields(client, monkeypatch, _env):
     auth = _login(client)
     resp = _upload(client, auth, monkeypatch, _FIRST_PROPOSAL, _env)
-    assert resp.status_code == 201
+    assert resp.status_code == 200
     # thiếu 1 field → 422
     body = {
         "decisions": [
@@ -363,12 +367,7 @@ def test_coverage_endpoint(client, monkeypatch, _env):
     resp = _upload(client, auth, monkeypatch, _FIRST_PROPOSAL, _env)
     imp_id = resp.json()["id"]
     mapping = client.get(f"/api/imports/{imp_id}/mapping", headers=auth).json()
-    dec = client.post(
-        f"/api/imports/{imp_id}/mapping/decision",
-        json=_approve_all(mapping),
-        headers=auth,
-    )
-    assert dec.status_code == 200
+    _decide(client, auth, imp_id, _approve_all(mapping))
 
     cov = client.get(
         f"/api/products/{_env['product_id']}/schema/coverage", headers=auth

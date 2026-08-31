@@ -1,14 +1,15 @@
 "use client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type {
-  ImportApplyReport,
+  ImportListResponse,
+  ImportPreview,
   ImportRecord,
   MappingDecision,
   MappingProposal,
 } from "@/lib/types";
 
-/** Bước 1 LISTEN: upload CSV → profile → LLM mapping proposal (chờ Gate #1). */
+/** Free gate: upload CSV → sanitized deterministic profile only. */
 export function useCreateImport() {
   return useMutation({
     mutationFn: ({
@@ -29,6 +30,60 @@ export function useCreateImport() {
   });
 }
 
+export function useImports() {
+  return useQuery({
+    queryKey: ["imports", "activity"],
+    queryFn: () => apiFetch<ImportListResponse>("/api/imports?limit=50"),
+    refetchInterval: 4000,
+    staleTime: 0,
+  });
+}
+
+export function useImport(importId: string | null) {
+  return useQuery({
+    queryKey: ["imports", importId],
+    queryFn: () => apiFetch<ImportRecord>(`/api/imports/${importId}`),
+    enabled: !!importId,
+    refetchInterval: (query) =>
+      ["mapping_generating", "importing"].includes(query.state.data?.status ?? "")
+        ? 2000
+        : false,
+  });
+}
+
+export function useImportPreview(importId: string | null) {
+  return useQuery({
+    queryKey: ["imports", importId, "preview"],
+    queryFn: () => apiFetch<ImportPreview>(`/api/imports/${importId}/preview`),
+    enabled: !!importId,
+    staleTime: Infinity,
+  });
+}
+
+export function useProposeMapping() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (importId: string) =>
+      apiFetch<{ import_id: string; status: string }>(
+        `/api/imports/${importId}/mapping/proposal`,
+        { method: "POST" },
+      ),
+    onSuccess: (_, importId) => {
+      void qc.invalidateQueries({ queryKey: ["imports"] });
+      void qc.invalidateQueries({ queryKey: ["imports", importId] });
+    },
+  });
+}
+
+export function useCancelImport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (importId: string) =>
+      apiFetch<ImportRecord>(`/api/imports/${importId}/cancel`, { method: "POST" }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["imports"] }),
+  });
+}
+
 export function useGetMapping(importId: string | null) {
   return useQuery({
     queryKey: ["import-mapping", importId],
@@ -40,6 +95,7 @@ export function useGetMapping(importId: string | null) {
 
 /** Gate #1: human chốt mapping → import thực thi MỘT LẦN. */
 export function useDecideMapping() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
       importId,
@@ -53,7 +109,7 @@ export function useDecideMapping() {
       const q = defaultSource
         ? `?default_source=${encodeURIComponent(defaultSource)}`
         : "";
-      return apiFetch<ImportApplyReport>(
+      return apiFetch<{ import_id: string; status: "importing" }>(
         `/api/imports/${importId}/mapping/decision${q}`,
         {
           method: "POST",
@@ -62,5 +118,6 @@ export function useDecideMapping() {
         },
       );
     },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["imports"] }),
   });
 }

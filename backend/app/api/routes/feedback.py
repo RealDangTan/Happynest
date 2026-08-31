@@ -59,6 +59,8 @@ def list_feedbacks(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     product_id: uuid.UUID | None = Query(default=None),
+    import_id: uuid.UUID | None = Query(default=None),
+    analysis_state: str | None = Query(default=None, pattern="^(pending|completed)$"),
     severity: str | None = Query(default=None, min_length=1),
     sentiment: str | None = Query(default=None, min_length=1),
     topic: str | None = Query(default=None, min_length=1),
@@ -70,6 +72,12 @@ def list_feedbacks(
     conditions = []
     if product_id is not None:
         conditions.append(Feedback.product_id == product_id)
+    if import_id is not None:
+        conditions.append(Feedback.import_id == import_id)
+    if analysis_state == "pending":
+        conditions.append(Feedback.ai_analysis.is_(None))
+    elif analysis_state == "completed":
+        conditions.append(Feedback.ai_analysis.is_not(None))
     if severity is not None:
         conditions.append(Feedback.ai_analysis["severity"].astext == severity)
     if sentiment is not None:

@@ -1,0 +1,195 @@
+INFO:     127.0.0.1:54022 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54035 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50390 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50390 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50667 - "POST /api/auth/register HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:55827 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55837 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63944 - "POST /api/auth/register HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57103 - "POST /api/auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57732 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57733 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61939 - "GET /api/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60588 - "GET /api/feedbacks/86e695f0-f59b-400c-927e-c6489824f28b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "GET /api/feedbacks/86e695f0-f59b-400c-927e-c6489824f28b/similar?k=5 HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:50665 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54917 - "GET /api/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56573 - "POST /api/imports HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:53712 - "GET /api/clusters?sort=feedback_count HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53713 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56287 - "GET /api/reports/summary?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60713 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52023 - "POST /api/auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54340 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54339 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54973 - "GET /api/feedbacks/3c87572f-1b69-4948-a748-94957682baa0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54974 - "GET /api/feedbacks/3c87572f-1b69-4948-a748-94957682baa0/similar?k=5 HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:54912 - "GET /api/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65321 - "GET /api/health HTTP/1.1" 200 OK
+  INFO:     127.0.0.1:54360 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54362 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54361 - "GET /api/products HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54359 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54363 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63734 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63735 - "GET /api/reports/summary?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59615 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59617 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57123 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57122 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57129 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57124 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57127 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57126 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57130 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52894 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57132 - "GET /api/reports/summary?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57131 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63186 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:60633 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:63550 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:63551 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:63554 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63552 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63557 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57272 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63553 - "GET /api/reports/summary?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56727 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53797 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53796 - "GET /api/reports/summary?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53799 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53801 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53798 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53800 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62855 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62856 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62857 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62861 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62862 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62859 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62863 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62865 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62864 - "GET /api/reports/summary?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51695 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62866 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53107 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:61765 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61764 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+ INFO:     127.0.0.1:50602 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50603 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55315 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55314 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52944 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52945 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65415 - "GET /api/feedbacks/bc39b494-9a92-42b2-9bab-530d6d64e0c9 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65416 - "GET /api/feedbacks/bc39b494-9a92-42b2-9bab-530d6d64e0c9/similar?k=5 HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:61647 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61646 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53027 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60323 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60322 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56944 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56945 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56943 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56964 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64338 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61710 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52415 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63374 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63468 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56738 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54406 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49683 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51549 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61590 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60530 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54237 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58918 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62841 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49944 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57264 - "GET /api/imports/dfc73b60-a72a-46e1-ba31-c8a86b1265a1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53993 - "GET /api/imports/dfc73b60-a72a-46e1-ba31-c8a86b1265a1/preview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51719 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53994 - "GET /api/imports/dfc73b60-a72a-46e1-ba31-c8a86b1265a1/mapping HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50140 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57458 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49692 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49693 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+ INFO:     127.0.0.1:53843 - "GET /api/imports?limit=50 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:58621 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64933 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64922 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61135 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64932 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64942 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61208 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53380 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49894 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56124 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61811 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63786 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55177 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63703 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63421 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53018 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55391 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62060 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49892 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58971 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51464 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63605 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50061 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54446 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54146 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54145 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56595 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55957 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49245 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64681 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58656 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59447 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56856 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63218 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50689 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59721 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51941 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60544 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64008 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64011 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64007 - "GET /api/feedbacks?limit=20&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64010 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64015 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64014 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55830 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59786 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51307 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64155 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51319 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62898 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55376 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59881 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59530 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51008 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56338 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54587 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62984 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51933 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55605 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57776 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62809 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54142 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54502 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57074 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51353 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56741 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59819 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53163 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57467 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55872 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58629 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63658 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55348 - "GET /api/analysis/runs?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49455 - "GET /api/imports?limit=50 HTTP/1.1" 200 OK

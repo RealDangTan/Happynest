@@ -2,12 +2,10 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   useRunProgress,
   useRunResults,
-  useTriggerRun,
   RUN_RESULTS_PAGE_SIZE,
 } from "@/hooks/use-analysis";
 import type { Feedback } from "@/lib/types";
@@ -16,17 +14,6 @@ import {
   SEVERITY_LABEL,
 } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -53,45 +40,13 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useActivity } from "@/components/activity/activity-provider";
 
 const STATUS_LABEL: Record<string, string> = {
   running: "Đang chạy",
   completed: "Hoàn tất",
   failed: "Thất bại",
 };
-
-function TriggerButton({
-  running,
-  onConfirm,
-}: {
-  running: boolean;
-  onConfirm: () => void;
-}) {
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button disabled={running}>
-          <Play data-icon="inline-start" />
-          Chạy phân loại
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Chạy trên toàn bộ feedback chưa xử lý?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Batch sẽ phân loại + tạo embedding cho mọi phản hồi chưa có run. Hành
-            động tốn LLM credit; các run song song không trùng công việc (claim
-            theo row).
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Huỷ</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Xác nhận chạy</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
 
 function RunResults({ runId }: { runId: string }) {
   const [page, setPage] = useState(1);
@@ -207,7 +162,7 @@ function AnalysisInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const runId = sp.get("run");
-  const trigger = useTriggerRun();
+  const activity = useActivity();
   const progress = useRunProgress(runId);
   const [notified, setNotified] = useState<string | null>(null);
 
@@ -224,13 +179,6 @@ function AnalysisInner() {
     }
   }, [progress.data, notified, router]);
 
-  function startRun() {
-    trigger.mutate(undefined, {
-      onSuccess: (r) =>
-        router.replace(`/analysis?run=${r.run_id}`),
-    });
-  }
-
   const pct =
     progress.data && progress.data.total_count > 0
       ? Math.round(
@@ -242,10 +190,7 @@ function AnalysisInner() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl">Phân tích</h1>
-        <TriggerButton
-          running={progress.data?.status === "running"}
-          onConfirm={startRun}
-        />
+        <Button onClick={activity.openQueue}>Mở Activity Center</Button>
       </div>
 
       {!runId ? (
@@ -253,19 +198,11 @@ function AnalysisInner() {
           <EmptyHeader>
             <EmptyTitle>Chưa có lượt phân tích nào đang theo dõi</EmptyTitle>
             <EmptyDescription>
-              Bấm “Chạy phân loại” để xử lý hàng loạt các phản hồi chưa có nhãn:
-              hệ thống gọi LLM phân loại (mức độ, cảm xúc, vấn đề AI) và tạo
-              embedding cho tìm kiếm tương tự.
+              Tạo run có scope và xem cost receipt trong Activity Center trên navbar.
+              Trang này chỉ giữ vai trò xem kết quả chi tiết.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
-      ) : null}
-
-      {trigger.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Không tạo được run</AlertTitle>
-          <AlertDescription>{trigger.error.message}</AlertDescription>
-        </Alert>
       ) : null}
 
       {runId && progress.isPending ? (
@@ -320,12 +257,7 @@ function AnalysisInner() {
                     tạo run mới — chỉ phần chưa xử lý được nhặt, không nhân đôi
                     kết quả.
                   </span>
-                  <div>
-                    <Button size="sm" variant="outline" onClick={startRun}>
-                      <RefreshCw data-icon="inline-start" />
-                      Chạy lại phần còn lại
-                    </Button>
-                  </div>
+                  <div><Button size="sm" variant="outline" onClick={activity.openQueue}>Chọn lại scope trong Activity Center</Button></div>
                 </AlertDescription>
               </Alert>
             ) : null}

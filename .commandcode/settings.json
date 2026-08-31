@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(cd backend && git add app/api/routes/agent.py app/schemas/agent.py app/main.py app/jobs/agent_runner.py tests/test_agent_api_integration.py ../docs/api-checklist.md && git commit -F - <<'EOF' feat(agents): run/status/decision endpoints replace nothing (new surface) Phase 19 Task 4 — POST /api/agent/runs, GET /runs/{id} (pending_approval đọc từ snapshot checkpoint), POST /runs/{id}/decision resume HITL. Runner biết đậu interrupt (giữ running) + resume heal crash-dở-dâng. Integration test trajectory đầy đủ → interrupt → approve đúng 1 bộ (insight + 2 draft + review), canary PII, 422/404/409. api-checklist +3 endpoint (hard rule #10). Assisted-by: claude-code EOF git log --oneline -2)",
+      "Shell(git:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

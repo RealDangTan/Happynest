@@ -55,6 +55,7 @@ class RunStatus(str, enum.Enum):
     running = "running"
     completed = "completed"
     failed = "failed"
+    cancelled = "cancelled"
 
 
 class LlmCallType(str, enum.Enum):
@@ -109,9 +110,13 @@ class DecisionSubject(str, enum.Enum):
 
 class ImportStatus(str, enum.Enum):
     pending = "pending"
+    profile_ready = "profile_ready"
+    mapping_generating = "mapping_generating"
     mapping_review = "mapping_review"
+    importing = "importing"   # Gate #1 đã duyệt — background đang nạp rows (0014)
     imported = "imported"
     failed = "failed"
+    cancelled = "cancelled"
 
 
 def _pg(py_enum: type[enum.Enum], type_name: str) -> SaEnum:

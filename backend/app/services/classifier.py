@@ -12,6 +12,11 @@ aware (topics khớp bảng taxonomies).
 không bao giờ đi qua hàm này vào prompt/log/trace.
 """
 
+import json
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
 from app.models.enums import LlmCallType
 from app.schemas.taxonomy import Classification
 from app.services.llm_client import chat_structured
@@ -40,6 +45,15 @@ Nhiệm vụ: với MỖI feedback, trả về JSON object gồm:
 - rationale: giải thích ngắn gọn ≤ 2 câu tiếng Việt vì sao phân loại như vậy
 
 Chỉ trả về JSON object, không text thừa."""
+
+
+class BatchClassificationItem(BaseModel):
+    feedback_id: UUID
+    result: Classification
+
+
+class BatchClassificationOut(BaseModel):
+    items: list[BatchClassificationItem] = Field(min_length=1, max_length=10)
 
 
 def classify_feedback(
@@ -80,3 +94,40 @@ def classify_feedback(
         feedback_id=feedback_id,
         analysis_run_id=analysis_run_id,
     )
+
+
+def classify_feedback_batch(
+    items: list[tuple[UUID, str]],
+    *,
+    taxonomy_names: list[str] | None = None,
+    analysis_run_id=None,
+) -> dict[UUID, Classification]:
+    """Classify one chunk in one logical request and verify exact ID coverage."""
+    if not items:
+        return {}
+    taxonomy = (
+        _TAXONOMY_BLOCK.format(taxonomy=", ".join(taxonomy_names))
+        if taxonomy_names
+        else ""
+    )
+    payload = [
+        {"feedback_id": str(feedback_id), "feedback_text": text}
+        for feedback_id, text in items
+    ]
+    response = chat_structured(
+        SYSTEM_PROMPT_V2
+        + "\nTrả về items; mỗi feedback_id xuất hiện đúng một lần và giữ nguyên.",
+        f"{taxonomy}\nFeedback batch:\n{json.dumps(payload, ensure_ascii=False)}",
+        BatchClassificationOut,
+        call_type=LlmCallType.classify,
+        prompt_version=PROMPT_VERSION,
+        analysis_run_id=analysis_run_id,
+    )
+    requested = [feedback_id for feedback_id, _ in items]
+    returned = [item.feedback_id for item in response.items]
+    if len(returned) != len(set(returned)) or set(returned) != set(requested):
+        from app.services.llm_client import LLMStructureError
+
+        raise LLMStructureError("Batch response IDs are missing, duplicate, or unknown.")
+    by_id = {item.feedback_id: item.result for item in response.items}
+    return {feedback_id: by_id[feedback_id] for feedback_id in requested}

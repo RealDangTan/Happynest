@@ -100,6 +100,7 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 | 25 | [25-understand-agent.md](25-understand-agent.md) | Migration 0011 evidence + insights mới + UNDERSTAND graph (planner/evaluator/synthesizer) + Gate #2 | 24 | ⬜ |
 | 26 | [26-act-agent.md](26-act-agent.md) | Migration 0012 actions + ACT agent + priority formula + matrix + Gate #3 | 25 | ⬜ |
 | 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | Migration 0013 decision_logs + KPIs LISTEN/UNDERSTAND/ACT + DoD sweep + docs | 21–26 | ⬜ |
+| 28 | [28-navbar-activity-budgeted-analysis.md](28-navbar-activity-budgeted-analysis.md) | Explicit LISTEN paid gates + scoped/batched analysis + navbar Activity Center contract | 21–27, migration 0014 | ✅ 2026-08-31 |
 
 ```text
 21 ── 22 ─┬─ 24 ── 25 ── 26 ── 27

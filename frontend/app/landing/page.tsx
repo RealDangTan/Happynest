@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import "./landing.css";
-import { silkscreen } from "./fonts";
+import { lora, silkscreen } from "./fonts";
 import {
   BirdSvg,
   ConfidenceRing,
   CountUp,
+  HeroVideo,
   LandingNav,
+  PublicFooter,
   Reveal,
   SignalField,
 } from "./motion";
@@ -15,33 +17,6 @@ export const metadata: Metadata = {
   description:
     "Happynest aggregates user feedback about AI products, classifies and clusters it into evidence-backed insights, and puts a human in the loop before anything becomes action.",
 };
-
-/* HERO IMAGE SLOT — when the AI-generated illustration is ready, drop it into
-   frontend/public/landing/hero.png and replace <HeroPlaceholder/> below with:
-   <Image src="/landing/hero.png" alt="Happynest illustration" width={880} height={660} priority />
-*/
-function HeroPlaceholder() {
-  return (
-    <div className="hn-frame hn-grain flex aspect-[4/3] w-full items-center justify-center">
-      <span className="hn-tick hn-tick-tl" />
-      <span className="hn-tick hn-tick-tr" />
-      <span className="hn-tick hn-tick-bl" />
-      <span className="hn-tick hn-tick-br" />
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="relative">
-          <BirdSvg size={48} />
-          <svg width="64" height="16" viewBox="0 0 16 4" shapeRendering="crispEdges" aria-hidden className="mx-auto -mt-1">
-            <rect x="2" y="0" width="12" height="2" fill="var(--hn-olive)" />
-            <rect x="4" y="2" width="8" height="2" fill="var(--hn-olive)" opacity="0.7" />
-          </svg>
-        </div>
-        <p className="hn-pixel text-[11px] tracking-widest text-[var(--hn-stone)]">
-          hero illustration — incoming
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function SteppedConnector({ delay }: { delay: string }) {
   return (
@@ -199,7 +174,7 @@ function Marquee() {
           </p>
         </Reveal>
       </div>
-      <Reveal className="mt-10 space-y-2">
+      <Reveal className="mt-10 flex flex-col gap-2">
         <ChipRow items={MARQUEE_ROW_1} />
         <ChipRow items={MARQUEE_ROW_2} reverse />
       </Reveal>
@@ -300,10 +275,232 @@ function Features() {
   );
 }
 
+const SOURCES = [
+  ["App reviews", "rating + release"],
+  ["Support", "ticket + queue"],
+  ["Surveys", "score + response"],
+  ["Email", "thread + timestamp"],
+  ["In-product", "event + context"],
+  ["CSV exports", "your schema"],
+] as const;
+
+function Sources() {
+  return (
+    <section id="sources" className="py-24 md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <Reveal>
+          <p className="hn-eyebrow">Source intelligence</p>
+          <h2 className="hn-display mt-4 text-3xl font-semibold md:text-4xl">
+            Every channel speaks a different dialect.
+          </h2>
+          <p className="mt-5 max-w-xl leading-relaxed text-[var(--hn-stone)]">
+            Happynest profiles each import, proposes a reusable source schema, and
+            shows its coverage before anything enters analysis. You approve the map;
+            the system remembers the structure.
+          </p>
+          <a href="/docs#import" className="hn-link mt-7 inline-flex text-sm">
+            Read the import guide →
+          </a>
+        </Reveal>
+        <Reveal delay={120}>
+          <div className="hn-source-grid">
+            {SOURCES.map(([name, meta], index) => (
+              <article key={name} className="hn-source-cell">
+                <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">
+                  {(index + 1).toString().padStart(2, "0")}
+                </span>
+                <h3 className="hn-display mt-4 text-xl font-semibold">{name}</h3>
+                <p className="mt-2 text-sm text-[var(--hn-stone)]">{meta}</p>
+              </article>
+            ))}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function EvidenceAnatomy() {
+  return (
+    <section id="evidence" className="bg-[var(--hn-charcoal)] py-24 md:py-32">
+      <div className="mx-auto max-w-6xl px-4">
+        <Reveal>
+          <p className="hn-eyebrow">Inside one insight</p>
+          <h2 className="hn-display mt-4 max-w-3xl text-3xl font-semibold md:text-4xl">
+            A claim is only as useful as the trail behind it.
+          </h2>
+        </Reveal>
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+          <Reveal>
+            <article className="hn-insight-card">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <span className="hn-pixel text-[10px] text-[var(--hn-soft)]">
+                  FINDING · REVIEW READY
+                </span>
+                <ConfidenceRing value={87} size={52} />
+              </div>
+              <h3 className="hn-display mt-8 text-2xl font-semibold md:text-3xl">
+                Upload failures concentrate on older Android devices after the latest release.
+              </h3>
+              <p className="mt-5 leading-relaxed text-[var(--hn-stone)]">
+                The statement stays paired with scope, time window, confidence, and
+                evidence IDs. If support is weak or contradictory, it remains a
+                hypothesis instead of being polished into certainty.
+              </p>
+              <div className="hn-evidence-meta mt-8">
+                <span>WINDOW · 14 DAYS</span>
+                <span>SIGNALS · 38</span>
+                <span>SOURCES · 3</span>
+              </div>
+            </article>
+          </Reveal>
+          <Reveal delay={120}>
+            <ol className="hn-trace-list">
+              {[
+                ["01", "App review", "Crash after selecting a large file", "Android 11"],
+                ["02", "Support", "Upload reaches 82%, then returns to start", "Ticket queue"],
+                ["03", "In-product", "Repeated upload_error after release 2.4", "Event context"],
+              ].map(([id, source, quote, meta]) => (
+                <li key={id} className="hn-trace-item">
+                  <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">{id}</span>
+                  <div>
+                    <p className="text-sm text-[var(--hn-ivory)]">{quote}</p>
+                    <p className="mt-2 text-xs text-[var(--hn-stone)]">
+                      {source} · {meta}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const GATES = [
+  {
+    gate: "GATE 1",
+    title: "Approve meaning",
+    body: "Confirm how an imported source maps its text, time, identity, and metadata before analysis begins.",
+  },
+  {
+    gate: "GATE 2",
+    title: "Approve insight",
+    body: "Inspect cited evidence, edit the synthesis, reject it, or send the agent back to investigate more.",
+  },
+  {
+    gate: "GATE 3",
+    title: "Approve action",
+    body: "Keep or override the proposed owner and priority while preserving the system’s original recommendation.",
+  },
+] as const;
+
+function HumanGates() {
+  return (
+    <section id="human-gates" className="py-24 md:py-32">
+      <div className="mx-auto max-w-6xl px-4">
+        <Reveal className="grid gap-6 lg:grid-cols-2 lg:items-end">
+          <div>
+            <p className="hn-eyebrow">Human by design</p>
+            <h2 className="hn-display mt-4 text-3xl font-semibold md:text-4xl">
+              Automation moves the work. People move the meaning.
+            </h2>
+          </div>
+          <p className="max-w-xl leading-relaxed text-[var(--hn-stone)] lg:justify-self-end">
+            Each gate records what the system proposed, what a reviewer decided,
+            and why. Corrections become evaluation evidence rather than disappearing
+            inside a chat transcript.
+          </p>
+        </Reveal>
+        <div className="mt-12 grid gap-px bg-[var(--hn-olive)] lg:grid-cols-3">
+          {GATES.map((gate, index) => (
+            <Reveal key={gate.gate} delay={index * 90}>
+              <article className="hn-gate h-full">
+                <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">{gate.gate}</span>
+                <h3 className="hn-display mt-6 text-2xl font-semibold">{gate.title}</h3>
+                <p className="mt-4 text-sm leading-relaxed text-[var(--hn-stone)]">
+                  {gate.body}
+                </p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Teams() {
+  return (
+    <section id="teams" className="bg-[var(--hn-charcoal)] py-24 md:py-32">
+      <div className="mx-auto max-w-6xl px-4">
+        <Reveal>
+          <p className="hn-eyebrow">One signal, several decisions</p>
+          <h2 className="hn-display mt-4 text-3xl font-semibold md:text-4xl">
+            Clarity travels farther than a report.
+          </h2>
+        </Reveal>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {[
+            ["Product", "See recurring friction with scope, severity, and customer language attached."],
+            ["Operations", "Review source quality, route accountable action, and keep decision latency visible."],
+            ["AI quality", "Track safety signals, model-behavior complaints, and taxonomy drift over time."],
+          ].map(([role, outcome], index) => (
+            <Reveal key={role} delay={index * 90}>
+              <article className="hn-role-card h-full">
+                <span className="hn-pixel text-[10px] text-[var(--hn-soft)]">FOR {role.toUpperCase()}</span>
+                <h3 className="hn-display mt-8 text-2xl font-semibold">{role}</h3>
+                <p className="mt-4 leading-relaxed text-[var(--hn-stone)]">{outcome}</p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Questions() {
+  const questions = [
+    ["Does raw feedback go to the model?", "The intended boundary sanitizes PII before prompts, traces, or durable model-call logs."],
+    ["What happens when evidence is weak?", "The system can label a synthesis as a hypothesis or loop back to investigate more."],
+    ["Can it read Vietnamese and English together?", "Yes. Mixed-language and code-switched feedback are core design assumptions."],
+    ["Is this a production service?", "It is a production-shaped undergraduate thesis prototype, not a commercial service guarantee."],
+  ] as const;
+
+  return (
+    <section id="questions" className="py-24 md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 lg:grid-cols-[0.7fr_1.3fr]">
+        <Reveal>
+          <p className="hn-eyebrow">Questions worth asking</p>
+          <h2 className="hn-display mt-4 text-3xl font-semibold md:text-4xl">
+            Trust starts with clear limits.
+          </h2>
+          <a href="/qna" className="hn-link mt-7 inline-flex text-sm">
+            Read all questions →
+          </a>
+        </Reveal>
+        <Reveal delay={100}>
+          <div className="hn-question-list">
+            {questions.map(([question, answer]) => (
+              <details key={question} className="hn-question">
+                <summary className="hn-display text-xl font-semibold">{question}</summary>
+                <p className="mt-4 max-w-2xl leading-relaxed text-[var(--hn-stone)]">{answer}</p>
+              </details>
+            ))}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 const STATS = [
-  { to: 12438, suffix: "", label: "pieces of feedback processed" },
-  { to: 86, suffix: "", label: "problem clusters surfaced" },
-  { to: 320, suffix: "+", label: "analyst hours saved" },
+  { to: 3, suffix: "", label: "human decision gates" },
+  { to: 9, suffix: "", label: "bounded analytics tools" },
+  { to: 1, suffix: "", label: "linked decision trail" },
 ];
 
 function Proof() {
@@ -328,11 +525,11 @@ function Proof() {
             <span className="hn-tick hn-tick-tl" />
             <span className="hn-tick hn-tick-br" />
             <blockquote className="hn-display text-lg leading-relaxed">
-              “We stopped guessing what users meant. Happynest put the evidence on
-              the table and let us decide — that&apos;s the part I trust.”
+              “The thesis is not that an agent should decide faster. It is that a
+              team should see the evidence, intervention, and outcome in one place.”
             </blockquote>
             <figcaption className="mt-4 text-sm text-[var(--hn-stone)]">
-              Product lead, AI SaaS · pilot program
+              Happynest design principle · research prototype
             </figcaption>
           </figure>
         </Reveal>
@@ -358,7 +555,7 @@ function FinalCta() {
               <BirdSvg size={28} />
             </span>
           </div>
-          <a href="#" className="hn-btn mt-6 inline-flex">
+          <a href="/login" className="hn-btn mt-6 inline-flex">
             Open the nest
           </a>
         </Reveal>
@@ -367,44 +564,22 @@ function FinalCta() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="border-t border-[var(--hn-olive)] py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 md:flex-row">
-        <div className="flex items-center gap-2">
-          <BirdSvg size={18} />
-          <span className="hn-pixel text-xs tracking-widest">happynest</span>
-        </div>
-        <p className="hn-pixel text-[10px] tracking-widest text-[var(--hn-stone)]">
-          WARM INTELLIGENCE · CALM CLARITY · HUMAN CONTROL
-        </p>
-        <div className="flex gap-6 text-sm">
-          <a href="#" className="hn-link">Product</a>
-          <a href="#" className="hn-link">Company</a>
-          <a href="#" className="hn-link">Legal</a>
-        </div>
-      </div>
-      <p className="mt-6 text-center text-xs text-[var(--hn-stone)]">
-        © 2026 Happynest
-      </p>
-    </footer>
-  );
-}
-
 export default function LandingPage() {
   return (
-    <div className={`${silkscreen.variable} hn`}>
+    <div className={`${silkscreen.variable} ${lora.variable} hn`}>
       <LandingNav />
       <main>
-        <section className="hn-vignette relative py-16 md:py-24">
+        <section className="hn-hero hn-vignette relative">
+          <HeroVideo src="/assets/landing-hero.webm" />
+          <div className="hn-hero-shade" aria-hidden />
           <SignalField />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 lg:grid-cols-2">
-            <div>
+          <div className="hn-hero-content relative mx-auto flex max-w-6xl items-end px-4">
+            <div className="max-w-2xl pb-24 pt-28 md:pb-32">
               <p className="hn-eyebrow hn-enter" style={{ "--d": "0s" } as React.CSSProperties}>
                 Feedback finds a home
               </p>
               <h1
-                className="hn-display hn-enter mt-5 text-4xl font-semibold leading-tight md:text-6xl"
+                className="hn-hero-title hn-display hn-enter mt-5 font-semibold leading-tight"
                 style={{ "--d": "0.12s" } as React.CSSProperties}
               >
                 Where feedback finds a home, insights find clarity.
@@ -413,15 +588,15 @@ export default function LandingPage() {
                 className="hn-enter mt-6 max-w-lg leading-relaxed text-[var(--hn-stone)]"
                 style={{ "--d": "0.24s" } as React.CSSProperties}
               >
-                Happynest gathers what users say about your AI product, sorts the
-                signal from the noise, and hands your team evidence-backed insights —
-                with a human approving every step of the way.
+                Happynest gathers what users say about your AI product, separates
+                signal from noise, and carries traceable insight through three human
+                decision gates.
               </p>
               <div
                 className="hn-enter mt-8 flex flex-wrap gap-4"
                 style={{ "--d": "0.36s" } as React.CSSProperties}
               >
-                <a href="#" className="hn-btn">
+                <a href="/login" className="hn-btn">
                   Start listening
                 </a>
                 <a href="#how-it-works" className="hn-btn-ghost">
@@ -435,19 +610,21 @@ export default function LandingPage() {
                 PII SANITIZED · EVIDENCE LINKED · HUMAN APPROVED
               </p>
             </div>
-            <div className="hn-enter" style={{ "--d": "0.3s" } as React.CSSProperties}>
-              <HeroPlaceholder />
-            </div>
           </div>
         </section>
 
         <Pipeline />
+        <Sources />
         <Marquee />
+        <EvidenceAnatomy />
         <Features />
+        <HumanGates />
+        <Teams />
         <Proof />
+        <Questions />
         <FinalCta />
       </main>
-      <Footer />
+      <PublicFooter />
     </div>
   );
 }

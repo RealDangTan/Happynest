@@ -1,4 +1,5 @@
 "use client";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMe } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
+import { ActivityProvider } from "@/components/activity/activity-provider";
+import { ActivityNavButton } from "@/components/activity/activity-nav-button";
 import {
   LayoutDashboard,
   LogOut,
@@ -70,6 +73,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
 
   return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <ActivityProvider>
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="px-4 py-3 font-heading text-lg">
@@ -131,9 +136,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="text-sm text-muted-foreground">
             AI Feedback Agent — bản demo luận văn
           </span>
+          <ActivityNavButton />
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
+    </ActivityProvider>
+    </Suspense>
   );
 }

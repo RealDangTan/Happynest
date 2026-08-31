@@ -15,6 +15,13 @@ export class ApiError extends Error {
       const body = await res.json();
       detail = body?.detail ?? body;
       if (typeof detail === "string") message = detail;
+      else if (
+        detail &&
+        typeof detail === "object" &&
+        "message" in detail &&
+        typeof detail.message === "string"
+      )
+        message = detail.message;
       else if (Array.isArray(detail))
         message = detail
           .map((d: { msg?: string }) => d.msg ?? JSON.stringify(d))

@@ -42,12 +42,38 @@ Swagger UI: `http://127.0.0.1:8000/docs` — bấm *Authorize*, đăng nhập
 `pm@thesis.local` / mật khẩu đã seed (hoặc lấy token từ `POST /api/auth/token`
 và dán Bearer header — hai cơ chế song song, cookie ưu tiên).
 
+## Chạy local nhanh — Backend + Frontend
+
+Sau lần cài đặt đầu tiên, mở **hai terminal riêng** tại thư mục gốc repo:
+
+```powershell
+# Terminal 1 — Backend API (giữ terminal này chạy)
+cd backend
+uv run uvicorn app.main:app --reload
+
+# Terminal 2 — Frontend Next.js (giữ terminal này chạy)
+cd frontend
+pnpm dev
+```
+
+Mở ứng dụng tại `http://127.0.0.1:3000/landing`; API health check là
+`http://127.0.0.1:8000/api/health`, Swagger là `http://127.0.0.1:8000/docs`.
+
+Nếu đây là máy mới, cài frontend một lần trước khi chạy: `cd frontend; pnpm install`.
+Backend cần `backend/.env` hợp lệ và Supabase đang active (xem Quickstart ở trên).
+Nhấn `Ctrl+C` trong từng terminal để dừng service tương ứng.
+
+Sau khi đăng nhập, queue import/analysis nằm trong capsule **Hoạt động** bên
+phải navbar. Upload CSV chỉ tạo preview miễn phí; mapping AI và analysis đều
+có receipt + bước xác nhận riêng, nên không tự tiêu credit. Có thể reload hoặc
+chia sẻ URL `?activity=import:<id>` / `?activity=run:<id>` để tiếp tục review.
+
 ## Ma trận test
 
 | Lệnh | Phạm vi | Yêu cầu |
 |---|---|---|
-| `uv run pytest -q` | Unit thuần (29 test) — mock LLM/embedder/tracing, sqlite sink cho log | Không cần DB/network |
-| `uv run pytest -q -m integration` | Integration trên PostgreSQL thật (31 test) | Supabase active + internet |
+| `uv run pytest -q` | Unit thuần — mock LLM/embedder/tracing | Không cần DB/network |
+| `uv run pytest -q -m integration` | Integration trên PostgreSQL thật; provider AI vẫn mock | Supabase active + internet |
 | `TEST_DATABASE_URL=… uv run pytest -q -m integration` | Trỏ suite sang **test project thứ 2** (khuyến nghị khi data demo đã quan trọng); phải `alembic upgrade head` một lần trên project đó | Project test đang active |
 
 - Test integration mà DB không reachable → **SKIP kèm message rõ**, không ERROR.
@@ -60,8 +86,8 @@ và dán Bearer header — hai cơ chế song song, cookie ưu tiên).
 
 1. **Không Docker** dưới mọi hình thức — FastAPI native Windows + Supabase managed PG.
 2. `uvicorn --reload` chạy riêng terminal (Windows quirk §10.2 execute-plan).
-3. **PII boundary**: raw content không bao giờ vào prompt/log/trace/docs mặc định;
-   chỉ `sanitized_content` ra khỏi biên sanitize. API trả raw cần flag `include_raw=true`.
+3. **PII boundary**: raw content không bao giờ vào prompt/log/trace/docs hoặc
+   API response; chỉ `feedback_text` và profile/sample đã sanitize ra khỏi biên.
 4. File `.env` nằm ở repo root VÀ copy tại `backend/.env` — code đọc bản trong `backend/`.
 5. Mọi lệch khỏi plan → entry dated trong [`docs/decisions.md`](docs/decisions.md).
 

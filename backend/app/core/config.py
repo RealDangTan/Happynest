@@ -87,6 +87,8 @@ class Settings(BaseSettings):
     # --- LISTEN import (plan 22): raw CSV lưu DISK local (decisions
     # 2026-08-28 — chưa có Supabase Storage credentials) ---
     IMPORT_STORAGE_DIR: str = "storage/imports"
+    ANALYSIS_MAX_ITEMS_PER_RUN: int = 100
+    ANALYSIS_BATCH_SIZE: int = 10
 
     # --- Closed-loop impact (Phase 20): cửa sổ đo trước/sau mốc ticket draft ---
     IMPACT_WINDOW_DAYS: int = 7

@@ -2,9 +2,9 @@
 
 > **Quy tắc đồng bộ (Hard rule #10 — AGENTS.md):** thêm/sửa/xóa endpoint, đổi request/response schema hay auth → BẮT BUỘC cập nhật bảng dưới trong cùng commit; đổi phía FE (nối/sửa call API) cũng cập nhật 2 cột cuối. Agent tự đập vào checklist này, không cần nhắc.
 >
-> List này là **bản đồ nối FE ↔ BE** — đủ 32/32 endpoint mà backend expose (`backend/app/main.py` + `backend/app/api/routes/*`, không có route nào khác).
+> List này là **bản đồ nối FE ↔ BE** cho toàn bộ surface backend expose (`backend/app/main.py` + `backend/app/api/routes/*`).
 
-Snapshot: 2026-08-28 (phase 22 — LISTEN) · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**` (🔶 = đã nối nhưng shape/API đổi sau reshape — series FE mới sẽ nối lại)
+Snapshot: 2026-08-30 (phase 28 / FE-10 — Activity Center + scoped analysis) · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`
 
 > ⚠️ **RE-PLAN 2026-08-28:** series 21–27 ([`plans/21-27-voc-os-index.md`](plans/21-27-voc-os-index.md)) viết lại surface BE theo kiến trúc VoC OS. Endpoint drop: `/api/sources`, `/api/reviews`, `/api/corrections`, `/api/insights`, `/api/reports/kpis`, `/api/agent/*` cũ, `/api/feedbacks/import-csv` (phase 22 thay bằng `/api/imports` + Gate #1). Sẽ trở lại shape mới ở plans 25/26/27.
 
@@ -33,16 +33,22 @@ Chú thích:
 | ✅ | GET | `/api/taxonomies/review` | pm \| operations | Hàng chờ emerging theme `pending_review` (accumulate evidence — §21) | ⬜ | — |
 | ✅ | POST | `/api/taxonomies/review/{taxonomy_id}` | pm \| operations | **Human Gate taxonomy:** `approve` (lên canonical) \| `merge` (`merge_into_id` bắt buộc — feedback topics redirect) \| `reject`. 409 node không ở pending_review; 422 merge thiếu target | ⬜ | — |
 | ❌ | POST | `/api/feedbacks/import-csv` | — | **ĐÃ BỎ phase 22** — thay bằng `POST /api/imports` (LISTEN pipeline) | ❌ | Route không còn tồn tại |
-| ✅ | GET | `/api/imports` | pm \| operations | List import lô (status: pending/mapping_review/imported/failed) | ⬜ | — |
-| ✅ | POST | `/api/imports` | pm \| operations | **LISTEN (plan 22):** upload CSV multipart → lưu raw (disk — decisions 2026-08-28) → deterministic profile → LLM schema mapping proposal → 201 `ImportOut` status `mapping_review`. 409 khi product đang có import chờ review; 422 sai đuôi; 502 LLM fail | ⬜ | — (FE Mapping Review series sau) |
-| ✅ | GET | `/api/imports/{import_id}` | pm \| operations | Chi tiết 1 import | ⬜ | — |
-| ✅ | GET | `/api/imports/{import_id}/mapping` | pm \| operations | Proposal mapping đang chờ Gate #1 — per source_field: MAP/PROMOTE/SOURCE_META/IGNORE/AMBIGUOUS + confidence + reason (VoC OS §10–11) | ⬜ | — |
-| ✅ | POST | `/api/imports/{import_id}/mapping/decision` | pm \| operations | **Gate #1 (VoC OS §12):** human quyết per field `approve\|remap\|promote\|demote\|ignore` (phủ ĐỦ mọi source_field) → (tùy) activate schema version mới → parse + sanitize + import feedback rows. 422 AMBIGUOUS approve máy móc / thiếu-dư field / 2 cột trùng target / thiếu feedback_text; 409 re-decision; `?default_source=` khi CSV không có cột source | ⬜ | — |
-| ✅ | GET | `/api/feedbacks` | pm \| operations | List phân trang (`limit` ≤100, `offset`) + filter `product_id` / `severity` / `sentiment` / `topic` (JSONB ai_analysis) / `source` | 🔶 | Trang `/feedbacks` — filter cũ (review_status/category) đã bỏ |
+| ✅ | GET | `/api/imports` | pm \| operations | Queue import, filter `product_id` + lặp `status`, action-first ordering | ✅ | `ActivityProvider` poll; queue ba nhóm trong navbar Activity Sheet |
+| ✅ | POST | `/api/imports` | pm \| operations | Upload CSV → lưu raw + deterministic profile/sample đã sanitize → 201 `profile_ready`; **không gọi LLM**. 409 `active_import_exists` | ✅ | Dialog `/feedbacks`; thành công đóng dialog và mở `?activity=import:<id>` |
+| ✅ | GET | `/api/imports/{import_id}` | pm \| operations | Chi tiết import + profile/report/progress fields | ✅ | Import detail trong Activity Sheet, poll khi mapping/import đang chạy |
+| ✅ | GET | `/api/imports/{import_id}/preview` | pm \| operations | Profile/sample đã sanitize; không trả raw feedback | ✅ | Bước “Preview cấu trúc”, badge “Chưa gọi AI” |
+| ✅ | POST | `/api/imports/{import_id}/mapping/proposal` | pm \| operations | Paid gate riêng → 202; claim atomically, chống double-click, reclaim sau 5 phút; fail về `profile_ready` | ✅ | Cost receipt + AlertDialog trước khi gọi AI mapping |
+| ✅ | GET | `/api/imports/{import_id}/mapping` | pm \| operations | Proposal mapping đang chờ Gate #1 | ✅ | Mapping table/remap controls trong Activity Sheet |
+| ✅ | POST | `/api/imports/{import_id}/mapping/decision` | pm \| operations | Human chốt mapping → 202 `importing`; FE poll detail đến `imported\|failed` | ✅ | Mapping review + import progress/report trong Activity Sheet |
+| ✅ | POST | `/api/imports/{import_id}/cancel` | pm \| operations | Chỉ draft/review/failed; xóa raw file đúng storage root → `cancelled` | ✅ | Nút Hủy import trong detail |
+| ✅ | GET | `/api/feedbacks` | pm \| operations | List phân trang + filter cũ và `import_id`, `analysis_state=pending\|completed` | ✅ | Trang `/feedbacks`; Activity Sheet dùng scope import để chọn analysis items |
 | ✅ | GET | `/api/feedbacks/{feedback_id}` | pm \| operations | Chi tiết feedback; `feedback_text` (đã sanitize) là dữ liệu phân tích — **raw_content KHÔNG BAO GIỜ ra response** (toggle include_raw đã bỏ) | 🔶 | Trang chi tiết `/feedbacks/[id]` — dùng feedback_text thay sanitized_content |
 | ✅ | GET | `/api/feedbacks/{feedback_id}/similar` | pm \| operations | Cosine nearest-neighbor exact scan quanh embedding của 1 feedback (`k` ≤ 50, snippet từ feedback_text); **409** khi chưa có embedding | ✅ | Panel "Phản hồi tương tự" — shape snippet giữ nguyên |
-| ✅ | POST | `/api/analysis/runs` | pm \| operations | Tạo run batch phân loại + đẩy job nền → 201 `{run_id}` ngay; marker "đã xử lý" = `ai_analysis IS NOT NULL`; pipeline_version `v2` (reshape) | ✅ | Trang `/analysis` — giữ nguyên hợp đồng |
+| ✅ | POST | `/api/analysis/runs/preview` | pm \| operations | Preview selected/batch trong đúng import; cap 100, token estimate + logical calls + max attempts | ✅ | Cost receipt trong Activity Sheet |
+| ✅ | POST | `/api/analysis/runs` | pm \| operations | Body bắt buộc; selected/batch + `import_id` + `confirmed_item_count`; claim exact scope; lệch → 409 `selection_changed` | ✅ | AlertDialog xác nhận paid run trong Activity Sheet; không còn global trigger |
+| ✅ | GET | `/api/analysis/runs` | pm \| operations | Queue/history run cho navbar | ✅ | `ActivityProvider` poll dùng chung cho navbar/Sheet/mascot tương lai |
 | ✅ | GET | `/api/analysis/runs/{run_id}` | pm \| operations | Progress một run: status, processed/total, error + snapshot cấu hình | ✅ | Cùng trang — `useRunProgress` poll |
+| ✅ | POST | `/api/analysis/runs/{run_id}/cancel` | pm \| operations | Request dừng sau item/chunk hiện tại; unclaim phần chưa chạy | ✅ | Run detail trong Activity Sheet |
 | ✅ | GET | `/api/analysis/runs/{run_id}/results` | pm \| operations | Kết quả theo run, phân trang; item chưa xử lý có `ai_analysis` null | 🔶 | Cùng trang — FE đọc labels từ JSONB mới |
 | ✅ | POST | `/api/clusters/run` | pm \| operations | Chạy lại toàn bộ clustering HDBSCAN cosine + LLM naming — idempotent trong 1 transaction (C5) | ✅ | Nút "Tạo lại phân cụm" tại `/clusters` |
 | ✅ | GET | `/api/clusters` | pm \| operations | Danh sách cụm theo C1 (`sort=feedback_count\|growth_ratio\|recent`, kèm `sample_feedback_ids` ≤5) | ✅ | Trang `/clusters` — giữ nguyên hợp đồng |

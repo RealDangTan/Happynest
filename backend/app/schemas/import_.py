@@ -16,10 +16,15 @@ class ImportOut(BaseModel):
     product_id: UUID
     source_type: str
     storage_path: str | None
+    original_filename: str | None
     mapping_version: str | None
     schema_version: int | None
     status: ImportStatus
     row_count: int | None
+    source_row_count: int | None
+    column_profiles: list[dict[str, Any]] | None
+    report: dict[str, Any] | None
+    mapping_started_at: datetime | None
     error: str | None
     created_at: datetime
 
@@ -27,6 +32,15 @@ class ImportOut(BaseModel):
 class ImportListOut(BaseModel):
     items: list[ImportOut]
     total: int
+    limit: int
+    offset: int
+
+
+class ImportPreviewOut(BaseModel):
+    id: UUID
+    original_filename: str | None
+    source_row_count: int
+    column_profiles: list[dict[str, Any]]
 
 
 # ------------------------------------------------------------------ LISTEN (plan 22)

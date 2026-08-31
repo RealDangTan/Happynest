@@ -30,8 +30,9 @@ from app.db.session import SessionLocal
 from app.jobs import analysis_runner as runner_mod
 from app.jobs.analysis_runner import run_analysis
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import RunStatus
+from app.models.enums import ImportStatus, RunStatus
 from app.models.feedback import Feedback
+from app.models.import_ import Import
 from app.models.taxonomy import Taxonomy
 from app.schemas.taxonomy import Classification
 from app.services import classifier as classifier_mod
@@ -146,7 +147,7 @@ def batch(fake_llm_embedder, test_product):
     của test, runner sẽ nhặt chúng. Fixture tạm gán chúng vào 1 run 'test-quarantine'
     rồi TRẢ NGUYÊN (analysis_run_id=NULL) khi teardown — không đụng labels.
     """
-    state = {"run_ids": [], "qrun_id": None}
+    state = {"run_ids": [], "qrun_id": None, "import_id": None}
     with SessionLocal() as db:
         # dọn rác lần chạy trước (nếu teardown trước bị đứt)
         db.query(Feedback).filter(
@@ -176,12 +177,24 @@ def batch(fake_llm_embedder, test_product):
                 .values(analysis_run_id=qrun.id)
             )
 
+        import_row = Import(
+            product_id=test_product.id,
+            source_type="csv",
+            status=ImportStatus.imported,
+            source_row_count=N_ITEMS,
+            row_count=N_ITEMS,
+        )
+        db.add(import_row)
+        db.flush()
+        state["import_id"] = import_row.id
+
         # Seed đúng thứ tự occurred_at tăng dần → runner xử lý item 1..10.
         base = datetime.now(timezone.utc) - timedelta(hours=1)
         ids: list[uuid.UUID] = []
         for i in range(1, N_ITEMS + 1):
             fb = Feedback(
                 product_id=test_product.id,
+                import_id=import_row.id,
                 source=SOURCE,
                 source_record_id=f"{REF_PREFIX}{i:02d}",
                 # đã sanitize sẵn — runner KHÔNG phải gọi presidio (nhẹ, nhanh)
@@ -215,6 +228,9 @@ def batch(fake_llm_embedder, test_product):
             run = db.get(AnalysisRun, rid)
             if run is not None:
                 db.delete(run)
+        import_row = db.get(Import, state["import_id"])
+        if import_row is not None:
+            db.delete(import_row)
         db.commit()
 
 
@@ -226,9 +242,19 @@ def _make_run(batch, total: int) -> uuid.UUID:
             llm_model="fake-model",
             prompt_version="v1",
             embedding_model="fake-embed",
+            import_id=batch["import_id"],
+            mode="selected",
+            chunk_size=1,
             total_count=total,
         )
         db.add(run)
+        db.flush()
+        if total:
+            db.execute(
+                update(Feedback)
+                .where(Feedback.id.in_(batch["ids"][:total]))
+                .values(analysis_run_id=run.id)
+            )
         db.commit()
         batch["run_ids"].append(run.id)
         return run.id
@@ -362,7 +388,13 @@ def test_runs_endpoints_create_progress_results(client, batch, monkeypatch):
         )
     assert count_unclaimed == N_ITEMS
 
-    resp = client.post("/api/analysis/runs", headers=headers)
+    scope = {
+        "mode": "selected",
+        "import_id": str(batch["import_id"]),
+        "feedback_ids": [str(item_id) for item_id in batch["ids"]],
+        "confirmed_item_count": N_ITEMS,
+    }
+    resp = client.post("/api/analysis/runs", json=scope, headers=headers)
     assert resp.status_code == 201, resp.text
     rid = uuid.UUID(resp.json()["run_id"])
     batch["run_ids"].append(rid)
@@ -384,16 +416,6 @@ def test_runs_endpoints_create_progress_results(client, batch, monkeypatch):
         "embedding_model",
     ):
         assert body.get(field), f"progress thiếu snapshot {field}"
-
-    # Runner bị patch no-op → tự gắn seed rows vào run như runner thật sẽ làm,
-    # rồi kiểm tra results trả ĐỦ items thuộc run kèm labels chưa xử lý.
-    with SessionLocal() as db:
-        db.execute(
-            update(Feedback)
-            .where(Feedback.source_record_id.like(f"{REF_PREFIX}%"))
-            .values(analysis_run_id=rid)
-        )
-        db.commit()
 
     results = client.get(f"/api/analysis/runs/{rid}/results?limit=100", headers=headers)
     assert results.status_code == 200, results.text
