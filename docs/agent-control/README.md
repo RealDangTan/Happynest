@@ -40,15 +40,19 @@ Tóm lại: **3 điểm gọi LLM** (planner, evaluator, synthesizer), phần c�
 
 ## 4. Cách dùng editor.html
 
-1. Double-click `editor.html` (hoặc kéo thả `agent-schema.json` vào trang nếu trình duyệt chặn đọc file lân cận).
+Trang **nhúng sẵn bản vẽ hiện trạng** của agent — double-click là thấy ngay toàn bộ agent như nó đang chạy, không cần nạp file gì cả. (Nút "Nhập JSON…" chỉ dùng khi bạn muốn nạp một bản schema khác, vd bản đề xuất đã tải xuống.)
+
+1. Double-click `editor.html`.
 2. Xem cây agent: 7 node nối với nhau, node gọi LLM được đánh dấu riêng, Gate #2 nổi bật.
 3. Sửa những gì bạn muốn:
    - **Knobs** (ngưỡng/trần): đổi số trực tiếp.
    - **Prompt** của planner / evaluator / synthesizer: sửa text trong ô lớn.
    - **Tools**: bật/tắt khỏi catalog mà planner được chọn.
    - **Cấu trúc** (node/edge): xem được; sửa được nhưng sẽ bị cảnh báo vì cần implement lại code.
-4. Bấm **Tải JSON** để xuất bản schema đã sửa, hoặc **Copy change-request** để lấy markdown mô tả đúng những gì bạn đổi (so với bản hiện tại).
-5. Lưu markdown/file vào `change-requests/`, rồi nói với Claude Code: *"áp dụng change-request X"*.
+4. Bấm **Copy change-request** để lấy markdown mô tả đúng những gì bạn đổi (so với hiện trạng), hoặc **Tải JSON** để xuất bản schema đã sửa.
+5. Dán change-request vào `change-requests/`, rồi nói với Claude Code: *"áp dụng change-request X"*.
+
+**Cầu nối bạn ↔ tôi:** khi tôi áp change-request vào code, tôi cũng cập nhật lại bản vẽ hiện trạng trong chính `editor.html` (object `EMBEDDED_SCHEMA`) và `agent-schema.json` trong cùng commit — nên lần mở sau, trang luôn phản ánh đúng agent mới.
 
 ## 5. Luồng làm việc với agent lập trình
 

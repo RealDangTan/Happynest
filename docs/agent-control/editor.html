@@ -84,6 +84,19 @@
   }
   .banner ul { margin: 6px 0 0; padding-left: 18px; }
 
+  /* ---------- bridge banner ---------- */
+  .bridge {
+    margin: 12px 20px 0; padding: 10px 16px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    font-size: 13px;
+  }
+  .bridge .bridge-loop {
+    display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+    margin-top: 6px; color: var(--muted-fg); font-size: 12.5px;
+  }
+  .bridge .bridge-loop b { color: var(--ring); }
+  .bridge .bridge-loop em { font-style: normal; color: var(--ink); }
+
   /* ---------- layout ---------- */
   .layout { display: flex; min-height: calc(100vh - 54px); }
   .rail {
@@ -292,6 +305,21 @@
 
 <div id="errors" role="alert"></div>
 
+<div class="bridge" id="bridge">
+  <div>
+    <strong>Đây là bản vẽ HIỆN TRẠNG của agent UNDERSTAND</strong> — nhúng sẵn trong trang, bạn mở lên là thấy đúng những gì agent đang chạy.
+  </div>
+  <div class="bridge-loop">
+    <span><b>1.</b> Bạn sửa ngay tại đây</span>
+    <span>→</span>
+    <span><b>2.</b> Bấm <em>Copy change-request</em></span>
+    <span>→</span>
+    <span><b>3.</b> Dán cho Claude Code: “áp dụng CR này”</span>
+    <span>→</span>
+    <span><b>4.</b> Tôi sửa code <em>và</em> cập nhật lại trang này</span>
+  </div>
+</div>
+
 <div id="intro">
   <span class="eyebrow2">AGENT CONTROL / UNDERSTAND</span>
   <h2>Chưa có bản vẽ nào được nạp</h2>
@@ -402,6 +430,264 @@
 
 <script>
 "use strict";
+
+// ============================================================
+// BẢN VẼ HIỆN TRẠNG — nhúng sẵn trong trang.
+// Claude Code cập nhật object này trong CÙNG commit mỗi khi sửa
+// code agent (nodes.py / config.py / graph.py / tools.py).
+// Nguồn sự thật song song: agent-schema.json (cùng nội dung).
+// ============================================================
+var EMBEDDED_SCHEMA = {
+  "$schema_version": 1,
+  "agent": "understand",
+  "meta": {
+    "pipeline_version": "understand-v1",
+    "prompt_version": "understand-v1",
+    "graph_file": "backend/understand_agent/graph.py",
+    "nodes_file": "backend/understand_agent/nodes.py",
+    "runner_file": "backend/understand_agent/runner.py",
+    "state_file": "backend/understand_agent/state.py",
+    "tools_file": "backend/app/analytics/tools.py",
+    "config_file": "backend/app/core/config.py",
+    "llm_model_env": "LLM_MODEL",
+    "temperature": 0,
+    "how_to_run": [
+      "POST /api/agent/runs { product_id, question, trigger_type } (web/HTTP)",
+      "backend/scripts/agent_terminal.py (terminal REPL)",
+      "backend/scripts/e2e_happytest.py (kịch bản E2E)"
+    ],
+    "updated_from_code_at": "2026-09-18"
+  },
+
+  "nodes": [
+    {
+      "name": "load_context",
+      "kind": "deterministic",
+      "source": "backend/understand_agent/nodes.py:84",
+      "purpose": "Xem hồ sơ sản phẩm trước khi điều tra: tên sản phẩm, schema fields, coverage, taxonomy, top 5 clusters theo độ ưu tiên.",
+      "llm": null,
+      "inputs": ["product_id"],
+      "outputs": ["product_context", "iteration=0"],
+      "prompt": null,
+      "output_schema": null,
+      "fallback": null
+    },
+    {
+      "name": "planner",
+      "kind": "llm",
+      "source": "backend/understand_agent/nodes.py:131",
+      "purpose": "Điều tra viên chọn BƯỚC TIẾP: gọi 1 tool phân tích, hoặc tuyên bố 'đủ bằng chứng' để tổng hợp insight. Đồng thời là nơi kiểm soát trần: hết vòng lặp hoặc hết ngân sách LLM → ép synthesize.",
+      "llm": {
+        "call_type": "plan",
+        "user_payload_shape": {
+          "question": "câu hỏi/signal",
+          "trigger_type": "user_question | system_signal",
+          "product_context": "hồ sơ từ load_context",
+          "evidence_so_far": "tối đa 5 evidence gần nhất (statement cắt 200 ký tự)",
+          "evaluations": "2 lần đánh giá gần nhất (đã nén)",
+          "tool_history": "5 lượt tool gần nhất",
+          "iteration": "số vòng hiện tại",
+          "available_tools": "catalog 9 tool + params signature",
+          "force": "chuỗi ép synthesize nếu hết iteration/budget, rỗng nếu không"
+        }
+      },
+      "inputs": ["question", "product_context", "evidence", "evaluations", "tool_history", "iteration", "llm_budget"],
+      "outputs": ["next_action {action: tool|synthesize, tool?, params?, objective}"],
+      "prompt": "Bạn là điều tra viên phân tích phản hồi khách hàng. Cho câu hỏi/signal và context đã có, chọn BƯỚC TIẾP: gọi 1 tool phân tích (action='tool', chỉ định nghĩa params cho tool đó — params PHẢI khớp đúng signature trong available_tools) hoặc tổng hợp insight khi bằng chứng đã đủ (action='synthesize'). Aggregate first, drill down sau (§69). Chỉ trả JSON.",
+      "output_schema": "PlannerOut",
+      "fallback": "LLM lỗi cấu trúc → action=synthesize nếu có evidence; nếu force (hết budget/iteration) → ép action=synthesize bất kể output"
+    },
+    {
+      "name": "dispatch",
+      "kind": "deterministic",
+      "source": "backend/understand_agent/nodes.py:196",
+      "purpose": "Thực thi tool mà planner chọn (params validate bằng pydantic input_model), ghi kết quả vào bảng evidence. Tool sai tên hoặc lỗi → ghi observation lỗi, KHÔNG làm chết graph.",
+      "llm": null,
+      "inputs": ["next_action"],
+      "outputs": ["evidence +1 entry", "tool_history +1 entry"],
+      "prompt": null,
+      "output_schema": null,
+      "fallback": "Exception trong tool → evidence rỗng kèm observation {error}, graph chạy tiếp"
+    },
+    {
+      "name": "evaluator",
+      "kind": "llm",
+      "source": "backend/understand_agent/nodes.py:262",
+      "purpose": "Điều tra viên khách quan đánh giá evidence MỚI NHẤT: hỗ trợ giả thuyết gì, mâu thuẫn gì, câu hỏi mới nào nảy sinh, chất lượng dữ liệu ổn không, và đã đủ để trả lời câu hỏi chưa. Kết quả nạp lại cho planner ở vòng kế.",
+      "llm": {
+        "call_type": "evaluate",
+        "user_payload_shape": {
+          "question": "câu hỏi/signal",
+          "latest_evidence": "tool + statement (cắt 200 ký tự)",
+          "all_evidence_statements": "mọi statement, mỗi cái cắt 150 ký tự"
+        }
+      },
+      "inputs": ["question", "evidence"],
+      "outputs": ["evaluations +1 entry", "iteration +1"],
+      "prompt": "Bạn là điều tra viên khách quan. Đánh giá evidence mới nhất: có hỗ trợ giả thuyết nào, mâu thuẫn gì, câu hỏi mới nào nảy sinh, dữ liệu có vấn đề chất lượng không, và bằng chứng đã ĐỦ để trả lời câu hỏi chưa (§39). Chỉ trả JSON.",
+      "output_schema": "EvaluateOut",
+      "fallback": "LLM lỗi cấu trúc → sufficient_evidence=true (đẩy nhanh về synthesize), các list rỗng"
+    },
+    {
+      "name": "synthesizer",
+      "kind": "llm",
+      "source": "backend/understand_agent/nodes.py:314",
+      "purpose": "Viết báo cáo (insight draft) CHỈ từ evidence được cung cấp: finding = fact có evidence, hypothesis = suy luận tách riêng confidence. Server tự whitelist evidence_ids — id bịa sẽ bị loại; nếu rỗng → gán toàn bộ evidence có thật. Không đủ evidence → insight 'limited' nói thẳng.",
+      "llm": {
+        "call_type": "synthesize",
+        "user_payload_shape": {
+          "question": "câu hỏi/signal",
+          "product_context": "hồ sơ sản phẩm",
+          "evidence": "toàn bộ evidence (statement cắt 200 ký tự)",
+          "evaluations": "5 lần đánh giá gần nhất (đã nén)",
+          "rules": "3 luật: finding=having evidence, evidence_ids whitelist, limitations phải nêu coverage thấp nếu có"
+        }
+      },
+      "inputs": ["question", "product_context", "evidence", "evaluations"],
+      "outputs": ["draft_insight"],
+      "prompt": "Tổng hợp evidence-grounded insight cho người quyết định (VoC OS §42). Draft CHỈ từ evidence được cung cấp. Chỉ trả JSON khớp schema.",
+      "output_schema": "InsightDraft",
+      "fallback": "LLM lỗi cấu trúc → _limited_insight (title 'Không đủ bằng chứng: …', finding liệt kê các tool đã thử, confidence 0.3)"
+    },
+    {
+      "name": "persist_insight",
+      "kind": "hitl",
+      "source": "backend/understand_agent/nodes.py:385",
+      "purpose": "Lưu insight draft vào DB (status=pending, idempotent theo run_id+title) rồi DỪNG — raise interrupt Gate #2 chờ con người quyết. Đây là điểm dừng duy nhất của graph.",
+      "llm": null,
+      "inputs": ["draft_insight"],
+      "outputs": ["insights_created +1", "decision (từ human)"],
+      "prompt": null,
+      "output_schema": null,
+      "fallback": null
+    },
+    {
+      "name": "apply_decision",
+      "kind": "deterministic",
+      "source": "backend/understand_agent/nodes.py:454",
+      "purpose": "Xử lý quyết định của con người ở Gate #2: cập nhật status insight, ghi InsightReview (audit trail original/edited/reviewer), ghi decision log (agent_value vs human_value). action=edit → text con người gõ được RE-SANITIZE PII trước khi lưu. approve/edit/reject → run completed; investigate_more → quay lại planner (xoá draft, iteration +1).",
+      "llm": null,
+      "inputs": ["decision", "insights_created", "draft_insight"],
+      "outputs": ["final_status"],
+      "prompt": null,
+      "output_schema": null,
+      "fallback": null
+    }
+  ],
+
+  "edges": [
+    { "from": "START", "to": "load_context", "when": "luôn luôn" },
+    { "from": "load_context", "to": "planner", "when": "luôn luôn" },
+    { "from": "planner", "to": "dispatch", "when": "next_action.action == 'tool'" },
+    { "from": "planner", "to": "synthesizer", "when": "next_action.action == 'synthesize' (hoặc hết budget/iteration hoặc LLM lỗi)" },
+    { "from": "dispatch", "to": "evaluator", "when": "luôn luôn" },
+    { "from": "evaluator", "to": "planner", "when": "luôn luôn (vòng lặp tool)" },
+    { "from": "synthesizer", "to": "persist_insight", "when": "luôn luôn" },
+    { "from": "persist_insight", "to": "apply_decision", "when": "sau khi human đã quyết (resume)" },
+    { "from": "apply_decision", "to": "planner", "when": "final_status == 'investigating' (human chọn investigate_more)" },
+    { "from": "apply_decision", "to": "END", "when": "final_status in {approved, edited, rejected}" }
+  ],
+
+  "tools": [
+    { "name": "get_schema", "description": "List product analytical dimensions with coverage", "params": {}, "input_model": "GetSchemaInput" },
+    { "name": "profile_field", "description": "Coverage, distinct count and top values of one field", "params": { "field": "str (1-80 ký tự, bắt buộc)" }, "input_model": "ProfileFieldInput" },
+    { "name": "aggregate_feedback", "description": "Group-by counts (or avg confidence) over filtered feedback", "params": { "filters": "dict[str,str] (mặc định {})", "group_by": "str (1-80 ký tự, bắt buộc)", "metric": "'count' | 'avg_confidence' (mặc định 'count')" }, "input_model": "AggregateInput" },
+    { "name": "compare_periods", "description": "Count an issue in current vs previous window with change_pct", "params": { "filters": "dict[str,str] (mặc định {})", "current": "'last_7_days' | 'last_30_days'", "previous": "'previous_7_days' | 'previous_30_days'" }, "input_model": "ComparePeriodsInput" },
+    { "name": "segment_feedback", "description": "Coverage/top/share per dimension for a filtered issue set", "params": { "filters": "dict[str,str] (mặc định {})", "dimensions": "list[str], 1-5 phần tử" }, "input_model": "SegmentInput" },
+    { "name": "semantic_search", "description": "Cosine kNN over feedback embeddings, filtered and capped", "params": { "query": "str (1-1000 ký tự, bắt buộc)", "filters": "dict[str,str] (mặc định {})", "k": "int 1-30 (mặc định 8)" }, "input_model": "SemanticSearchInput" },
+    { "name": "representative_feedback", "description": "Diverse representative verbatims interleaved by source", "params": { "filters": "dict[str,str] (mặc định {})", "n": "int 1-30 (mặc định 6)" }, "input_model": "RepresentativeInput" },
+    { "name": "inspect_cluster", "description": "Stored trend fields plus live member/severity metrics of one cluster", "params": { "cluster_id": "str UUID 36 ký tự" }, "input_model": "InspectClusterInput" },
+    { "name": "search_similar_cases", "description": "Retrieve similar past insights (precedents) by semantic similarity", "params": { "query": "str (1-1000 ký tự, bắt buộc)", "k": "int 1-10 (mặc định 3)" }, "input_model": "SearchSimilarCasesInput" }
+  ],
+
+  "knobs": [
+    { "key": "UNDERSTAND_MAX_ITERATIONS", "default": 8, "type": "int", "label": "Số vòng điều tra tối đa (planner gọi tool bao nhiêu lần trước khi bị ép tổng hợp)", "where": "backend/app/core/config.py:76 (env var)" },
+    { "key": "UNDERSTAND_LLM_BUDGET_PER_RUN", "default": 18, "type": "int", "label": "Ngân sách LLM call mỗi run (đếm plan+evaluate+synthesize trong llm_call_logs; hết → ép synthesize)", "where": "backend/app/core/config.py:77 (env var)" },
+    { "key": "MAX_RAW_FEEDBACK_PER_TOOL", "default": 30, "type": "int", "label": "Trần số dòng feedback thô 1 tool được trả về (chống tràn context)", "where": "backend/app/core/config.py:74 (env var)" },
+    { "key": "MAX_TOTAL_VERBATIMS", "default": 80, "type": "int", "label": "Trần tổng số verbatim (trích dẫn gốc) mỗi run", "where": "backend/app/core/config.py:75 (env var)" },
+    { "key": "_STATEMENT_MAX", "default": 300, "type": "int", "label": "Độ dài tối đa statement lưu vào bảng evidence (ký tự)", "where": "backend/understand_agent/nodes.py:38 (hằng số trong code)" },
+    { "key": "_PROMPT_STATEMENT_MAX", "default": 200, "type": "int", "label": "Độ dài statement khi nhét vào prompt LLM (ký tự)", "where": "backend/understand_agent/nodes.py:39 (hằng số trong code)" },
+    { "key": "_MAX_CLUSTERS_CONTEXT", "default": 5, "type": "int", "label": "Số cluster tối đa nạp vào context lúc đầu (top theo độ ưu tiên)", "where": "backend/understand_agent/nodes.py:40 (hằng số trong code)" }
+  ],
+
+  "output_schemas": {
+    "PlannerOut": {
+      "source": "backend/understand_agent/nodes.py:122",
+      "fields": {
+        "action": "str, pattern ^(tool|synthesize)$",
+        "tool": "str | null (tên tool trong catalog)",
+        "params": "dict (mặc định {})",
+        "objective": "str, max 300 ký tự"
+      }
+    },
+    "EvaluateOut": {
+      "source": "backend/understand_agent/nodes.py:254",
+      "fields": {
+        "supports": "list[{hypothesis, strength, evidence_ids}] (mặc định [])",
+        "contradictions": "list[str] (mặc định [])",
+        "new_questions": "list[str] (mặc định [])",
+        "data_quality_warning": "str | null",
+        "sufficient_evidence": "bool (bắt buộc)"
+      }
+    },
+    "InsightDraft": {
+      "source": "backend/understand_agent/nodes.py:302",
+      "fields": {
+        "title": "str, max 255",
+        "finding": "str, max 2000",
+        "finding_confidence": "float 0.0-1.0",
+        "hypothesis_statement": "str | null, max 1000",
+        "hypothesis_confidence": "float | null 0.0-1.0",
+        "affected_context": "dict (mặc định {})",
+        "impact": "list[str] (mặc định [])",
+        "limitations": "list[str] (mặc định [])",
+        "evidence_ids": "list[str], tối thiểu 1 — server whitelist theo evidence có thật"
+      }
+    }
+  },
+
+  "state_fields": {
+    "source": "backend/understand_agent/state.py",
+    "fields": {
+      "run_id": "str UUID của analysis_runs row",
+      "product_id": "str UUID sản phẩm",
+      "question": "câu hỏi user HOẶC mô tả system signal — đã sanitize PII trước khi vào graph",
+      "trigger_type": "'user_question' | 'system_signal'",
+      "product_context": "hồ sơ sản phẩm từ load_context",
+      "evidence": "list tích lũy (add-only): {evidence_id, tool, statement, payload}",
+      "evaluations": "list tích lũy: kết quả EvaluateOut từng vòng",
+      "tool_history": "list tích lũy: {tool, ok, error}",
+      "iteration": "số vòng đã đi",
+      "llm_budget": "ngân sách LLM call (khởi tạo từ UNDERSTAND_LLM_BUDGET_PER_RUN)",
+      "next_action": "output hiện hành của planner",
+      "draft_insight": "output của synthesizer",
+      "decision": "{action, edited_*?, reason?} từ Gate #2 (Command resume)",
+      "final_status": "approved | edited | rejected | investigating",
+      "insights_created": "list insight id đã persist"
+    }
+  },
+
+  "hitl": {
+    "gate": "#2",
+    "interrupt_node": "persist_insight",
+    "trigger": "mỗi run — luôn dừng chờ con người trước khi chốt insight",
+    "options": ["approve", "edit", "investigate_more", "reject"],
+    "resume_endpoint": "POST /api/agent/runs/{run_id}/decision",
+    "audit": "InsightReview (original_value/edited_value/action/reason/reviewer_id) + decision_log",
+    "edit_safety": "title/finding do human gõ được RE-SANITIZE PII trước khi persist",
+    "investigate_more_loop": "quay lại planner, xoá draft_insight, iteration +1 (vẫn chịu trần MAX_ITERATIONS/budget)"
+  },
+
+  "safety_rules": [
+    "PII boundary: câu hỏi được sanitize (Presidio) TRƯỚC khi vào graph (runner.submit_or_start L145); reason/edited_insight cũng sanitize khi resume; chỉ sanitized_content được phép qua biên.",
+    "Planner CHỈ được chọn tool từ registry 9 tool; params validate pydantic — sai → observation lỗi, không crash graph.",
+    "Evidence whitelist: synthesizer chỉ được trích evidence_id có thật trong state; không evidence → limited insight.",
+    "Budget check TRƯỚC MỖI call LLM (đếm llm_call_logs call_type plan/evaluate/synthesize) — hết ngân sách → buộc synthesize.",
+    "Tool lỗi → observation lỗi + evidence rỗng, graph chạy tiếp (không crash).",
+    "LLM output sai cấu trúc → 1 fallback cố định an toàn (planner: synthesize; evaluator: sufficient; synthesizer: limited insight).",
+    "finding vs hypothesis tách confidence — suy luận không được trình bày như root cause xác nhận."
+  ]
+};
 
 var original = null;   // schema nguyên bản (để diff)
 var current = null;    // schema đang sửa
@@ -536,7 +822,13 @@ function tryAutoLoad() {
   fetch("agent-schema.json", { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
     .then(function (t) { acceptSchema(t, "agent-schema.json (cạnh editor)"); })
-    .catch(function () { /* file:// hoặc thiếu file → chờ người dùng nạp */ });
+    .catch(function () {
+      // file:// chặn fetch → dùng bản hiện trạng nhúng sẵn trong trang
+      if (EMBEDDED_SCHEMA && Object.keys(EMBEDDED_SCHEMA).length) {
+        acceptSchema(JSON.stringify(EMBEDDED_SCHEMA), "hiện trạng nhúng sẵn trong trang");
+      }
+      /* không có cả hai → giữ màn hình chờ, người dùng tự nạp file */
+    });
 }
 
 // ---------- rendering ----------
