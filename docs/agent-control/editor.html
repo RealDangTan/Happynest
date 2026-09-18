@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Control — UNDERSTAND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Lora:wght@500;600&family=Silkscreen&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f1f3e9;
+    --ink: #14251d;
+    --card: #fcfcf8;
+    --secondary: #e5e9da;
+    --muted-fg: #5c6b5e;
+    --accent: #e2e8d6;
+    --border: #d9ddca;
+    --ring: #3f738b;
+    --lichen: #91a873;
+    --pollen: #dbac3b;
+    --danger: #a63a2e;
+    --rail: #14251d;
+    --rail-fg: #eef1e4;
+    --rail-accent: #22352b;
+    --rail-border: #22352b;
+    --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --heading: "Lora", Georgia, serif;
+    --pixel: "Silkscreen", "Courier New", monospace;
+    --mono: "JetBrains Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .topbar h1 { font-family: var(--heading); font-size: 17px; font-weight: 600; margin: 0; white-space: nowrap; }
+  .topbar .eyebrow { font-family: var(--pixel); font-size: 9px; letter-spacing: 1px; color: var(--muted-fg); display: block; }
+  .chip {
+    font-family: var(--mono); font-size: 11px;
+    padding: 3px 10px; border-radius: 999px;
+    background: var(--secondary); color: var(--muted-fg);
+    border: 1px solid var(--border); white-space: nowrap;
+  }
+  .chip.dirty { background: #f4e9c8; color: #7a5d13; border-color: #e3d190; }
+  .topbar .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--border); background: var(--card); color: var(--ink);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500;
+    transition: background .15s, border-color .15s;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn.primary { background: var(--ink); color: var(--rail-fg); border-color: var(--ink); }
+  .btn.primary:hover { background: #22352b; }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted-fg); }
+  .btn.ghost:hover { color: var(--ink); background: var(--secondary); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ---------- error banner ---------- */
+  #errors { display: none; }
+  .banner {
+    margin: 12px 20px 0; padding: 10px 14px;
+    background: #f6e4e1; border: 1px solid #ddb9b3; border-radius: 10px;
+    color: var(--danger); font-size: 13px;
+  }
+  .banner ul { margin: 6px 0 0; padding-left: 18px; }
+
+  /* ---------- layout ---------- */
+  .layout { display: flex; min-height: calc(100vh - 54px); }
+  .rail {
+    width: 320px; flex-shrink: 0;
+    background: var(--rail); color: var(--rail-fg);
+    padding: 22px 18px 30px;
+    border-right: 1px solid var(--rail-border);
+  }
+  .workspace { flex: 1; min-width: 0; padding: 22px 26px 60px; }
+
+  /* ---------- pipeline rail ---------- */
+  .rail h2 { font-family: var(--pixel); font-size: 10px; letter-spacing: 1.5px; color: var(--lichen); margin: 0 0 4px; }
+  .rail .sub { font-size: 12px; color: #9db3a4; margin: 0 0 18px; }
+  .flow { list-style: none; margin: 0; padding: 0; position: relative; }
+  .flow::before {
+    content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px;
+    width: 2px; background: var(--rail-border);
+  }
+  .flow li { position: relative; padding-left: 40px; }
+  .flow li + li { margin-top: 4px; }
+  .dot {
+    position: absolute; left: 8px; top: 14px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--rail); border: 2px solid var(--lichen); z-index: 1;
+  }
+  .flow li.llm .dot { border-color: var(--pollen); }
+  .flow li.hitl .dot { background: var(--pollen); border-color: var(--pollen); }
+  .flow li.start .dot, .flow li.end .dot { width: 10px; height: 10px; left: 11px; top: 17px; border-radius: 2px; transform: rotate(45deg); border-color: #9db3a4; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(219,172,59,.45);} 50% { box-shadow: 0 0 0 6px rgba(219,172,59,0);} }
+  .flow li.llm .dot, .flow li.hitl .dot { animation: pulse 2.6s ease-in-out infinite; }
+  .ncard {
+    display: block; width: 100%; text-align: left;
+    background: var(--rail-accent); color: var(--rail-fg);
+    border: 1px solid var(--rail-border); border-radius: 10px;
+    padding: 9px 12px 10px; margin-bottom: 2px;
+    transition: border-color .15s, background .15s;
+  }
+  .ncard:hover { border-color: var(--lichen); }
+  .ncard.active { border-color: var(--ring); background: #24382d; }
+  .ncard .nrow { display: flex; align-items: center; gap: 8px; }
+  .ncard .nname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; }
+  .badge {
+    font-family: var(--pixel); font-size: 8px; letter-spacing: 1px;
+    padding: 2px 6px; border-radius: 4px; margin-left: auto;
+  }
+  .badge.llm { background: rgba(219,172,59,.18); color: var(--pollen); }
+  .badge.hitl { background: var(--pollen); color: var(--ink); }
+  .badge.det { background: rgba(145,168,115,.16); color: var(--lichen); }
+  .badge.term { background: transparent; color: #9db3a4; }
+  .ncard .npurpose { font-size: 11.5px; color: #a7bbae; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .edge-label {
+    font-family: var(--mono); font-size: 10px; color: #7e947f;
+    padding: 1px 0 7px 2px; position: relative;
+  }
+  .edge-label::before { content: "↳ "; color: #5f7360; }
+  .rail .legend { margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--rail-border); font-size: 11px; color: #9db3a4; }
+  .rail .legend b { color: var(--pollen); font-weight: 500; }
+  .rail .legend i { color: var(--lichen); font-style: normal; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    border: none; background: transparent; color: var(--muted-fg);
+    font-size: 13.5px; font-weight: 500; padding: 9px 16px;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ring); }
+  .tab .tcount { font-family: var(--mono); font-size: 10.5px; color: #7a5d13; margin-left: 5px; }
+  .panel { display: none; }
+  .panel.show { display: block; }
+
+  .sec { margin-bottom: 28px; }
+  .sec > h3 { font-family: var(--heading); font-size: 15.5px; font-weight: 600; margin: 0 0 4px; }
+  .sec > .hint { font-size: 12.5px; color: var(--muted-fg); margin: 0 0 12px; }
+  .eyebrow2 { font-family: var(--pixel); font-size: 9px; letter-spacing: 1.2px; color: var(--lichen); display: block; margin-bottom: 4px; }
+
+  /* ---------- cards / fields ---------- */
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .kcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 13px 15px 14px;
+  }
+  .kcard.changed { border-color: #e3d190; box-shadow: 0 0 0 1px #e3d190 inset; }
+  .kcard .klabel { font-size: 12.5px; margin: 6px 0 8px; }
+  .kcard .kwhere { font-family: var(--mono); font-size: 10px; color: var(--muted-fg); margin-top: 8px; word-break: break-all; }
+  .kfield { display: flex; align-items: center; gap: 8px; }
+  .kfield input {
+    width: 96px; font-family: var(--mono); font-size: 14px;
+    padding: 6px 10px; border: 1px solid var(--input, var(--border)); border-radius: 8px;
+    background: var(--paper); color: var(--ink);
+  }
+  .kfield input:focus { border-color: var(--ring); outline: none; }
+  .kfield .kold { font-family: var(--mono); font-size: 11px; color: var(--danger); }
+  .kname { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+
+  .tcard { display: flex; gap: 12px; align-items: flex-start; }
+  .tcard .tinfo { flex: 1; min-width: 0; }
+  .tcard .tdesc { font-size: 12.5px; color: var(--muted-fg); margin-top: 2px; }
+  .tcard .tparams { font-family: var(--mono); font-size: 10.5px; color: var(--muted-fg); margin-top: 7px; line-height: 1.7; word-break: break-word; }
+  .tcard.off .tname, .tcard.off .tdesc { opacity: .55; }
+  .tname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; }
+  .switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+  .switch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .switch .track { position: absolute; inset: 0; border-radius: 999px; background: var(--secondary); border: 1px solid var(--border); transition: background .15s; }
+  .switch .thumb { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); transition: left .15s; }
+  .switch input:checked + .track { background: var(--lichen); border-color: var(--lichen); }
+  .switch input:checked ~ .thumb { left: 19px; }
+  .switch input:focus-visible + .track { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  .pcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 15px 17px 16px; margin-bottom: 14px;
+  }
+  .pcard.changed { border-color: #e3d190; box-shadow: 0 0 0 1px #e3d190 inset; }
+  .pcard .phead { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .pcard textarea {
+    width: 100%; font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--paper);
+    color: var(--ink); padding: 11px 13px; resize: vertical; min-height: 74px;
+  }
+  .pcard textarea:focus { border-color: var(--ring); outline: none; }
+  .pcard textarea.prompt { min-height: 110px; }
+  .pcard .diffbox { margin-top: 9px; }
+  .pcard .diffbox summary { cursor: pointer; font-size: 12px; color: var(--ring); }
+  .pcard .diffold {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted-fg);
+    background: var(--secondary); border-radius: 8px; padding: 9px 11px; margin-top: 7px;
+    white-space: pre-wrap;
+  }
+  .kv { font-family: var(--mono); font-size: 11.5px; color: var(--muted-fg); }
+
+  .warnbox {
+    display: flex; gap: 10px; background: #f4e9c8; border: 1px solid #e3d190;
+    border-radius: 10px; padding: 10px 14px; font-size: 12.5px; color: #6d5312;
+    margin-bottom: 16px;
+  }
+  .edge-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .edge-table th { text-align: left; font-family: var(--pixel); font-size: 8.5px; letter-spacing: 1px; color: var(--muted-fg); padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 400; }
+  .edge-table td { padding: 7px 10px; border-bottom: 1px solid var(--secondary); }
+  .edge-table td.mono { font-family: var(--mono); font-size: 11.5px; white-space: nowrap; }
+  .edge-table input {
+    width: 100%; font-size: 12px; border: 1px solid transparent; border-radius: 6px;
+    background: transparent; color: var(--ink); padding: 4px 6px; font-family: inherit;
+  }
+  .edge-table input:hover { background: var(--secondary); }
+  .edge-table input:focus { border-color: var(--ring); outline: none; background: var(--card); }
+  .edge-table tr.changed td { background: #fdf6df; }
+
+  #rawJson {
+    width: 100%; min-height: 460px; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--ink);
+    padding: 14px 16px; resize: vertical;
+  }
+  #rawJson:focus { border-color: var(--ring); outline: none; }
+
+  .safety li { margin-bottom: 7px; }
+  .sfbox { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; }
+  .sfbox ul { margin: 6px 0 0; padding-left: 20px; font-size: 13px; }
+
+  /* ---------- intro / drop ---------- */
+  #intro { max-width: 620px; margin: 8vh auto 0; text-align: center; }
+  #intro h2 { font-family: var(--heading); font-size: 26px; font-weight: 600; margin: 18px 0 8px; }
+  #intro p { color: var(--muted-fg); margin: 0 0 22px; }
+  .drop {
+    border: 2px dashed var(--border); border-radius: 16px; background: var(--card);
+    padding: 42px 24px; transition: border-color .15s, background .15s;
+  }
+  .drop.over { border-color: var(--ring); background: var(--accent); }
+  .drop .big { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .drop .small { font-size: 12.5px; color: var(--muted-fg); }
+  #intro .steps { text-align: left; margin: 26px auto 0; max-width: 480px; font-size: 13px; color: var(--muted-fg); }
+  #intro .steps li { margin-bottom: 6px; }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--ink); color: var(--rail-fg); border-radius: 10px;
+    padding: 10px 18px; font-size: 13px; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 50; max-width: 80vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 880px) {
+    .layout { flex-direction: column; }
+    .rail { width: 100%; border-right: none; border-bottom: 1px solid var(--rail-border); }
+    .workspace { padding: 18px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div>
+      <span class="eyebrow">AGENT CONTROL</span>
+      <h1>UNDERSTAND — bảng điều khiển</h1>
+    </div>
+    <span class="chip" id="statusChip">chưa tải schema</span>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn ghost" id="btnLoad" hidden>Nhập JSON…</button>
+  <button class="btn" id="btnReset" hidden>Reset</button>
+  <button class="btn" id="btnDownload" hidden>Tải JSON</button>
+  <button class="btn primary" id="btnCR" hidden>Copy change-request</button>
+</header>
+
+<div id="errors" role="alert"></div>
+
+<div id="intro">
+  <span class="eyebrow2">AGENT CONTROL / UNDERSTAND</span>
+  <h2>Chưa có bản vẽ nào được nạp</h2>
+  <p>Kéo thả <code>agent-schema.json</code> vào khung dưới, hoặc bấm chọn file. Editor sẽ tự thử nạp file nằm cạnh nó trước.</p>
+  <div class="drop" id="drop">
+    <div class="big">Kéo thả agent-schema.json vào đây</div>
+    <div class="small">hoặc <button class="btn" id="btnPick">Chọn file…</button></div>
+    <input type="file" id="filePick" accept=".json,application/json" hidden>
+  </div>
+  <ol class="steps">
+    <li>Xem cây 7 trạm của agent ở cột trái — trạm vàng nhấp nháy là chỗ gọi AI.</li>
+    <li>Sửa knobs (ngưỡng), prompt từng trạm, bật/tắt tool ở các tab bên phải.</li>
+    <li>Bấm <strong>Copy change-request</strong> rồi dán cho Claude Code: “áp dụng CR này”.</li>
+  </ol>
+</div>
+
+<div class="layout" id="layout" hidden>
+  <aside class="rail" aria-label="Sơ đồ pipeline">
+    <h2>FLIGHT PLAN</h2>
+    <p class="sub">7 trạm của 1 run — bấm để nhảy tới tab sửa tương ứng</p>
+    <ol class="flow" id="flow"></ol>
+    <div class="legend">
+      <i>●</i> viền xanh lá = chạy code chắc chắn<br>
+      <b>●</b> viền vàng = gọi LLM (tốn tiền)<br>
+      <b>●</b> nền vàng = Gate #2 — dừng chờ người duyệt
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="overview" aria-selected="true">Tổng quan</button>
+      <button class="tab" role="tab" data-tab="knobs" aria-selected="false">Knobs</button>
+      <button class="tab" role="tab" data-tab="tools" aria-selected="false">Tools</button>
+      <button class="tab" role="tab" data-tab="prompts" aria-selected="false">Prompts</button>
+      <button class="tab" role="tab" data-tab="structure" aria-selected="false">Cấu trúc &amp; JSON</button>
+    </div>
+
+    <section class="panel show" id="panel-overview" role="tabpanel">
+      <div class="sec">
+        <span class="eyebrow2">META</span>
+        <h3>Thông tin chung</h3>
+        <p class="hint">Tra cứu — sửa ở đây chỉ có tác dụng khi Claude Code đồng bộ code.</p>
+        <div class="cardgrid" id="metaGrid"></div>
+      </div>
+      <div class="sec">
+        <span class="eyebrow2">GATE #2</span>
+        <h3>Chốt human-in-the-loop</h3>
+        <div class="sfbox" id="hitlBox"></div>
+      </div>
+      <div class="sec">
+        <span class="eyebrow2">KHÔNG ĐƯỢC PHÁ</span>
+        <h3>7 luật an toàn</h3>
+        <div class="sfbox"><ul class="safety" id="safetyList"></ul></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-knobs" role="tabpanel">
+      <div class="sec">
+        <span class="eyebrow2">KNOWBS / NGƯỠNG</span>
+        <h3>Các núm vặn hành vi</h3>
+        <p class="hint">Số nhỏ = agent đi nhanh, rẻ, nông. Số lớn = điều tra sâu hơn, tốn hơn. Knob có tên bắt đầu bằng <code>_</code> là hằng số trong code — Claude Code sẽ sửa <code>nodes.py</code> cho bạn.</p>
+        <div class="cardgrid" id="knobGrid"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-tools" role="tabpanel">
+      <div class="sec">
+        <span class="eyebrow2">TOOLBOX</span>
+        <h3>Công cụ planner được phép chọn</h3>
+        <p class="hint">Tắt một tool = planner không còn thấy nó trong danh sách khi điều tra.</p>
+        <div id="toolList"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-prompts" role="tabpanel">
+      <div class="sec">
+        <span class="eyebrow2">PROMPTS</span>
+        <h3>Lời chỉ dẫn cho AI ở từng trạm</h3>
+        <p class="hint">Chỉ trạm <strong>llm</strong> có prompt. Đổi text ở đây = đổi cách agent nghĩ ở trạm đó.</p>
+        <div id="promptList"></div>
+      </div>
+      <div class="sec">
+        <span class="eyebrow2">MỤC ĐÍCH TRẠM</span>
+        <h3>Ghi chú purpose</h3>
+        <p class="hint">Mô tả hiển thị trong schema — không ảnh hưởng code runtime, dùng để ghi chú theo cách bạn hiểu.</p>
+        <div id="purposeList"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-structure" role="tabpanel">
+      <div class="sec">
+        <span class="eyebrow2">CẤU TRÚC</span>
+        <h3>Đường đi giữa các trạm (edges)</h3>
+        <div class="warnbox">⚠️ Thêm/bớt node hoặc edge = thay đổi cấu trúc graph LangGraph — cần Claude Code sửa <code>graph.py</code> và có thể reset checkpoint các run đang dở. Sửa chừng mực.</div>
+        <table class="edge-table" id="edgeTable"></table>
+      </div>
+      <div class="sec">
+        <span class="eyebrow2">JSON THÔ</span>
+        <h3>Toàn bộ schema</h3>
+        <p class="hint">Sửa trực tiếp cho các thay đổi nâng cao (thêm node, đổi output_schemas…). Lỗi cú pháp sẽ bị chặn khi xuất.</p>
+        <textarea id="rawJson" spellcheck="false"></textarea>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+
+var original = null;   // schema nguyên bản (để diff)
+var current = null;    // schema đang sửa
+var loaded = false;
+
+// ---------- helpers ----------
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+  return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+}); }
+function toast(msg) {
+  var t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(function () { t.classList.remove("show"); }, 2600);
+}
+
+// flatten object into {path: value} for diffing
+function flatten(obj, prefix, out) {
+  out = out || {};
+  if (Array.isArray(obj)) {
+    obj.forEach(function (v, i) { flatten(v, prefix + "[" + i + "]", out); });
+    if (obj.length === 0) out[prefix + "[]"] = [];
+  } else if (obj && typeof obj === "object") {
+    var keys = Object.keys(obj);
+    keys.forEach(function (k) { flatten(obj[k], prefix ? prefix + "." + k : k, out); });
+    if (keys.length === 0) out[prefix + "{}"] = {};
+  } else {
+    out[prefix] = obj;
+  }
+  return out;
+}
+
+function computeDiff() {
+  if (!original) return [];
+  var a = flatten(original, ""), b = flatten(current, "");
+  var paths = {};
+  Object.keys(a).forEach(function (k) { paths[k] = 1; });
+  Object.keys(b).forEach(function (k) { paths[k] = 1; });
+  var changes = [];
+  Object.keys(paths).sort().forEach(function (k) {
+    var va = JSON.stringify(a[k]), vb = JSON.stringify(b[k]);
+    if (va !== vb) changes.push({ path: k, old: a[k], now: b[k], added: !(k in a), removed: !(k in b) });
+  });
+  return changes;
+}
+
+function sectionOf(path) {
+  if (/^knobs\[\d+\]/.test(path)) return "knobs";
+  if (/^nodes\[\d+\]\.prompt$/.test(path)) return "prompts";
+  if (/^nodes\[\d+\]\.purpose$/.test(path)) return "purposes";
+  if (/^tools\[\d+\]/.test(path)) return "tools";
+  if (/^edges\[\d+\]/.test(path)) return "edges";
+  if (/^nodes\[\d+\]/.test(path)) return "nodes";
+  return "other";
+}
+
+// ---------- validation ----------
+function validate(s) {
+  var errs = [];
+  if (!s || typeof s !== "object") { errs.push("Schema không phải một object JSON."); return errs; }
+  if (!Array.isArray(s.nodes) || s.nodes.length === 0) errs.push("「nodes」phải là mảng có ít nhất 1 node.");
+  else {
+    var names = {};
+    s.nodes.forEach(function (n, i) {
+      if (!n.name) errs.push("Node thứ " + (i + 1) + " thiếu 「name」.");
+      else {
+        if (names[n.name]) errs.push("Trùng tên node: 「" + n.name + "」.");
+        names[n.name] = true;
+      }
+      if (!n.kind) errs.push("Node 「" + (n.name || i + 1) + "」 thiếu 「kind」 (deterministic|llm|hitl).");
+      if (n.kind === "llm" && !(typeof n.prompt === "string" && n.prompt.trim())) {
+        errs.push("Node llm 「" + (n.name || i + 1) + "」 phải có 「prompt」 không rỗng.");
+      }
+    });
+  }
+  if (Array.isArray(s.edges)) {
+    s.edges.forEach(function (e, i) {
+      if (!e.from) errs.push("Edge thứ " + (i + 1) + " thiếu 「from」.");
+      if (!e.to) errs.push("Edge thứ " + (i + 1) + " thiếu 「to」.");
+      ["from", "to"].forEach(function (side) {
+        var v = e[side];
+        if (v && v !== "START" && v !== "END" && s.nodes && !names[v]) {
+          errs.push("Edge thứ " + (i + 1) + ": 「" + side + "」 trỏ tới node không tồn tại 「" + v + "」.");
+        }
+      });
+    });
+  }
+  if (Array.isArray(s.knobs)) {
+    s.knobs.forEach(function (k, i) {
+      if (!k.key) errs.push("Knob thứ " + (i + 1) + " thiếu 「key」.");
+      if (typeof k.default !== "number" || isNaN(k.default)) errs.push("Knob 「" + (k.key || i + 1) + "」: 「default」 phải là số.");
+    });
+  }
+  if (Array.isArray(s.tools)) {
+    s.tools.forEach(function (t, i) {
+      if (!t.name) errs.push("Tool thứ " + (i + 1) + " thiếu 「name」.");
+    });
+  }
+  return errs;
+}
+
+function showErrors(errs) {
+  var box = $("errors");
+  if (!errs.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+  box.style.display = "block";
+  box.innerHTML = '<div class="banner"><strong>Chưa xuất được — schema có ' + errs.length + ' vấn đề:</strong><ul>' +
+    errs.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul></div>";
+}
+
+// ---------- loading ----------
+function acceptSchema(text, sourceName) {
+  var s;
+  try { s = JSON.parse(text); }
+  catch (e) { toast("File JSON lỗi cú pháp: " + e.message); return false; }
+  var errs = validate(s);
+  if (errs.length) { showErrors(errs); toast("Schema có lỗi — sửa theo danh sách rồi nhập lại."); return false; }
+  showErrors([]);
+  original = JSON.parse(JSON.stringify(s));
+  current = s;
+  loaded = true;
+  $("intro").hidden = true;
+  $("layout").hidden = false;
+  ["btnLoad", "btnReset", "btnDownload", "btnCR"].forEach(function (id) { $(id).hidden = false; });
+  renderAll();
+  toast("Đã nạp " + (sourceName || "schema") + " — 7 trạm sẵn sàng.");
+  return true;
+}
+
+function tryAutoLoad() {
+  fetch("agent-schema.json", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function (t) { acceptSchema(t, "agent-schema.json (cạnh editor)"); })
+    .catch(function () { /* file:// hoặc thiếu file → chờ người dùng nạp */ });
+}
+
+// ---------- rendering ----------
+function renderAll() {
+  renderFlow();
+  renderOverview();
+  renderKnobs();
+  renderTools();
+  renderPrompts();
+  renderEdges();
+  $("rawJson").value = JSON.stringify(current, null, 2);
+  updateStatus();
+}
+
+function nodeKindLabel(kind) {
+  if (kind === "llm") return "LLM";
+  if (kind === "hitl") return "GATE #2";
+  return "CỐ ĐỊNH";
+}
+
+function renderFlow() {
+  var ol = $("flow");
+  ol.innerHTML = "";
+  var mk = function (cls, name, badge, purpose, target) {
+    var li = document.createElement("li");
+    li.className = cls;
+    li.innerHTML = '<span class="dot"></span>' +
+      '<button class="ncard" data-jump="' + esc(target || "") + '"><span class="nrow">' +
+      '<span class="nname">' + esc(name) + "</span>" +
+      (badge ? '<span class="badge ' + esc(cls.split(" ")[0]) + '">' + esc(badge) + "</span>" : "") +
+      "</span>" + (purpose ? '<div class="npurpose">' + esc(purpose) + "</div>" : "") + "</button>";
+    return li;
+  };
+  ol.appendChild(mk("start term", "START", "", "", ""));
+  var edgeByFrom = {};
+  (current.edges || []).forEach(function (e) {
+    (edgeByFrom[e.from] = edgeByFrom[e.from] || []).push(e);
+  });
+  (current.nodes || []).forEach(function (n) {
+    var li = mk(n.kind, n.name, nodeKindLabel(n.kind), n.purpose, n.name);
+    li.firstChild.setAttribute("data-node", n.name);
+    ol.appendChild(li);
+    (edgeByFrom[n.name] || []).forEach(function (e) {
+      var d = document.createElement("div");
+      d.className = "edge-label";
+      d.textContent = e.to + " · " + (e.when || "");
+      ol.appendChild(d);
+    });
+  });
+  ol.appendChild(mk("end term", "END", "", "", ""));
+}
+
+function renderOverview() {
+  var m = current.meta || {};
+  var rows = [
+    ["pipeline_version", m.pipeline_version], ["prompt_version", m.prompt_version],
+    ["model LLM (env LLM_MODEL)", m.llm_model_env], ["temperature", m.temperature],
+    ["graph", m.graph_file], ["nodes", m.nodes_file],
+    ["tools", m.tools_file], ["config", m.config_file],
+    ["chốt schema với code", m.updated_from_code_at]
+  ];
+  $("metaGrid").innerHTML = rows.map(function (r) {
+    return '<div class="kcard"><div class="kv">' + esc(r[0]) + '</div><div class="kname" style="margin-top:4px">' + esc(r[1] == null ? "—" : r[1]) + "</div></div>";
+  }).join("");
+
+  var h = current.hitl || {};
+  $("hitlBox").innerHTML =
+    '<div class="kv">Node dừng: <strong style="color:var(--ink)">' + esc(h.interrupt_node || "—") + "</strong> · trigger: " + esc(h.trigger || "—") + "</div>" +
+    '<div class="kv" style="margin-top:6px">Lựa chọn: ' + (h.options || []).map(function (o) {
+      return '<span class="chip" style="margin-right:4px">' + esc(o) + "</span>";
+    }).join("") + "</div>" +
+    (h.edit_safety ? '<div style="font-size:12.5px;margin-top:8px">' + esc(h.edit_safety) + "</div>" : "") +
+    (h.audit ? '<div style="font-size:12.5px;margin-top:4px">Audit: ' + esc(h.audit) + "</div>" : "");
+
+  $("safetyList").innerHTML = (current.safety_rules || []).map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("");
+}
+
+function renderKnobs() {
+  var grid = $("knobGrid");
+  grid.innerHTML = "";
+  (current.knobs || []).forEach(function (k, i) {
+    var div = document.createElement("div");
+    div.className = "kcard";
+    div.setAttribute("data-knob", k.key);
+    div.innerHTML =
+      '<span class="kname">' + esc(k.key) + "</span>" +
+      '<div class="klabel">' + esc(k.label || "") + "</div>" +
+      '<div class="kfield"><input type="number" step="any" value="' + esc(k.default) +
+      '" aria-label="Giá trị ' + esc(k.key) + '"><span class="kold" hidden></span></div>' +
+      '<div class="kwhere">' + esc(k.where || "") + "</div>";
+    var input = div.querySelector("input");
+    input.addEventListener("input", function () {
+      var v = parseFloat(input.value);
+      if (!isNaN(v)) {
+        k.default = v;
+        refreshChanged();
+      }
+    });
+    grid.appendChild(div);
+  });
+}
+
+function renderTools() {
+  var list = $("toolList");
+  list.innerHTML = "";
+  (current.tools || []).forEach(function (t, i) {
+    var enabled = t.enabled !== false;
+    var div = document.createElement("div");
+    div.className = "kcard tcard" + (enabled ? "" : " off");
+    div.style.marginBottom = "10px";
+    div.setAttribute("data-tool", t.name);
+    var params = Object.keys(t.params || {}).map(function (p) {
+      return p + ": " + t.params[p];
+    }).join(" · ") || "(không cần params)";
+    div.innerHTML =
+      '<label class="switch"><input type="checkbox" ' + (enabled ? "checked" : "") +
+      ' aria-label="Bật tắt tool ' + esc(t.name) + '"><span class="track"></span><span class="thumb"></span></label>' +
+      '<div class="tinfo"><div class="tname">' + esc(t.name) + (enabled ? "" : ' <span class="chip">ĐÃ TẮT</span>') + "</div>" +
+      '<div class="tdesc">' + esc(t.description || "") + "</div>" +
+      '<div class="tparams">' + esc(params) + "</div></div>";
+    var cb = div.querySelector("input");
+    cb.addEventListener("change", function () {
+      t.enabled = cb.checked;
+      div.classList.toggle("off", !cb.checked);
+      div.querySelector(".tname").innerHTML = esc(t.name) + (cb.checked ? "" : ' <span class="chip">ĐÃ TẮT</span>');
+      refreshChanged();
+    });
+    list.appendChild(div);
+  });
+}
+
+function promptCards(listId, getter, apply, fieldClass, minH) {
+  var list = $(listId);
+  list.innerHTML = "";
+  (current.nodes || []).forEach(function (n) {
+    var val = getter(n);
+    if (val === undefined || val === null) return;
+    var orig = original ? getter(findNode(original, n.name)) : val;
+    var div = document.createElement("div");
+    div.className = "pcard";
+    div.setAttribute("data-node-edit", n.name);
+    div.innerHTML =
+      '<div class="phead"><span class="kname">' + esc(n.name) + '</span><span class="badge ' +
+      esc(n.kind) + '">' + esc(nodeKindLabel(n.kind)) + "</span></div>" +
+      '<textarea class="' + fieldClass + '" spellcheck="false"></textarea>' +
+      (String(orig) !== String(val)
+        ? '<details class="diffbox"><summary>Xem bản gốc</summary><div class="diffold"></div></details>'
+        : "");
+    var ta = div.querySelector("textarea");
+    ta.value = val;
+    ta.style.minHeight = (minH || 74) + "px";
+    ta.addEventListener("input", function () {
+      apply(n, ta.value);
+      refreshChanged();
+    });
+    var old = div.querySelector(".diffold");
+    if (old) old.textContent = orig;
+    list.appendChild(div);
+  });
+}
+
+function renderPrompts() {
+  promptCards("promptList",
+    function (n) { return n.kind === "llm" ? (n.prompt || "") : undefined; },
+    function (n, v) { n.prompt = v; },
+    "prompt", 110);
+  promptCards("purposeList",
+    function (n) { return n.purpose || ""; },
+    function (n, v) { n.purpose = v; },
+    "", 60);
+}
+
+function findNode(schema, name) {
+  return (schema.nodes || []).filter(function (n) { return n.name === name; })[0];
+}
+
+function renderEdges() {
+  var tb = $("edgeTable");
+  tb.innerHTML = "<thead><tr><th>Từ</th><th>Đi tới</th><th>Khi nào</th></tr></thead><tbody></tbody>";
+  var body = tb.querySelector("tbody");
+  (current.edges || []).forEach(function (e, i) {
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td class='mono'>" + esc(e.from) + "</td><td class='mono'>" + esc(e.to) + "</td>";
+    var td = document.createElement("td");
+    var inp = document.createElement("input");
+    inp.value = e.when || "";
+    inp.setAttribute("aria-label", "Điều kiện edge " + i);
+    inp.addEventListener("input", function () { e.when = inp.value; refreshChanged(); });
+    td.appendChild(inp);
+    tr.appendChild(td);
+    body.appendChild(tr);
+  });
+}
+
+// ---------- changed-state UI ----------
+function refreshChanged() {
+  // sync raw JSON textarea unless user is typing in it right now
+  if (document.activeElement !== $("rawJson")) {
+    $("rawJson").value = JSON.stringify(current, null, 2);
+  }
+  // knob cards
+  var changes = computeDiff();
+  document.querySelectorAll(".kcard[data-knob]").forEach(function (el) {
+    var k = (current.knobs || []).filter(function (x) { return x.key === el.getAttribute("data-knob"); })[0];
+    var o = original ? (original.knobs || []).filter(function (x) { return x.key === el.getAttribute("data-knob"); })[0] : null;
+    var changed = !o || !k || o.default !== k.default;
+    el.classList.toggle("changed", changed);
+    var old = el.querySelector(".kold");
+    if (old) { old.hidden = !changed; old.textContent = changed ? "gốc: " + (o ? o.default : "?") : ""; }
+  });
+  document.querySelectorAll(".pcard[data-node-edit]").forEach(function (el) {
+    var name = el.getAttribute("data-node-edit");
+    var n = findNode(current, name), o = original ? findNode(original, name) : null;
+    var ta = el.querySelector("textarea");
+    var isPrompt = ta.classList.contains("prompt");
+    var changed = !o || (isPrompt ? (o.prompt || "") !== (n.prompt || "") : (o.purpose || "") !== (n.purpose || ""));
+    el.classList.toggle("changed", changed);
+  });
+  document.querySelectorAll("#edgeTable tr[data-edge]").forEach(function () { /* handled below */ });
+  // edge rows
+  var rows = document.querySelectorAll("#edgeTable tbody tr");
+  (current.edges || []).forEach(function (e, i) {
+    var row = rows[i];
+    if (!row) return;
+    var o = original && original.edges && original.edges[i];
+    row.classList.toggle("changed", !o || (o.when || "") !== (e.when || "") || o.from !== e.from || o.to !== e.to);
+  });
+  updateStatus();
+}
+
+function updateStatus() {
+  var n = computeDiff().length;
+  var chip = $("statusChip");
+  if (!loaded) { chip.textContent = "chưa tải schema"; chip.className = "chip"; return; }
+  if (n === 0) { chip.textContent = "khớp bản gốc"; chip.className = "chip"; }
+  else { chip.textContent = n + " thay đổi"; chip.className = "chip dirty"; }
+}
+
+// ---------- export ----------
+function buildExport() {
+  // strip editor-only fields? keep "enabled" — Claude Code consumes it
+  var errs = validate(current);
+  showErrors(errs);
+  return errs.length === 0;
+}
+
+function download() {
+  if (!buildExport()) { toast("Schema còn lỗi — xem banner đỏ phía trên."); return; }
+  var blob = new Blob([JSON.stringify(current, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "agent-schema.proposed.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast("Đã tải agent-schema.proposed.json — chép vào docs/agent-control/change-requests/.");
+}
+
+function buildChangeRequest() {
+  var changes = computeDiff();
+  if (!changes.length) return null;
+  var groups = { knobs: [], prompts: [], purposes: [], tools: [], edges: [], nodes: [], other: [] };
+  changes.forEach(function (c) { groups[sectionOf(c.path)].push(c); });
+
+  var md = "# Change Request — agent UNDERSTAND\n";
+  md += "- Ngày: " + new Date().toISOString().slice(0, 10) + "\n";
+  md += "- Nguồn: editor.html (docs/agent-control)\n";
+  md += "- Tổng số thay đổi: " + changes.length + "\n\n";
+  md += "## Thay đổi đề nghị\n";
+
+  if (groups.knobs.length) {
+    md += "### Knobs\n";
+    groups.knobs.forEach(function (c) {
+      var key = c.path.replace(/^knobs\[(\d+)\]\.?(.*)$/, function (_, i, rest) {
+        var k = current.knobs[+i]; return (k && k.key) || ("knob#" + i);
+      });
+      md += "- `" + key + "`: " + JSON.stringify(c.old) + " → " + JSON.stringify(c.now) + "\n";
+    });
+    md += "\n";
+  }
+  if (groups.tools.length) {
+    md += "### Tools\n";
+    groups.tools.forEach(function (c) {
+      if (/\.enabled$/.test(c.path)) {
+        var idx = +c.path.match(/^tools\[(\d+)\]/)[1];
+        var t = current.tools[idx];
+        md += "- " + (c.now === false ? "**TẮT** tool `" + (t ? t.name : idx) + "`" : "**BẬT** tool `" + (t ? t.name : idx) + "`") + "\n";
+      } else {
+        md += "- `" + c.path + "`: " + JSON.stringify(c.old) + " → " + JSON.stringify(c.now) + "\n";
+      }
+    });
+    md += "\n";
+  }
+  if (groups.prompts.length) {
+    md += "### Prompts\n";
+    groups.prompts.forEach(function (c) {
+      var idx = +c.path.match(/^nodes\[(\d+)\]/)[1];
+      var n = current.nodes[idx];
+      md += "#### Node `" + (n ? n.name : idx) + "`\n\n**Bản gốc:**\n\n```\n" + (c.old == null ? "" : c.old) + "\n```\n\n**Đề nghị mới:**\n\n```\n" + c.now + "\n```\n\n";
+    });
+  }
+  if (groups.purposes.length) {
+    md += "### Ghi chú purpose (không ảnh hưởng runtime)\n";
+    groups.purposes.forEach(function (c) {
+      md += "- `" + c.path + "`: " + JSON.stringify(c.old) + " → " + JSON.stringify(c.now) + "\n";
+    });
+    md += "\n";
+  }
+  var structural = groups.edges.concat(groups.nodes).concat(groups.other);
+  if (structural.length) {
+    md += "### ⚠️ Cấu trúc / khác (Claude Code cần review kỹ)\n";
+    structural.forEach(function (c) {
+      md += "- `" + c.path + "`: " + (c.added ? "THÊM " : c.removed ? "XOÁ " : "") + JSON.stringify(c.old) + " → " + JSON.stringify(c.now) + "\n";
+    });
+    md += "\n";
+  }
+  md += "## Lý do\n\n<!-- điền thêm tại sao đổi, hành vi mong đợi -->\n";
+  return md;
+}
+
+function copyCR() {
+  var md = buildChangeRequest();
+  if (!md) { toast("Chưa có thay đổi nào so với bản gốc."); return; }
+  var done = function () { toast("Đã copy change-request (" + computeDiff().length + " thay đổi) — dán vào file trong change-requests/."); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(md).then(done, function () { fallbackCopy(md, done); });
+  } else fallbackCopy(md, done);
+}
+
+function fallbackCopy(text, done) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); done(); }
+  catch (e) { toast("Copy thất bại — dùng nút Tải JSON thay thế."); }
+  document.body.removeChild(ta);
+}
+
+function resetAll() {
+  if (!original) return;
+  if (computeDiff().length && !confirm("Bỏ toàn bộ " + computeDiff().length + " thay đổi, quay về bản gốc?")) return;
+  current = JSON.parse(JSON.stringify(original));
+  renderAll();
+  toast("Đã reset về bản gốc.");
+}
+
+// ---------- wiring ----------
+document.querySelectorAll(".tab").forEach(function (t) {
+  t.addEventListener("click", function () {
+    document.querySelectorAll(".tab").forEach(function (x) { x.setAttribute("aria-selected", x === t ? "true" : "false"); });
+    document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("show", p.id === "panel-" + t.dataset.tab); });
+  });
+});
+
+document.addEventListener("click", function (ev) {
+  var jump = ev.target.closest("[data-jump]");
+  if (!jump || !jump.getAttribute("data-jump")) return;
+  var name = jump.getAttribute("data-node") || "";
+  document.querySelector('.tab[data-tab="prompts"]').click();
+  var card = document.querySelector('.pcard[data-node-edit="' + name + '"]');
+  if (card) { card.scrollIntoView({ behavior: "smooth", block: "start" }); card.classList.add("active"); setTimeout(function () { card.classList.remove("active"); }, 1200); }
+});
+
+$("btnDownload").addEventListener("click", download);
+$("btnCR").addEventListener("click", copyCR);
+$("btnReset").addEventListener("click", resetAll);
+$("btnLoad").addEventListener("click", function () { $("filePick").click(); });
+$("btnPick").addEventListener("click", function (e) { e.stopPropagation(); $("filePick").click(); });
+$("filePick").addEventListener("change", function () {
+  var f = this.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function () { acceptSchema(String(reader.result), f.name); };
+  reader.readAsText(f);
+  this.value = "";
+});
+
+var drop = $("drop");
+["dragenter", "dragover"].forEach(function (ev) {
+  document.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); });
+});
+["dragleave", "drop"].forEach(function (ev) {
+  document.addEventListener(ev, function (e) {
+    e.preventDefault();
+    if (ev === "dragleave" && e.relatedTarget) return;
+    drop.classList.remove("over");
+  });
+});
+document.addEventListener("drop", function (e) {
+  var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function () { acceptSchema(String(reader.result), f.name); };
+  reader.readAsText(f);
+});
+
+$("rawJson").addEventListener("change", function () {
+  try {
+    var s = JSON.parse(this.value);
+    var errs = validate(s);
+    if (errs.length) { showErrors(errs); toast("JSON đọc được nhưng có " + errs.length + " lỗi nội dung."); }
+    else { showErrors([]); }
+    original = original || JSON.parse(JSON.stringify(s));
+    current = s;
+    renderAll();
+    toast("Đã áp dụng JSON thô.");
+  } catch (e) {
+    showErrors(["JSON thô lỗi cú pháp: " + e.message]);
+    toast("JSON thô lỗi cú pháp — chưa áp dụng.");
+  }
+});
+
+tryAutoLoad();
+</script>
+</body>
+</html>
