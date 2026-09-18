@@ -98,62 +98,82 @@
   .bridge .bridge-loop em { font-style: normal; color: var(--ink); }
 
   /* ---------- layout ---------- */
-  .layout { display: flex; min-height: calc(100vh - 54px); }
-  .rail {
-    width: 320px; flex-shrink: 0;
-    background: var(--rail); color: var(--rail-fg);
-    padding: 22px 18px 30px;
-    border-right: 1px solid var(--rail-border);
-  }
-  .workspace { flex: 1; min-width: 0; padding: 22px 26px 60px; }
+  .workspace { max-width: 1400px; margin: 0 auto; padding: 16px 26px 60px; }
 
-  /* ---------- pipeline rail ---------- */
-  .rail h2 { font-family: var(--pixel); font-size: 10px; letter-spacing: 1.5px; color: var(--lichen); margin: 0 0 4px; }
-  .rail .sub { font-size: 12px; color: #9db3a4; margin: 0 0 18px; }
-  .flow { list-style: none; margin: 0; padding: 0; position: relative; }
-  .flow::before {
-    content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px;
-    width: 2px; background: var(--rail-border);
+  /* ---------- graph canvas ---------- */
+  .gtoolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .gtbar-hint { font-size: 12px; color: var(--muted-fg); }
+  .glegend { margin-left: auto; font-size: 11px; color: var(--muted-fg); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .glegend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; background: var(--card); }
+  .glegend .swline { display: inline-block; width: 18px; height: 0; border-top: 2px dashed var(--ring); margin-right: 5px; vertical-align: 3px; }
+  .gwrap {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    overflow: auto; position: relative;
+    background-image: radial-gradient(var(--secondary) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
-  .flow li { position: relative; padding-left: 40px; }
-  .flow li + li { margin-top: 4px; }
-  .dot {
-    position: absolute; left: 8px; top: 14px; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--rail); border: 2px solid var(--lichen); z-index: 1;
+  .gcanvas { position: relative; }
+  .gcanvas svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .wires .wire { fill: none; stroke: #8ba08c; stroke-width: 1.8; }
+  .wires .wcond { stroke: var(--ring); stroke-dasharray: 6 5; }
+  .gnode {
+    position: absolute; width: 190px; min-height: 86px; z-index: 2;
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; cursor: grab; user-select: none;
+    box-shadow: 0 1px 3px rgba(20,37,29,.08);
+    transition: border-color .15s, box-shadow .15s;
   }
-  .flow li.llm .dot { border-color: var(--pollen); }
-  .flow li.hitl .dot { background: var(--pollen); border-color: var(--pollen); }
-  .flow li.start .dot, .flow li.end .dot { width: 10px; height: 10px; left: 11px; top: 17px; border-radius: 2px; transform: rotate(45deg); border-color: #9db3a4; }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(219,172,59,.45);} 50% { box-shadow: 0 0 0 6px rgba(219,172,59,0);} }
-  .flow li.llm .dot, .flow li.hitl .dot { animation: pulse 2.6s ease-in-out infinite; }
-  .ncard {
-    display: block; width: 100%; text-align: left;
-    background: var(--rail-accent); color: var(--rail-fg);
-    border: 1px solid var(--rail-border); border-radius: 10px;
-    padding: 9px 12px 10px; margin-bottom: 2px;
-    transition: border-color .15s, background .15s;
-  }
-  .ncard:hover { border-color: var(--lichen); }
-  .ncard.active { border-color: var(--ring); background: #24382d; }
-  .ncard .nrow { display: flex; align-items: center; gap: 8px; }
-  .ncard .nname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; }
-  .badge {
-    font-family: var(--pixel); font-size: 8px; letter-spacing: 1px;
-    padding: 2px 6px; border-radius: 4px; margin-left: auto;
-  }
-  .badge.llm { background: rgba(219,172,59,.18); color: var(--pollen); }
+  .gnode:hover { border-color: var(--lichen); box-shadow: 0 2px 8px rgba(20,37,29,.14); }
+  .gnode.selected { border-color: var(--ring); box-shadow: 0 0 0 2px rgba(63,115,139,.25); }
+  .gnode.dragging { cursor: grabbing; box-shadow: 0 6px 16px rgba(20,37,29,.2); z-index: 5; }
+  .gnode.llm { border-color: var(--pollen); }
+  .gnode.hitl { border-color: var(--pollen); border-width: 2.5px; background: #fdf6df; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(219,172,59,.35);} 50% { box-shadow: 0 0 0 7px rgba(219,172,59,0);} }
+  .gnode.llm, .gnode.hitl { animation: pulse 2.6s ease-in-out infinite; }
+  .gterm { position: absolute; z-index: 2; width: 16px; height: 16px; background: var(--ink); transform: rotate(45deg); border-radius: 3px; cursor: grab; }
+  .gterm.start { border-radius: 50%; }
+  .gnhead { display: flex; align-items: center; gap: 7px; }
+  .gname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; word-break: break-all; }
+  .badge { font-family: var(--pixel); font-size: 8px; letter-spacing: 1px; padding: 2px 6px; border-radius: 4px; margin-left: auto; flex-shrink: 0; }
+  .badge.llm { background: rgba(219,172,59,.18); color: #7a5d13; }
   .badge.hitl { background: var(--pollen); color: var(--ink); }
-  .badge.det { background: rgba(145,168,115,.16); color: var(--lichen); }
-  .badge.term { background: transparent; color: #9db3a4; }
-  .ncard .npurpose { font-size: 11.5px; color: #a7bbae; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .edge-label {
-    font-family: var(--mono); font-size: 10px; color: #7e947f;
-    padding: 1px 0 7px 2px; position: relative;
+  .badge.det { background: rgba(145,168,115,.16); color: #5c7346; }
+  .gdesc { font-size: 11px; color: var(--muted-fg); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .elabel {
+    position: absolute; z-index: 3; max-width: 210px;
+    font-family: var(--mono); font-size: 10px; line-height: 1.35;
+    background: var(--card); border: 1px solid var(--border); border-radius: 7px;
+    padding: 2px 7px; cursor: pointer; color: var(--muted-fg);
   }
-  .edge-label::before { content: "↳ "; color: #5f7360; }
-  .rail .legend { margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--rail-border); font-size: 11px; color: #9db3a4; }
-  .rail .legend b { color: var(--pollen); font-weight: 500; }
-  .rail .legend i { color: var(--lichen); font-style: normal; }
+  .elabel:hover { border-color: var(--ring); color: var(--ink); }
+  .elabel.cond { border-color: var(--ring); color: var(--ring); background: #eef3f0; }
+  .elabel b { color: var(--ink); font-weight: 500; }
+  .elabel.cond b { color: var(--ring); }
+
+  /* ---------- modal ---------- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,37,29,.45); z-index: 40;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 8vh 16px 16px;
+  }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    width: 580px; max-width: 100%; max-height: 82vh; overflow: auto;
+    padding: 18px 20px 20px; box-shadow: 0 12px 40px rgba(20,37,29,.3);
+  }
+  .modal h4 { font-family: var(--heading); margin: 0 0 4px; font-size: 16px; }
+  .modal .msub { font-size: 12px; color: var(--muted-fg); margin: 0 0 12px; }
+  .modal label { display: block; font-family: var(--pixel); font-size: 9px; letter-spacing: 1px; color: var(--muted-fg); margin: 12px 0 4px; }
+  .modal input[type=text], .modal select, .modal textarea {
+    width: 100%; font-family: var(--mono); font-size: 12.5px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--paper); color: var(--ink);
+  }
+  .modal textarea { min-height: 90px; resize: vertical; line-height: 1.55; }
+  .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--ring); outline: none; }
+  .modal .mrow { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; align-items: center; }
+  .modal .mdanger { margin-right: auto; }
+  .btn.danger { border-color: #ddb9b3; background: #f6e4e1; color: var(--danger); }
+  .btn.danger:hover { background: #f1d6d1; }
 
   /* ---------- tabs ---------- */
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
@@ -280,9 +300,7 @@
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 880px) {
-    .layout { flex-direction: column; }
-    .rail { width: 100%; border-right: none; border-bottom: 1px solid var(--rail-border); }
-    .workspace { padding: 18px 16px 60px; }
+    .workspace { padding: 14px 10px 60px; }
   }
 </style>
 </head>
@@ -337,27 +355,34 @@
 </div>
 
 <div class="layout" id="layout" hidden>
-  <aside class="rail" aria-label="Sơ đồ pipeline">
-    <h2>FLIGHT PLAN</h2>
-    <p class="sub">7 trạm của 1 run — bấm để nhảy tới tab sửa tương ứng</p>
-    <ol class="flow" id="flow"></ol>
-    <div class="legend">
-      <i>●</i> viền xanh lá = chạy code chắc chắn<br>
-      <b>●</b> viền vàng = gọi LLM (tốn tiền)<br>
-      <b>●</b> nền vàng = Gate #2 — dừng chờ người duyệt
-    </div>
-  </aside>
-
   <main class="workspace">
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="overview" aria-selected="true">Tổng quan</button>
+      <button class="tab" role="tab" data-tab="graph" aria-selected="true">Graph</button>
+      <button class="tab" role="tab" data-tab="overview" aria-selected="false">Tổng quan</button>
       <button class="tab" role="tab" data-tab="knobs" aria-selected="false">Knobs</button>
       <button class="tab" role="tab" data-tab="tools" aria-selected="false">Tools</button>
       <button class="tab" role="tab" data-tab="prompts" aria-selected="false">Prompts</button>
       <button class="tab" role="tab" data-tab="structure" aria-selected="false">Cấu trúc &amp; JSON</button>
     </div>
 
-    <section class="panel show" id="panel-overview" role="tabpanel">
+    <section class="panel show" id="panel-graph" role="tabpanel">
+      <div class="gtoolbar">
+        <button class="btn" id="btnAddNode">＋ Node</button>
+        <button class="btn" id="btnAddEdge">＋ Edge</button>
+        <span class="gtbar-hint">Bấm node để sửa · kéo node để sắp xếp · bấm nhãn trên mũi tên để sửa điều kiện</span>
+        <div class="glegend">
+          <span><span class="sw" style="border:2px solid var(--lichen)"></span>code chắc chắn</span>
+          <span><span class="sw" style="border:2px solid var(--pollen)"></span>gọi LLM (tốn tiền)</span>
+          <span><span class="sw" style="background:var(--pollen); border:2px solid var(--pollen)"></span>Gate #2 HITL</span>
+          <span><span class="swline"></span>edge điều kiện</span>
+        </div>
+      </div>
+      <div class="gwrap">
+        <div class="gcanvas" id="gcanvas"><svg class="wires" id="gwires"></svg></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-overview" role="tabpanel">
       <div class="sec">
         <span class="eyebrow2">META</span>
         <h3>Thông tin chung</h3>
@@ -730,6 +755,7 @@ function computeDiff() {
   Object.keys(b).forEach(function (k) { paths[k] = 1; });
   var changes = [];
   Object.keys(paths).sort().forEach(function (k) {
+    if (k === "layout" || k.indexOf("layout.") === 0 || k.indexOf("layout[") === 0) return; // vị trí kéo thả = cosmetic
     var va = JSON.stringify(a[k]), vb = JSON.stringify(b[k]);
     if (va !== vb) changes.push({ path: k, old: a[k], now: b[k], added: !(k in a), removed: !(k in b) });
   });
@@ -833,7 +859,7 @@ function tryAutoLoad() {
 
 // ---------- rendering ----------
 function renderAll() {
-  renderFlow();
+  drawGraph();
   renderOverview();
   renderKnobs();
   renderTools();
@@ -849,36 +875,248 @@ function nodeKindLabel(kind) {
   return "CỐ ĐỊNH";
 }
 
-function renderFlow() {
-  var ol = $("flow");
-  ol.innerHTML = "";
-  var mk = function (cls, name, badge, purpose, target) {
-    var li = document.createElement("li");
-    li.className = cls;
-    li.innerHTML = '<span class="dot"></span>' +
-      '<button class="ncard" data-jump="' + esc(target || "") + '"><span class="nrow">' +
-      '<span class="nname">' + esc(name) + "</span>" +
-      (badge ? '<span class="badge ' + esc(cls.split(" ")[0]) + '">' + esc(badge) + "</span>" : "") +
-      "</span>" + (purpose ? '<div class="npurpose">' + esc(purpose) + "</div>" : "") + "</button>";
-    return li;
-  };
-  ol.appendChild(mk("start term", "START", "", "", ""));
-  var edgeByFrom = {};
-  (current.edges || []).forEach(function (e) {
-    (edgeByFrom[e.from] = edgeByFrom[e.from] || []).push(e);
-  });
+// ---------- graph canvas ----------
+var NODE_W = 190, NODE_H = 86;
+var DEFAULT_LAYOUT = {
+  "START": { x: 24, y: 245 },
+  "load_context": { x: 110, y: 210 },
+  "planner": { x: 320, y: 210 },
+  "dispatch": { x: 550, y: 50 },
+  "evaluator": { x: 550, y: 385 },
+  "synthesizer": { x: 780, y: 210 },
+  "persist_insight": { x: 990, y: 210 },
+  "apply_decision": { x: 1200, y: 210 },
+  "END": { x: 1420, y: 245 }
+};
+
+function findNode(schema, name) {
+  return (schema.nodes || []).filter(function (n) { return n.name === name; })[0];
+}
+
+function posOf(name) {
+  if (current.layout && current.layout[name]) return current.layout[name];
+  if (DEFAULT_LAYOUT[name]) return DEFAULT_LAYOUT[name];
+  var count = Object.keys((current.layout || {})).length;
+  return { x: 120 + (count % 4) * 220, y: 590 };
+}
+
+function centerOf(name) {
+  var p = posOf(name);
+  if (name === "START" || name === "END") return { x: p.x + 8, y: p.y + 8 };
+  return { x: p.x + NODE_W / 2, y: p.y + NODE_H / 2 };
+}
+
+function trimPt(a, b, r) {
+  var d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  var t = 1 - r / d;
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+function drawGraph() { buildGraphNodes(); drawWires(); }
+
+function buildGraphNodes() {
+  var canvas = $("gcanvas");
+  Array.prototype.slice.call(canvas.querySelectorAll(".gnode,.gterm")).forEach(function (el) { el.remove(); });
   (current.nodes || []).forEach(function (n) {
-    var li = mk(n.kind, n.name, nodeKindLabel(n.kind), n.purpose, n.name);
-    li.firstChild.setAttribute("data-node", n.name);
-    ol.appendChild(li);
-    (edgeByFrom[n.name] || []).forEach(function (e) {
-      var d = document.createElement("div");
-      d.className = "edge-label";
-      d.textContent = e.to + " · " + (e.when || "");
-      ol.appendChild(d);
-    });
+    var p = posOf(n.name);
+    var el = document.createElement("div");
+    el.className = "gnode " + n.kind;
+    el.style.left = p.x + "px";
+    el.style.top = p.y + "px";
+    el.setAttribute("data-node", n.name);
+    el.innerHTML = '<div class="gnhead"><span class="gname">' + esc(n.name) + '</span><span class="badge ' +
+      (n.kind === "llm" ? "llm" : n.kind === "hitl" ? "hitl" : "det") + '">' + esc(nodeKindLabel(n.kind)) + "</span></div>" +
+      '<div class="gdesc">' + esc(n.purpose || "") + "</div>";
+    canvas.appendChild(el);
   });
-  ol.appendChild(mk("end term", "END", "", "", ""));
+  ["START", "END"].forEach(function (t) {
+    var p = posOf(t);
+    var el = document.createElement("div");
+    el.className = "gterm " + (t === "START" ? "start" : "end");
+    el.style.left = p.x + "px";
+    el.style.top = p.y + "px";
+    el.setAttribute("data-term", t);
+    el.title = t;
+    canvas.appendChild(el);
+  });
+}
+
+function drawWires() {
+  var canvas = $("gcanvas"), svg = $("gwires");
+  Array.prototype.slice.call(canvas.querySelectorAll(".elabel")).forEach(function (el) { el.remove(); });
+  var maxX = 600, maxY = 420;
+  (current.nodes || []).forEach(function (n) {
+    var p = posOf(n.name);
+    maxX = Math.max(maxX, p.x + NODE_W);
+    maxY = Math.max(maxY, p.y + NODE_H);
+  });
+  ["START", "END"].forEach(function (t) {
+    var p = posOf(t);
+    maxX = Math.max(maxX, p.x + 40);
+    maxY = Math.max(maxY, p.y + 40);
+  });
+
+  var parts = ['<defs>' +
+    '<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8ba08c"/></marker>' +
+    '<marker id="arrowc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3f738b"/></marker>' +
+    "</defs>"];
+  (current.edges || []).forEach(function (e, idx) {
+    if (!e.from || !e.to) return;
+    var a = centerOf(e.from), b = centerOf(e.to);
+    var cond = !!(e.when && e.when !== "luôn luôn");
+    var a2 = trimPt(a, b, (e.from === "START" || e.from === "END") ? 12 : 54);
+    var b2 = trimPt(b, a, (e.to === "START" || e.to === "END") ? 12 : 54);
+    var c1, c2;
+    if (b2.x < a2.x) {
+      var my = Math.max(a2.y, b2.y) + 120;
+      maxY = Math.max(maxY, my + 14);
+      c1 = { x: a2.x + 60, y: my };
+      c2 = { x: b2.x - 60, y: my };
+    } else {
+      var off = Math.max((b2.x - a2.x) * 0.42, 50);
+      c1 = { x: a2.x + off, y: a2.y };
+      c2 = { x: b2.x - off, y: b2.y };
+    }
+    var d = "M" + a2.x + "," + a2.y + " C" + c1.x + "," + c1.y + " " + c2.x + "," + c2.y + " " + b2.x + "," + b2.y;
+    parts.push('<path class="wire' + (cond ? " wcond" : "") + '" data-eidx="' + idx + '" d="' + d + '" marker-end="url(#' + (cond ? "arrowc" : "arrow") + ')"/>');
+  });
+  canvas.style.width = (maxX + 50) + "px";
+  canvas.style.height = (maxY + 40) + "px";
+  svg.innerHTML = parts.join("");
+  svg.setAttribute("viewBox", "0 0 " + (maxX + 50) + " " + (maxY + 40));
+
+  (current.edges || []).forEach(function (e, idx) {
+    var p = svg.querySelector('path[data-eidx="' + idx + '"]');
+    if (!p) return;
+    var cond = !!(e.when && e.when !== "luôn luôn");
+    var mid = p.getPointAtLength(p.getTotalLength() / 2);
+    var lab = document.createElement("div");
+    lab.className = "elabel" + (cond ? " cond" : "");
+    var txt = e.when || "luôn luôn";
+    lab.innerHTML = "<b>" + esc(e.to) + "</b> · " + esc(txt.length > 46 ? txt.slice(0, 45) + "…" : txt);
+    lab.title = e.from + " → " + e.to + " · " + txt;
+    lab.style.left = (mid.x - 70) + "px";
+    lab.style.top = (mid.y - 12) + "px";
+    lab.setAttribute("data-eidx", idx);
+    canvas.appendChild(lab);
+  });
+}
+
+// ---------- modals ----------
+function closeModal() { var ov = $("overlay"); if (ov) ov.remove(); }
+function openModal(title, sub, bodyHTML) {
+  closeModal();
+  var ov = document.createElement("div");
+  ov.className = "overlay";
+  ov.id = "overlay";
+  ov.innerHTML = '<div class="modal"><h4>' + esc(title) + "</h4>" +
+    (sub ? '<p class="msub">' + esc(sub) + "</p>" : "") + bodyHTML +
+    '<div class="mrow"><button class="btn danger mdanger" id="mDelete" hidden>Xoá</button>' +
+    '<button class="btn" id="mCancel">Huỷ</button><button class="btn primary" id="mSave">Lưu</button></div></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener("pointerdown", function (e) { if (e.target === ov) closeModal(); });
+  ov.querySelector("#mCancel").addEventListener("click", closeModal);
+  ov.querySelector("#mSave").addEventListener("click", function () { ov._save(ov); });
+  return ov;
+}
+function field(ov, name) { return ov.querySelector('[data-field="' + name + '"]'); }
+
+function nodeModal(name) {
+  var isNew = !name;
+  var n = isNew ? { name: "", kind: "deterministic", purpose: "", prompt: null, fallback: null } : findNode(current, name);
+  if (!n) return;
+  var body = '<div class="warnbox">⚠️ Sửa <strong>tên</strong> hoặc <strong>kind</strong> = thay đổi cấu trúc graph — Claude Code cần đồng bộ graph.py. Sửa purpose/prompt/fallback là mô tả &amp; chỉ dẫn AI.</div>' +
+    '<label>TÊN NODE (khóa liên kết edge)</label><input type="text" data-field="name" value="' + esc(n.name) + '">' +
+    '<label>KIND</label><select data-field="kind">' +
+    '<option value="deterministic"' + (n.kind === "deterministic" ? " selected" : "") + ">deterministic — code chắc chắn</option>" +
+    '<option value="llm"' + (n.kind === "llm" ? " selected" : "") + ">llm — gọi AI</option>" +
+    '<option value="hitl"' + (n.kind === "hitl" ? " selected" : "") + ">hitl — dừng chờ con người</option></select>" +
+    "<label>PURPOSE (mô tả)</label><textarea data-field=\"purpose\">" + esc(n.purpose || "") + "</textarea>" +
+    "<label>PROMPT (chỉ dùng khi kind = llm)</label><textarea data-field=\"prompt\" style=\"min-height:120px\">" + esc(n.prompt || "") + "</textarea>" +
+    "<label>FALLBACK (khi LLM lỗi)</label><textarea data-field=\"fallback\" style=\"min-height:56px\">" + esc(n.fallback || "") + "</textarea>";
+  var ov = openModal(isNew ? "Thêm node" : "Node: " + n.name, "code thật: backend/understand_agent/graph.py + nodes.py", body);
+  ov._save = function () {
+    var nameV = field(ov, "name").value.trim();
+    if (!nameV) { toast("Tên node không được rỗng."); return; }
+    var dup = (current.nodes || []).filter(function (x) { return x.name === nameV && x !== n; }).length;
+    if (dup) { toast("Đã có node tên này rồi."); return; }
+    if (!isNew && nameV !== n.name) {
+      (current.edges || []).forEach(function (e) {
+        if (e.from === n.name) e.from = nameV;
+        if (e.to === n.name) e.to = nameV;
+      });
+      if (current.layout && current.layout[n.name]) {
+        current.layout[nameV] = current.layout[n.name];
+        delete current.layout[n.name];
+      }
+    }
+    n.name = nameV;
+    n.kind = field(ov, "kind").value;
+    n.purpose = field(ov, "purpose").value;
+    n.prompt = n.kind === "llm" ? field(ov, "prompt").value : null;
+    n.fallback = field(ov, "fallback").value || null;
+    if (isNew) {
+      current.nodes.push(n);
+      var maxX = 100;
+      Object.keys(current.layout || {}).forEach(function (k) { maxX = Math.max(maxX, current.layout[k].x); });
+      current.layout[n.name] = { x: maxX + 30, y: 590 };
+    }
+    closeModal();
+    renderAll();
+    toast(isNew ? "Đã thêm node (cấu trúc) — Claude Code sẽ cần sửa graph.py khi áp CR." : "Đã cập nhật node.");
+  };
+  if (!isNew) {
+    var del = ov.querySelector("#mDelete");
+    del.hidden = false;
+    del.addEventListener("click", function () {
+      if (!confirm("Xoá node 「" + n.name + "」 và mọi edge nối với nó?")) return;
+      current.nodes = current.nodes.filter(function (x) { return x !== n; });
+      current.edges = (current.edges || []).filter(function (e) { return e.from !== n.name && e.to !== n.name; });
+      closeModal();
+      renderAll();
+      toast("Đã xoá node (cấu trúc).");
+    });
+  }
+}
+
+function edgeModal(idx) {
+  var isNew = idx == null;
+  var e = isNew ? { from: "planner", to: "", when: "" } : (current.edges || [])[idx];
+  if (!e) return;
+  var opts = function (sel) {
+    var html = '<option value="START"' + (sel === "START" ? " selected" : "") + ">START</option>";
+    (current.nodes || []).forEach(function (n) {
+      html += '<option value="' + esc(n.name) + '"' + (sel === n.name ? " selected" : "") + ">" + esc(n.name) + "</option>";
+    });
+    return html + '<option value="END"' + (sel === "END" ? " selected" : "") + ">END</option>";
+  };
+  var body = '<div class="warnbox">⚠️ Đổi <strong>from/to</strong> hoặc thêm/xoá edge = thay đổi cấu trúc graph — Claude Code cần đồng bộ graph.py. Sửa chữ 「when」 chỉ là mô tả điều kiện trong bản vẽ.</div>' +
+    '<label>TỪ (from)</label><select data-field="from">' + opts(e.from) + "</select>" +
+    '<label>ĐI TỚI (to)</label><select data-field="to">' + opts(e.to) + "</select>" +
+    '<label>KHI NÀO (điều kiện — mô tả; khác 「luôn luôn」 sẽ vẽ nét đứt)</label><input type="text" data-field="when" value="' + esc(e.when || "") + '">';
+  var ov = openModal(isNew ? "Thêm edge" : "Edge: " + e.from + " → " + e.to, "", body);
+  ov._save = function () {
+    var f = field(ov, "from").value, t = field(ov, "to").value;
+    if (f === t) { toast("from và to phải khác nhau."); return; }
+    e.from = f;
+    e.to = t;
+    e.when = field(ov, "when").value.trim();
+    if (isNew) current.edges.push(e);
+    closeModal();
+    renderAll();
+    refreshChanged();
+  };
+  if (!isNew) {
+    var del = ov.querySelector("#mDelete");
+    del.hidden = false;
+    del.addEventListener("click", function () {
+      if (!confirm("Xoá edge " + e.from + " → " + e.to + "?")) return;
+      current.edges.splice(idx, 1);
+      closeModal();
+      renderAll();
+      refreshChanged();
+    });
+  }
 }
 
 function renderOverview() {
@@ -999,10 +1237,6 @@ function renderPrompts() {
     function (n) { return n.purpose || ""; },
     function (n, v) { n.purpose = v; },
     "", 60);
-}
-
-function findNode(schema, name) {
-  return (schema.nodes || []).filter(function (n) { return n.name === name; })[0];
 }
 
 function renderEdges() {
@@ -1186,14 +1420,47 @@ document.querySelectorAll(".tab").forEach(function (t) {
   });
 });
 
-document.addEventListener("click", function (ev) {
-  var jump = ev.target.closest("[data-jump]");
-  if (!jump || !jump.getAttribute("data-jump")) return;
-  var name = jump.getAttribute("data-node") || "";
-  document.querySelector('.tab[data-tab="prompts"]').click();
-  var card = document.querySelector('.pcard[data-node-edit="' + name + '"]');
-  if (card) { card.scrollIntoView({ behavior: "smooth", block: "start" }); card.classList.add("active"); setTimeout(function () { card.classList.remove("active"); }, 1200); }
+// ---------- graph interactions (bind 1 lần) ----------
+var gdrag = null;
+$("gcanvas").addEventListener("pointerdown", function (ev) {
+  var el = ev.target.closest(".gnode,.gterm");
+  if (!el) return;
+  var name = el.getAttribute("data-node") || el.getAttribute("data-term");
+  var p = posOf(name);
+  gdrag = { name: name, el: el, sx: ev.clientX, sy: ev.clientY, ox: p.x, oy: p.y, nx: p.x, ny: p.y, moved: false };
+  try { el.setPointerCapture(ev.pointerId); } catch (err) { /* không bắt buộc */ }
 });
+$("gcanvas").addEventListener("pointermove", function (ev) {
+  if (!gdrag) return;
+  var dx = ev.clientX - gdrag.sx, dy = ev.clientY - gdrag.sy;
+  if (!gdrag.moved && Math.abs(dx) + Math.abs(dy) > 4) gdrag.moved = true;
+  if (!gdrag.moved) return;
+  gdrag.el.classList.add("dragging");
+  gdrag.nx = Math.max(0, gdrag.ox + dx);
+  gdrag.ny = Math.max(0, gdrag.oy + dy);
+  gdrag.el.style.left = gdrag.nx + "px";
+  gdrag.el.style.top = gdrag.ny + "px";
+  if (!current.layout) current.layout = {};
+  current.layout[gdrag.name] = { x: gdrag.nx, y: gdrag.ny };
+  drawWires();
+});
+$("gcanvas").addEventListener("pointerup", function () {
+  if (!gdrag) return;
+  gdrag.el.classList.remove("dragging");
+  if (gdrag.moved) {
+    refreshChanged();
+    toast("Đã lưu vị trí 「" + gdrag.name + "」 vào schema (layout — không tính là thay đổi).");
+  } else if (gdrag.name !== "START" && gdrag.name !== "END") {
+    nodeModal(gdrag.name);
+  }
+  gdrag = null;
+});
+$("gcanvas").addEventListener("click", function (ev) {
+  var lab = ev.target.closest(".elabel");
+  if (lab) edgeModal(parseInt(lab.getAttribute("data-eidx"), 10));
+});
+$("btnAddNode").addEventListener("click", function () { nodeModal(null); });
+$("btnAddEdge").addEventListener("click", function () { edgeModal(null); });
 
 $("btnDownload").addEventListener("click", download);
 $("btnCR").addEventListener("click", copyCR);
