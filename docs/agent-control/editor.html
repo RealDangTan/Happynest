@@ -120,16 +120,15 @@
   .gnode {
     position: absolute; width: 190px; min-height: 86px; z-index: 2;
     background: var(--card); border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 10px 12px; cursor: grab; user-select: none;
+    padding: 10px 12px; cursor: pointer; user-select: none;
     box-shadow: 0 1px 3px rgba(20,37,29,.08);
     transition: border-color .15s, box-shadow .15s;
   }
   .gnode:hover { border-color: var(--lichen); box-shadow: 0 2px 8px rgba(20,37,29,.14); }
   .gnode.selected { border-color: var(--ring); box-shadow: 0 0 0 2px rgba(63,115,139,.25); }
-  .gnode.dragging { cursor: grabbing; box-shadow: 0 6px 16px rgba(20,37,29,.2); z-index: 5; }
   .gnode.llm { border-color: var(--pollen); }
   .gnode.hitl { border-color: var(--pollen); border-width: 2.5px; background: #fdf6df; }
-  .gterm { position: absolute; z-index: 2; width: 16px; height: 16px; background: var(--ink); transform: rotate(45deg); border-radius: 3px; cursor: grab; }
+  .gterm { position: absolute; z-index: 2; width: 16px; height: 16px; background: var(--ink); transform: rotate(45deg); border-radius: 3px; }
   .gterm.start { border-radius: 50%; }
   .gnhead { display: flex; align-items: center; gap: 7px; }
   .gname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; word-break: break-all; }
@@ -370,7 +369,7 @@
       <div class="gtoolbar">
         <button class="btn" id="btnAddNode">＋ Node</button>
         <button class="btn" id="btnAddEdge">＋ Edge</button>
-        <span class="gtbar-hint">Bấm node để sửa · kéo node để sắp xếp · bấm nhãn trên mũi tên để sửa điều kiện</span>
+        <span class="gtbar-hint">Bấm node để sửa · bấm dây hoặc nhãn để sửa edge — bố cục tự sắp xếp, không cần kéo</span>
         <div class="glegend">
           <span><span class="sw" style="border:2px solid var(--lichen)"></span>code chắc chắn</span>
           <span><span class="sw" style="border:2px solid var(--pollen)"></span>gọi LLM (tốn tiền)</span>
@@ -876,50 +875,71 @@ function nodeKindLabel(kind) {
   return "CỐ ĐỊNH";
 }
 
-// ---------- graph canvas ----------
-var NODE_W = 190, NODE_H = 86;
-var DEFAULT_LAYOUT = {
-  "START": { x: 24, y: 245 },
-  "load_context": { x: 110, y: 210 },
-  "planner": { x: 320, y: 210 },
-  "dispatch": { x: 550, y: 50 },
-  "evaluator": { x: 550, y: 385 },
-  "synthesizer": { x: 780, y: 210 },
-  "persist_insight": { x: 990, y: 210 },
-  "apply_decision": { x: 1200, y: 210 },
-  "END": { x: 1420, y: 245 }
-};
+// ---------- graph canvas (layered top->down, tự động sắp xếp — không kéo thả) ----------
+var NODE_W = 190, NODE_H = 86, ROW_H = 140, TOP = 40;
+var CANVAS_W = 820;
+var COL_X = { single: 315, left: 160, right: 470 };
+var layoutData = null;
+
+function computeLayout() {
+  var names = (current.nodes || []).map(function (n) { return n.name; });
+  var edges = (current.edges || []).filter(function (e) { return e.from && e.to; });
+  var layer = { START: 0, END: 0 };
+  var state = {};
+  var adj = {};
+  var backSet = {};
+  edges.forEach(function (e) { (adj[e.from] = adj[e.from] || []).push(e.to); });
+  function dfs(v, depth) {
+    state[v] = 1;
+    if (!(v in layer) || depth > layer[v]) layer[v] = depth;
+    (adj[v] || []).forEach(function (w) {
+      if (state[w] === 1) { backSet[v + "\u0000" + w] = true; return; } // back edge — không dùng để chia lớp
+      if (state[w] !== 2) dfs(w, depth + 1);
+    });
+    state[v] = 2;
+  }
+  dfs("START", 0);
+  names.forEach(function (n) { if (!state[n]) dfs(n, 1); });
+
+  var cols = {};
+  names.concat(["START", "END"]).forEach(function (n) {
+    var c = layer[n] || 0;
+    (cols[c] = cols[c] || []).push(n);
+  });
+  var pos = {};
+  var placedX = {}; // x-center của node đã đặt (dùng sắp tầng sau)
+  function avgPredX(n) {
+    var ps = edges.filter(function (e) { return e.to === n && !backSet[e.from + "\u0000" + e.to] && placedX[e.from] != null; })
+      .map(function (e) { return placedX[e.from]; });
+    if (!ps.length) return CANVAS_W / 2;
+    return ps.reduce(function (s, v) { return s + v; }, 0) / ps.length;
+  }
+  Object.keys(cols).map(Number).sort(function (a, b) { return a - b; }).forEach(function (c) {
+    var list = cols[c];
+    list.sort(function (a, b) { return avgPredX(a) - avgPredX(b); });
+    var xs = list.length === 1 ? [COL_X.single] : [COL_X.left, COL_X.right];
+    list.forEach(function (n, i) {
+      pos[n] = { x: xs[Math.min(i, xs.length - 1)], y: TOP + c * ROW_H, col: c };
+      placedX[n] = pos[n].x + NODE_W / 2;
+    });
+  });
+  return { pos: pos, backSet: backSet, edges: edges };
+}
+
+function isTerm(n) { return n === "START" || n === "END"; }
 
 function findNode(schema, name) {
   return (schema.nodes || []).filter(function (n) { return n.name === name; })[0];
 }
 
-function posOf(name) {
-  if (current.layout && current.layout[name]) return current.layout[name];
-  if (DEFAULT_LAYOUT[name]) return DEFAULT_LAYOUT[name];
-  var count = Object.keys((current.layout || {})).length;
-  return { x: 120 + (count % 4) * 220, y: 590 };
-}
-
-function centerOf(name) {
-  var p = posOf(name);
-  if (name === "START" || name === "END") return { x: p.x + 8, y: p.y + 8 };
-  return { x: p.x + NODE_W / 2, y: p.y + NODE_H / 2 };
-}
-
-function trimPt(a, b, r) {
-  var d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-  var t = 1 - r / d;
-  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
-}
-
 function drawGraph() { buildGraphNodes(); drawWires(); }
 
 function buildGraphNodes() {
+  layoutData = computeLayout();
   var canvas = $("gcanvas");
   Array.prototype.slice.call(canvas.querySelectorAll(".gnode,.gterm")).forEach(function (el) { el.remove(); });
   (current.nodes || []).forEach(function (n) {
-    var p = posOf(n.name);
+    var p = layoutData.pos[n.name] || { x: 20, y: 20 };
     var el = document.createElement("div");
     el.className = "gnode " + n.kind;
     el.style.left = p.x + "px";
@@ -931,10 +951,10 @@ function buildGraphNodes() {
     canvas.appendChild(el);
   });
   ["START", "END"].forEach(function (t) {
-    var p = posOf(t);
+    var p = layoutData.pos[t] || { x: 20, y: 20 };
     var el = document.createElement("div");
     el.className = "gterm " + (t === "START" ? "start" : "end");
-    el.style.left = p.x + "px";
+    el.style.left = (p.x + NODE_W / 2 - 8) + "px";
     el.style.top = p.y + "px";
     el.setAttribute("data-term", t);
     el.title = t;
@@ -943,51 +963,51 @@ function buildGraphNodes() {
 }
 
 function drawWires() {
+  var L = layoutData || computeLayout();
   var canvas = $("gcanvas"), svg = $("gwires");
   Array.prototype.slice.call(canvas.querySelectorAll(".elabel")).forEach(function (el) { el.remove(); });
-  var maxX = 600, maxY = 420;
-  (current.nodes || []).forEach(function (n) {
-    var p = posOf(n.name);
-    maxX = Math.max(maxX, p.x + NODE_W);
-    maxY = Math.max(maxY, p.y + NODE_H);
+  var maxY = TOP;
+  Object.keys(L.pos).forEach(function (n) {
+    var p = L.pos[n];
+    maxY = Math.max(maxY, p.y + (isTerm(n) ? 16 : NODE_H));
   });
-  ["START", "END"].forEach(function (t) {
-    var p = posOf(t);
-    maxX = Math.max(maxX, p.x + 40);
-    maxY = Math.max(maxY, p.y + 40);
-  });
+  canvas.style.width = CANVAS_W + "px";
+  canvas.style.height = (maxY + 50) + "px";
 
   var parts = ['<defs>' +
-    '<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8ba08c"/></marker>' +
+    '<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b8c4b4"/></marker>' +
     '<marker id="arrowc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3f738b"/></marker>' +
     "</defs>"];
-  (current.edges || []).forEach(function (e, idx) {
-    if (!e.from || !e.to) return;
-    var a = centerOf(e.from), b = centerOf(e.to);
+
+  function cxc(n) { return L.pos[n].x + NODE_W / 2; }
+  function cyc(n) { return L.pos[n].y + NODE_H / 2; }
+
+  L.edges.forEach(function (e, idx) {
+    var a = L.pos[e.from], b = L.pos[e.to];
+    if (!a || !b) return;
     var cond = !!(e.when && e.when !== "luôn luôn");
-    var a2 = trimPt(a, b, (e.from === "START" || e.from === "END") ? 12 : 54);
-    var b2 = trimPt(b, a, (e.to === "START" || e.to === "END") ? 12 : 54);
-    var c1, c2;
-    if (b2.x < a2.x) {
-      var my = Math.max(a2.y, b2.y) + 120;
-      maxY = Math.max(maxY, my + 14);
-      c1 = { x: a2.x + 60, y: my };
-      c2 = { x: b2.x - 60, y: my };
+    var d;
+    if (L.backSet[e.from + "\u0000" + e.to]) {
+      // back edge: vòng ra biên (trái nếu source đứng trái đích, phải nếu cùng cột)
+      var goLeft = cxc(e.from) < cxc(e.to) - 60;
+      var bulge = goLeft ? 60 : CANVAS_W - 60;
+      var x1 = goLeft ? a.x : a.x + NODE_W;
+      var x2 = goLeft ? b.x : b.x + NODE_W;
+      var y1 = cyc(e.from), y2 = cyc(e.to);
+      d = "M" + x1 + "," + y1 + " C" + bulge + "," + y1 + " " + bulge + "," + y2 + " " + x2 + "," + y2;
     } else {
-      var off = Math.max((b2.x - a2.x) * 0.42, 50);
-      c1 = { x: a2.x + off, y: a2.y };
-      c2 = { x: b2.x - off, y: b2.y };
+      var ax = cxc(e.from), bx = cxc(e.to);
+      var ay = isTerm(e.from) ? a.y + 16 : a.y + NODE_H;
+      var by = b.y;
+      d = "M" + ax + "," + ay + " C" + ax + "," + (ay + 45) + " " + bx + "," + (Math.max(by, ay + 60) - 45) + " " + bx + "," + by;
     }
-    var d = "M" + a2.x + "," + a2.y + " C" + c1.x + "," + c1.y + " " + c2.x + "," + c2.y + " " + b2.x + "," + b2.y;
     parts.push('<path class="wire' + (cond ? " wcond" : "") + '" data-eidx="' + idx + '" d="' + d + '" marker-end="url(#' + (cond ? "arrowc" : "arrow") + ')"/>');
     parts.push('<path class="whit" data-eidx="' + idx + '" d="' + d + '"/>');
   });
-  canvas.style.width = (maxX + 50) + "px";
-  canvas.style.height = (maxY + 40) + "px";
   svg.innerHTML = parts.join("");
-  svg.setAttribute("viewBox", "0 0 " + (maxX + 50) + " " + (maxY + 40));
+  svg.setAttribute("viewBox", "0 0 " + CANVAS_W + " " + (maxY + 50));
 
-  (current.edges || []).forEach(function (e, idx) {
+  L.edges.forEach(function (e, idx) {
     var p = svg.querySelector('path.wire[data-eidx="' + idx + '"]');
     if (!p) return;
     var cond = !!(e.when && e.when !== "luôn luôn");
@@ -995,7 +1015,6 @@ function drawWires() {
     var lab = document.createElement("div");
     lab.className = "elabel" + (cond ? " cond" : " quiet");
     var txt = e.when || "luôn luôn";
-    // edge điều kiện: chỉ hiện điều kiện; edge thường: ẩn, rê chuột vào dây mới hiện
     lab.innerHTML = cond ? esc(txt.length > 34 ? txt.slice(0, 33) + "…" : txt) : "<b>" + esc(e.to) + "</b> · " + esc(txt);
     lab.title = e.from + " → " + e.to + " · " + txt;
     lab.style.left = (mid.x - 70) + "px";
@@ -1048,10 +1067,6 @@ function nodeModal(name) {
         if (e.from === n.name) e.from = nameV;
         if (e.to === n.name) e.to = nameV;
       });
-      if (current.layout && current.layout[n.name]) {
-        current.layout[nameV] = current.layout[n.name];
-        delete current.layout[n.name];
-      }
     }
     n.name = nameV;
     n.kind = field(ov, "kind").value;
@@ -1060,9 +1075,6 @@ function nodeModal(name) {
     n.fallback = field(ov, "fallback").value || null;
     if (isNew) {
       current.nodes.push(n);
-      var maxX = 100;
-      Object.keys(current.layout || {}).forEach(function (k) { maxX = Math.max(maxX, current.layout[k].x); });
-      current.layout[n.name] = { x: maxX + 30, y: 590 };
     }
     closeModal();
     renderAll();
@@ -1424,40 +1436,6 @@ document.querySelectorAll(".tab").forEach(function (t) {
 });
 
 // ---------- graph interactions (bind 1 lần) ----------
-var gdrag = null;
-$("gcanvas").addEventListener("pointerdown", function (ev) {
-  var el = ev.target.closest(".gnode,.gterm");
-  if (!el) return;
-  var name = el.getAttribute("data-node") || el.getAttribute("data-term");
-  var p = posOf(name);
-  gdrag = { name: name, el: el, sx: ev.clientX, sy: ev.clientY, ox: p.x, oy: p.y, nx: p.x, ny: p.y, moved: false };
-  try { el.setPointerCapture(ev.pointerId); } catch (err) { /* không bắt buộc */ }
-});
-$("gcanvas").addEventListener("pointermove", function (ev) {
-  if (!gdrag) return;
-  var dx = ev.clientX - gdrag.sx, dy = ev.clientY - gdrag.sy;
-  if (!gdrag.moved && Math.abs(dx) + Math.abs(dy) > 4) gdrag.moved = true;
-  if (!gdrag.moved) return;
-  gdrag.el.classList.add("dragging");
-  gdrag.nx = Math.max(0, gdrag.ox + dx);
-  gdrag.ny = Math.max(0, gdrag.oy + dy);
-  gdrag.el.style.left = gdrag.nx + "px";
-  gdrag.el.style.top = gdrag.ny + "px";
-  if (!current.layout) current.layout = {};
-  current.layout[gdrag.name] = { x: gdrag.nx, y: gdrag.ny };
-  drawWires();
-});
-$("gcanvas").addEventListener("pointerup", function () {
-  if (!gdrag) return;
-  gdrag.el.classList.remove("dragging");
-  if (gdrag.moved) {
-    refreshChanged();
-    toast("Đã lưu vị trí 「" + gdrag.name + "」 vào schema (layout — không tính là thay đổi).");
-  } else if (gdrag.name !== "START" && gdrag.name !== "END") {
-    nodeModal(gdrag.name);
-  }
-  gdrag = null;
-});
 $("gcanvas").addEventListener("pointerover", function (ev) {
   var hit = ev.target.closest(".whit");
   if (!hit) return;
@@ -1471,6 +1449,8 @@ $("gcanvas").addEventListener("pointerout", function (ev) {
   if (lab) lab.classList.remove("show");
 });
 $("gcanvas").addEventListener("click", function (ev) {
+  var node = ev.target.closest(".gnode");
+  if (node) { nodeModal(node.getAttribute("data-node")); return; }
   var lab = ev.target.closest(".elabel");
   var hit = ev.target.closest(".whit");
   var idx = lab ? lab.getAttribute("data-eidx") : hit ? hit.getAttribute("data-eidx") : null;

@@ -43,9 +43,9 @@ Tóm lại: **3 điểm gọi LLM** (planner, evaluator, synthesizer), phần c�
 Trang **nhúng sẵn bản vẽ hiện trạng** của agent — double-click là thấy ngay toàn bộ agent như nó đang chạy, không cần nạp file gì cả. (Nút "Nhập JSON…" chỉ dùng khi bạn muốn nạp một bản schema khác, vd bản đề xuất đã tải xuống.)
 
 1. Double-click `editor.html`.
-2. Tab **Graph** mở sẵn: sơ đồ dạng graph của agent — node kéo thả được, mũi tên có nhãn điều kiện (nét đứt = edge điều kiện), Gate #2 nền vàng.
-   - **Bấm node** → sửa tên/kind/purpose/prompt/fallback. **Kéo node** → sắp xếp lại bố cục (lưu vào schema, không tính là thay đổi).
-   - **Bấm nhãn trên mũi tên** → sửa edge (from/to/điều kiện) hoặc xoá. **＋ Node / ＋ Edge** → thêm mới.
+2. Tab **Graph** mở sẵn: sơ đồ dạng graph tự sắp xếp gọn gàng — flow chính chạy dọc giữa, vòng lặp điều tra cột trái, nhánh tổng hợp cột phải, back-edge vòng ra hai biên; edge điều kiện nét đứt.
+   - **Bấm node** → sửa tên/kind/purpose/prompt/fallback.
+   - **Bấm dây hoặc nhãn trên dây** → sửa edge (from/to/điều kiện) hoặc xoá. **＋ Node / ＋ Edge** → thêm mới.
    - Mọi thao tác đụng cấu trúc đều có cảnh báo vàng vì Claude Code sẽ phải đồng bộ `graph.py`.
 3. Sửa những gì bạn muốn:
    - **Knobs** (ngưỡng/trần): đổi số trực tiếp.
