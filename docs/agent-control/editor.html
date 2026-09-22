@@ -120,15 +120,16 @@
   .gnode {
     position: absolute; width: 190px; min-height: 86px; z-index: 2;
     background: var(--card); border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 10px 12px; cursor: pointer; user-select: none;
+    padding: 10px 12px; cursor: grab; user-select: none;
     box-shadow: 0 1px 3px rgba(20,37,29,.08);
     transition: border-color .15s, box-shadow .15s;
   }
   .gnode:hover { border-color: var(--lichen); box-shadow: 0 2px 8px rgba(20,37,29,.14); }
   .gnode.selected { border-color: var(--ring); box-shadow: 0 0 0 2px rgba(63,115,139,.25); }
+  .gnode.dragging { cursor: grabbing; box-shadow: 0 6px 16px rgba(20,37,29,.2); z-index: 5; }
   .gnode.llm { border-color: var(--pollen); }
   .gnode.hitl { border-color: var(--pollen); border-width: 2.5px; background: #fdf6df; }
-  .gterm { position: absolute; z-index: 2; width: 16px; height: 16px; background: var(--ink); transform: rotate(45deg); border-radius: 3px; }
+  .gterm { position: absolute; z-index: 2; width: 16px; height: 16px; background: var(--ink); transform: rotate(45deg); border-radius: 3px; cursor: grab; }
   .gterm.start { border-radius: 50%; }
   .gnhead { display: flex; align-items: center; gap: 7px; }
   .gname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; word-break: break-all; }
@@ -369,7 +370,7 @@
       <div class="gtoolbar">
         <button class="btn" id="btnAddNode">＋ Node</button>
         <button class="btn" id="btnAddEdge">＋ Edge</button>
-        <span class="gtbar-hint">Bấm node để sửa · bấm dây hoặc nhãn để sửa edge — bố cục tự sắp xếp, không cần kéo</span>
+        <span class="gtbar-hint">Bấm node để sửa · kéo node để sắp xếp · bấm dây/nhãn để sửa edge — dây tự đi đường thẳng góc</span>
         <div class="glegend">
           <span><span class="sw" style="border:2px solid var(--lichen)"></span>code chắc chắn</span>
           <span><span class="sw" style="border:2px solid var(--pollen)"></span>gọi LLM (tốn tiền)</span>
@@ -923,6 +924,12 @@ function computeLayout() {
       placedX[n] = pos[n].x + NODE_W / 2;
     });
   });
+  // vị trí người dùng đã kéo (current.layout) đè lên bố cục tự động
+  if (current.layout) {
+    Object.keys(current.layout).forEach(function (k) {
+      if (pos[k]) pos[k] = current.layout[k];
+    });
+  }
   return { pos: pos, backSet: backSet, edges: edges };
 }
 
@@ -988,18 +995,26 @@ function drawWires() {
     var cond = !!(e.when && e.when !== "luôn luôn");
     var d;
     if (L.backSet[e.from + "\u0000" + e.to]) {
-      // back edge: vòng ra biên (trái nếu source đứng trái đích, phải nếu cùng cột)
-      var goLeft = cxc(e.from) < cxc(e.to) - 60;
-      var bulge = goLeft ? 60 : CANVAS_W - 60;
+      // back edge: đường vuông góc vòng qua biên
+      var sameCol = Math.abs(cxc(e.from) - cxc(e.to)) < 60;
+      var goLeft = !sameCol && cxc(e.from) < cxc(e.to);
+      var ch = goLeft ? 60 : CANVAS_W - 60;
+      var y1 = cyc(e.from), y2 = cyc(e.to);
       var x1 = goLeft ? a.x : a.x + NODE_W;
       var x2 = goLeft ? b.x : b.x + NODE_W;
-      var y1 = cyc(e.from), y2 = cyc(e.to);
-      d = "M" + x1 + "," + y1 + " C" + bulge + "," + y1 + " " + bulge + "," + y2 + " " + x2 + "," + y2;
+      d = "M" + x1 + "," + y1 + " H" + ch + " V" + y2 + " H" + x2;
     } else {
-      var ax = cxc(e.from), bx = cxc(e.to);
-      var ay = isTerm(e.from) ? a.y + 16 : a.y + NODE_H;
-      var by = b.y;
-      d = "M" + ax + "," + ay + " C" + ax + "," + (ay + 45) + " " + bx + "," + (Math.max(by, ay + 60) - 45) + " " + bx + "," + by;
+      var sx = cxc(e.from), tx = cxc(e.to);
+      var sy = isTerm(e.from) ? a.y + 16 : a.y + NODE_H;
+      var ty = b.y;
+      if (Math.abs(sx - tx) < 2) {
+        d = "M" + sx + "," + sy + " V" + ty;
+      } else {
+        var s2 = sx + (tx > sx ? 40 : -40);
+        var t2 = tx + (tx > sx ? -40 : 40);
+        var midY = Math.round((sy + ty) / 2);
+        d = "M" + s2 + "," + sy + " V" + midY + " H" + t2 + " V" + ty;
+      }
     }
     parts.push('<path class="wire' + (cond ? " wcond" : "") + '" data-eidx="' + idx + '" d="' + d + '" marker-end="url(#' + (cond ? "arrowc" : "arrow") + ')"/>');
     parts.push('<path class="whit" data-eidx="' + idx + '" d="' + d + '"/>');
@@ -1436,6 +1451,41 @@ document.querySelectorAll(".tab").forEach(function (t) {
 });
 
 // ---------- graph interactions (bind 1 lần) ----------
+var gdrag = null;
+$("gcanvas").addEventListener("pointerdown", function (ev) {
+  var el = ev.target.closest(".gnode,.gterm");
+  if (!el) return;
+  var name = el.getAttribute("data-node") || el.getAttribute("data-term");
+  var p = layoutData.pos[name] || { x: 20, y: 20 };
+  gdrag = { name: name, el: el, sx: ev.clientX, sy: ev.clientY, ox: p.x, oy: p.y, nx: p.x, ny: p.y, moved: false };
+  try { el.setPointerCapture(ev.pointerId); } catch (err) { /* không bắt buộc */ }
+});
+$("gcanvas").addEventListener("pointermove", function (ev) {
+  if (!gdrag) return;
+  var dx = ev.clientX - gdrag.sx, dy = ev.clientY - gdrag.sy;
+  if (!gdrag.moved && Math.abs(dx) + Math.abs(dy) > 4) gdrag.moved = true;
+  if (!gdrag.moved) return;
+  gdrag.el.classList.add("dragging");
+  gdrag.nx = Math.max(0, gdrag.ox + dx);
+  gdrag.ny = Math.max(0, gdrag.oy + dy);
+  gdrag.el.style.left = gdrag.nx + "px";
+  gdrag.el.style.top = gdrag.ny + "px";
+  layoutData.pos[gdrag.name] = { x: gdrag.nx, y: gdrag.ny };
+  if (!current.layout) current.layout = {};
+  current.layout[gdrag.name] = { x: gdrag.nx, y: gdrag.ny };
+  drawWires();
+});
+$("gcanvas").addEventListener("pointerup", function () {
+  if (!gdrag) return;
+  gdrag.el.classList.remove("dragging");
+  if (gdrag.moved) {
+    refreshChanged();
+    toast("Đã lưu vị trí 「" + gdrag.name + "」.");
+  } else if (!isTerm(gdrag.name)) {
+    nodeModal(gdrag.name);
+  }
+  gdrag = null;
+});
 $("gcanvas").addEventListener("pointerover", function (ev) {
   var hit = ev.target.closest(".whit");
   if (!hit) return;
@@ -1449,8 +1499,6 @@ $("gcanvas").addEventListener("pointerout", function (ev) {
   if (lab) lab.classList.remove("show");
 });
 $("gcanvas").addEventListener("click", function (ev) {
-  var node = ev.target.closest(".gnode");
-  if (node) { nodeModal(node.getAttribute("data-node")); return; }
   var lab = ev.target.closest(".elabel");
   var hit = ev.target.closest(".whit");
   var idx = lab ? lab.getAttribute("data-eidx") : hit ? hit.getAttribute("data-eidx") : null;
