@@ -51,6 +51,33 @@ class Severity(str, enum.Enum):
     critical = "critical"
 
 
+class Emotion(str, enum.Enum):
+    """Giá trị JSONB `ai_analysis.emotions` (plan 31 — spec Listen 2026-10-07).
+
+    Multi-label (một feedback có thể "frustrated VÀ angry"); rỗng → "neutral"
+    ở tầng post-process của enricher. Validation thuần, không PG column."""
+
+    frustration = "frustration"
+    anger = "anger"
+    disappointment = "disappointment"
+    confusion = "confusion"
+    anxiety = "anxiety"
+    satisfaction = "satisfaction"
+    delight = "delight"
+    neutral = "neutral"
+
+
+class Intent(str, enum.Enum):
+    """Giá trị JSONB `ai_analysis.intent` (plan 31 — closed set, spec §3)."""
+
+    bug_report = "bug_report"
+    feature_request = "feature_request"
+    question = "question"
+    complaint = "complaint"
+    praise = "praise"
+    other = "other"
+
+
 class RunStatus(str, enum.Enum):
     running = "running"
     completed = "completed"
@@ -75,6 +102,10 @@ class LlmCallType(str, enum.Enum):
     synthesize = "synthesize"
     # ACT agent (plan 26) — ADD VALUE qua migration 0012.
     act_generate = "act_generate"
+    # Listen AI re-spec (plans 31–32) — ADD VALUE qua migration 0016.
+    enrich = "enrich"
+    taxonomy_generate = "taxonomy_generate"
+    topic_recommend = "topic_recommend"
 
 
 class InsightReviewAction(str, enum.Enum):

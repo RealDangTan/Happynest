@@ -30,8 +30,10 @@ Chú thích:
 | ✅ | GET | `/api/products/{product_id}/schema/coverage` | pm \| operations | Coverage per product field từ `data` JSONB (VoC OS §19) — `records_with_field/total` | ⬜ | — |
 | ✅ | POST | `/api/feedbacks` | pm \| operations | Ingest 1 feedback đơn lẻ — sanitize tại ingest, gắn product mặc định + JSONB zones (`data`, `source_meta`) | 🔶 | Dialog "Nhập liệu" trang Feedbacks — response shape mới (feedback_text/occurred_at/data) |
 | ✅ | GET | `/api/taxonomies` | pm \| operations | Tree taxonomy product (`?product_id=`, filter `?status_filter=`) — canonical + emerging (VoC OS §20) | ⬜ | — |
-| ✅ | GET | `/api/taxonomies/review` | pm \| operations | Hàng chờ emerging theme `pending_review` (accumulate evidence — §21) | ⬜ | — |
+| ✅ | GET | `/api/taxonomies/review` | pm \| operations | Hàng chờ emerging theme `pending_review` (accumulate evidence — §21; **legacy** — flow auto-emerging superseded 2026-10-07) | ⬜ | — |
 | ✅ | POST | `/api/taxonomies/review/{taxonomy_id}` | pm \| operations | **Human Gate taxonomy:** `approve` (lên canonical) \| `merge` (`merge_into_id` bắt buộc — feedback topics redirect) \| `reject`. 409 node không ở pending_review; 422 merge thiếu target | ⬜ | — |
+| ✅ | POST | `/api/taxonomies/generate` | **pm** | **Plan 31:** GPT sinh proposal taxonomy từ sample feedback ĐÃ SANITIZE + context (`product_type/use_case/persona`, `sample_size` ≤50) — proposal STATELESS, không đụng DB. 404 product lạ | ⬜ | — |
+| ✅ | POST | `/api/taxonomies/apply` | pm \| operations | **Human Gate (plan 31):** apply proposal (đã sửa tay) → tạo node `canonical/active` kèm slug ổn định, skip trùng (idempotent), bump `taxonomy_version` + decision log. 422 parent không tồn tại | ⬜ | — |
 | ❌ | POST | `/api/feedbacks/import-csv` | — | **ĐÃ BỎ phase 22** — thay bằng `POST /api/imports` (LISTEN pipeline) | ❌ | Route không còn tồn tại |
 | ✅ | GET | `/api/imports` | pm \| operations | Queue import, filter `product_id` + lặp `status`, action-first ordering | ✅ | `ActivityProvider` poll; rail "Files" trong `/vault` + "Current tasks — imports" tại `/importer` (FE-12) |
 | ✅ | POST | `/api/imports` | pm \| operations | Upload CSV → lưu raw + deterministic profile/sample đã sanitize → 201 `profile_ready`; **không gọi LLM**. 409 `active_import_exists` | ✅ | Wizard bước 1 (File) tại `/importer` — "Upload and preview" (FE-12) |

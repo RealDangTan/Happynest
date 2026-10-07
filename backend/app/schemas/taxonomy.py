@@ -105,6 +105,7 @@ class TaxonomyOut(BaseModel):
     product_id: UUID
     parent_id: UUID | None
     name: str
+    slug: str | None = None  # plan 31: topic id ổn định (bất biến khi rename)
     description: str | None
     kind: str
     status: str
@@ -125,3 +126,87 @@ class TaxonomyReviewActionIn(BaseModel):
     action: str = Field(pattern="^(approve|merge|reject)$")
     merge_into_id: UUID | None = None  # bắt buộc khi action=merge
     reason: str | None = Field(default=None, max_length=500)
+
+
+# ---------------------------------------------------------------------------
+# GPT taxonomy proposal (plan 31 — spec Listen 2026-10-07 §2)
+# ---------------------------------------------------------------------------
+
+class ProposedTopic(BaseModel):
+    """Một node trong proposal — PHẲNG, `parent` là NAME của topic khác trong
+    list (None = root). Cố tình không dùng cây đệ quy: strict json_schema
+    (Mode A) không cho `$ref`/recursion.
+
+    Hierarchy 2–3 level do prompt ép; validate ở service khi apply."""
+
+    name: str = Field(min_length=1, max_length=100)
+    parent: str | None = Field(default=None, max_length=100)
+    description: str | None = Field(default=None, max_length=300)
+
+
+class TaxonomyProposalOut(BaseModel):
+    """Output của GPT generate — proposal STATELESS (chưa đụng DB)."""
+
+    topics: list[ProposedTopic] = Field(min_length=1, max_length=60)
+
+
+def strict_taxonomy_proposal_schema() -> dict:
+    """JSON schema phẳng cho Mode A của TaxonomyProposalOut (strict)."""
+    topic_item = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "parent": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+            "description": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        },
+        "required": ["name", "parent", "description"],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "object",
+        "properties": {
+            "topics": {"type": "array", "items": topic_item},
+        },
+        "required": ["topics"],
+        "additionalProperties": False,
+    }
+
+
+class TaxonomyGenerateIn(BaseModel):
+    """POST /api/taxonomies/generate — context tùy chọn bổ sung cho GPT."""
+
+    product_id: UUID
+    sample_size: int = Field(default=30, ge=1, le=50)
+    product_type: str | None = Field(default=None, max_length=200)
+    use_case: str | None = Field(default=None, max_length=500)
+    persona: str | None = Field(default=None, max_length=300)
+
+
+class TaxonomyGenerateOut(BaseModel):
+    product_id: UUID
+    sample_count: int
+    proposal: TaxonomyProposalOut
+
+
+class TaxonomyApplyIn(BaseModel):
+    """POST /api/taxonomies/apply — human duyệt (có thể đã sửa) proposal."""
+
+    product_id: UUID
+    proposal: TaxonomyProposalOut
+
+
+class TaxonomyApplyOut(BaseModel):
+    created: list[TaxonomyOut]
+    skipped: int
+    taxonomy_version: int
+
+
+_proposal_schema_keys = set(
+    strict_taxonomy_proposal_schema()["properties"]["topics"]["items"]["properties"]
+)
+_proposal_model_keys = set(ProposedTopic.model_fields)
+if _proposal_schema_keys != _proposal_model_keys:  # pragma: no cover — drift guard
+    raise RuntimeError(
+        f"taxonomy proposal drift: schema={sorted(_proposal_schema_keys)} "
+        f"vs model={sorted(_proposal_model_keys)}"
+    )

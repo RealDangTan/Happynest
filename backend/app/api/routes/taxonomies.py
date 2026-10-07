@@ -1,8 +1,12 @@
-"""Routes taxonomies — governance (plan 23; VoC OS §20–21).
+"""Routes taxonomies — governance (plan 23; VoC OS §20–21) + GPT proposal
+(plan 31; spec Listen 2026-10-07).
 
 GET  /api/taxonomies?product_id=         : tree (canonical + emerging, filter status)
-GET  /api/taxonomies/review?product_id=  : hàng chờ emerging pending_review
+GET  /api/taxonomies/review?product_id=  : hàng chờ emerging pending_review (legacy)
 POST /api/taxonomies/review/{id}         : Gate: approve | merge | reject
+                                           — AI KHÔNG BAO GIỜ gọi endpoint này.
+POST /api/taxonomies/generate            : GPT sinh proposal (pm-only, tốn LLM)
+POST /api/taxonomies/apply               : HUMAN apply proposal → Active Taxonomy
                                            — AI KHÔNG BAO GIỜ gọi endpoint này.
 """
 
@@ -13,9 +17,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_role
+from app.models.product import Product
 from app.models.taxonomy import Taxonomy
 from app.models.user import User
 from app.schemas.taxonomy import (
+    TaxonomyApplyIn,
+    TaxonomyApplyOut,
+    TaxonomyGenerateIn,
+    TaxonomyGenerateOut,
     TaxonomyListOut,
     TaxonomyOut,
     TaxonomyReviewActionIn,
@@ -27,6 +36,8 @@ router = APIRouter(
     tags=["taxonomies"],
     dependencies=[Depends(require_role("pm", "operations"))],
 )
+
+_pm_only = [Depends(require_role("pm"))]
 
 
 @router.get("")
@@ -134,3 +145,64 @@ def review_theme(
         reviewer_id=user.id,
     )
     return result
+
+
+@router.post("/generate", dependencies=_pm_only)
+def generate_taxonomy(
+    body: TaxonomyGenerateIn,
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> TaxonomyGenerateOut:
+    """GPT sinh proposal taxonomy từ sample (đã sanitize) + context — pm-only
+    vì tốn LLM credit. Proposal STATELESS; chỉ `apply` đụng DB."""
+    product = session.get(Product, body.product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    context = {
+        "product_type": body.product_type,
+        "use_case": body.use_case,
+        "persona": body.persona,
+    }
+    proposal, sample_count = taxonomy_service.generate_proposal(
+        session, product, sample_size=body.sample_size, context=context
+    )
+    return TaxonomyGenerateOut(
+        product_id=product.id, sample_count=sample_count, proposal=proposal
+    )
+
+
+@router.post("/apply")
+def apply_taxonomy(
+    body: TaxonomyApplyIn,
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> TaxonomyApplyOut:
+    """HUMAN gate: apply proposal (có thể đã sửa generate/recommend) → tạo
+    node canonical/active + bump taxonomy_version + decision memory."""
+    product = session.get(Product, body.product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    try:
+        result = taxonomy_service.apply_proposal(session, product, body.proposal)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    # Decision memory: 1 dòng per node TẠO MỚI (khớp pattern review — per node).
+    from app.models.enums import DecisionSubject
+    from app.services.decision_log import log_decision
+
+    for node in result["created"]:
+        log_decision(
+            session,
+            product_id=product.id,
+            subject_type=DecisionSubject.taxonomy,
+            subject_id=node.id,
+            agent_value={"name": node.name, "slug": node.slug, "source": "proposal_apply"},
+            human_value={"applied": True, "taxonomy_version": result["taxonomy_version"]},
+            reviewer_id=user.id,
+        )
+    return TaxonomyApplyOut(
+        created=[TaxonomyOut.model_validate(n) for n in result["created"]],
+        skipped=result["skipped"],
+        taxonomy_version=result["taxonomy_version"],
+    )

@@ -25,6 +25,9 @@ class Taxonomy(Base):
         ForeignKey("taxonomies.id"), nullable=True
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # Plan 31: id ổn định cho topic label ("payment.payment_failure") — BẤT BIẾN
+    # khi rename `name`. Unique (product_id, slug) WHERE NOT NULL (migration 0016).
+    slug: Mapped[str | None] = mapped_column(String(200), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     # canonical (human-governed) | emerging (AI đề xuất chờ duyệt)
     kind: Mapped[str] = mapped_column(String(20), nullable=False, default="canonical")
