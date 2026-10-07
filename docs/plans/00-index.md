@@ -95,13 +95,25 @@ Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 �
 |---|---|---|---|---|
 | 21 | [21-voc-core-reshape.md](21-voc-core-reshape.md) | Migration 0008 destructive: products, imports, feedback JSONB zones + strip hitl_graph/review/agent/sources/insights cũ | — | ⬜ |
 | 22 | [22-listen-schema-intelligence.md](22-listen-schema-intelligence.md) | Migration 0009 product_schemas + profiler + LLM mapper + Gate #1 + Supabase Storage raw | 21 | ⬜ |
-| 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | Migration 0010 taxonomies + emerging themes + ai_analysis JSONB reshape + runner thích ứng | 21 | ⬜ |
+| 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | Migration 0010 taxonomies + emerging themes + ai_analysis JSONB reshape + runner thích ứng | 21 | ⬜ ⚠️ flow auto-emerging partial-superseded 2026-10-07 → series [30–34](#7-series-listen-ai-re-spec-3034--khai-báo-2026-10-07) |
 | 24 | [24-analytics-engine.md](24-analytics-engine.md) | 9 MVP tools + query compiler (validate theo product schema, không SQL tự do) | 22, 23 | ⬜ |
 | 25 | [25-understand-agent.md](25-understand-agent.md) | Migration 0011 evidence + insights mới + UNDERSTAND graph (planner/evaluator/synthesizer) + Gate #2 | 24 | ⬜ |
 | 26 | [26-act-agent.md](26-act-agent.md) | Migration 0012 actions + ACT agent + priority formula + matrix + Gate #3 | 25 | ⬜ |
 | 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | Migration 0013 decision_logs + KPIs LISTEN/UNDERSTAND/ACT + DoD sweep + docs | 21–26 | ⬜ |
 | 28 | [28-navbar-activity-budgeted-analysis.md](28-navbar-activity-budgeted-analysis.md) | Explicit LISTEN paid gates + scoped/batched analysis + navbar Activity Center contract | 21–27, migration 0014 | ✅ 2026-08-31 |
 | 29 | [29-interactive-agent-terminal.md](29-interactive-agent-terminal.md) | Existing agent terminal + HTTP CSV → three gates → impact wizard; Windows launcher | 25–28 | ✅ extended 2026-09-07 |
+
+## 7. Series Listen AI re-spec (30–34) — khai báo 2026-10-07
+
+> Nguồn thiết kế: spec "AI trong Listen — Taxonomy Setup + JEV Enrichment" (owner 2026-10-07) + [decisions.md](../decisions.md) cùng ngày. Nguyên tắc: **GPT discovers the label space · JEV applies the label space at scale · Human controls taxonomy evolution.** Supersede một phần plan 23 (auto-emerging per-record); bảng taxonomies + governance giữ nguyên. Quy tắc §3 áp dụng nguyên vẹn.
+
+| # | File | Phạm vi | Blocked by | Status |
+|---|---|---|---|---|
+| 30 | [30-model-routing-env.md](30-model-routing-env.md) | `MODEL_*` routing mọi use case + `ENRICH_ENGINE`/`JEV_*` + health model map | — | ⬜ |
+| 31 | [31-taxonomy-generation-gpt.md](31-taxonomy-generation-gpt.md) | Migration 0016 + GPT generate proposal + human apply → Active Taxonomy v1 | 30 | ⬜ |
+| 32 | [32-jev-enrichment-engine.md](32-jev-enrichment-engine.md) | Enricher v3 (LLM backend) + UNCATEGORIZED + strip classifier/auto-emerging + re-enrich endpoint | 30, 31 | ⬜ |
+| 33 | [33-spike-s7-jev.md](33-spike-s7-jev.md) | Spike S7: Jev (TypeSafe) vs LLM baseline — gate bật `ENRICH_ENGINE=jev` | 32 | ⬜ |
+| 34 | [34-topic-recommendation-gpt.md](34-topic-recommendation-gpt.md) | Recommend topics + apply → Taxonomy v2 + re-enrich loop + e2e (+34B jev wiring nếu S7 PASS) | 32 (34B: +33) | ⬜ |
 
 ```text
 21 ── 22 ─┬─ 24 ── 25 ── 26 ── 27
