@@ -41,3 +41,8 @@
 - Trace per use case: `SELECT call_type, model, COUNT(*) FROM llm_call_logs GROUP BY 1,2 ORDER BY 2;`
 - API thử tay: `POST /api/taxonomies/generate {"product_id": "...", "sample_size": 20}` → `POST /api/taxonomies/apply` → tạo analysis run như thường → `POST /api/taxonomies/recommend` → `/recommend/apply` → `POST /api/analysis/re-enrich-uncategorized`.
 - Backend đang chạy nền (task `s0zreocv`, PID 30072) — stop bằng kill task khi xong.
+
+## Addendum (cùng ngày, sau handoff ban đầu) — ĐÃ fill model + VERIFY LIVE
+- Risk #1 (model chết) ĐÃ GIẢI QUYẾT: probe firsthand OpenRouter (credit còn ~$2.60), live-call test 3 vòng gồm schema THẬT, rồi fill `backend/.env`: qwen3-30b-a3b-instruct-2507 (default + enrich), mistral-small-24b (schema_map + cluster_name), gpt-4o-mini (taxonomy/recommend/understand/act). Chi tiết + rejected alternatives: decisions.md addendum 2026-10-07.
+- Verify cuối: enrich 1 feedback VI thật qua app path → JSONB đúng shape; `llm_call_logs` `call_type=enrich, model=qwen/..., error=NULL`. Backend restart (task `s1c6j316`, PID 20204) — `/api/health.models` khớp .env.
+- Còn lại: S7 chờ `JEV_API_KEY` (risk #2), FE-14 (risk #3).
