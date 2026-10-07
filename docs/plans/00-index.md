@@ -15,7 +15,7 @@
 | 31 | [31-taxonomy-generation-gpt.md](31-taxonomy-generation-gpt.md) | Migration 0016 + GPT generate proposal + human apply → Active Taxonomy v1 | 30 | ⬜ |
 | 32 | [32-jev-enrichment-engine.md](32-jev-enrichment-engine.md) | Enricher v3 (LLM backend) + UNCATEGORIZED + strip classifier/auto-emerging + re-enrich endpoint | 30, 31 | ✅ 2026-10-07 |
 | 33 | [33-spike-s7-jev.md](33-spike-s7-jev.md) | Spike S7: Jev (TypeSafe) vs LLM baseline — gate bật `ENRICH_ENGINE=jev` | 32 | ⬜ |
-| 34 | [34-topic-recommendation-gpt.md](34-topic-recommendation-gpt.md) | Recommend topics + apply → Taxonomy v2 + re-enrich loop + e2e (+34B jev wiring nếu S7 PASS) | 32 (34B: +33) | ⬜ |
+| 34 | [34-topic-recommendation-gpt.md](34-topic-recommendation-gpt.md) | Recommend topics + apply → Taxonomy v2 + re-enrich loop + e2e (+34B jev wiring nếu S7 PASS) | 32 (34B: +33) | ✅ 2026-10-07 — 34B chờ S7 |
 
 Thứ tự cứng: **30 → 31 → 32 → 33 → 34**.
 

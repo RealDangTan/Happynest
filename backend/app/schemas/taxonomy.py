@@ -201,6 +201,77 @@ class TaxonomyApplyOut(BaseModel):
     taxonomy_version: int
 
 
+# ---------------------------------------------------------------------------
+# GPT topic recommendation (plan 34 — spec Listen §4): evolve từ pool
+# uncategorized, human apply — KHÔNG per-record auto-emerging.
+# ---------------------------------------------------------------------------
+
+class TopicRecommendation(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    parent: str | None = Field(default=None, max_length=100)
+    evidence_count: int = Field(ge=1)
+    examples: list[str] = Field(default_factory=list, max_length=3)
+
+
+class TopicRecommendationOut(BaseModel):
+    """Empty pool → recommendations rỗng (min 0) — caller không tốn LLM."""
+
+    recommendations: list[TopicRecommendation] = Field(default_factory=list, max_length=8)
+
+
+class TopicRecommendIn(BaseModel):
+    """POST /api/taxonomies/recommend — pm-only (tốn LLM)."""
+
+    product_id: UUID
+    pool_limit: int = Field(default=100, ge=10, le=200)
+
+
+class TopicRecommendGenerateOut(BaseModel):
+    product_id: UUID
+    pool_count: int
+    recommendations: list[TopicRecommendation]
+
+
+class TopicRecommendApplyIn(BaseModel):
+    """POST /api/taxonomies/recommend/apply — human chọn topic để nhận."""
+
+    product_id: UUID
+    topics: list[TopicRecommendation] = Field(min_length=1, max_length=8)
+
+
+def strict_topic_recommendation_schema() -> dict:
+    item = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "parent": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+            "evidence_count": {"type": "integer"},
+            "examples": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["name", "parent", "evidence_count", "examples"],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "object",
+        "properties": {"recommendations": {"type": "array", "items": item}},
+        "required": ["recommendations"],
+        "additionalProperties": False,
+    }
+
+
+_rec_schema_keys = set(
+    strict_topic_recommendation_schema()["properties"]["recommendations"]["items"][
+        "properties"
+    ]
+)
+_rec_model_keys = set(TopicRecommendation.model_fields)
+if _rec_schema_keys != _rec_model_keys:  # pragma: no cover — drift guard
+    raise RuntimeError(
+        f"topic recommendation drift: schema={sorted(_rec_schema_keys)} "
+        f"vs model={sorted(_rec_model_keys)}"
+    )
+
+
 _proposal_schema_keys = set(
     strict_taxonomy_proposal_schema()["properties"]["topics"]["items"]["properties"]
 )

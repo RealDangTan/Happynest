@@ -20,11 +20,12 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models.enums import LlmCallType
 from app.models.feedback import Feedback
 from app.models.product import Product
 from app.models.taxonomy import Taxonomy
-from app.schemas.taxonomy import TaxonomyProposalOut
+from app.schemas.taxonomy import TopicRecommendationOut, TaxonomyProposalOut
 from app.services.llm_client import chat_structured
 
 #: Nhánh canonical gốc seed cho product mới (VoC OS §20) — migration 0010
@@ -374,3 +375,90 @@ def apply_proposal(
         "skipped": skipped,
         "taxonomy_version": product_row.taxonomy_version,
     }
+
+
+# ---------------------------------------------------------------------------
+# GPT topic recommendation (plan 34 — spec Listen §4): taxonomy evolves từ
+# pool uncategorized qua HUMAN apply — không per-record auto-emerging.
+# ---------------------------------------------------------------------------
+
+PROMPT_VERSION_RECOMMEND = "v1"
+
+_RECOMMEND_SYSTEM = """Bạn là chuyên gia phân tích phản hồi người dùng (VoC) về sản phẩm AI. \
+Văn phong làm việc: tiếng Việt, trộn thuật ngữ kỹ thuật tiếng Anh bình thường.
+
+Nhiệm vụ: đọc nhóm feedback CHƯA phân loại được (uncategorized hoặc độ tin cậy chủ đề thấp) \
+và đề xuất TỐI ĐA 5 topic mới để bổ sung vào taxonomy.
+
+Quy tắc:
+- GOM các feedback cùng vấn đề thành MỘT topic — không tạo topic cho từng feedback lẻ.
+- `name` ≤ 6 từ, dùng đúng từ ngữ người dùng hay nói; `parent` (tùy chọn) là tên topic gốc \
+HIỆN CÓ trong taxonomy được cung cấp, hoặc None.
+- `evidence_count` = số feedback trong pool ủng hộ topic này.
+- `examples`: TỐI ĐA 3 trích NGUYÊN VĂN (ngắn) từ chính các feedback được cung cấp — không bịa.
+- KHÔNG đề xuất topic trùng/tương đương taxonomy hiện có.
+- Chỉ đề xuất khi có ÍT NHẤT 2 feedback ủng hộ (noise đơn lẻ bỏ qua).
+
+Chỉ trả về JSON object khớp schema, không text thừa."""
+
+
+def find_unclassified_pool(
+    db: Session, product_id: uuid.UUID, limit: int = 100
+) -> list[Feedback]:
+    """Feedback uncategorized HOẶC topic_confidence dưới floor — pool đề xuất."""
+    from sqlalchemy import Float, and_, cast, or_
+
+    floor = get_settings().ENRICH_TOPIC_CONFIDENCE_FLOOR
+    return list(
+        db.scalars(
+            select(Feedback)
+            .where(
+                Feedback.product_id == product_id,
+                Feedback.ai_analysis.is_not(None),
+                or_(
+                    Feedback.ai_analysis["uncategorized"].astext == "true",
+                    and_(
+                        Feedback.ai_analysis["topic_confidence"].isnot(None),
+                        cast(
+                            Feedback.ai_analysis["topic_confidence"].astext, Float
+                        )
+                        < floor,
+                    ),
+                ),
+            )
+            .order_by(Feedback.occurred_at.desc())
+            .limit(limit)
+        ).all()
+    )
+
+
+def recommend_topics(
+    db: Session,
+    product: Product,
+    *,
+    pool_limit: int = 100,
+) -> tuple[TopicRecommendationOut, int]:
+    """GPT đọc pool uncategorized → đề xuất topic mới — STATELESS, human apply.
+
+    Trả (recommendations, pool_count). PII boundary: chỉ `feedback_text` đã
+    sanitize được gửi vào prompt."""
+    pool = find_unclassified_pool(db, product.id, limit=pool_limit)
+    if not pool:
+        return TopicRecommendationOut(recommendations=[]), 0
+    existing = get_taxonomy_names(db, product.id)
+    payload = {
+        "product": {"name": product.name},
+        "existing_taxonomy": existing,
+        "unclassified_feedback": [
+            {"id": str(fb.id), "text": fb.feedback_text or "", "topic_confidence": (fb.ai_analysis or {}).get("topic_confidence")}
+            for fb in pool
+        ],
+    }
+    result = chat_structured(
+        _RECOMMEND_SYSTEM,
+        json.dumps(payload, ensure_ascii=False),
+        TopicRecommendationOut,
+        call_type=LlmCallType.topic_recommend,
+        prompt_version=PROMPT_VERSION_RECOMMEND,
+    )
+    return result, len(pool)

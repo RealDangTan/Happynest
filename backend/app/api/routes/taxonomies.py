@@ -8,6 +8,8 @@ POST /api/taxonomies/review/{id}         : Gate: approve | merge | reject
 POST /api/taxonomies/generate            : GPT sinh proposal (pm-only, tốn LLM)
 POST /api/taxonomies/apply               : HUMAN apply proposal → Active Taxonomy
                                            — AI KHÔNG BAO GIỜ gọi endpoint này.
+POST /api/taxonomies/recommend           : GPT đề xuất topic từ pool uncategorized (pm-only)
+POST /api/taxonomies/recommend/apply     : HUMAN nhận topic đề xuất → Taxonomy v2
 """
 
 import uuid
@@ -21,13 +23,18 @@ from app.models.product import Product
 from app.models.taxonomy import Taxonomy
 from app.models.user import User
 from app.schemas.taxonomy import (
+    ProposedTopic,
     TaxonomyApplyIn,
     TaxonomyApplyOut,
     TaxonomyGenerateIn,
     TaxonomyGenerateOut,
     TaxonomyListOut,
     TaxonomyOut,
+    TaxonomyProposalOut,
     TaxonomyReviewActionIn,
+    TopicRecommendApplyIn,
+    TopicRecommendGenerateOut,
+    TopicRecommendIn,
 )
 from app.services import taxonomy_service
 
@@ -198,6 +205,67 @@ def apply_taxonomy(
             subject_type=DecisionSubject.taxonomy,
             subject_id=node.id,
             agent_value={"name": node.name, "slug": node.slug, "source": "proposal_apply"},
+            human_value={"applied": True, "taxonomy_version": result["taxonomy_version"]},
+            reviewer_id=user.id,
+        )
+    return TaxonomyApplyOut(
+        created=[TaxonomyOut.model_validate(n) for n in result["created"]],
+        skipped=result["skipped"],
+        taxonomy_version=result["taxonomy_version"],
+    )
+
+
+@router.post("/recommend", dependencies=_pm_only)
+def recommend_topics(
+    body: TopicRecommendIn,
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> TopicRecommendGenerateOut:
+    """Plan 34 — GPT đọc pool uncategorized/low-confidence → đề xuất topic mới
+    (STATELESS). Pool rỗng → recommendations rỗng, không gọi LLM."""
+    product = session.get(Product, body.product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    result, pool_count = taxonomy_service.recommend_topics(
+        session, product, pool_limit=body.pool_limit
+    )
+    return TopicRecommendGenerateOut(
+        product_id=product.id, pool_count=pool_count, recommendations=result.recommendations
+    )
+
+
+@router.post("/recommend/apply")
+def apply_recommended_topics(
+    body: TopicRecommendApplyIn,
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> TaxonomyApplyOut:
+    """HUMAN gate: nhận topic đề xuất → tạo canonical/active (tái dùng
+    apply_proposal: idempotent + bump version + decision memory)."""
+    product = session.get(Product, body.product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    proposal = TaxonomyProposalOut(
+        topics=[
+            ProposedTopic(name=t.name, parent=t.parent, description=None)
+            for t in body.topics
+        ]
+    )
+    try:
+        result = taxonomy_service.apply_proposal(session, product, proposal)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    from app.models.enums import DecisionSubject
+    from app.services.decision_log import log_decision
+
+    for node in result["created"]:
+        log_decision(
+            session,
+            product_id=product.id,
+            subject_type=DecisionSubject.taxonomy,
+            subject_id=node.id,
+            agent_value={"name": node.name, "slug": node.slug, "source": "topic_recommendation"},
             human_value={"applied": True, "taxonomy_version": result["taxonomy_version"]},
             reviewer_id=user.id,
         )

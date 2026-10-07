@@ -338,14 +338,18 @@ def _schema_for(schema: type[BaseModel]) -> dict:
         from app.schemas.taxonomy import (
             Classification,
             TaxonomyProposalOut,
+            TopicRecommendationOut,
             strict_classification_schema,
             strict_taxonomy_proposal_schema,
+            strict_topic_recommendation_schema,
         )
 
         if schema is Classification:
             _SCHEMA_CACHE[schema] = strict_classification_schema()
         elif schema is TaxonomyProposalOut:
             _SCHEMA_CACHE[schema] = strict_taxonomy_proposal_schema()
+        elif schema is TopicRecommendationOut:
+            _SCHEMA_CACHE[schema] = strict_topic_recommendation_schema()
         elif schema is EnrichmentOut:
             _SCHEMA_CACHE[schema] = strict_enrichment_schema()
         elif schema is BatchEnrichmentOut:
