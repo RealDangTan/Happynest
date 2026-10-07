@@ -1,9 +1,9 @@
-"""Import-scoped analysis selection and budget receipts (phase 28)."""
+"""Import-scoped analysis selection and budget receipts (phase 28 + plan 32)."""
 
 import math
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -75,3 +75,21 @@ def preview_analysis(db: Session, scope: AnalysisScopeIn) -> AnalysisCostPreview
         eligible_count=eligible_count,
         chunk_size=get_settings().ANALYSIS_BATCH_SIZE,
     )
+
+
+def reset_uncategorized(db: Session, product_id: uuid.UUID) -> int:
+    """Clear `ai_analysis` + `analysis_run_id` của rows uncategorized (plan 32
+    — taxonomy v2 được apply rồi, enrich lại theo nhãn mới).
+
+    CHỈ đụng nhãn dẫn xuất: raw_content/feedback_text/embedding GIỮ NGUYÊN
+    (embedding tính từ text — vẫn hợp lệ). Trả số row được clear."""
+    result = db.execute(
+        update(Feedback)
+        .where(
+            Feedback.product_id == product_id,
+            Feedback.ai_analysis["uncategorized"].astext == "true",
+        )
+        .values(ai_analysis=None, analysis_run_id=None)
+    )
+    db.commit()
+    return int(result.rowcount or 0)

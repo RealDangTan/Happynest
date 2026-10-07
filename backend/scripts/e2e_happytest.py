@@ -189,13 +189,13 @@ def main() -> int:
         from app.jobs.analysis_runner import PIPELINE_VERSION, run_analysis
         from app.schemas.analysis import AnalysisScopeIn
         from app.services.analysis_service import select_eligible_feedback
-        from app.services.classifier import PROMPT_VERSION
+        from app.services.enricher import PROMPT_VERSION
 
         scope = AnalysisScopeIn(mode="batch", import_id=import_row.id)
         rows, _eligible = select_eligible_feedback(db, scope)
         run = AnalysisRun(
             pipeline_version=PIPELINE_VERSION,
-            llm_model=get_settings().LLM_MODEL,
+            llm_model=get_settings().llm_model_for("enrich"),
             prompt_version=PROMPT_VERSION,
             embedding_model=get_settings().EMBEDDING_MODEL,
             import_id=import_row.id,

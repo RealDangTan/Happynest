@@ -12,7 +12,6 @@ from app.models.analysis_run import AnalysisRun
 from app.models.enums import ImportStatus, RunStatus, UserRole
 from app.models.feedback import Feedback
 from app.models.import_ import Import
-from app.schemas.taxonomy import Classification
 from app.services import import_service
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
@@ -121,28 +120,37 @@ def test_batch_23_feedback_uses_three_classify_and_embedding_calls(
         db.commit()
         run_id, import_id = run.id, import_row.id
 
-    classification = Classification(
-        categories=["quality"],
-        ai_issue=None,
-        sentiment="neutral",
-        severity="low",
-        safety_issue=False,
-        confidence=0.9,
-        rationale="Mocked.",
-    )
+    enrichment = {
+        "topics": ["quality"],
+        "topic_scores": [{"id": "quality", "probability": 0.9}],
+        "topic_confidence": 0.9,
+        "uncategorized": False,
+        "sentiment": "neutral",
+        "emotions": ["neutral"],
+        "emotion_scores": [],
+        "intent": "other",
+        "severity": "low",
+        "safety_issue": False,
+        "ai_issue": None,
+        "confidence": 0.9,
+        "rationale": "Mocked.",
+        "taxonomy_version": 1,
+        "analysis_version": "enrich-v3",
+    }
 
-    def fake_classify(items, **kwargs):
+    def fake_enrich(items, **kwargs):
         classify_calls.append(len(items))
-        return {item_id: classification for item_id, _ in items}
+        return {item_id: dict(enrichment) for item_id, _ in items}
 
     def fake_embed(texts):
         embedding_calls.append(len(texts))
         return [[0.0] * 1536 for _ in texts]
 
-    monkeypatch.setattr(analysis_runner, "classify_feedback_batch", fake_classify)
+    monkeypatch.setattr(analysis_runner, "enrich_feedback_batch", fake_enrich)
     monkeypatch.setattr(analysis_runner, "embed_texts", fake_embed)
-    monkeypatch.setattr(analysis_runner.taxonomy_service, "get_taxonomy_names", lambda *a: [])
-    monkeypatch.setattr(analysis_runner.taxonomy_service, "accumulate_emerging", lambda *a, **k: None)
+    monkeypatch.setattr(
+        analysis_runner.taxonomy_service, "get_taxonomy_labels", lambda *a: []
+    )
 
     analysis_runner.run_analysis(run_id)
 

@@ -329,6 +329,12 @@ def _schema_for(schema: type[BaseModel]) -> dict:
     """JSON schema phẳng cho Mode A. Taxonomy có bản tay tối ưu strict-mode;
     schema khác dùng model_json_schema chung (đủ chuẩn OpenAI strict)."""
     if schema not in _SCHEMA_CACHE:
+        from app.schemas.enrichment import (
+            BatchEnrichmentOut,
+            EnrichmentOut,
+            strict_batch_enrichment_schema,
+            strict_enrichment_schema,
+        )
         from app.schemas.taxonomy import (
             Classification,
             TaxonomyProposalOut,
@@ -336,13 +342,14 @@ def _schema_for(schema: type[BaseModel]) -> dict:
             strict_taxonomy_proposal_schema,
         )
 
-        _SCHEMA_CACHE[schema] = (
-            strict_classification_schema()
-            if schema is Classification
-            else (
-                strict_taxonomy_proposal_schema()
-                if schema is TaxonomyProposalOut
-                else schema.model_json_schema()
-            )
-        )
+        if schema is Classification:
+            _SCHEMA_CACHE[schema] = strict_classification_schema()
+        elif schema is TaxonomyProposalOut:
+            _SCHEMA_CACHE[schema] = strict_taxonomy_proposal_schema()
+        elif schema is EnrichmentOut:
+            _SCHEMA_CACHE[schema] = strict_enrichment_schema()
+        elif schema is BatchEnrichmentOut:
+            _SCHEMA_CACHE[schema] = strict_batch_enrichment_schema()
+        else:
+            _SCHEMA_CACHE[schema] = schema.model_json_schema()
     return _SCHEMA_CACHE[schema]

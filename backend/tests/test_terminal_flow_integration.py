@@ -28,7 +28,6 @@ from app.models.product_schema import ProductSchema
 from app.models.taxonomy import Taxonomy
 from app.models.user import User
 from app.schemas.import_ import MappingProposalOut
-from app.schemas.taxonomy import Classification
 from app.services import act_agent, import_service, llm_client
 from app.services.terminal_flow import FlowWizard
 from app.services.terminal_http import TerminalClient
@@ -50,10 +49,28 @@ def test_csv_three_gates_real_persistence_and_scoped_impact(tmp_path, monkeypatc
         for source, target in [("message", "feedback_text"), ("date", "occurred_at")]
     ]})
     monkeypatch.setattr(import_service, "build_mapping_proposal", lambda *a, **k: proposal)
-    classified = Classification(categories=["Performance"], sentiment="negative", severity="high", safety_issue=False, confidence=.9, rationale="Synthetic slow app")
-    def classify(items, **kwargs):
-        return {fid: classified for fid, _ in items}
-    monkeypatch.setattr(analysis_runner, "classify_feedback_batch", classify)
+    enrichment = {
+        "topics": ["performance"],
+        "topic_scores": [{"id": "performance", "probability": 0.94}],
+        "topic_confidence": 0.94,
+        "uncategorized": False,
+        "sentiment": "negative",
+        "emotions": ["frustration"],
+        "emotion_scores": [{"label": "frustration", "probability": 0.8}],
+        "intent": "bug_report",
+        "severity": "high",
+        "safety_issue": False,
+        "ai_issue": None,
+        "confidence": 0.9,
+        "rationale": "Synthetic slow app",
+        "taxonomy_version": 1,
+        "analysis_version": "enrich-v3",
+    }
+
+    def enrich_batch(items, **kwargs):
+        return {fid: dict(enrichment) for fid, _ in items}
+
+    monkeypatch.setattr(analysis_runner, "enrich_feedback_batch", enrich_batch)
     monkeypatch.setattr(analysis_runner, "embed_texts", lambda texts: [[1.] + [0.] * 1535 for _ in texts])
     calls = {"planner": 0}
     def agent_llm(system, user, schema, **kwargs):

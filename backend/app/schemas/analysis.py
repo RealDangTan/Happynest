@@ -40,6 +40,19 @@ class AnalysisRunCreateIn(AnalysisScopeIn):
     confirmed_item_count: int = Field(ge=1, le=100)
 
 
+class ReEnrichIn(BaseModel):
+    """POST /api/analysis/re-enrich-uncategorized — clear nhãn của rows
+    uncategorized (sau khi taxonomy v2 được apply) để run Analysis kế tiếp
+    nhặt lại. Raw + embedding GIỮ NGUYÊN."""
+
+    product_id: UUID
+
+
+class ReEnrichOut(BaseModel):
+    released: int
+    hint: str = "Tạo analysis run như thường lệ — rows đã clear sẽ được enrich lại theo taxonomy mới."
+
+
 class AnalysisCostPreviewOut(BaseModel):
     eligible_count: int
     selected_count: int

@@ -25,16 +25,19 @@ from app.schemas.analysis import (
     AnalysisCostPreviewOut,
     AnalysisRunCreateIn,
     AnalysisScopeIn,
+    ReEnrichIn,
+    ReEnrichOut,
     RunCreatedOut,
     RunListOut,
     RunProgressOut,
 )
 from app.schemas.feedback import FeedbackListOut, FeedbackOut
-from app.services.classifier import PROMPT_VERSION
+from app.services.enricher import PROMPT_VERSION
 from app.core.config import get_settings
 from app.services.analysis_service import (
     SelectionChangedError,
     preview_analysis,
+    reset_uncategorized,
     select_eligible_feedback,
 )
 
@@ -69,7 +72,8 @@ def create_analysis_run(
         )
     run = AnalysisRun(
         pipeline_version=PIPELINE_VERSION,
-        llm_model=settings.LLM_MODEL,
+        # plan 30: model ĐÃ RESOLVE cho use case enrich (snapshot traceable).
+        llm_model=settings.llm_model_for("enrich"),
         prompt_version=PROMPT_VERSION,
         embedding_model=settings.EMBEDDING_MODEL,
         import_id=body.import_id,
@@ -182,3 +186,15 @@ def get_run_results(
         limit=limit,
         offset=offset,
     )
+
+
+@router.post("/analysis/re-enrich-uncategorized")
+def re_enrich_uncategorized(
+    body: ReEnrichIn,
+    session: Session = Depends(get_db),
+) -> ReEnrichOut:
+    """Plan 32 — vòng lặp taxonomy evolution: sau khi human apply taxonomy v2,
+    clear nhãn các row UNCATEGORIZED để run Analysis kế tiếp enrich lại theo
+    nhãn mới. Chỉ đụng nhãn dẫn xuất (raw + embedding giữ nguyên)."""
+    released = reset_uncategorized(session, body.product_id)
+    return ReEnrichOut(released=released)

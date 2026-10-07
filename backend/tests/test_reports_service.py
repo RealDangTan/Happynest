@@ -99,8 +99,14 @@ def test_by_enums_null_excluded_and_zero_keys_kept(db_session, test_product) -> 
     assert out["by_sentiment"]["neutral"] == base_out["by_sentiment"]["neutral"]
 
 
-def test_top_categories_merges_duplicates_and_orders(db_session, test_product) -> None:
+def test_top_categories_merges_duplicates_and_orders(db_session, test_product, monkeypatch) -> None:
     from app.models.feedback import Feedback
+
+    from app.services import reports
+
+    # LIMIT 10 là hằng trình bày — DB dev dùng chung có demo topic đếm hàng chục
+    # (e2e happytest) nên test aggregation phải NÂNG limit, không phụ thuộc data.
+    monkeypatch.setattr(reports, "_TOP_CATEGORIES_LIMIT", 500)
 
     base_cats = {
         item["category"]: item["count"]
@@ -109,10 +115,9 @@ def test_top_categories_merges_duplicates_and_orders(db_session, test_product) -
 
     db_session.add_all(
         [
-            # topic-a x3, topic-b x2 — đủ nặng để KHÔNG bị LIMIT 10 cắt
-            # (DB dev chung có sẵn nhiều topic đếm-1 cạnh tranh)
-            Feedback(**_fb("c1", product_id=test_product.id, ai_analysis={"topics": ["rep-it-topic-a", "rep-it-topic-a", "rep-it-topic-b"]})),
-            Feedback(**_fb("c2", product_id=test_product.id, ai_analysis={"topics": ["rep-it-topic-a", "rep-it-topic-b"]})),
+            # topic-a x40, topic-b x4 — trùng trong 1 row lẫn KHẮP row đều đếm
+            Feedback(**_fb("c1", product_id=test_product.id, ai_analysis={"topics": ["rep-it-topic-a"] * 20 + ["rep-it-topic-b"] * 2})),
+            Feedback(**_fb("c2", product_id=test_product.id, ai_analysis={"topics": ["rep-it-topic-a"] * 20 + ["rep-it-topic-b"] * 2})),
             Feedback(**_fb("c3", product_id=test_product.id, ai_analysis=None)),  # json-null không nổ query
             Feedback(
                 **_fb(
@@ -128,8 +133,8 @@ def test_top_categories_merges_duplicates_and_orders(db_session, test_product) -
     out = build_summary(db_session, days=30, now=NOW)
 
     cats = {item["category"]: item["count"] for item in out["top_categories"]}
-    assert cats["rep-it-topic-a"] == base_cats.get("rep-it-topic-a", 0) + 3  # trùng gộp đúng
-    assert cats["rep-it-topic-b"] == base_cats.get("rep-it-topic-b", 0) + 2
+    assert cats["rep-it-topic-a"] == base_cats.get("rep-it-topic-a", 0) + 40  # trùng gộp đúng
+    assert cats["rep-it-topic-b"] == base_cats.get("rep-it-topic-b", 0) + 4
     assert "rep-it-old-topic" not in cats   # prefix unique + ngoài cửa sổ → bị loại hẳn
 
 

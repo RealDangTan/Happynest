@@ -94,6 +94,23 @@ def get_taxonomy_names(db: Session, product_id: uuid.UUID) -> list[str]:
     return list(rows)
 
 
+def get_taxonomy_labels(db: Session, product_id: uuid.UUID) -> list[tuple[str, str]]:
+    """(slug, name) của node ACTIVE — tập đóng cho enricher (plan 32).
+
+    Chỉ status="active" (pending_review KHÔNG được phép làm nhãn — spec §2:
+    chỉ Active Taxonomy được apply). Tự backfill slug (idempotent) trước khi
+    đọc, nên node legacy không bị bỏ sót."""
+    ensure_slugs(db, product_id)
+    rows = db.execute(
+        select(Taxonomy.slug, Taxonomy.name).where(
+            Taxonomy.product_id == product_id,
+            Taxonomy.status == "active",
+            Taxonomy.slug.is_not(None),
+        )
+    ).all()
+    return [(slug, name) for slug, name in rows]
+
+
 def seed_default_taxonomy(db: Session, product_id: uuid.UUID) -> None:
     """Tạo 5 nhánh canonical gốc nếu product chưa có taxonomy nào."""
     exists = db.scalars(
