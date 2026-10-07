@@ -1,4 +1,4 @@
-# Plan 33 — Spike S7: Jev (TypeSafe) vs LLM baseline
+﻿# Plan 33 — Spike S7: Jev (TypeSafe) vs LLM baseline
 
 > Nguồn: thoả thuận spike-first (taste/decisions 2026-10-07) · Blocked by: 32 (baseline = enricher v3). **App code KHÔNG đổi.**
 
@@ -12,9 +12,9 @@
 
 ## Tasks
 
-- [ ] Task 1 — Pin vendor docs firsthand: `docs.typesafe.ai/api` + `/models` (`POST /v1/systemone`, model `jev-latest`; shape Noul/Choice/Score). Lệch thực tế → correction dated vào spike report + decisions.
-- [ ] Task 2 — `scripts/spikes/s7_jev_parity.py` theo convention S1–S6 (`_common.py`, docstring PASS criteria, results vào `scripts/spikes/results/` gitignored).
-- [ ] Task 3 — Thiết kế: **per-emotion binary Noul song song**; rỗng → `neutral`; **threshold sweep {0.5, 0.6, 0.7}**; metrics **micro-F1 + precision (+ accuracy)**; ground truth gán tay 1–2 label/record gồm mixed-emotion cases; data = `docs/feedback-mock/` + sample enrich thật; baseline = enricher v3 cùng bộ.
+- [x] Task 1 — Pin vendor docs firsthand: `docs.typesafe.ai/api` + `/models` (`POST /v1/systemone`, model `jev-latest`; shape Noul/Choice/Score). Lệch thực tế → correction dated vào spike report + decisions.
+- [x] Task 2 — `scripts/spikes/s7_jev_parity.py` theo convention S1–S6 (`_common.py`, docstring PASS criteria, results vào `scripts/spikes/results/` gitignored).
+- [x] Task 3 — Thiết kế: **per-emotion binary Noul song song**; rỗng → `neutral`; **threshold sweep {0.5, 0.6, 0.7}**; metrics **micro-F1 + precision (+ accuracy)**; ground truth gán tay 1–2 label/record gồm mixed-emotion cases; data = `docs/feedback-mock/` + sample enrich thật; baseline = enricher v3 cùng bộ.
 - [ ] Task 4 — Chạy spike (cần `JEV_API_BASE/JEV_API_KEY` owner điền); outcome (kể cả flat reject) → entry dated `decisions.md`. PASS → mở Phase 34B.
 
 ## Verify
