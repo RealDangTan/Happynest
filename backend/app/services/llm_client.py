@@ -44,6 +44,31 @@ class LLMStructureError(RuntimeError):
     """Cả fallback chain thất bại — model không trả JSON hợp lệ sau retry."""
 
 
+#: Map call_type → use case routing (plan 30): chat_structured tự resolve model
+#: theo bảng này — caller KHÔNG phải truyền model trừ khi muốn override tường minh.
+_CALL_TYPE_USE_CASE: dict[str, str] = {
+    "classify": "enrich",
+    "schema_map": "schema_map",
+    "name_cluster": "cluster_name",
+    "generate_insight": "insight",
+    "plan": "understand",
+    "evaluate": "understand",
+    "synthesize": "understand",
+    "act_generate": "act",
+    "taxonomy_generate": "taxonomy_generate",
+    "topic_recommend": "topic_recommend",
+}
+
+
+def _resolve_model(call_type: LlmCallType, override: str | None) -> str:
+    """Model cho một call: override tường minh → routing per use case → LLM_MODEL."""
+    if override:
+        return override
+    settings = get_settings()
+    use_case = _CALL_TYPE_USE_CASE.get(call_type.value)
+    return settings.llm_model_for(use_case) if use_case else settings.LLM_MODEL
+
+
 def _get_client() -> Any:
     """OpenAI SDK client singleton, base_url override theo locked decision."""
     global _client
@@ -72,11 +97,14 @@ def _extract_json(text: str) -> str:
 
 
 def _api_call(
-    messages: list[dict[str, str]], response_format: dict | None
+    messages: list[dict[str, str]], response_format: dict | None, model: str | None = None
 ) -> tuple[str, dict[str, int] | None]:
-    """Một call API thô. Trả (content, usage-dict); raise khi provider lỗi."""
+    """Một call API thô. Trả (content, usage-dict); raise khi provider lỗi.
+
+    `model`: override tường minh; rỗng → LLM_MODEL toàn cục (plan 30 routing
+    đã resolve ở tầng chat_structured nên thường không rỗng)."""
     kwargs: dict[str, Any] = {
-        "model": get_settings().LLM_MODEL,
+        "model": model or get_settings().LLM_MODEL,
         "messages": messages,
         "temperature": 0,
         "max_tokens": get_settings().LLM_MAX_TOKENS,
@@ -155,6 +183,7 @@ def chat_structured(
     feedback_id: Any | None = None,
     analysis_run_id: Any | None = None,
     session_factory: Any | None = None,
+    model: str | None = None,
 ) -> BaseModel:
     """Gọi LLM chat ép đầu ra khớp `schema` theo fallback chain khóa ở header.
 
@@ -163,13 +192,15 @@ def chat_structured(
     `call_type`/`prompt_version`: metadata ghi llm_call_logs (classifier truyền
     LlmCallType.classify + PROMPT_VERSION của nó). `session_factory` inject được
     cho unit test — mặc định SessionLocal ứng dụng.
+
+    `model`: override tường minh (hiếm cần); mặc định resolve qua routing per
+    use case (plan 30) dựa trên `call_type` — xem `_CALL_TYPE_USE_CASE`.
     """
     global _structured_output_mode
     from app.db.session import SessionLocal
 
     factory = session_factory or SessionLocal
-    settings = get_settings()
-    model_name = settings.LLM_MODEL
+    model_name = _resolve_model(call_type, model)
     name = f"{call_type.value}:{schema.__name__}"
     base_messages = [
         {"role": "system", "content": system},
@@ -202,7 +233,7 @@ def chat_structured(
     result: BaseModel | None = None
     usage_a: dict[str, int] | None = None
     try:
-        content_a, usage_a = _api_call(base_messages, fmt)
+        content_a, usage_a = _api_call(base_messages, fmt, model_name)
     except Exception as exc:  # noqa: BLE001 — mọi provider error đều rơi xuống Mode B
         a_error = f"provider: {type(exc).__name__}: {exc}"
         latency = int((time.perf_counter() - t0) * 1000)
@@ -250,7 +281,7 @@ def chat_structured(
         b_error: str | None = None
         content_b, usage_b = "", None
         try:
-            content_b, usage_b = _api_call(b_messages, None)
+            content_b, usage_b = _api_call(b_messages, None, model_name)
         except Exception as exc:  # noqa: BLE001
             b_error = f"provider: {type(exc).__name__}: {exc}"
             latency = int((time.perf_counter() - t0) * 1000)

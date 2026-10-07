@@ -9,10 +9,24 @@ từng điền — DATABASE_URL|DB_CONNECT_STRING, EMBEDDING_DIM|EMBEDDING_DIMEN
 """
 
 from functools import lru_cache
+from typing import Literal
 from urllib.parse import quote
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+#: Use case có knob `MODEL_<USE_CASE>` trong .env (plan 30) — thứ tự chỉ để
+#: hiển thị; resolve luôn theo tên.
+MODEL_USE_CASES: tuple[str, ...] = (
+    "schema_map",           # LISTEN import mapping (Gate #1)
+    "enrich",               # JEV-role: enrichment/classify (task đóng)
+    "taxonomy_generate",    # GPT-role: sinh taxonomy (task mở)
+    "topic_recommend",      # GPT-role: đề xuất topic từ pool uncategorized
+    "cluster_name",         # đặt tên cluster
+    "insight",              # generate insight (dự phòng — caller hiện qua understand)
+    "understand",           # UNDERSTAND graph (plan/evaluate/synthesize)
+    "act",                  # ACT agent
+)
 
 
 class Settings(BaseSettings):
@@ -37,6 +51,23 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_MODEL: str = ""
     LLM_MAX_TOKENS: int = 8192  # cap max_tokens per call — OpenRouter 402 khi mặc định model max vượt credit afford
+
+    # --- Model routing per use case (plan 30): rỗng → fallback LLM_MODEL ---
+    MODEL_SCHEMA_MAP: str = ""
+    MODEL_ENRICH: str = ""
+    MODEL_TAXONOMY_GENERATE: str = ""
+    MODEL_TOPIC_RECOMMEND: str = ""
+    MODEL_CLUSTER_NAME: str = ""
+    MODEL_INSIGHT: str = ""
+    MODEL_UNDERSTAND: str = ""
+    MODEL_ACT: str = ""
+
+    # --- Enrich engine (plan 32/34): "jev" CHỈ bật sau khi Spike S7 PASS ---
+    ENRICH_ENGINE: Literal["llm", "jev"] = "llm"
+    JEV_API_BASE: str = ""
+    JEV_API_KEY: str = ""
+    JEV_MODEL: str = "jev-latest"
+    ENRICH_TOPIC_CONFIDENCE_FLOOR: float = 0.60  # dưới mốc này → UNCATEGORIZED
     EMBEDDING_BASE_URL: str = ""  # nếu rỗng → fallback LLM_BASE_URL (Phase 08)
     EMBEDDING_API_KEY: str = ""   # nếu rỗng → fallback LLM_API_KEY
     EMBEDDING_MODEL: str = ""
@@ -105,6 +136,19 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """CORS_ORIGINS là chuỗi phân tách phẩy trong .env → list cho middleware."""
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    def llm_model_for(self, use_case: str) -> str:
+        """Resolve model theo use case (plan 30): `MODEL_<USE_CASE>` →
+        `LLM_MODEL`. Use case lạ (không có knob) → `LLM_MODEL` luôn."""
+        field = f"MODEL_{use_case.upper()}"
+        value = getattr(self, field, "") if hasattr(self, field) else ""
+        return value or self.LLM_MODEL
+
+    @property
+    def model_routing_map(self) -> dict[str, str]:
+        """Map use_case → model đã resolve — /api/health expose để owner tự
+        kiểm chứng routing mà không phải đoán từ log."""
+        return {uc: self.llm_model_for(uc) for uc in MODEL_USE_CASES}
 
     @property
     def database_url_sqla(self) -> str:

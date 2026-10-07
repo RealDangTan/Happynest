@@ -1,123 +1,28 @@
-# BACKEND FOUNDATION — PHÂN RÃ THỰC THI THEO PHASE
+﻿# PLANS — ACTIVE BOARD
 
-> **Nguồn gốc:** [`../backend-foundation-execute-plan.md`](../backend-foundation-execute-plan.md) v1.0 (**amendment v1.1: DB = Supabase**) · bối cảnh gốc: [`../../../AGENTS.md`](../../../AGENTS.md)
-> **Cách dùng:** mỗi lần thực thi = đúng 1 phase. Làm xong tick checkbox trong file phase + cập nhật cột Status ở bảng dưới. Lệch kế hoạch → ghi entry dated vào [`../../../docs/decisions.md`](../../../docs/decisions.md) TRƯỚC khi làm tiếp.
-> **Ngày phân rã:** 2026-08-23
+> Các series đã xong (01–29, FE-\*, UF-\*, delivery-\*) đã được dọn 2026-10-07 — tóm tắt tại [`../plan_report.md`](../plan_report.md); file gốc vẫn nằm trong git history.
+> Quy tắc: lệch kế hoạch → entry dated [`../decisions.md`](../decisions.md) TRƯỚC khi làm tiếp. Không Docker · không subagent · PII boundary · endpoint đổi → `../api-checklist.md` cùng commit.
 
----
+## Series Listen AI re-spec (30–34) — khai báo 2026-10-07 — ⚡ ACTIVE
 
-## 1. Hiện trạng máy (đã khảo sát 2026-08-23)
-
-| Hạng mục | Trạng thái | Ảnh hưởng |
-|---|---|---|
-| Git identity + commit #1 `.gitattributes` | ✅ Xong | — |
-| Repo | Gần trống: chỉ có AGENTS.md, README.md, docs/ | Phải dựng toàn bộ |
-| Database | 🔄 Chuyển sang **Supabase** (v1.1) — project chưa tạo | Phase 01 việc người dùng; thay cho PG-in-WSL2 gốc (xem decisions.md) |
-| uv | ❌ Chưa cài (python hệ thống 3.11.9) | Phase 01 cài |
-| Env vars Windows `STANZA_RESOURCES_DIR`, `PIP_CACHE_DIR` | ❌ Chưa đặt | Phase 01 đặt |
-| Models stanza (vi, en) + spaCy `en_core_web_lg` | ❌ Chưa tải | Phase 01 tải |
-| `.env` / `.env.example` | ❌ Chưa tồn tại | Phase 01 tạo example, người dùng điền key |
-| Tín dụng API (OpenRouter) | ⚠️ Rất thấp (subagent từng lỗi 402) | Thực thi inline, không spawn subagent |
-
-## 2. Bảng phase
-
-| # | File | Phạm vi | Blocked by | Status | Commit |
-|---|---|---|---|---|---|
-| 01 | [01-preconditions-environment.md](01-preconditions-environment.md) | §3 preconditions + §5 env contract + cài uv/pyproject pins | — | ✅ 2026-08-24 | `chore(env): pin deps day one, add .env.example` |
-| 02 | [02-spikes-core-s1-s2-s3-s6.md](02-spikes-core-s1-s2-s3-s6.md) | §8 spike S1, S2, S3, S6 | 01 (S3/S6 cần PG) | ✅ 2026-08-24 (S4/S5 dời phase 10) | `test(spikes): add S1-S3,S6 evidence scripts and record outcomes` |
-| 03 | [03-repo-skeleton-models-migrations.md](03-repo-skeleton-models-migrations.md) | §4 layout + §6 models + Alembic | 01 | ✅ 2026-08-24 | `feat(db): app skeleton, all core models, alembic baseline` |
-| 04 | [04-auth-rbac.md](04-auth-rbac.md) | Auth + RBAC | 03 | ✅ 2026-08-24 | `feat(auth): oauth2 password flow, jwt cookie, role guard, seed users` |
-| 05 | [05-feedback-ingestion.md](05-feedback-ingestion.md) | Ingestion POST/CSV/list/detail | 03, 04 | ✅ 2026-08-24 | `feat(feedback): manual post, csv import, paginated list/detail` |
-| 06 | [06-pii-presidio-service.md](06-pii-presidio-service.md) | Presidio sanitize + wiring | 05, 01 (models đã tải) | ✅ 2026-08-24 | `feat(pii): presidio sanitize service wired into ingestion` |
-| 07 | [07-llm-client-classifier.md](07-llm-client-classifier.md) | LLM client + classifier + tracing | 03, 01 (key .env) | ✅ 2026-08-24 | code trong `feat(services)` 0df1e4b (sweep phiên song song) + `test(llm): …` |
-| 08 | [08-embedder-pgvector-similarity.md](08-embedder-pgvector-similarity.md) | Embedder + `/similar` | 03, 01 (key .env) | ✅ 2026-08-24 | `feat(embedding): embedder service, vector storage, similar endpoint` |
-| 09 | [09-analysis-runner-progress-api.md](09-analysis-runner-progress-api.md) | Batch runner + progress API | 06, 07, 08 | ✅ 2026-08-25 | `feat(analysis): idempotent batch runner, run progress endpoints` |
-| 10 | [10-spikes-late-s4-s5.md](10-spikes-late-s4-s5.md) | §8 spike S4, S5 | 03, 01 (PG) | ✅ 2026-08-24 | `test(spikes): S4/S5 evidence scripts, outcomes 6/6 PASS` |
-| 11 | [11-test-suite-polish.md](11-test-suite-polish.md) | Suite pytest hoàn thiện | 04–09 | ✅ 2026-08-25 | `test(suite): conftest strategy, markers, green unit + integration` |
-| 12 | [12-definition-of-done-sweep.md](12-definition-of-done-sweep.md) | §9 DoD sweep + docs cuối | Tất cả | ✅ 2026-08-25 | `docs(dod): final readme, api notes, dod sweep results` |
-
-Thứ tự chạy = đúng mốc §10.8 của execute plan: **01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12**.
-
-Đồ thị phụ thuộc rút gọn:
-
-```text
-01 ─┬─ 02 (S3/S6 đợi PG thật) ────────────────┐
-    ├─ 03 ─┬─ 04 ─ 05 ─ 06 ─┐                 │
-    │      ├─ 07 ────────────┼─ 09 ─ 11 ─ 12   │
-    │      ├─ 08 ────────────┘                 │
-    │      └─ 10 (S5 cần PG)                   │
-    └─ (việc người dùng: Supabase project, .env, Langfuse) ─┴─ chặn S3/S6/S5 + mọi verify cần DB (cần internet)
-```
-
-## 3. Quy tắc làm việc chung (áp cho mọi phase)
-
-1. **Mỗi phase ≥ 1 conventional commit** (`feat(auth): …`, `fix(db): …`), nhỏ, không commit `.env` hay key thật.
-2. **Blocker rule (§10.6):** phase fail sau nỗ lực hợp lý → STOP phase đó, ghi blocker vào `docs/decisions.md`, chuyển sang phase độc lập khác, báo cáo cuối phiên.
-3. **Deviation rule:** mọi lệch (conflict package, thiếu apt package, quirk provider) → fix forward + entry dated theo format trong `decisions.md`.
-4. **Không Docker** dưới mọi hình thức. Dev = FastAPI native Windows + **Supabase** managed PostgreSQL (v1.1).
-9. **Anti-pause Supabase:** free tier tự pause sau 7 ngày low-activity — mỗi tuần mở dashboard hoặc chạy ≥1 query. DB cần internet mọi phiên làm việc.
-5. **PII boundary:** raw content không bao giờ vào prompt, log, trace, docs. Chỉ `sanitized_content` ra khỏi biên sanitize.
-6. **Windows quirks:** `uvicorn --reload` chạy RIÊNG một terminal, không spawn subprocess dưới reload; mọi file `.sh`/`.sql` LF-only (`.gitattributes` đã ép).
-7. **Pin đúng ngày đầu** trong `backend/pyproject.toml`; thêm thư viện ngoài danh sách §1 → phải log lý do (`tenacity` đã được duyệt sẵn).
-8. **Không spawn subagent** khi thực thi (tín dụng API thấp) — làm inline.
-
-## 4. Checklist tiến độ tổng
-
-- [x] 01 Môi trường + preconditions
-- [x] 02 Spike S1/S2/S3/S6
-- [x] 03 Skeleton + models + migrations
-- [x] 04 Auth + RBAC
-- [x] 05 Ingestion
-- [x] 06 Presidio PII
-- [x] 07 LLM client + classifier
-- [x] 08 Embedder + similarity
-- [x] 09 Analysis runner
-- [x] 10 Spike S4/S5
-- [x] 11 Test suite polish
-- [x] 12 DoD sweep
-
-## 5. Series Agent module (17–20) — khai báo 2026-08-26 — ⚠️ SUPERSEDED 2026-08-28
-
-> **SUPERSEDED:** Re-plan VoC OS 2026-08-28 (xem [decisions.md](../decisions.md) cùng ngày) — kiến trúc mới LISTEN → UNDERSTAND → ACT thay thế thiết kế này. Series 17–19 đã commit (8d935a3..26f35c8) nhưng code sẽ bị strip theo quyết định "strip & rewrite"; series thực thi mới là **[21–27](21-27-voc-os-index.md)**. Bảng dưới giữ lại làm bằng chứng lịch sử.
+> Nguồn: spec "AI trong Listen — Taxonomy Setup + JEV Enrichment" (owner 2026-10-07) + `decisions.md` cùng ngày.
+> Nguyên tắc: **GPT discovers the label space · JEV applies the label space at scale · Human controls taxonomy evolution.**
+> Supersede một phần plan 23 cũ (auto-emerging per-record); bảng taxonomies + governance giữ nguyên.
 
 | # | File | Phạm vi | Blocked by | Status |
 |---|---|---|---|---|
-| 17 | [17-agent-substrate-demo-data.md](17-agent-substrate-demo-data.md) | Migration 0007 (insights.embedding, action_drafts, insight_reviews, impact_checks, enum route/critic) + dataset demo ~650 row planted spike/false-alarm | head migration ổn định | ⚠️ code committed, SUPERSEDED |
-| 18 | [18-agent-toolbox.md](18-agent-toolbox.md) | 5 tool deterministic + registry cho router + backfill insight embeddings | 17, phase 14 Task 3–4 | ⚠️ code committed, SUPERSEDED |
-| 19 | [19-agent-graph-hitl.md](19-agent-graph-hitl.md) | LangGraph fully LLM-routed (router node) + budget cap + critic + risk gate + interrupt/resume + `/api/agent/*` | 18 | ⚠️ code committed, SUPERSEDED |
-| 20 | [20-closed-loop-kpis-demo.md](20-closed-loop-kpis-demo.md) | Impact check closed-loop + `GET /api/reports/kpis` (thuần SQL) + demo script + align success story | 17 (Task 1–2 độc lập); 19 (demo trọn) | ⚠️ KPI committed (95c59dd), SUPERSEDED |
-
-## 6. Series VoC OS rewrite (21–27) — khai báo 2026-08-28
-
-> Nguồn thiết kế: [`../VoC Agent Operating System — Technical Implementation Plan.md`](../VoC%20Agent%20Operating%20System%20—%20Technical%20Implementation%20Plan.md). Quy tắc §3 phía trên áp dụng nguyên vẹn. Chi tiết: [21-27-voc-os-index.md](21-27-voc-os-index.md).
-
-| # | File | Phạm vi | Blocked by | Status |
-|---|---|---|---|---|
-| 21 | [21-voc-core-reshape.md](21-voc-core-reshape.md) | Migration 0008 destructive: products, imports, feedback JSONB zones + strip hitl_graph/review/agent/sources/insights cũ | — | ⬜ |
-| 22 | [22-listen-schema-intelligence.md](22-listen-schema-intelligence.md) | Migration 0009 product_schemas + profiler + LLM mapper + Gate #1 + Supabase Storage raw | 21 | ⬜ |
-| 23 | [23-taxonomy-semantic.md](23-taxonomy-semantic.md) | Migration 0010 taxonomies + emerging themes + ai_analysis JSONB reshape + runner thích ứng | 21 | ⬜ ⚠️ flow auto-emerging partial-superseded 2026-10-07 → series [30–34](#7-series-listen-ai-re-spec-3034--khai-báo-2026-10-07) |
-| 24 | [24-analytics-engine.md](24-analytics-engine.md) | 9 MVP tools + query compiler (validate theo product schema, không SQL tự do) | 22, 23 | ⬜ |
-| 25 | [25-understand-agent.md](25-understand-agent.md) | Migration 0011 evidence + insights mới + UNDERSTAND graph (planner/evaluator/synthesizer) + Gate #2 | 24 | ⬜ |
-| 26 | [26-act-agent.md](26-act-agent.md) | Migration 0012 actions + ACT agent + priority formula + matrix + Gate #3 | 25 | ⬜ |
-| 27 | [27-decision-memory-kpis.md](27-decision-memory-kpis.md) | Migration 0013 decision_logs + KPIs LISTEN/UNDERSTAND/ACT + DoD sweep + docs | 21–26 | ⬜ |
-| 28 | [28-navbar-activity-budgeted-analysis.md](28-navbar-activity-budgeted-analysis.md) | Explicit LISTEN paid gates + scoped/batched analysis + navbar Activity Center contract | 21–27, migration 0014 | ✅ 2026-08-31 |
-| 29 | [29-interactive-agent-terminal.md](29-interactive-agent-terminal.md) | Existing agent terminal + HTTP CSV → three gates → impact wizard; Windows launcher | 25–28 | ✅ extended 2026-09-07 |
-
-## 7. Series Listen AI re-spec (30–34) — khai báo 2026-10-07
-
-> Nguồn thiết kế: spec "AI trong Listen — Taxonomy Setup + JEV Enrichment" (owner 2026-10-07) + [decisions.md](../decisions.md) cùng ngày. Nguyên tắc: **GPT discovers the label space · JEV applies the label space at scale · Human controls taxonomy evolution.** Supersede một phần plan 23 (auto-emerging per-record); bảng taxonomies + governance giữ nguyên. Quy tắc §3 áp dụng nguyên vẹn.
-
-| # | File | Phạm vi | Blocked by | Status |
-|---|---|---|---|---|
-| 30 | [30-model-routing-env.md](30-model-routing-env.md) | `MODEL_*` routing mọi use case + `ENRICH_ENGINE`/`JEV_*` + health model map | — | ⬜ |
+| 30 | [30-model-routing-env.md](30-model-routing-env.md) | `MODEL_*` routing mọi use case + `ENRICH_ENGINE`/`JEV_*` + health model map | — | ✅ 2026-10-07 |
 | 31 | [31-taxonomy-generation-gpt.md](31-taxonomy-generation-gpt.md) | Migration 0016 + GPT generate proposal + human apply → Active Taxonomy v1 | 30 | ⬜ |
 | 32 | [32-jev-enrichment-engine.md](32-jev-enrichment-engine.md) | Enricher v3 (LLM backend) + UNCATEGORIZED + strip classifier/auto-emerging + re-enrich endpoint | 30, 31 | ⬜ |
 | 33 | [33-spike-s7-jev.md](33-spike-s7-jev.md) | Spike S7: Jev (TypeSafe) vs LLM baseline — gate bật `ENRICH_ENGINE=jev` | 32 | ⬜ |
 | 34 | [34-topic-recommendation-gpt.md](34-topic-recommendation-gpt.md) | Recommend topics + apply → Taxonomy v2 + re-enrich loop + e2e (+34B jev wiring nếu S7 PASS) | 32 (34B: +33) | ⬜ |
 
-```text
-21 ── 22 ─┬─ 24 ── 25 ── 26 ── 27
- └───────┴─ 23 ──┘
-```
+Thứ tự cứng: **30 → 31 → 32 → 33 → 34**.
 
-Quy tắc áp dụng nguyên bộ quy tắc §3 phía trên (inline, không subagent, PII boundary, lệch → decisions). Các series khác: FE xem [`FE-00-index.md`](FE-00-index.md), UF xem [`UF-00-index.md`](UF-00-index.md).
+Checklist:
+
+- [ ] 30 Model routing env
+- [ ] 31 Taxonomy generation (GPT)
+- [ ] 32 JEV enrichment engine
+- [ ] 33 Spike S7 JEV
+- [ ] 34 Topic recommendation + e2e

@@ -127,6 +127,9 @@ def create_app() -> FastAPI:
             "db": db_status,
             "structured_output_mode": llm_client._structured_output_mode,
             "llm_model": settings.LLM_MODEL or None,
+            # Plan 30: map use_case → model đã resolve (owner tự kiểm chứng routing).
+            "models": settings.model_routing_map,
+            "enrich_engine": settings.ENRICH_ENGINE,
             "embedding_model": settings.EMBEDDING_MODEL or None,
             "pii_mode": presidio_service.mode()["mode"],
         }
