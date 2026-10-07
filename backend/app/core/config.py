@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     LLM_BASE_URL: str = ""
     LLM_API_KEY: str = ""
     LLM_MODEL: str = ""
+    LLM_MAX_TOKENS: int = 8192  # cap max_tokens per call — OpenRouter 402 khi mặc định model max vượt credit afford
     EMBEDDING_BASE_URL: str = ""  # nếu rỗng → fallback LLM_BASE_URL (Phase 08)
     EMBEDDING_API_KEY: str = ""   # nếu rỗng → fallback LLM_API_KEY
     EMBEDDING_MODEL: str = ""

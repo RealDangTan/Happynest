@@ -42,7 +42,7 @@ export default function LoginPage() {
       return res.json();
     },
     onSuccess: async () => {
-      router.replace("/feedbacks");
+      router.replace("/importer");
       router.refresh();
     },
   });

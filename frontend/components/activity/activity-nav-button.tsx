@@ -8,7 +8,7 @@ import { useActivity } from "./activity-provider";
 
 export function ActivityNavButton() {
   const activity = useActivity();
-  const label = `${activity.attentionCount} việc cần duyệt, ${activity.runningCount} job đang chạy`;
+  const label = `${activity.attentionCount} task(s) need review, ${activity.runningCount} running`;
 
   return (
     <Button
@@ -28,7 +28,7 @@ export function ActivityNavButton() {
       {["idle", "needs_attention"].includes(activity.state) ? (
         <Activity data-icon="inline-start" />
       ) : null}
-      <span className="hidden sm:inline">Hoạt động</span>
+      <span className="hidden sm:inline">Current tasks</span>
       {activity.state === "running" && activity.runningCount > 0 ? (
         <Badge variant="secondary">{activity.runningCount}</Badge>
       ) : activity.attentionCount > 0 ? (

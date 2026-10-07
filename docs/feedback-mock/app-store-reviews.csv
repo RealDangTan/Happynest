@@ -1,0 +1,33 @@
+﻿id,app_id,title,content,rating,version,author_nickname,reviewed_date,territory,storefront,device,ios_version,helpful_yes,helpful_no
+AS-0001,1499000000,"Crash when uploading photos","App crashes every time I try to upload a photo larger than 4MB. Please fix!",1,2.4.1,AppleUser812,2026-08-02,VN,VNM,iPhone 14 Pro,17.5,15,3
+AS-0002,1499000000,"Trợ lý AI tốt nhất Việt Nam","Mình đã thử nhiều AI assistant nhưng HappyBot hiểu tiếng Việt tốt nhất. Đáng tiền!",5,2.4.1,ngoc.minh.88,2026-08-02,VN,VNM,iPhone 15,18.0,42,1
+AS-0003,1499000000,"Subscription issue","Charged twice for the yearly plan. My receipt: receipt.fake-2026@apple.com. Need refund.",2,2.4.0,DavidTran,2026-08-04,VN,VNM,iPhone 13,17.6,8,0
+AS-0004,1499000000,"Good but battery hungry","Chất lượng trả lời ok nhưng pin tụt nhanh quá khi dùng voice mode.",3,2.4.1,thao.bui.1995,2026-08-05,VN,VNM,iPhone 12 mini,17.5,11,2
+AS-0005,1499000000,"Voice recognition cần cải thiện","Giọng miền Tây nó không nhận diện được. iOS version làm chưa bằng Android.",2,2.4.1,tuankiet.vn,2026-08-06,VN,VNM,iPhone 11,17.5,19,4
+AS-0006,1499000000,"Great for studying","I use this for TOEIC prep everyday. The bot explains grammar mistakes clearly.",5,2.4.1,LinhNguyenEdu,2026-08-07,VN,VNM,iPad Air 5,17.5,31,0
+AS-0007,1499000000,"Face ID login fails","Face ID không hoạt động trên iOS 18, phải gõ mật khẩu mỗi lần mở app.",2,2.4.1,quanghuy.it,2026-08-08,VN,VNM,iPhone 15 Pro,18.0,14,1
+AS-0008,1499000000,"Nice update","Dark mode mới rất đẹp, font dễ đọc. Keep it up team!",4,2.4.1,michelle.pham,2026-08-09,VN,VNM,iPhone 14,17.6,9,0
+AS-0009,1499000000,"Hallucination problem","Bot bịa nguồn trích dẫn không có thật khi tôi hỏi về luật lao động. Nguy hiểm cho người dùng tin tưởng.",1,2.4.1,luatsugiabao,2026-08-10,VN,VNM,iPhone 15 Pro Max,18.0,67,2
+AS-0010,1499000000,"Hỗ trợ khách hàng nhanh","Báo lỗi qua in-app support, 2 giờ sau đã được fix. 5 sao cho support team!",5,2.4.1,minhhang.02,2026-08-11,VN,VNM,iPhone 13 mini,17.6,6,0
+AS-0011,1499000000,"Widget missing","Trên iOS còn chưa có widget như Android version. Please add soon!",3,2.4.1,iosfanboy2010,2026-08-12,VN,VNM,iPhone 14 Plus,17.6,22,3
+AS-0012,1499000000,"Tốt cho công việc","Tôi dùng để draft email và meeting notes mỗi ngày, tiết kiệm được 1-2 tiếng.",4,2.4.1,projectman.ha,2026-08-13,VN,VNM,iPad Pro 11,17.5,17,1
+AS-0013,1499000000,"Đăng nhập bằng Apple ID bị lỗi","Sign in with Apple báo error ngay từ lần đầu. Không vào được app luôn.",1,2.4.1,thanh.user.77,2026-08-14,VN,VNM,iPhone XR,17.5,25,5
+AS-0014,1499000000,"Amazing translation","Dịch tài liệu tiếng Nhật sang tiếng Việt rất chính xác. Surprisingly good!",5,2.4.1,kenji.hcm,2026-08-15,VN,VNM,iPhone 15,18.0,28,0
+AS-0015,1499000000,"Too expensive","Gói Pro 199k/tháng hơi mắc so với thu nhập sinh viên. Student discount đi team!",3,2.4.1,sinhvienit.uit,2026-08-16,VN,VNM,iPhone SE 3,17.6,35,6
+AS-0016,1499000000,"Data sync broken","iCloud sync không hoạt động giữa iPhone và iPad, notes viết trên máy này máy kia không thấy.",2,2.4.1,lethu.hn,2026-08-17,VN,VNM,iPhone 13 Pro,17.6,12,1
+AS-0017,1499000000,"Perfect for brainstorm","Ideation mode rất hay, bot gợi ý angle mới cho content marketing của tôi.",4,2.4.1,creator.dung,2026-08-18,VN,VNM,iPhone 14 Pro,17.6,8,0
+AS-0018,1499000000,"Push notification quá nhiều","Nhận 5-6 notification mỗi ngày, không có option tắt từng loại.",2,2.4.1,annoyeduser.vn,2026-08-19,VN,VNM,iPhone 12,17.5,20,2
+AS-0019,1499000000,"Code helper tuyệt vời","Debug Swift code nhanh gấp 3. Nhờ app mà project của tôi ship đúng deadline.",5,2.4.1,iosdev.tu,2026-08-20,VN,VNM,MacBook Air M2 (app),18.0,33,1
+AS-0020,1499000000,"App freeze on long chats","Cuộc hội thoại dài hơn 100 tin nhắn thì app bị đơ, phải kill và reopen.",2,2.4.1,chatheavy.user,2026-08-21,VN,VNM,iPhone 11 Pro,17.5,16,3
+AS-0021,1499000000,"Ổn định hơn trước","Version 2.4.1 fix được crash lúc dùng image analysis. Now it works fine.",4,2.4.1,phuc.nguyen.9x,2026-08-22,VN,VNM,iPhone 13,17.6,5,0
+AS-0022,1499000000,"Privacy concern","Bot đọc được content clipboard mà không hỏi permission? Contact me at privacy.fake@icloud.com for details.",1,2.4.1,securityfirst.hn,2026-08-23,VN,VNM,iPhone 15 Pro,18.0,48,7
+AS-0023,1499000000,"Vietnamese NLP tốt","So với các app AI khác, HappyBot xử lý teencode và viết tắt tiếng Việt rất tốt. 'ko bt' nó cũng hiểu lol",5,2.4.1,teencodetest,2026-08-24,VN,VNM,iPhone 14,17.6,26,2
+AS-0024,1499000000,"Search trong history kém","Tìm lại tin nhắn cũ trong chat history gần như bất khả thi. Cần full-text search.",3,2.4.1,archivist.me,2026-08-25,VN,VNM,iPad mini 6,17.5,13,1
+AS-0025,1499000000,"Good value","So sánh với ChatGPT subscription thì gói của app này rẻ hơn mà tính năng đủ dùng.",4,2.4.1,smartshopper.vt,2026-08-26,VN,VNM,iPhone 13 mini,17.6,11,4
+AS-0026,1499000000,"App Store rating bị lừa?","Cho 5 sao để đổi coupon giảm giá như yêu cầu từ support — app thực ra chỉ 3 sao thôi.",3,2.4.1,honestreviewer99,2026-08-27,VN,VNM,iPhone 12 Pro,17.5,58,12
+AS-0027,1499000000,"Voice modelag nhiều","Voice mode trên iOS 17.5 bị delay 3-4 giây mỗi lượt trả lời.",2,2.4.1,peternguyen88,2026-08-28,VN,VNM,iPhone 11,17.5,9,1
+AS-0028,1499000000,"Best Vietnamese AI app","Tự hào sản phẩm Việt! Bot trả lời văn hóa tiếng Việt rất chuẩn, dùng thành ngữ tự nhiên.",5,2.4.1,nguoiviet.tuhao,2026-08-29,VN,VNM,iPhone 15 Pro Max,18.0,44,2
+AS-0029,1499000000,"Export function thiếu","Không thể export cuộc hội thoại ra Notes hoặc PDF trên iOS.",3,2.4.1,organizer.anh,2026-08-30,VN,VNM,iPad 10,17.6,18,2
+AS-0030,1499000000,"Giúp mẹ dạy con học","Tôi dùng app để giải thích bài tập cho con, bot giải thích rất dễ hiểu cho trẻ.",5,2.4.1,mebon.2012,2026-08-31,VN,VNM,iPhone 12 mini,17.5,21,0
+AS-0031,1499000000,"Login loop bug","Sau update 2.4.1, app bị loop login mãi không vào được màn hình chính.",1,2.4.1,trapped.in.loop,2026-09-01,VN,VNM,iPhone 14 Plus,17.6,30,4
+AS-0032,1499000000,"Recommended!","My whole team switched to HappyBot for meeting summaries. Solid productivity gain.",4,2.4.1,teamlead.sg,2026-09-02,VN,VNM,iPhone 15,18.0,14,1

@@ -15,19 +15,27 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_role
+from app.core.config import get_settings
 from app.models.analysis_run import AnalysisRun
 from app.models.evidence import Evidence
 from app.models.insight import Insight
+from app.models.llm_call_log import LlmCallLog
 from app.models.user import User
 from app.schemas.agent import (
     AgentDecisionIn,
     AgentRunCreatedOut,
     AgentRunCreateIn,
     AgentRunStatusOut,
+    AgentTraceOut,
+    AgentTraceRowOut,
     EvidenceRefOut,
     InsightsListOut,
     InsightOut,
+    InsightUpdateIn,
+    RunProgressOut,
 )
+from app.models.enums import InsightReviewAction, RunStatus
+from app.models.insight_review import InsightReview
 from understand_agent import runner as understand_runner
 
 router = APIRouter(
@@ -35,6 +43,9 @@ router = APIRouter(
     tags=["agent"],
     dependencies=[Depends(require_role("pm", "operations"))],
 )
+
+# Destructive ops siết thêm: chỉ pm.
+_pm_only = [Depends(require_role("pm"))]
 
 
 @router.post("/agent/runs", status_code=status.HTTP_200_OK)
@@ -55,6 +66,40 @@ def _load_run(db: Session, run_id: uuid.UUID) -> AnalysisRun:
     return run
 
 
+def _run_progress(db: Session, run: AnalysisRun) -> RunProgressOut | None:
+    """Progress điều tra (chỉ khi running) — query rẻ từ Evidence/LlmCallLog."""
+    if run.status != RunStatus.running:
+        return None
+    evidence_count = int(
+        db.scalar(
+            select(func.count()).select_from(Evidence).where(Evidence.run_id == run.id)
+        )
+        or 0
+    )
+    llm_calls = int(
+        db.scalar(
+            select(func.count())
+            .select_from(LlmCallLog)
+            .where(LlmCallLog.analysis_run_id == run.id)
+        )
+        or 0
+    )
+    last_ev = db.scalars(
+        select(Evidence)
+        .where(Evidence.run_id == run.id)
+        .order_by(Evidence.created_at.desc())
+        .limit(1)
+    ).first()
+    return RunProgressOut(
+        iteration=evidence_count,
+        max_iterations=get_settings().UNDERSTAND_MAX_ITERATIONS,
+        last_tool=last_ev.source_tool if last_ev else None,
+        llm_calls_used=llm_calls,
+        llm_budget=get_settings().UNDERSTAND_LLM_BUDGET_PER_RUN,
+        evidence_count=evidence_count,
+    )
+
+
 @router.get("/agent/runs/{run_id}")
 def get_agent_run(run_id: uuid.UUID, db: Session = Depends(get_db)) -> AgentRunStatusOut:
     run = _load_run(db, run_id)
@@ -67,6 +112,44 @@ def get_agent_run(run_id: uuid.UUID, db: Session = Depends(get_db)) -> AgentRunS
         started_at=run.started_at,
         completed_at=run.completed_at,
         pending_approval=payload,
+        progress=_run_progress(db, run),
+    )
+
+
+@router.get("/agent/runs/{run_id}/trace")
+def get_agent_run_trace(
+    run_id: uuid.UUID, db: Session = Depends(get_db)
+) -> AgentTraceOut:
+    """Trace metadata-only các LLM call của run (HAX G4/G16) — FE live trace.
+
+    PII boundary: KHÔNG trả prompt/response — chỉ call_type, OK/ERROR,
+    latency, tokens, model (đúng ràng buộc plan 29).
+    """
+    _load_run(db, run_id)
+    rows = db.scalars(
+        select(LlmCallLog)
+        .where(LlmCallLog.analysis_run_id == run_id)
+        .order_by(LlmCallLog.created_at.asc())
+        .limit(200)
+    ).all()
+    return AgentTraceOut(
+        run_id=run_id,
+        items=[
+            AgentTraceRowOut(
+                call_type=(
+                    r.call_type.value if hasattr(r.call_type, "value") else str(r.call_type)
+                ),
+                status="error" if r.error else "ok",
+                latency_ms=r.latency_ms,
+                prompt_tokens=r.prompt_tokens,
+                completion_tokens=r.completion_tokens,
+                model=r.model,
+                prompt_version=r.prompt_version,
+                error=(r.error[:200] if r.error else None),
+                created_at=r.created_at,
+            )
+            for r in rows
+        ],
     )
 
 
@@ -164,3 +247,62 @@ def list_insights(
         item["evidence"] = [e.model_dump(mode="json") for e in evidence_refs]
         items.append(InsightOut.model_validate(item))
     return InsightsListOut(items=items, total=int(total or 0))
+
+
+@router.patch("/insights/{insight_id}", dependencies=_pm_only)
+def update_insight(
+    insight_id: uuid.UUID,
+    body: InsightUpdateIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> InsightOut:
+    """Sửa trực tiếp title/finding — nhãn người dùng = ground truth, đỡ
+    hallucinate. Ghi trail `insight_reviews` (action=edit) + status='edited'."""
+    insight = db.get(Insight, insight_id)
+    if insight is None:
+        raise HTTPException(status_code=404, detail="Insight không tồn tại.")
+
+    original = {"title": insight.title, "finding": insight.finding}
+    edited: dict[str, str] = {}
+    if body.title is not None:
+        insight.title = body.title
+        edited["title"] = body.title
+    if body.finding is not None:
+        insight.finding = body.finding
+        edited["finding"] = body.finding
+    if not edited:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Không có trường nào để sửa (title/finding).",
+        )
+
+    insight.status = "edited"
+    db.add(
+        InsightReview(
+            insight_id=insight.id,
+            original_value=original,
+            edited_value=edited,
+            action=InsightReviewAction.edit,
+            reviewer_id=user.id,
+        )
+    )
+    db.commit()
+    db.refresh(insight)
+    return InsightOut.model_validate(insight)
+
+
+@router.delete(
+    "/insights/{insight_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=_pm_only,
+)
+def delete_insight(
+    insight_id: uuid.UUID, db: Session = Depends(get_db)
+) -> None:
+    """Hard delete insight sai/hallucinate — actions, insight_reviews,
+    impact_checks cascade sẵn ở DB (ondelete=CASCADE)."""
+    insight = db.get(Insight, insight_id)
+    if insight is None:
+        raise HTTPException(status_code=404, detail="Insight không tồn tại.")
+    db.delete(insight)
+    db.commit()

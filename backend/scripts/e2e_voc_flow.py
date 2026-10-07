@@ -113,7 +113,7 @@ def main() -> int:
         from app.models.insight import Insight
 
         insight = db.get(Insight, insight_id)
-        created, skipped = act_agent.generate_actions(db, insight)
+        created, skipped, _gen_err = act_agent.generate_actions(db, insight)
         print(f"[8] ACT: {len(created)} actions, skipped: {', '.join(skipped) or '—'}")
         if created:
             a = created[0]

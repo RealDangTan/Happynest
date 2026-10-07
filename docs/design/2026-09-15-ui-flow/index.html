@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Happynest - UI flow review</title>
+  <style>
+    :root{--ink:#14251d;--paper:#f1f3e9;--chalk:#fcfcf8;--lichen:#91a873;--pollen:#dbac3b;--blue:#3f738b;--line:#d9dfd2;--muted:#5c685c}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Segoe UI",Aptos,Arial,sans-serif}
+    button,a,input{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}a{color:var(--blue);text-underline-offset:3px}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:4px}
+    .skip{position:absolute;left:16px;top:-80px;z-index:10;background:white;padding:10px}.skip:focus{top:12px}
+    .shell{min-height:100vh;display:grid;grid-template-columns:244px minmax(0,1fr)}.rail{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--ink);color:var(--chalk);padding:30px 18px;display:flex;flex-direction:column;gap:28px}
+    .brand{font-size:24px;font-weight:650;letter-spacing:-1px;padding:0 12px}.brand small{display:block;font:11px/1.6 "Segoe UI",sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:#c3d0b6;margin-top:5px}
+    .stage{margin:0 0 18px}.stage h2{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#aaba9e;margin:0 12px 9px}.nav-item{color:#e9eee3;text-decoration:none;display:flex;align-items:baseline;gap:10px;padding:10px 12px;border-radius:6px;margin:2px 0}.nav-item span{font:11px monospace;color:#aaba9e}.nav-item:hover{background:#263b2d}.nav-item[aria-current=page]{background:var(--lichen);color:var(--ink);font-weight:650}.nav-item[aria-current=page] span{color:var(--ink)}.nav-item.flow{font-size:13px;padding-top:6px;padding-bottom:6px;color:#c3d0b6}.nav-item.flow[aria-current=page]{color:var(--ink)}
+    .rail-note{margin:auto 12px 0;font-size:12px;color:#b6c2ad;border-top:1px solid #354735;padding-top:18px}.rail-note a{color:#e9eee3}
+    .workspace{min-width:0}.topbar{min-height:76px;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;gap:16px;border-bottom:1px solid var(--line);background:var(--chalk)}.topbar p{margin:0;font-size:13px;color:var(--muted)}.topbar strong{color:var(--ink)}.tabs{display:flex;gap:5px;background:var(--paper);padding:4px;border:1px solid var(--line);border-radius:8px}.tabs button{border:0;background:none;padding:7px 14px;color:var(--muted);border-radius:4px}.tabs button[aria-pressed=true]{background:var(--ink);color:var(--chalk)}
+    main{padding:30px 32px 20px;max-width:1700px;margin:0 auto}.eyebrow{font:11px/1.4 monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--blue);margin:0 0 8px}.heading{display:flex;gap:24px;justify-content:space-between;align-items:flex-start;margin-bottom:20px}.heading h1{font:400 clamp(27px,3vw,40px)/1.1 Palatino,"Palatino Linotype",Georgia,serif;margin:0 0 10px;letter-spacing:-.6px}.heading p{max-width:760px;color:var(--muted);margin:0}.badge{display:inline-block;white-space:nowrap;padding:5px 10px;background:#e9eddc;border:1px solid #c9d1bc;border-radius:5px;font-size:12px}.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}.toolbar .counter{margin-right:auto;font-size:12px;color:var(--muted)}.button{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;border:1px solid #c6cebd;background:var(--chalk);padding:8px 13px;border-radius:5px;color:var(--ink);min-height:38px}.button:hover{background:#e7eddd}.button:disabled{opacity:.4;cursor:default}.button.primary{background:var(--ink);color:var(--chalk);border-color:var(--ink)}
+    .figure{margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:white;box-shadow:0 8px 26px #14251d07}.image-button{padding:0;display:block;width:100%;border:0;background:#e9ede2;cursor:zoom-in}.image-button img{display:block;width:100%;height:auto;max-height:calc(100vh - 320px);min-height:250px;object-fit:contain}.figure figcaption{display:flex;gap:15px;justify-content:space-between;align-items:center;padding:11px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}.figure figcaption span:last-child{font-family:monospace;white-space:nowrap}.review-note{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;border-left:3px solid var(--blue);padding:14px 18px;margin:18px 0;background:#e7ece8;font-size:13px}.review-note strong{color:var(--blue)}.review-note p{margin:0}.handoff{display:flex;gap:16px;justify-content:space-between;padding:12px 0;font-size:12px;color:var(--muted)}
+    [hidden]{display:none!important}.ascii-header{margin-bottom:22px}.ascii-header h1{font:36px Palatino,Georgia,serif;margin:0 0 10px}.ascii-header p{color:var(--muted)}.ascii-tools{display:flex;gap:10px;flex-wrap:wrap}.ascii-content{overflow:auto;background:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:24px;font:12px/1.65 Consolas,"Cascadia Mono",monospace;tab-size:2;white-space:pre;max-height:75vh}
+    dialog{width:calc(100vw - 40px);max-width:none;height:calc(100vh - 40px);max-height:none;border:0;padding:0;border-radius:8px;background:var(--chalk);color:var(--ink)}dialog::backdrop{background:#08130dec}.zoombar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--chalk);border-bottom:1px solid var(--line);z-index:1}.zoomimage{display:block;max-width:100%;height:auto;margin:auto}.zoom-title{font-size:13px;font-weight:600}.zoom-help{font-size:12px;color:var(--muted);padding:0 16px 12px}
+    @media(max-width:900px){.shell{grid-template-columns:190px minmax(0,1fr)}.rail{padding:24px 9px}.topbar{padding:14px 20px}main{padding:24px 20px}.heading{display:block}.badge{margin-top:12px}.image-button img{max-height:none;min-height:150px}.review-note{grid-template-columns:1fr;gap:4px}}
+    @media(max-width:620px){.shell{display:block}.rail{position:relative;height:auto;padding:18px;gap:15px}.brand{padding:0}.brand small{display:inline;margin-left:12px}.rail nav{display:flex;gap:12px;overflow:auto}.stage{flex:0 0 150px;margin:0}.stage h2{margin-left:8px}.nav-item{padding:7px 8px;font-size:13px}.rail-note{display:none}.topbar{padding:12px 16px;flex-wrap:wrap}main{padding:22px 16px}.figure figcaption{display:block}.figure figcaption span{display:block}.figure figcaption span:last-child{margin-top:5px}.handoff{flex-direction:column;gap:6px}.ascii-content{padding:12px;font-size:10px}dialog{width:100vw;height:100vh;border-radius:0}}
+    @media print{.rail,.topbar,.toolbar,.handoff,.image-button::after{display:none}.shell{display:block}main{padding:0}.image-button img{max-height:none}.ascii-content{max-height:none;overflow:visible;font-size:8px;border:0}.review-note{break-inside:avoid}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to design</a>
+<div class="shell">
+  <aside class="rail" aria-label="Design navigation">
+    <div class="brand">Happynest<small>UI flow review / 15.09.26</small></div>
+    <nav aria-label="Generated screens">
+      <section class="stage"><h2>Listen</h2>
+        <a class="nav-item" href="#importer" data-screen="importer"><span>01</span>Importer</a>
+        <a class="nav-item" href="#vault" data-screen="vault"><span>02</span>Feedback Vault</a>
+        <a class="nav-item flow" href="#listen-flow" data-screen="listen-flow"><span>03</span>Import &amp; analysis flow</a>
+      </section>
+      <section class="stage"><h2>Understand</h2>
+        <a class="nav-item" href="#graph" data-screen="graph"><span>04</span>Data Graph</a>
+        <a class="nav-item" href="#reports" data-screen="reports"><span>05</span>Reports</a>
+        <a class="nav-item flow" href="#understand-flow" data-screen="understand-flow"><span>06</span>Investigation flow</a>
+      </section>
+      <section class="stage"><h2>Act</h2>
+        <a class="nav-item" href="#matrix" data-screen="matrix"><span>07</span>Priority Matrix</a>
+        <a class="nav-item" href="#stakeholders" data-screen="stakeholders"><span>08</span>Stakeholders</a>
+        <a class="nav-item flow" href="#act-flow" data-screen="act-flow"><span>09</span>Decision &amp; follow-up flow</a>
+      </section>
+    </nav>
+    <p class="rail-note">Six screens. Three human decisions.<br><br>Generated UI mockups.<br>Use the ASCII specification for exact behavior and copy.<br><br><a href="01-user-flow-ascii.txt" download>Download ASCII</a></p>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><p><strong>Design review</strong> &nbsp; / &nbsp; Demo AI</p>
+      <div class="tabs" aria-label="Review format"><button id="images-tab" type="button" aria-pressed="true">UI images</button><button id="ascii-tab" type="button" aria-pressed="false">ASCII flow</button></div>
+    </header>
+    <main id="main">
+      <section id="images-view" aria-label="Image review">
+        <div class="heading"><div><p id="stage-label" class="eyebrow"></p><h1 id="screen-title"></h1><p id="screen-description"></p></div><span id="screen-type" class="badge"></span></div>
+        <div class="toolbar"><span id="counter" class="counter" aria-live="polite"></span><button class="button" id="previous" type="button">Previous</button><button class="button primary" id="next" type="button">Next</button><button class="button" id="zoom" type="button">View full size</button><a class="button" id="download" download>Download image</a></div>
+        <figure class="figure"><button type="button" class="image-button" id="image-open" aria-label="Open full-size design"><img id="screen-image" alt="" decoding="async"></button><figcaption><span id="image-caption"></span><span id="image-code"></span></figcaption></figure>
+        <div class="review-note"><strong>Check the flow</strong><p id="review-focus"></p></div>
+        <footer class="handoff"><span>Back and forward navigation works in this gallery. Controls drawn inside images are illustrative.</span><a href="README.md">Deliverables &amp; generation notes</a></footer>
+      </section>
+      <section id="ascii-view" hidden aria-label="ASCII specification">
+        <div class="ascii-header"><p class="eyebrow">Complete interaction specification</p><h1>Follow the entire journey.</h1><p>26 ASCII diagrams cover the six screens, three review gates, reverse navigation, and recovery states.</p><div class="ascii-tools"><a class="button primary" href="01-user-flow-ascii.txt" download>Download plain text</a><a class="button" href="01-user-flow-ascii.md" download>Download Markdown</a></div></div>
+        <pre class="ascii-content" tabindex="0" aria-label="Complete ASCII user flow">Happynest / Complete UI flow
+
+Design review edition | 15 September 2026 | Desktop first
+
+Six screens. Three human decisions. One continuous path from feedback to action.
+
+This is the authoritative interaction specification for the accompanying generated UI images.
+All sample records are fictional. All displayed feedback is sanitized.
+
+Reading key
+
+[ Button ]       Action                 [ Choice v ]    Dropdown
+[x] / [ ]        Selection              &gt;               Current item
+--&gt;              Forward path          &lt;--&gt;             Return path available
+G1 / G2 / G3     Human decision         S01-S06          Main screen IDs
+
+00 / The complete journey
+
+                                      SIGN IN
+                                         |
+                              CHOOSE / CREATE PRODUCT
+                                         |
+                   +---------------------+--------------------+
+                   |                                          |
+              First visit                               Returning visit
+                   |                                          |
+                   v                                          v
+             S01 IMPORTER                           Last visited screen
+                   |
+       File &lt;--&gt; Preview &lt;--&gt; Mapping
+                                 |
+                        G1: CONFIRM MAPPING
+                                 |
+                         Import and receipt
+                                 |
+                                 v
+                        S02 FEEDBACK VAULT &lt;-------------------------+
+                                 |                                  |
+                         Select pending items                       |
+                                 |                                  |
+                    Review scope / usage --&gt; Analyze                |
+                                 |                                  |
+                                 v                                  |
+                         S03 DATA GRAPH &lt;--&gt; Feedback details -------+
+                                 |
+                    Explore --&gt; Ask AI --&gt; Investigate
+                                 |
+                                 v
+                           S04 REPORTS &lt;--&gt; Evidence &lt;--&gt; Feedback
+                                 |
+                +----------------+-------------------+
+                |                |                   |
+              Reject      Investigate more      Review / edit
+                |                |                   |
+          Retain history    S03 Data Graph     G2: APPROVE FINDING
+                                 |                   |
+                          Revised report     Review usage / generate
+                                 |                   |
+                                 +--&gt; S04            v
+                                              S05 PRIORITY MATRIX
+                                                     |
+                                             Open / edit action
+                                                     |
+                                             G3: ACCEPT ACTION
+                                                     |
+                                                     v
+                                              S06 STAKEHOLDERS
+                                                     |
+                                            Team carries out work
+                                                     |
+                                             Collect new feedback
+                                                     |
+                                   S01 --&gt; S02 --&gt; S03 follow-up
+                                                     |
+                                   New report linked to earlier report
+
+The stages organize navigation; they do not lock users into a wizard. Review gates control
+specific actions. Users can inspect saved data and return to earlier screens at any time.
+
+01 / Persistent shell and entry
+
+The header owns product selection, current tasks, and account access. The sidebar owns stage
+navigation. Inner file, dataset, report, and department lists belong to the active screen.
+
++----------------------------------------------------------------------------------------------------+
+| Happynest   [ Demo AI v ]                                     [ Current tasks  2 ]   [ Account v ] |
++--------------------+-------------------------------------------------------------------------------+
+|                    | STAGE / Screen                                                                |
+| LISTEN             | Context and scope                                                             |
+|   Importer         |                                                                               |
+|   Feedback Vault   |                                                                               |
+|                    |                                                                               |
+| UNDERSTAND         |                            WORKSPACE                                          |
+|   Data Graph       |                                                                               |
+|   Reports          |                                                                               |
+|                    |                                                                               |
+| ACT                |                                                                               |
+|   Priority Matrix  |                                                                               |
+|   Stakeholders     |                                                                               |
+|                    |                                                                               |
++--------------------+-------------------------------------------------------------------------------+
+
++--------------------------------------------+     +----------------------------------------------+
+| Happynest                                  |     | Choose a product                             |
+| Sign in                                    |     |                                              |
+|                                            |     | &gt; Demo AI                       [ Open ]     |
+| Email      [.............................] | --&gt; |   Other product                              |
+| Password   [.............................] |     |                                              |
+|                                            |     | [ + Create product ]                         |
+| [ Sign in ]                                |     | Name [....................................]  |
+| Error stays beside the relevant field.     |     | Description [.............................]  |
++--------------------------------------------+     +----------------------------------------------+
+
+- A new product with no feedback opens Importer.
+- A returning product restores its last visited screen, including its valid navigation state.
+- A pending task is visible in the header; it does not force a redirect away from the user&#39;s work.
+- Sign out ends access. An expired session requests sign-in, then returns to the requested screen.
+
+02 / LISTEN
+
+S01 / Importer
+
+Job: bring a file into the product and finish its mapping review.
+
++---------------------------------------------------------------------------------------------------+
+| LISTEN / Importer                                                     Product: Demo AI            |
+| Bring feedback into your product.                                                                 |
++--------------------------------------------------------------------+------------------------------+
+|                                                                    | CURRENT TASKS                |
+|                                                                    |                              |
+|                         Get started                                | feedback-sep.csv             |
+|                                                                    | Needs mapping review         |
+|                   +--------------------------+                     | [ Continue mapping ]         |
+|                   |       Import CSV         |                     |                              |
+|                   +--------------------------+                     | Analysis A-12                |
+|                                                                    | Processing 32 of 80          |
+|                   [ Source ]     [ Source ]                        | [ View progress ]            |
+|                   [ Source ]     [ Source ]                        |                              |
+|                   Additional sources: coming later                 | [ View task history ]        |
+|                                                                    |                              |
+| RECENT IMPORTS                                                     |                              |
+| feedback-aug.csv          120 rows       Imported     [ Open ]      |                             |
+| survey-jul.csv             96 rows       Imported     [ Open ]      |                             |
++--------------------------------------------------------------------+------------------------------+
+
+The four source tiles are inactive placeholders. CSV is the supported source in this design.
+
+L01-L04 / Four-step import wizard
+
+                   1 FILE &lt;--&gt; 2 PREVIEW &lt;--&gt; 3 MAPPING ---&gt; 4 RESULT
+                      ^            ^             |
+                      |            |             v
+                      |            +----- G1: CONFIRM MAPPING
+                      |
+                 Back preserves choices; no operation is automatically replayed.
+
++---------------------------------------------------------------------------------------------------+
+| L01 / Upload file                                                     Step 1 of 4                 |
+| FILE ---------------- Preview ---------------- Mapping ---------------- Result                    |
++---------------------------------------------------------------------------------------------------+
+| Product: Demo AI                                                                                  |
+|                                                                                                   |
+|                  +------------------------------------------------------------+                   |
+|                  | Drop a CSV here, or [ Choose file ]                         |                  |
+|                  | feedback-sep.csv                                           |                   |
+|                  +------------------------------------------------------------+                   |
+|                                                                                                   |
+| File errors appear here, with a specific correction.                                              |
+|                                                                                                   |
+| [ Cancel ]                                                               [ Upload and preview ]   |
++---------------------------------------------------------------------------------------------------+
+
++----------------------------------------------------------------------------------------------------+
+| L02 / Preview                                                         Step 2 of 4                  |
+| File ---------------- PREVIEW ---------------- Mapping ---------------- Result                     |
++----------------------------------------------------------------------------------------------------+
+| feedback-sep.csv     83 rows     5 columns     Preview ready                                       |
+| No AI used yet. Samples below are sanitized.                                                       |
+|                                                                                                    |
+| comment                         submitted_at     app_version    channel      extra                 |
+|--------------------------------------------------------------------------------------------------  |
+| &lt;ORG&gt; received a slow answer.   2026-09-01       2.1            Support      --                    |
+| &lt;ORG&gt; found a bad citation.     2026-09-02       2.1            Survey       --                    |
+|                                                                                                    |
+| Review structure before asking AI to propose column meanings.                                      |
+|                                                                                                    |
+| [ Back to file ]                                                        [ Suggest mapping ]        |
++----------------------------------------------------------------------------------------------------+
+
++---------------------------------------------------------------------------------------------------+
+| L03 / Column mapping                                                  Step 3 of 4                 |
+| File ---------------- Preview ---------------- MAPPING ---------------- Result                    |
++---------------------------------------------------------------------------------------------------+
+| CSV COLUMN          PRODUCT MEANING                         SAMPLE                   REVIEW       |
+|-------------------------------------------------------------------------------------------------- |
+| comment             [ Feedback text v ]                    &lt;ORG&gt; received...        Ready         |
+| submitted_at        [ Feedback date v ]                    2026-09-01               Ready         |
+| app_version         [ Product field: version v ]           2.1                      Ready         |
+| channel             [ Source metadata v ]                  Support                  Ready         |
+| extra               [ Ignore v ]                           --                       Ready         |
+|                                                                                                   |
+| G1 / Confirm what these columns mean.                                                             |
+| Resolve ambiguous mappings and missing required fields before importing.                          |
+|                                                                                                   |
+| [ Back to preview ]    [ Cancel import ]                              [ Confirm mapping &amp; import ]|
++---------------------------------------------------------------------------------------------------+
+
++----------------------------------------------------------------------------------------------------+
+| L04 / Import result                                                   Step 4 of 4                  |
+| File ---------------- Preview ---------------- Mapping ---------------- RESULT                     |
++----------------------------------------------------------------------------------------------------+
+| Import completed                                                                                   |
+|                                                                                                    |
+|         83 source rows                 80 imported                 3 failed                        |
+|                                                                                                    |
+| [ View row errors ]                                                                                |
+| Row 21: date needs ISO format.     Row 54: missing feedback.     Row 77: missing feedback.         |
+| Correct and re-import only the failed rows.                                                        |
+|                                                                                                    |
+| [ Import another file ]                                                  [ Open Feedback Vault ]   |
++----------------------------------------------------------------------------------------------------+
+
+Progress and cancellation: while mapping/importing runs, display progress and allow leaving
+the screen. Reopen the same task from Current tasks. Offer cancellation only where supported;
+closing the wizard never means cancelling a job. Back after import shows read-only history,
+not an editable mapping that appears able to undo an already completed import.
+
+S02 / Feedback Vault
+
+Job: inspect imported feedback and choose exactly what to analyze or explore.
+
++---------------------------------------------------------------------------------------------------+
+| LISTEN / Feedback Vault                                                        [ Import CSV ]     |
++----------------------+----------------------------------------------------------------------------+
+| FILES                | [ Search feedback...................................................... ]  |
+|                      | [ Date v ] [ Topic v ] [ Sentiment v ] [ Analysis state v ]                |
+| All imports          |                                                                            |
+| &gt; feedback-sep.csv   | [ ] FEEDBACK                     SOURCE       TOPIC          STATE         |
+|   feedback-aug.csv   |--------------------------------------------------------------------------- |
+|   survey-jul.csv     | [x] &lt;ORG&gt; received a slow answer. Support      Performance    Ready        |
+|                      | [x] &lt;ORG&gt; found a bad citation.   Survey       Accuracy       Ready        |
+|                      | [ ] &lt;ORG&gt; saw output stop.       Support      --             Pending       |
+|                      |                                                                            |
+|                      | 2 selected                              [ Clear selection ]                |
+|                      |                                                                            |
+|                      | [ Analyze pending items ]                    [ Explore selected ]          |
+|                      |                                                                            |
+|                      | Showing 1-25 of 80                                  [ &lt; ] 1 2 3 4 [ &gt; ]    |
++----------------------+----------------------------------------------------------------------------+
+
+- Opening the Vault from an import selects that import.
+- Analysis uses explicitly selected pending items; without a selection, preview a clearly
+  counted pending batch from the active import. A batch contains at most 100 items.
+- Ready selections can be explored immediately. Mixed selections show how many items need
+  analysis and how many are excluded from analysis-dependent charts.
+- Pending items can still be read as feedback. They are never silently counted as analyzed.
+
+L05 / Analysis receipt and resumable progress
+
++------------------------------------------------+   +----------------------------------------------+
+| Review analysis                                |   | Analysis A-12                                |
+|                                                |   |                                              |
+| Product: Demo AI                               |   | Processing selected feedback                 |
+| Import: feedback-sep.csv                       |   |                                              |
+| Scope: 80 pending items                        |--&gt;| [################..............] 32 / 80     |
+|                                                |   |                                              |
+| Estimated usage: from the current preview      |   | You can leave this screen.                   |
+| Maximum attempts: shown before starting        |   | Reopen from Current tasks.                   |
+|                                                |   |                                              |
+| [ Back ]                     [ Start analysis ]|   | [ Return to Vault ]        [ Stop analysis ] |
++------------------------------------------------+   +----------------------------------------------+
+
+Stop analysis requests a stop after the current item/chunk; it does not claim an immediate abort.
+If the selection changed since preview, refresh the receipt and require a fresh explicit start.
+Never invent a precise monetary estimate when the provider only supplies usage estimates.
+
+D01 / Shared feedback detail
+
++---------------------------------------------------------------+
+| Feedback F-18                                  [ Close  X ]   |
+| [ &lt; Previous ]                                  [ Next &gt; ]    |
++---------------------------------------------------------------+
+| &lt;ORG&gt; found an invalid citation in the answer.                |
+|                                                               |
+| Import        feedback-sep.csv                                |
+| Occurred      2026-09-02                                      |
+| Topic         Accuracy                                        |
+| Sentiment     Negative                                        |
+| Analysis      Ready                                           |
+|                                                               |
+| [ Similar feedback ]              [ Explore this topic ]      |
+|                                                               |
+| REFERENCED IN                                                 |
+| R-07  Accuracy complaints increased             [ Open ]      |
+|                                                               |
+| [ Back to originating view ]                                  |
++---------------------------------------------------------------+
+
+Previous/Next traverse the originating result set. Closing restores its filters, selection,
+pagination, and scroll. If similarity is unavailable, explain that analysis is required.
+
+03 / UNDERSTAND
+
+S03 / Data Graph
+
+Job: explore data, inspect its feedback, and investigate a clear question.
+
++----------------------------------------------------------------------------------------------------+
+| UNDERSTAND / Data Graph                                                                            |
+| Demo AI / 2 imports / Sep 1-14 / 120 analyzed / 15 pending excluded                                |
++--------------------+-------------------------------------------------------+-----------------------+
+| DATASETS           | [ Word cloud ]  [ Trends ]  [ Topics ]  [ Table ]      | ACTIVITY TRACE       |
+|                    |                                                       |                       |
+| [x] sep-survey     | [ Date v ] [ Topic v ] [ Sentiment v ]                | Investigation I-07    |
+| [x] sep-support    |                                                       |                       |
+| [ ] aug-survey     |                  slow                                 | [x] Scope checked     |
+|                    |                                                       | [x] Trend checked     |
+| [ Apply scope ]    |         citations       ACCURACY                      | [x] Samples found     |
+|                    |                                                       | [x] Draft ready       |
+| [ Open Vault ]     |                 response        timeout               |                       |
+|                    |                                                       | [ Open report ]       |
+|                    |         reliability          speed                    | [ View evidence ]     |
+|                    |                                                       |                       |
+|                    | Selected: accuracy                                    | Scope fixed at start  |
+|                    | [ View 24 feedback items ]                            |                       |
+|                    | Word size = frequency in this scope.                  |                       |
++--------------------+-------------------------------------------------------+-----------------------+
+|                    | Ask about this data                                                           |
+|                    | [ Why did accuracy complaints rise?.......................... ] [ Ask AI ]    |
++--------------------+-------------------------------------------------------------------------------+
+
+EXPLORE                                                INVESTIGATE
+Select datasets / filters                              Question OR emerging signal
+          |                                                       |
+     Apply scope                                            Review scope / usage
+          |                                                       |
+  Click word / chart point                                  Explicitly start
+          |                                                       |
+  Matching feedback &lt;--&gt; Feedback detail                    Running activity trace
+          |                                                       |
+  Back to same visualization                                 Draft --&gt; Open report
+
+The trace contains observable checks, tool activity, evidence, and failures. It is not a private
+reasoning transcript. Changing chart filters cannot change a running investigation&#39;s scope.
+
+S04 / Reports
+
+Job: review an investigation&#39;s findings against evidence and decide whether to act.
+
++--------------------------------------------------------------------------------------------------+
+| UNDERSTAND / Reports                                                                             |
++--------------------+-------------------------------------------------------+---------------------+
+| REPORTS            | R-07 / Accuracy complaints increased                  | EVIDENCE            |
+|                    | Needs review                                          |                     |
+| [ Search....... ]  |                                                       | E-01 / Trend        |
+| [ Status v ]       | [ Read report ] [ Review history ]                   | [ Inspect ]          |
+|                    |                                                       |                     |
+| &gt; R-07             | SUMMARY                                               | E-02 / Samples      |
+|   Needs review     | Accuracy complaints increased in the selected period.| [ Inspect ]          |
+|                    |                                                       |                     |
+|   R-06             | FINDINGS                                              | COVERAGE            |
+|   Approved         | Supported observations with evidence links. [E-01]   | 120 analyzed         |
+|                    |                                                       | 15 pending excluded |
+|   R-05             | HYPOTHESES                                            |                     |
+|   Rejected         | Possible explanations, clearly marked unconfirmed.   | Source imports       |
+|                    |                                                       | [ Open in Vault ]   |
+|                    | LIMITATIONS                                           |                     |
+|                    | Missing version values limit attribution.            | Fixed scope          |
+|                    |                                                       | Sep 1-14            |
+|                    | [ Back to investigation ]                             |                     |
++--------------------+-------------------------------------------------------+---------------------+
+| G2 / Review the finding                                                                          |
+| [ Reject ] [ Investigate more ] [ Edit finding ]                            [ Approve finding ]  |
++--------------------------------------------------------------------------------------------------+
+
+The report body is rendered Markdown, with distinct findings, hypotheses, and limitations.
+Evidence opens in a nested panel while preserving the report position.
+
+U01-U03 / Evidence, review, and revision
+
++--------------------------------+   +--------------------------------+   +-------------------------+
+| R-07 / Report                  |   | E-02 / Supporting evidence     |   | F-18 / Feedback         |
+|                                |--&gt;|                                |--&gt;|                         |
+| Finding links to [ E-02 ]      |   | Source: feedback samples       |   | Sanitized text          |
+|                                |   | Scope: Sep 1-14                |   | Import and labels       |
+| Report scroll stays unchanged. |   | F-18 [ Open feedback ]         |   |                         |
+|                                |&lt;--| [ Back to report ]             |&lt;--| [ Back to evidence ]    |
++--------------------------------+   +--------------------------------+   +-------------------------+
+
+NEEDS REVIEW
+    +--&gt; Approve finding -------------------------------&gt; APPROVED
+    +--&gt; Edit finding --&gt; Save edit and approve ---------&gt; APPROVED (edited)
+    +--&gt; Reject ----------------------------------------&gt; REJECTED / retained
+    +--&gt; Investigate more --&gt; original context in S03 ---&gt; INVESTIGATING
+                                                               |
+                                                        Revised report
+                                                               |
+                                                        NEEDS REVIEW
+
+APPROVED --&gt; Generate actions --&gt; Review expected usage --&gt; S05 Priority Matrix
+
+- Editing shows the finding and reason fields; evidence is not silently rewritten to fit the edit.
+- An approved report retains its recorded scope. Fresh imports do not rewrite its conclusions.
+- Review history records the decision, time, reviewer, and revision; rejected reports remain visible.
+- If the investigation budget is exhausted, explain the limit before offering a new run.
+- New follow-ups link to the earlier report and retain both. No report is labelled approved just
+  because another report on the same topic was approved.
+
+04 / ACT
+
+S05 / Priority Matrix
+
+Job: decide which proposed actions deserve attention, using effort and customer impact.
+
++---------------------------------------------------------------------------------------------------+
+| ACT / Priority Matrix                                                                             |
+| [ Report: R-07 v ] [ Department: All v ] [ Status: Active v ]                    [ + Add action ] |
++---------------------------------------------------------------------------------------------------+
+|                                                                                                   |
+| Expected customer impact                                                                          |
+| High ^                                                                                            |
+|      |          QUICK WINS                    |          STRATEGIC INVESTMENTS                    |
+|      |                                        |                                                   |
+|      |           o A-02                       |                     o A-01                        |
+|      |                                        |                                                   |
+|      |                                        |                                                   |
+|      +----------------------------------------+-------------------------------------------------- |
+|      |          LOW PRIORITY                  |          RECONSIDER                               |
+|      |                                        |                                                   |
+|      |                 o A-03                 |                 o A-04                            |
+|      |                                        |                                                   |
+| Low  +---------------------------------------------------------------------------------------&gt;    |
+|                  Low                          Effort                                  High        |
+|                                                                                                   |
+| Points are actions. Priority also considers urgency and confidence.                               |
+| [ View source report ]                                                [ View by department ]      |
++---------------------------------------------------------------------------------------------------+
+
+Impact and effort use 1-10 scales, split at 5. Clicking opens the action. Dragging previews new
+scores in the same drawer; only Save edits or Accept action confirms them. Keyboard-accessible
+numeric inputs provide the same change without dragging. Active includes proposed, edited, and
+accepted actions; rejected items are available through the status filter.
+
+D02 / Shared action drawer
+
++--------------------------------------------------------------------+
+| A-02 / Improve citation fallback                   [ Close  X ]    |
+| Engineering / Proposed                                             |
++--------------------------------------------------------------------+
+| WHAT                                                               |
+| Show a clear fallback when a citation cannot be verified.          |
+|                                                                    |
+| WHY                                                                |
+| Supported by the reviewed finding in R-07. [ Open report ]         |
+|                                                                    |
+|                         AI ESTIMATE          YOUR DECISION         |
+| Impact                       8                   [ 8 ]             |
+| Effort                       3                   [ 3 ]             |
+| Urgency                      9                   [ 9 ]             |
+| Confidence                 0.84                  --                |
+|                                                                    |
+| Reason for changes                                                 |
+| [..............................................................]   |
+|                                                                    |
+| G3 / You decide the final priority.                                |
+| [ Reject ]           [ Save edits ]           [ Accept action ]    |
++--------------------------------------------------------------------+
+
+PROPOSED --&gt; Save edits --&gt; EDITED / awaiting decision
+    |                         |
+    +---- Accept action ------+--&gt; ACCEPTED --&gt; visible by department
+    |                         |
+    +---- Reject -------------+--&gt; REJECTED --&gt; retained in history
+
+Save edits never implies acceptance. AI estimates remain visible after human overrides.
+Adding a manual action requires a department, recommendation, and scores; its final button
+is Add and accept action, making that decision explicit.
+
+S06 / Stakeholders
+
+Job: see what each department should do and inspect the evidence behind each decision.
+
++---------------------------------------------------------------------------------------------------+
+| ACT / Stakeholders                                                                                |
+| [ Report: R-07 v ] [ Status: Accepted v ]                                                         |
++--------------------+--------------------------------------------------+---------------------------+
+| BY DEPARTMENT      | [ Search actions.............................. ] | WHAT                      |
+|                    |                                                  |                           |
+| All                | ACTION                 PRIORITY    STATUS        | A-02                      |
+| &gt; Engineering      |--------------------------------------------------| Citation fallback         |
+| Support            | &gt; Citation fallback    High        Accepted      |                           |
+| Design             |   Citation checks      High        Accepted      | Recommendation            |
+| Marketing          |                                                  | Show a clear fallback     |
+| Legal              |                                                  | when a citation cannot    |
+| Finance            |                                                  | be verified.              |
+| Operations         |                                                  |                           |
+| Sales              |                                                  | WHY                       |
+|                    |                                                  | Finding in R-07           |
+|                    |                                                  | [ Open report ]           |
+|                    |                                                  |                           |
+|                    |                                                  | [ Open action ]           |
+|                    |                                                  | [ Show in matrix ]        |
++--------------------+--------------------------------------------------+---------------------------+
+
+Matrix and Stakeholders show the same action records. Changes appear in both views. Switching
+between them preserves the selected report and action; the destination reveals its department
+or matrix point. A selected proposed action may temporarily reveal that status in Stakeholders,
+so the usual Accepted filter does not hide the item the user just opened.
+
+No named-person assignment is implied. Departments without relevant actions show an empty
+state with Show proposed actions and Open Priority Matrix.
+
+A01 / Follow-up
+
+ACCEPTED ACTIONS --&gt; Team acts outside this flow --&gt; NEW FEEDBACK
+                                                        |
+                                       Import --&gt; Analyze --&gt; Data Graph
+                                                        |
+                                       Follow up on R-07 / choose new dates
+                                                        |
+                                               NEW REPORT R-08
+                                                        |
+                                       [ View previous report R-07 ]
+                                                        |
+                                       Review observed changes and limitations
+                                                        |
+                                       Approve --&gt; revise / add actions
+
+Accepted means the decision is accepted, not that implementation is complete. A follow-up
+reports observed changes; it does not assume that an action caused them.
+
+05 / Global tasks, back/forward, and recovery
+
+G01 / Current tasks
+
++---------------------------------------------------------------+
+| Current tasks                                 [ Close  X ]    |
+| Product: Demo AI                                              |
++---------------------------------------------------------------+
+| NEEDS YOUR REVIEW                                             |
+| Import / feedback-sep.csv          [ Continue mapping ]       |
+| Investigation / I-07              [ Review finding ]          |
+|                                                               |
+| RUNNING                                                       |
+| Analysis / A-12 / 32 of 80         [ View progress ]          |
+|                                                               |
+| HISTORY                                                       |
+| Previous completed and failed tasks [ View history ]          |
++---------------------------------------------------------------+
+
+The Importer panel and header task drawer refer to the same jobs. Labels reflect actual state.
+Opening, refreshing, or navigating back to a task never replays a mutation.
+
+G02 / Unsaved work
+
++---------------------------------------------------------------+
+| Discard your changes?                                         |
+| Your unsaved edits to A-02 will be lost.                      |
+|                                                               |
+| [ Keep editing ]                         [ Discard changes ]  |
++---------------------------------------------------------------+
+
+This protects action edits, finding edits, and unfinished mapping changes when navigating away
+or switching products. Saved task state survives refresh; unsaved changes must not be presented
+as saved. A browser unload warning is the fallback when an in-app dialog cannot be shown.
+
+Navigation rules
+
+| From | Open | Return restores |
+|---|---|---|
+| Import wizard | Previous step | File and valid choices; no duplicate request |
+| Vault | Feedback detail | Import, filters, selected IDs, page, and scroll |
+| Data Graph | Matching feedback | Dataset scope, chart tab, selected point, and scroll |
+| Report | Evidence, then feedback | Nested panel stack, report section, and evidence selection |
+| Matrix / Stakeholders | Report | Original action, report scope, department, and matrix selection |
+| Matrix | Stakeholders | Same action and report; reveal department and appropriate status |
+| Any screen | Current task | Existing job, its progress, or its pending decision |
+| Any screen | Browser Back / Forward | Navigation state only; never re-submit or re-approve |
+| Any product | Another product | Separate data and tasks, with unsaved-edit protection |
+
+Recovery routes
+
+EMPTY PRODUCT          --&gt; Import CSV
+EMPTY FILTER RESULT    --&gt; Clear filters --&gt; previous complete result set
+BAD FILE               --&gt; File-specific error --&gt; replace / correct CSV
+AMBIGUOUS MAPPING      --&gt; Highlight unresolved columns --&gt; edit --&gt; confirm
+PARTIAL IMPORT         --&gt; Row errors --&gt; correction file with failed rows only
+PENDING ANALYSIS       --&gt; Review scope --&gt; analyze --&gt; return to exploration
+SELECTION CHANGED      --&gt; Refresh receipt --&gt; explicit new confirmation
+AI OPERATION FAILED    --&gt; Failed stage / retained context --&gt; explicit retry
+INSUFFICIENT EVIDENCE  --&gt; Explain limits --&gt; investigate more / collect more data
+UNAPPROVED REPORT      --&gt; Review finding before generating actions
+NO DEPARTMENT ACTIONS --&gt; Show proposed actions / open matrix
+MISSING SAVED ITEM     --&gt; Explain unavailable item --&gt; return to containing list
+SESSION EXPIRED        --&gt; Sign in --&gt; return to requested screen
+
+06 / Review walkthroughs
+
+| # | Walkthrough | Pass condition |
+|---|---|---|
+| 1 | Product -&gt; CSV -&gt; G1 -&gt; Vault -&gt; analysis -&gt; investigation -&gt; G2 -&gt; actions -&gt; G3 -&gt; department | All six screens participate; each human decision is explicit |
+| 2 | Matrix -&gt; action -&gt; report -&gt; evidence -&gt; feedback -&gt; Back through every level | Each origin and selection is restored |
+| 3 | Needs-review report -&gt; investigate more -&gt; revised finding -&gt; review | Revised report requires a new decision and retains history |
+| 4 | Leave analysis -&gt; browse Vault -&gt; reopen Current tasks | Same job continues; nothing is submitted twice |
+| 5 | Fresh feedback -&gt; follow-up -&gt; new report -&gt; prior report | Both scopes remain visible and earlier conclusions are preserved |
+| 6 | Preview -&gt; Back -&gt; Preview; browser Back/Forward after approval | No duplicate upload, AI run, import, or approval |
+| 7 | Drag action -&gt; discard; edit score -&gt; save; accept action | Discard restores position; save preserves AI values; accept is explicit |
+| 8 | Partial import -&gt; inspect row errors -&gt; import corrections | Successful rows are not accidentally repeated |
+| 9 | Edit finding -&gt; switch product -&gt; Keep editing / Discard | Unsaved work is protected and products never mix |
+
+07 / Generated-image coverage
+
+The images illustrate the UI. This ASCII document defines exact interaction behavior and copy.
+
+| Image | Main coverage |
+|---|---|
+| 01-importer.png | S01: upload entry, source placeholders, recent imports, current tasks |
+| 02-feedback-vault.png | S02 and D01: files, filters, feedback selection, detail drawer |
+| 03-listen-flow.png | Entry, file, preview, mapping G1, import receipt, analysis receipt/progress |
+| 04-data-graph.png | S03: datasets, visualization, scoped question, activity trace |
+| 05-reports.png | S04: investigation list, rendered report, evidence, G2 decisions |
+| 06-understand-flow.png | Usage/start, evidence round trip, edit, revise, approve/generate |
+| 07-priority-matrix.png | S05 and D02: action points, correct axes, estimates, G3 decisions |
+| 08-stakeholders.png | S06: departments, accepted actions, shared action details |
+| 09-act-flow.png | Score preview/save, manual action, acceptance, department view, follow-up, recovery |
+
+Image filenames are the target set; the final gallery links only to verified delivered files.
+No production application/API implementation is part of this design-artifact deliverable.
+</pre>
+      </section>
+    </main>
+  </div>
+</div>
+<dialog id="image-dialog" aria-labelledby="zoom-title"><div class="zoombar"><span class="zoom-title" id="zoom-title"></span><button type="button" class="button" id="close-dialog">Close</button></div><p class="zoom-help">Scroll to inspect the full design. Press Escape to close.</p><img id="zoom-image" class="zoomimage" alt=""></dialog>
+<script>
+const screens = [
+  {id:'importer',stage:'LISTEN',title:'Importer',type:'Main screen',file:'listen/01-importer.png',code:'S01',description:'Bring a CSV into the product, continue unfinished mapping, and see current work.',focus:'The upload entry stays central. Current tasks reopens the same job; moving away never cancels or repeats it.'},
+  {id:'vault',stage:'LISTEN',title:'Feedback Vault',type:'Main screen',file:'listen/02-feedback-vault.png',code:'S02 / D01',description:'Browse files, select feedback, and inspect a record without losing your place.',focus:'Selections define the scope. Closing a feedback detail restores the import, filters, selected rows, pagination, and scroll.'},
+  {id:'listen-flow',stage:'LISTEN',title:'Import, review, and analyze',type:'Flow board',file:'listen/03-listen-flow.png',code:'ENTRY / L01-L05 / G01',description:'From sign-in and product selection to mapping confirmation, import results, and resumable analysis.',focus:'G1 confirms column meanings. Preview/back does not repeat a request. Partial-import recovery targets failed rows; paid work starts explicitly.'},
+  {id:'graph',stage:'UNDERSTAND',title:'Data Graph',type:'Main screen',file:'understand/04-data-graph.png',code:'S03',description:'Explore datasets, follow a signal, and ask an evidence-based question.',focus:'The visible scope labels excluded pending feedback. A running investigation keeps its starting scope even when exploration filters change.'},
+  {id:'reports',stage:'UNDERSTAND',title:'Reports',type:'Main screen',file:'understand/05-reports.png',code:'S04',description:'Read saved investigations alongside their evidence, hypotheses, and limitations.',focus:'G2 offers approve, edit, investigate more, or reject. Findings and hypotheses remain distinct. Approved reports retain their original scope.'},
+  {id:'understand-flow',stage:'UNDERSTAND',title:'Investigate, verify, and review',type:'Flow board',file:'understand/06-understand-flow.png',code:'U01-U03 / G2',description:'Follow the evidence round trip and the revision loop before generating actions.',focus:'Report -> evidence -> feedback returns through the same nested context. Investigate more produces another finding that still needs a human decision.'},
+  {id:'matrix',stage:'ACT',title:'Priority Matrix',type:'Main screen',file:'act/07-priority-matrix.png',code:'S05 / D02',description:'Compare action effort with expected customer impact and make priorities explicit.',focus:'Effort increases right; impact increases up. Drag is a preview. Save edits differs from Accept action, and original AI estimates stay visible.'},
+  {id:'stakeholders',stage:'ACT',title:'Stakeholders',type:'Main screen',file:'act/08-stakeholders.png',code:'S06',description:'See accepted actions by department and the findings behind them.',focus:'This is the same action set as the matrix. Switching views reveals the selected action and its department. Accepted does not mean delivered.'},
+  {id:'act-flow',stage:'ACT',title:'Decide, return, and follow up',type:'Flow board',file:'act/09-act-flow.png',code:'G3 / A01 / G02',description:'Review edits, add an action, accept a priority, and investigate fresh feedback later.',focus:'G3 is an explicit decision. Unsaved changes have Keep editing / Discard. A follow-up creates R-08 linked to R-07; it never silently replaces the earlier report.'}
+];
+const $ = id => document.getElementById(id);
+let current = 0;
+function showFormat(format){
+  const ascii = format === 'ascii';
+  $('images-view').hidden = ascii; $('ascii-view').hidden = !ascii;
+  $('images-tab').setAttribute('aria-pressed',String(!ascii)); $('ascii-tab').setAttribute('aria-pressed',String(ascii));
+}
+function sync(){
+  const id = location.hash.slice(1);
+  if(id === 'ascii'){showFormat('ascii');return;}
+  const found = screens.findIndex(screen => screen.id === id);
+  current = found < 0 ? 0 : found;
+  const screen = screens[current]; showFormat('images');
+  $('stage-label').textContent = screen.stage + ' / ' + screen.code;
+  $('screen-title').textContent = screen.title; $('screen-description').textContent = screen.description;
+  $('screen-type').textContent = screen.type; $('counter').textContent = String(current + 1).padStart(2,'0') + ' / 09';
+  $('screen-image').src = screen.file; $('screen-image').alt = 'Generated Happynest UI mockup: ' + screen.title;
+  $('image-caption').textContent = screen.type === 'Flow board' ? 'Supporting UI states and return paths - click to inspect at full size.' : 'Generated desktop UI mockup - click to inspect at full size.';
+  $('image-code').textContent = screen.code; $('review-focus').textContent = screen.focus;
+  $('download').href = screen.file;
+  $('previous').disabled = current === 0; $('next').disabled = current === screens.length - 1;
+  document.querySelectorAll('[data-screen]').forEach(link => {if(link.dataset.screen === screen.id) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');});
+  document.title = screen.title + ' - Happynest UI flow review';
+}
+function step(delta){if(location.hash === '#ascii') return;const next = current + delta;if(next >= 0 && next < screens.length) location.hash = screens[next].id;}
+function zoom(){const screen=screens[current];$('zoom-title').textContent=screen.title;$('zoom-image').src=screen.file;$('zoom-image').alt='Full-size generated mockup: '+screen.title;$('image-dialog').showModal();}
+$('previous').addEventListener('click',()=>step(-1));$('next').addEventListener('click',()=>step(1));
+$('zoom').addEventListener('click',zoom);$('image-open').addEventListener('click',zoom);$('close-dialog').addEventListener('click',()=>$('image-dialog').close());
+$('ascii-tab').addEventListener('click',()=>{location.hash='ascii';});$('images-tab').addEventListener('click',()=>{location.hash=screens[current].id;});
+window.addEventListener('hashchange',sync);
+document.addEventListener('keydown',event=>{if($('image-dialog').open||['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement.tagName))return;if(event.key==='ArrowRight')step(1);if(event.key==='ArrowLeft')step(-1);});
+sync();
+</script>
+</body>
+</html>

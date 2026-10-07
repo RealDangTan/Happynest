@@ -24,7 +24,8 @@ from sqlalchemy import select
 from app.analytics.tools import TOOLS
 from app.core.config import get_settings
 from app.db.session import SessionLocal
-from app.models.enums import UserRole
+from app.models.analysis_run import AnalysisRun
+from app.models.enums import RunStatus, UserRole
 from app.models.evidence import Evidence
 from app.models.feedback import Feedback
 from app.models.insight import Insight
@@ -209,6 +210,14 @@ def test_full_understand_flow_approve(client, monkeypatch, u_product) -> None:
     )
     assert dec.status_code == 200, dec.text
     assert dec.json()["final_status"] == "approved"
+
+    # Final Gate #2 decision closes the investigation lifecycle.
+    with SessionLocal() as db:
+        finished = db.get(AnalysisRun, uuid.UUID(run_id))
+        assert finished is not None
+        assert finished.status == RunStatus.completed
+        assert finished.processed_count == 1
+        assert finished.completed_at is not None
 
     # Insight approved + evidence refs mở rộng trong GET /insights
     listing = client.get(

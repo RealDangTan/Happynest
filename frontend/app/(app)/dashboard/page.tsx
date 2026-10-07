@@ -3,6 +3,8 @@ import Link from "next/link"
 import { ClipboardList, PlayCircle } from "lucide-react"
 import { useMe } from "@/hooks/use-me"
 import { useReportSummary } from "@/hooks/use-reports"
+import { FirstRunGuide } from "@/components/onboarding/first-run-guide"
+import { PageHeader } from "@/components/page-header"
 import type { EmergingClusterItem } from "@/lib/types"
 import { ReportTiles } from "@/components/report-tiles"
 import { SeverityBars } from "@/components/severity-bars"
@@ -53,14 +55,16 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-2xl">
-          Xin chào{me.data ? `, ${me.data.email}` : ""}
-        </h1>
-        {me.data ? (
-          <Badge variant="secondary">{ROLE_LABEL[me.data.role]}</Badge>
-        ) : null}
-      </div>
+      <PageHeader
+        title={`Xin chào${me.data ? `, ${me.data.email}` : ""}`}
+        actions={
+          me.data ? (
+            <Badge variant="secondary">{ROLE_LABEL[me.data.role]}</Badge>
+          ) : undefined
+        }
+      />
+
+      <FirstRunGuide />
 
       {/* Shortcut hành động */}
       <div className="flex flex-wrap gap-2">
@@ -82,16 +86,28 @@ export default function DashboardPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full" />
+              <Skeleton key={i} className="h-28 w-full" />
             ))}
           </div>
-          <Skeleton className="h-56 w-full" />
+          <Skeleton className="h-64 w-full" />
         </>
-      ) : summary.isError ? null : (
+      ) : summary.isError ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          Could not load the summary — {summary.error.message}
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2 block"
+            onClick={() => void summary.refetch()}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : (
         <>
           <ReportTiles totals={summary.data.totals} />
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid items-start gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Mức độ nghiêm trọng</CardTitle>

@@ -96,7 +96,7 @@ export default function FeedbackDetailPage() {
             </p>
           ) : null}
           <Separator />
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm sm:grid-cols-[10rem_1fr]">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm sm:grid-cols-[10rem_minmax(0,1fr)]">
             <dt className="text-muted-foreground">Chủ đề</dt>
             <dd className="flex flex-wrap gap-1">
               {(ai?.topics ?? []).length > 0
@@ -118,11 +118,11 @@ export default function FeedbackDetailPage() {
               <Separator />
               <div>
                 <h3 className="mb-2 text-sm font-medium">Product data</h3>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
+                <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_minmax(0,1fr)]">
                   {Object.entries(d.data).map(([k, v]) => (
                     <div key={k} className="contents">
                       <dt className="text-muted-foreground">{k}</dt>
-                      <dd>{String(v)}</dd>
+                      <dd className="break-words">{String(v)}</dd>
                     </div>
                   ))}
                 </dl>
@@ -135,11 +135,11 @@ export default function FeedbackDetailPage() {
               <Separator />
               <div>
                 <h3 className="mb-2 text-sm font-medium">Nguồn metadata</h3>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
+                <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_minmax(0,1fr)]">
                   {Object.entries(d.source_meta).map(([k, v]) => (
                     <div key={k} className="contents">
                       <dt className="text-muted-foreground">{k}</dt>
-                      <dd>{String(v)}</dd>
+                      <dd className="break-words">{String(v)}</dd>
                     </div>
                   ))}
                 </dl>

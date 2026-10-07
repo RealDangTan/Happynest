@@ -42,16 +42,21 @@ def _match_filter(insight: Insight) -> str | None:
     return json.dumps(ctx, ensure_ascii=False)
 
 
-def run_impact_checks(db: Session, now: datetime | None = None) -> list[dict]:
+def run_impact_checks(
+    db: Session, now: datetime | None = None, *, product_id: uuid.UUID | None = None
+) -> list[dict]:
     """Đo closed-loop cho action accepted/edited aged đủ window; idempotent."""
     settings = get_settings()
     now = now or datetime.now(timezone.utc)
     window = timedelta(days=settings.IMPACT_WINDOW_DAYS)
     results: list[dict] = []
 
-    actions = db.scalars(
-        select(Action).where(Action.status.in_(["accepted", "edited"]))
-    ).all()
+    candidates = select(Action).where(Action.status.in_(["accepted", "edited"]))
+    if product_id is not None:
+        candidates = candidates.join(Insight, Action.insight_id == Insight.id).where(
+            Insight.product_id == product_id
+        )
+    actions = db.scalars(candidates).all()
     for action in actions:
         # idempotent: đã đo cho action này → bỏ qua
         from app.models.impact_check import ImpactCheck

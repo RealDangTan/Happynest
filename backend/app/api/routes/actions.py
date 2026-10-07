@@ -24,6 +24,7 @@ from app.schemas.action import (
     HumanActionIn,
 )
 from app.services import act_agent
+from app.services import presidio_service
 
 router = APIRouter(
     prefix="/api",
@@ -63,9 +64,11 @@ def generate_actions(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Insight đang '{insight.status}' — ACT chỉ chạy trên insight đã duyệt (§44).",
         )
-    created, skipped_functions = act_agent.generate_actions(db, insight)
+    created, skipped_functions, generation_error = act_agent.generate_actions(db, insight)
     return ActionGenerateOut(
-        actions_created=len(created), functions_skipped=sorted(skipped_functions)
+        actions_created=len(created),
+        functions_skipped=sorted(skipped_functions),
+        generation_error=generation_error,
     )
 
 
@@ -94,8 +97,8 @@ def add_human_action(
     action = Action(
         insight_id=insight_id,
         function=body.function,
-        recommendation=body.recommendation,
-        rationale=body.rationale or "",
+        recommendation=presidio_service.sanitize(body.recommendation).sanitized_text,
+        rationale=presidio_service.sanitize(body.rationale).sanitized_text if body.rationale else "",
         impact=body.impact,
         effort=body.effort,
         urgency=body.urgency,
@@ -135,11 +138,11 @@ def update_action(
     if touched_scores:
         act_agent.recompute_priority(action)
     if body.recommendation is not None:
-        action.recommendation = body.recommendation
+        action.recommendation = presidio_service.sanitize(body.recommendation).sanitized_text
     if body.rationale is not None:
-        action.rationale = body.rationale
+        action.rationale = presidio_service.sanitize(body.rationale).sanitized_text
     if body.override_reason is not None:
-        action.override_reason = body.override_reason
+        action.override_reason = presidio_service.sanitize(body.override_reason).sanitized_text
     if body.status is not None:
         action.status = body.status
     elif action.status == "proposed":

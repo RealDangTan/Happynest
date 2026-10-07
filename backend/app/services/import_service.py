@@ -407,7 +407,7 @@ def execute_import(
                     occurred_at = datetime.fromisoformat(values[occurred_col])
                 except ValueError:
                     errors.append(
-                        {"row": offset, "reason": f"occurred_at sai ISO 8601: {values[occurred_col]!r}"}
+                        {"row": offset, "reason": "occurred_at sai định dạng ISO 8601."}
                     )
                     continue
 
@@ -464,13 +464,13 @@ def execute_import(
     except Exception as exc:  # noqa: BLE001 — lô hỏng nặng → failed + report
         db.rollback()
         import_row.status = ImportStatus.failed
-        import_row.error = f"{type(exc).__name__}: {exc}"[:2000]
+        import_row.error = f"{type(exc).__name__}: import failed"
         import_row.report = {
             "imported": imported,
             "failed": len(errors),
             "errors": errors,
             "import_id": str(import_row.id),
-            "fatal": f"{type(exc).__name__}: {exc}"[:500],
+            "fatal": f"{type(exc).__name__}: import failed",
         }
         db.commit()
         raise

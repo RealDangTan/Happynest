@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 import type {
   ImportListResponse,
   ImportPreview,
@@ -44,10 +44,20 @@ export function useImport(importId: string | null) {
     queryKey: ["imports", importId],
     queryFn: () => apiFetch<ImportRecord>(`/api/imports/${importId}`),
     enabled: !!importId,
-    refetchInterval: (query) =>
-      ["mapping_generating", "importing"].includes(query.state.data?.status ?? "")
-        ? 2000
-        : false,
+    // Poll while work is in flight — and once more if a terminal snapshot
+    // somehow lacks row_count (guards the result card against stale zeros).
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      if (["mapping_generating", "importing"].includes(d?.status ?? ""))
+        return 2000;
+      if (
+        d &&
+        (d.status === "imported" || d.status === "failed") &&
+        d.row_count == null
+      )
+        return 1500;
+      return false;
+    },
   });
 }
 
@@ -90,6 +100,11 @@ export function useGetMapping(importId: string | null) {
     queryFn: () => apiFetch<MappingProposal>(`/api/imports/${importId}/mapping`),
     enabled: !!importId,
     staleTime: 5 * 60_000,
+    // 409 = proposal not ready yet (mapping still generating) — poll for up to
+    // ~2.5 min; a real LLM proposal commonly takes 1–2 minutes.
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 409 && failureCount < 150,
+    retryDelay: 1000,
   });
 }
 

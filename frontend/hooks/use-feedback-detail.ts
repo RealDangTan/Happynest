@@ -10,15 +10,16 @@ export type SimilarFeedback = {
   snippet: string | null;
 };
 
-export function useFeedbackDetail(id: string) {
+export function useFeedbackDetail(id: string | null) {
   return useQuery({
     queryKey: ["feedback", id],
     queryFn: () => apiFetch<Feedback>(`/api/feedbacks/${id}`),
+    enabled: Boolean(id),
     staleTime: 60_000,
   });
 }
 
-export function useSimilarFeedbacks(id: string) {
+export function useSimilarFeedbacks(id: string | null) {
   return useQuery({
     queryKey: ["similar", id],
     queryFn: async () => {
@@ -32,6 +33,7 @@ export function useSimilarFeedbacks(id: string) {
         throw e;
       }
     },
+    enabled: Boolean(id),
     staleTime: 60_000,
   });
 }

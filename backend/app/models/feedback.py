@@ -27,6 +27,11 @@ from app.db.base import Base
 class Feedback(Base):
     __tablename__ = "feedback"
 
+    @property
+    def has_embedding(self) -> bool:
+        """Expose readiness, never the vector itself, to API consumers."""
+        return self.embedding is not None
+
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     product_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("products.id"), nullable=False, index=True

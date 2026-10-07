@@ -10,7 +10,7 @@ export function middleware(req: NextRequest) {
   // Logged-in users never see auth/landing pages — everything funnels to the app.
   if (hasSession && (SESSION_ENTRY_PATHS.includes(pathname) || pathname === "/")) {
     const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/importer";
     return NextResponse.redirect(url);
   }
   // Anonymous users get the public landing, never bare app routes or /login.

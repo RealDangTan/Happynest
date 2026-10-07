@@ -9,8 +9,10 @@ mỗi thao tác mở saver riêng. Background daemon thread qua BackgroundTasks.
 import logging
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
+
+from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
@@ -70,6 +72,45 @@ def start_understand_run(
     return run
 
 
+def mark_stale_running_failed(max_age_minutes: int = 30) -> int:
+    """Heal-on-startup: run 'running' quá hạn → failed.
+
+    Thread nền graph là daemon — chết theo process khi server restart
+    (--reload/dev) mà không ai đánh dấu run; để lại run 'running' vĩnh viễn
+    khiến FE polling vô hạn. Chạy 1 lần lúc boot.
+
+    Run đã tạo Insight (đậu Gate #2, chờ human decision) cũng status=running
+    nhưng là TRẠNG THÁI HỢP LỆ — chỉ heal run CHƯA có insight nào.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)
+    with SessionLocal() as db:
+        from app.models.insight import Insight
+
+        stale_ids = db.scalars(
+            select(AnalysisRun.id).where(
+                AnalysisRun.status == RunStatus.running,
+                AnalysisRun.started_at < cutoff,
+                ~select(Insight.id)
+                .where(Insight.run_id == AnalysisRun.id)
+                .exists(),
+            )
+        ).all()
+        if not stale_ids:
+            return 0
+        now = datetime.now(timezone.utc)
+        for row in db.scalars(
+            select(AnalysisRun).where(AnalysisRun.id.in_(stale_ids))
+        ).all():
+            row.status = RunStatus.failed
+            row.error = (
+                f"stale running quá {max_age_minutes} phút — server restart "
+                "giữa chừng? (heal-on-startup)"
+            )
+            row.completed_at = now
+        db.commit()
+        return len(stale_ids)
+
+
 def _thread_config(run_id: uuid.UUID) -> dict:
     return {"configurable": {"thread_id": f"understand-{run_id}"}}
 
@@ -109,6 +150,11 @@ def submit_or_start(
         raise CheckpointUnavailable(
             "Không kết nối được Supabase để dựng bảng checkpoint LangGraph."
         )
+    if start_payload is not None:
+        from app.services.presidio_service import sanitize
+
+        start_payload = dict(start_payload)
+        start_payload["question"] = sanitize(str(start_payload.get("question", ""))).sanitized_text
     return _run_graph(start_payload, run_id, product_id)
 
 
@@ -119,6 +165,17 @@ def resume_with_decision(run_id: uuid.UUID, payload: dict) -> dict:
     hợp lệ cho decision), 'resume' (đang interrupt), 'continue' (crash sau
     interrupt — chạy nốt), 'completed' (409).
     """
+    from app.services.presidio_service import sanitize
+
+    payload = dict(payload)
+    if payload.get("reason"):
+        payload["reason"] = sanitize(str(payload["reason"])).sanitized_text
+    if payload.get("edited_insight") is not None:
+        payload["edited_insight"] = {
+            key: sanitize(str(value)).sanitized_text
+            for key, value in payload["edited_insight"].items()
+            if key in {"title", "finding"} and value is not None
+        }
     if not ensure_checkpointer_ready():
         raise CheckpointUnavailable("Checkpoint saver chưa sẵn sàng.")
 
@@ -158,12 +215,24 @@ def get_run_snapshot(run_id: uuid.UUID) -> dict | None:
         async with AsyncPostgresSaver.from_conn_string(_conn_string()) as saver:
             graph = build_graph(saver)
             snap = await graph.aget_state(_thread_config(run_id))
-            if not (dict(snap.values or {})):
+            values = dict(snap.values or {})
+            interrupts = [
+                intr.value
+                for task in (getattr(snap, "tasks", None) or ())
+                for intr in (getattr(task, "interrupts", ()) or ())
+            ]
+            logger.info(
+                "get_run_snapshot run=%s values=%s next=%s interrupts=%s",
+                run_id,
+                list(values.keys()),
+                list(snap.next or ()),
+                [bool(i) for i in interrupts],
+            )
+            if not values:
                 return None
-            tasks = getattr(snap, "tasks", None) or ()
-            for task in tasks:
-                for intr in getattr(task, "interrupts", ()) or ():
-                    return intr.value
+            for intr in interrupts:
+                if intr:
+                    return intr
             return None
 
     try:

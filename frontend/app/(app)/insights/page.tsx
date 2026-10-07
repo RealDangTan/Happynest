@@ -2,8 +2,8 @@
 import { CircleHelp } from "lucide-react";
 import { useInsights } from "@/hooks/use-insights";
 import type { InsightItem } from "@/lib/types";
-import { formatRelative } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { AiBadge } from "@/components/ai/ai-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 
 const DICTIONARY: [string, string][] = [
   [
@@ -80,6 +81,7 @@ function InsightCard({ insight }: { insight: InsightItem }) {
           <Badge variant="outline">
             tin cậy {Math.round(insight.finding_confidence * 100)}%
           </Badge>
+          <AiBadge />
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -113,7 +115,7 @@ function InsightCard({ insight }: { insight: InsightItem }) {
             <ul className="mt-2 flex flex-col gap-2">
               {insight.evidence.map((ev) => (
                 <li key={ev.evidence_id}>
-                  <blockquote className="border-l-2 border-border pl-3 text-sm">
+                  <blockquote className="border-l-2 border-border pl-3 text-sm break-words">
                     {ev.statement}
                     <footer className="mt-1 text-xs text-muted-foreground">
                       nguồn: {ev.source_tool}
@@ -134,10 +136,11 @@ export default function InsightsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-2xl">Insight</h1>
-        <DictionaryPopover />
-      </div>
+      <PageHeader
+        title="Insight"
+        description="Kết luận có bằng chứng do agent điều tra rút ra — duyệt ở Gate #2 trước khi thành hành động."
+        actions={<DictionaryPopover />}
+      />
 
       {insights.isPending ? (
         <div className="flex flex-col gap-4">

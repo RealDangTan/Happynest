@@ -28,7 +28,7 @@ from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
 from app.models.cluster import Cluster
 from app.models.evidence import Evidence
-from app.models.enums import LlmCallType
+from app.models.enums import LlmCallType, RunStatus
 from app.services.llm_client import LLMStructureError, chat_structured
 from app.services.presidio_service import sanitize
 from understand_agent.state import UnderstandState
@@ -36,8 +36,28 @@ from understand_agent.state import UnderstandState
 logger = logging.getLogger(__name__)
 
 _STATEMENT_MAX = 300
+_PROMPT_STATEMENT_MAX = 200
 _MAX_CLUSTERS_CONTEXT = 5
 _TOOL_NAMES = sorted(analytics.TOOLS.keys())
+
+
+def _tool_catalog() -> list[dict[str, Any]]:
+    """Catalog tool kèm signature params — sinh 1 lần từ registry (giảm chọn sai params)."""
+    catalog = []
+    for name in _TOOL_NAMES:
+        spec = analytics.TOOLS[name]
+        props = spec.input_model.model_json_schema().get("properties", {})
+        params = {k: str(v.get("type", "any")) for k, v in props.items()}
+        catalog.append({"tool": name, "description": spec.description, "params": params})
+    return catalog
+
+
+_TOOL_CATALOG = _tool_catalog()
+
+
+def _compact_evaluations(evaluations: list[dict[str, Any]], last_n: int) -> list[dict[str, Any]]:
+    keep = ("sufficient_evidence", "contradictions", "new_questions", "data_quality_warning")
+    return [{k: ev.get(k) for k in keep} for ev in evaluations[-last_n:]]
 
 
 def _llm_budget_used(db: Session, run_id: uuid.UUID) -> int:
@@ -129,13 +149,17 @@ def planner(state: UnderstandState) -> dict[str, Any]:
             "trigger_type": state.get("trigger_type", "user_question"),
             "product_context": state["product_context"],
             "evidence_so_far": [
-                {"evidence_id": e["evidence_id"], "tool": e["tool"], "statement": e["statement"]}
-                for e in state.get("evidence", [])
+                {
+                    "evidence_id": e["evidence_id"],
+                    "tool": e["tool"],
+                    "statement": e["statement"][:_PROMPT_STATEMENT_MAX],
+                }
+                for e in state.get("evidence", [])[-5:]
             ],
-            "evaluations": state.get("evaluations", [])[-3:],
-            "tool_history": state.get("tool_history", []),
+            "evaluations": _compact_evaluations(state.get("evaluations", []), 2),
+            "tool_history": state.get("tool_history", [])[-5:],
             "iteration": iteration,
-            "available_tools": _TOOL_NAMES,
+            "available_tools": _TOOL_CATALOG,
             "force": force,
         },
         ensure_ascii=False,
@@ -144,7 +168,8 @@ def planner(state: UnderstandState) -> dict[str, Any]:
     system = (
         "Bạn là điều tra viên phân tích phản hồi khách hàng. Cho câu hỏi/signal và "
         "context đã có, chọn BƯỚC TIẾP: gọi 1 tool phân tích (action='tool', chỉ "
-        "định nghĩa params cho tool đó) hoặc tổng hợp insight khi bằng chứng đã đủ "
+        "định nghĩa params cho tool đó — params PHẢI khớp đúng signature trong "
+        "available_tools) hoặc tổng hợp insight khi bằng chứng đã đủ "
         "(action='synthesize'). Aggregate first, drill down sau (§69). Chỉ trả JSON."
     )
     try:
@@ -213,7 +238,13 @@ def dispatch(state: UnderstandState) -> dict[str, Any]:
                 "payload": result,
             }
         ],
-        "tool_history": [tool_name or "unknown"],
+        "tool_history": [
+            {
+                "tool": tool_name or "unknown",
+                "ok": "ok" in observation,
+                "error": observation.get("error"),
+            }
+        ],
     }
 
 
@@ -234,9 +265,12 @@ def evaluator(state: UnderstandState) -> dict[str, Any]:
     user_payload = json.dumps(
         {
             "question": state["question"],
-            "latest_evidence": latest,
+            "latest_evidence": {
+                "tool": latest.get("tool"),
+                "statement": latest.get("statement", "")[:_PROMPT_STATEMENT_MAX],
+            },
             "all_evidence_statements": [
-                e["statement"] for e in state.get("evidence", [])
+                e["statement"][:150] for e in state.get("evidence", [])
             ],
         },
         ensure_ascii=False,
@@ -284,8 +318,15 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
         {
             "question": state["question"],
             "product_context": state["product_context"],
-            "evidence": state.get("evidence", []),
-            "evaluations": state.get("evaluations", []),
+            "evidence": [
+                {
+                    "evidence_id": e["evidence_id"],
+                    "tool": e["tool"],
+                    "statement": e["statement"][:_PROMPT_STATEMENT_MAX],
+                }
+                for e in state.get("evidence", [])
+            ],
+            "evaluations": _compact_evaluations(state.get("evaluations", []), 5),
             "rules": [
                 "finding = fact có evidence; hypothesis = suy luận, KHÔNG trình bày như root cause xác nhận (§41).",
                 "evidence_ids CHỈ được dùng id có trong danh sách evidence.",
@@ -324,7 +365,10 @@ def _limited_insight(state: UnderstandState) -> dict[str, Any]:
         "title": f"Không đủ bằng chứng: {state['question'][:180]}",
         "finding": "Không thu thập đủ evidence để trả lời câu hỏi trong giới hạn "
         "iteration/budget. Các bước đã thử: "
-        + ", ".join(state.get("tool_history", [])[-6:]),
+        + ", ".join(
+            h.get("tool", "?") if isinstance(h, dict) else str(h)
+            for h in state.get("tool_history", [])[-6:]
+        ),
         "finding_confidence": 0.3,
         "hypothesis_statement": None,
         "hypothesis_confidence": None,
@@ -455,6 +499,12 @@ def apply_decision(state: UnderstandState) -> dict[str, Any]:
                     reviewer_id=reviewer_id,
                 )
             )
+            if action != "investigate_more":
+                run = db.get(AnalysisRun, uuid.UUID(state["run_id"]))
+                if run is not None:
+                    run.status = RunStatus.completed
+                    run.processed_count = 1
+                    run.completed_at = datetime.now(timezone.utc)
             db.commit()
 
             # Decision memory (§52–53, plan 27) — agent draft vs human quyết

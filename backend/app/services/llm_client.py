@@ -79,6 +79,7 @@ def _api_call(
         "model": get_settings().LLM_MODEL,
         "messages": messages,
         "temperature": 0,
+        "max_tokens": get_settings().LLM_MAX_TOKENS,
     }
     if response_format is not None:
         kwargs["response_format"] = response_format

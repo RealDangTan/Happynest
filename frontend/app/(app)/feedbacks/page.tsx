@@ -41,6 +41,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { DataEntryDialog } from "./data-entry-dialog";
+import { PageHeader } from "@/components/page-header";
 
 // Cột bật/tắt được. Cột "Nội dung" cố định luôn hiển thị.
 type ColumnKey =
@@ -113,7 +114,7 @@ function ColumnVisibilityMenu({
 
 function FeedbackCell({ fb }: { fb: Feedback }) {
   return (
-    <TableCell className="max-w-md">
+    <TableCell className="max-w-md break-words">
       <Link href={`/feedbacks/${fb.id}`} className="block">
         <span className="line-clamp-2">{fb.feedback_text ?? "(chưa phân tích)"}</span>
       </Link>
@@ -138,6 +139,7 @@ function FeedbacksTable() {
   const [visibleColumns, setVisibleColumns] =
     useState<ColumnKey[]>(DEFAULT_COLUMNS);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage chỉ đọc sau mount, tránh lệch hydration SSR
     setVisibleColumns(readStoredColumns());
   }, []);
 
@@ -375,10 +377,11 @@ function FeedbacksTable() {
 export default function FeedbacksPage() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl">Phản hồi</h1>
-        <DataEntryDialog />
-      </div>
+      <PageHeader
+        title="Phản hồi"
+        description="Mọi phản hồi đã nhập — lọc, duyệt, và mở chi tiết từng mục."
+        actions={<DataEntryDialog />}
+      />
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>
         <FeedbacksTable />
       </Suspense>

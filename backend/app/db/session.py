@@ -15,6 +15,7 @@ settings = get_settings()
 engine = create_engine(
     settings.database_url_sqla,
     connect_args={"options": "-csearch_path=extensions,public"},
+    pool_pre_ping=True,  # Supabase pooler ngắt conn idle → checkout chết 500; ping trước để tự thay conn mới
     pool_size=2,
     max_overflow=2,
 )

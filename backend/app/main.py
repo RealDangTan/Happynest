@@ -46,8 +46,20 @@ async def lifespan(app: FastAPI):
     # Windows dùng ProactorEventLoop mà async psycopg chỉ chạy trên selector
     # (quirk S5) — await ở đây nổ InterfaceError. Thread tự chạy asyncio.run
     # trên selector loop riêng; lỗi không chặn boot (health-degraded philosophy).
+    def _startup_bg() -> None:
+        if not graph_runtime.ensure_checkpointer_ready():
+            return
+        try:
+            from understand_agent import runner as understand_runner
+
+            healed = understand_runner.mark_stale_running_failed()
+            if healed:
+                logger.info("heal-on-startup: %s stale running run(s) → failed", healed)
+        except Exception:  # noqa: BLE001 — heal fail không chặn boot
+            logger.exception("heal-on-startup failed")
+
     threading.Thread(
-        target=graph_runtime.ensure_checkpointer_ready,
+        target=_startup_bg,
         name="langgraph-checkpoint-setup",
         daemon=True,
     ).start()

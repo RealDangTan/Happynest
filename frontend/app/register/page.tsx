@@ -52,7 +52,7 @@ export default function RegisterPage() {
         body: new URLSearchParams({ username: email.trim().toLowerCase(), password }),
         signal: AbortSignal.timeout(15000),
       });
-      router.replace(res.ok ? "/feedbacks" : "/login");
+      router.replace(res.ok ? "/importer" : "/login");
       router.refresh();
     },
   });

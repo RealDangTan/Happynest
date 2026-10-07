@@ -97,6 +97,7 @@ export function CountUp({
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reduced-motion final value
       setVal(to);
       return;
     }

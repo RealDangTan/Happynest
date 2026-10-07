@@ -4,40 +4,46 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Evidence Loom — 2026-09-15 visual brief:
+   Pine Ink sidebar/primary · Field Paper workspace · Chalk canvas
+   Lichen selected/accepted · Pollen review badges · Signal Blue evidence. */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.153 0.006 107.1);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.153 0.006 107.1);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.153 0.006 107.1);
-    --primary: oklch(0.228 0.013 107.4);
-    --primary-foreground: oklch(0.988 0.003 106.5);
-    --secondary: oklch(0.966 0.005 106.5);
-    --secondary-foreground: oklch(0.228 0.013 107.4);
-    --muted: oklch(0.966 0.005 106.5);
-    --muted-foreground: oklch(0.58 0.031 107.3);
-    --accent: oklch(0.966 0.005 106.5);
-    --accent-foreground: oklch(0.228 0.013 107.4);
-    --destructive: oklch(0.577 0.245 27.325);
-    --warning: oklch(0.666 0.179 58.318);
-    --border: oklch(0.93 0.007 106.5);
-    --input: oklch(0.93 0.007 106.5);
-    --ring: oklch(0.737 0.021 106.9);
-    --chart-1: oklch(0.88 0.011 106.6);
-    --chart-2: oklch(0.58 0.031 107.3);
-    --chart-3: oklch(0.466 0.025 107.3);
-    --chart-4: oklch(0.394 0.023 107.4);
-    --chart-5: oklch(0.286 0.016 107.4);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.988 0.003 106.5);
-    --sidebar-foreground: oklch(0.153 0.006 107.1);
-    --sidebar-primary: oklch(0.228 0.013 107.4);
-    --sidebar-primary-foreground: oklch(0.988 0.003 106.5);
-    --sidebar-accent: oklch(0.966 0.005 106.5);
-    --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
-    --sidebar-border: oklch(0.93 0.007 106.5);
-    --sidebar-ring: oklch(0.737 0.021 106.9);
+    --background: #f1f3e9;
+    --foreground: #14251d;
+    --card: #fcfcf8;
+    --card-foreground: #14251d;
+    --popover: #fcfcf8;
+    --popover-foreground: #14251d;
+    --primary: #14251d;
+    --primary-foreground: #fcfcf8;
+    --secondary: #e5e9da;
+    --secondary-foreground: #14251d;
+    --muted: #e5e9da;
+    --muted-foreground: #5c6b5e;
+    --accent: #e2e8d6;
+    --accent-foreground: #14251d;
+    --destructive: #a63a2e;
+    --warning: #dbac3b;
+    --border: #d9ddca;
+    --input: #d9ddca;
+    --ring: #3f738b;
+    --chart-1: #91a873;
+    --chart-2: #3f738b;
+    --chart-3: #dbac3b;
+    --chart-4: #5c6b5e;
+    --chart-5: #14251d;
+    --lichen: #91a873;
+    --pollen: #dbac3b;
+    --signal: #3f738b;
+    --radius: 0.5rem;
+    --sidebar: #14251d;
+    --sidebar-foreground: #eef1e4;
+    --sidebar-primary: #fcfcf8;
+    --sidebar-primary-foreground: #14251d;
+    --sidebar-accent: #22352b;
+    --sidebar-accent-foreground: #fcfcf8;
+    --sidebar-border: #22352b;
+    --sidebar-ring: #91a873;
 }
 
 .dark {
@@ -96,6 +102,9 @@
     --color-border: var(--border);
     --color-destructive: var(--destructive);
     --color-warning: var(--warning);
+    --color-lichen: var(--lichen);
+    --color-pollen: var(--pollen);
+    --color-signal: var(--signal);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -131,5 +140,5 @@
     }
   html {
     @apply font-sans;
-    }
+  }
 }

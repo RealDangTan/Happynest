@@ -103,11 +103,15 @@ def _insight_payload(insight: Insight) -> dict[str, Any]:
     }
 
 
-def generate_actions(db: Session, insight: Insight) -> tuple[list[Action], list[str]]:
+def generate_actions(
+    db: Session, insight: Insight
+) -> tuple[list[Action], list[str], str | None]:
     """Sinh action portfolio cho insight ĐÃ DUYỆT — idempotent: chỉ replace
     các action 'proposed' CHƯA bị human chạm; action edited/accepted giữ nguyên.
 
-    Returns (created_actions, skipped_functions) — skipped = relevance < threshold.
+    Returns (created_actions, skipped_functions, generation_error) — skipped =
+    relevance < threshold; generation_error không None khi LLM fail toàn bộ
+    (HAX G14 — không nuốt lỗi im lặng).
     """
     try:
         proposal = chat_structured(
@@ -117,8 +121,8 @@ def generate_actions(db: Session, insight: Insight) -> tuple[list[Action], list[
             call_type=LlmCallType.act_generate,
             prompt_version=PROMPT_VERSION,
         )
-    except LLMStructureError:
-        return [], []
+    except LLMStructureError as exc:
+        return [], [], f"LLMStructureError: {exc}"[:500]
 
     threshold = get_settings().ACT_RELEVANCE_THRESHOLD
     skipped = [c.function for c in proposal.functions if c.relevance < threshold]
@@ -162,7 +166,7 @@ def generate_actions(db: Session, insight: Insight) -> tuple[list[Action], list[
     db.commit()
     for a in new_actions:
         db.refresh(a)
-    return new_actions, skipped
+    return new_actions, skipped, None
 
 
 def matrix_quadrant(impact: int, effort: int) -> str:

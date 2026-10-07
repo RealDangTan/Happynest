@@ -40,14 +40,20 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const [seenFailures, setSeenFailures] = useState("");
   const [completedUntil, setCompletedUntil] = useState(0);
   const previousRunning = useRef(0);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, []);
   const summary = deriveActivitySummary({
     imports,
     runs,
     seenFailures,
-    completedRecently: Date.now() < completedUntil,
+    completedRecently: now < completedUntil,
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- acknowledging a failure once its task is opened
     if (activityParam && summary.failedSignature) setSeenFailures(summary.failedSignature);
   }, [activityParam, summary.failedSignature]);
 

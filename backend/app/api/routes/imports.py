@@ -24,7 +24,12 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_role
+from app.models.analysis_run import AnalysisRun
+from app.models.evidence import Evidence
+from app.models.feedback import Feedback
 from app.models.import_ import Import
+from app.models.insight import Insight
+from app.models.llm_call_log import LlmCallLog
 from app.models.enums import ImportStatus
 from app.models.user import User
 from app.schemas.import_ import (
@@ -47,6 +52,12 @@ router = APIRouter(
     tags=["imports"],
     dependencies=[Depends(require_role("pm", "operations"))],
 )
+
+# Destructive ops siết thêm: chỉ pm.
+_pm_only = [Depends(require_role("pm"))]
+
+# Import đang có job nền chạy → cấm xoá (đợi hoàn tất hoặc cancel trước).
+_BUSY_STATUSES = {ImportStatus.mapping_generating, ImportStatus.importing}
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -260,3 +271,47 @@ def decide_import_mapping(
         default_source=default_source,
     )
     return {"import_id": str(import_row.id), "status": "importing"}
+
+
+@router.delete(
+    "/{import_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=_pm_only,
+)
+def delete_import(
+    import_id: uuid.UUID, session: Session = Depends(get_db)
+) -> None:
+    """Hard delete cả lô import: feedback + analysis_runs (+ evidence,
+    llm_call_logs, insights tham chiếu run) — db nhẹ thật sau import nhầm.
+    409 khi import đang có job nền chạy."""
+    import_row = session.get(Import, import_id)
+    if import_row is None:
+        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    if import_row.status in _BUSY_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Import đang xử lý — đợi hoàn tất hoặc cancel trước khi xoá."
+            ),
+        )
+
+    run_ids = select(AnalysisRun.id).where(AnalysisRun.import_id == import_row.id)
+    # Insights trỏ run_id (FK không cascade) — xoá trước; con của insight
+    # (actions, insight_reviews, impact_checks) cascade sẵn ở DB.
+    session.query(Insight).filter(Insight.run_id.in_(run_ids)).delete(
+        synchronize_session=False
+    )
+    session.query(LlmCallLog).filter(
+        LlmCallLog.analysis_run_id.in_(run_ids)
+    ).delete(synchronize_session=False)
+    session.query(Evidence).filter(Evidence.run_id.in_(run_ids)).delete(
+        synchronize_session=False
+    )
+    session.query(Feedback).filter(Feedback.import_id == import_row.id).delete(
+        synchronize_session=False
+    )
+    session.query(AnalysisRun).filter(AnalysisRun.import_id == import_row.id).delete(
+        synchronize_session=False
+    )
+    session.delete(import_row)
+    session.commit()

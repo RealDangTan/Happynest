@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// OQ-3 (decisions 2026-08-26): root luôn về dashboard.
+// FE-12 (2026-09-15): root goes to the first LISTEN stage — the Importer.
 export default function Page() {
-  redirect("/dashboard");
+  redirect("/importer");
 }

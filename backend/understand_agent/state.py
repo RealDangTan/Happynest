@@ -26,7 +26,7 @@ class UnderstandState(TypedDict, total=False):
     #: Tích lũy qua các vòng tool-loop (Annotated add)
     evidence: Annotated[list[dict[str, Any]], _add_list]
     evaluations: Annotated[list[dict[str, Any]], _add_list]
-    tool_history: Annotated[list[str], _add_list]
+    tool_history: Annotated[list[dict[str, Any]], _add_list]
 
     iteration: int
     llm_budget: int

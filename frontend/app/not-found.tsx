@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./landing/landing.css";
 import { silkscreen } from "./landing/fonts";
 import { BirdSvg, SignalField } from "./landing/motion";
@@ -41,9 +42,9 @@ export default function NotFound() {
             The page you&apos;re after drifted out of the canopy. The signal dots are
             already searching for it.
           </p>
-          <a href="/" className="hn-btn mt-8 inline-flex">
+          <Link href="/" className="hn-btn mt-8 inline-flex">
             Back to the nest
-          </a>
+          </Link>
         </div>
       </main>
     </div>

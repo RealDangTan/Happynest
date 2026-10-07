@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // Generate actions / agent runs là route LLM đồng bộ (60–120s) — proxy mặc định
+  // cắt ở 30s → 500. Nới timeout lên 5 phút (FE-12 verify 2026-09-15).
+  experimental: {
+    proxyTimeout: 300_000,
+  },
 }
 
 export default nextConfig

@@ -40,6 +40,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 import { useActivity } from "@/components/activity/activity-provider";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -170,6 +171,7 @@ function AnalysisInner() {
   useEffect(() => {
     const d = progress.data;
     if (!d || d.status === "running" || notified === d.id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot completion toast guard
     setNotified(d.id);
     if (d.status === "completed") {
       toast.success("Phân loại hoàn tất", {
@@ -188,18 +190,19 @@ function AnalysisInner() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl">Phân tích</h1>
-        <Button onClick={activity.openQueue}>Mở Activity Center</Button>
-      </div>
+      <PageHeader
+        title="Phân tích"
+        description="Trang này giữ vai trò xem kết quả chi tiết — tạo run có scope và xem cost receipt trong Activity Center trên navbar."
+        actions={<Button onClick={activity.openQueue}>Mở Activity Center</Button>}
+      />
 
       {!runId ? (
-        <Empty>
+        <Empty className="border">
           <EmptyHeader>
             <EmptyTitle>Chưa có lượt phân tích nào đang theo dõi</EmptyTitle>
             <EmptyDescription>
-              Tạo run có scope và xem cost receipt trong Activity Center trên navbar.
-              Trang này chỉ giữ vai trò xem kết quả chi tiết.
+              Tạo run có scope trong Activity Center trên navbar, rồi mở kết quả
+              chi tiết tại đây.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

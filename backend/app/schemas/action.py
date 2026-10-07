@@ -40,6 +40,8 @@ class ActionsListOut(BaseModel):
 class ActionGenerateOut(BaseModel):
     actions_created: int
     functions_skipped: list[str]  # relevance < threshold (§47)
+    # HAX G14 — LLM fail KHÔNG nuốt im lặng: lỗi trả về FE để user biết
+    generation_error: str | None = None
 
 
 class HumanActionIn(BaseModel):

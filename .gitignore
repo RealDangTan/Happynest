@@ -29,3 +29,6 @@ Thumbs.db
 backend/evidence-server-*.log
 backend/cookie.txt
 backend/storage/
+
+# PII: survey responses tho (email/ten that) — KHONG BAO GIO commit (Hard Rule 2)
+docs/thesis/*Form Responses*.csv

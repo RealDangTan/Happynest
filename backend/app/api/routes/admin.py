@@ -9,6 +9,7 @@ Guard role pm|operations gắn ở TẦNG ROUTER như feedback router.
 """
 
 import time
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -17,6 +18,10 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_role
 from app.models.cluster import Cluster
+from app.models.product import Product
+from app.core.config import get_settings
+from app.services.impact_service import run_impact_checks
+from pydantic import BaseModel
 from app.schemas.cluster import ClusterOut, ClusterRunOut, ClustersListOut
 from app.schemas.report import (
     ReportKpisOut,
@@ -38,6 +43,36 @@ _SORT_COLUMNS = {
     "growth_ratio": Cluster.growth_ratio.desc(),
     "recent": Cluster.last_seen.desc(),  # `recent` = last_seen giảm dần (C1)
 }
+
+
+class ImpactRunIn(BaseModel):
+    product_id: uuid.UUID
+
+
+class ImpactResultOut(BaseModel):
+    action_id: uuid.UUID
+    insight_id: uuid.UUID
+    before_count: int
+    after_count: int
+    delta_ratio: float | None
+
+
+class ImpactRunOut(BaseModel):
+    product_id: uuid.UUID
+    window_days: int
+    results: list[ImpactResultOut]
+
+
+@router.post("/impact-checks/run")
+def run_product_impact(body: ImpactRunIn, db: Session = Depends(get_db)) -> ImpactRunOut:
+    """Measure eligible actions for exactly one product; no LLM calls."""
+    if db.get(Product, body.product_id) is None:
+        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    return ImpactRunOut(
+        product_id=body.product_id,
+        window_days=get_settings().IMPACT_WINDOW_DAYS,
+        results=run_impact_checks(db, product_id=body.product_id),
+    )
 
 
 @router.post("/clusters/run", status_code=status.HTTP_200_OK)

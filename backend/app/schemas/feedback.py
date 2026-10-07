@@ -42,6 +42,7 @@ class FeedbackOut(BaseModel):
     data: dict[str, Any]
     source_meta: dict[str, Any]
     ai_analysis: dict[str, Any] | None
+    has_embedding: bool = False
     created_at: datetime
 
 
@@ -52,6 +53,29 @@ class FeedbackListOut(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class FeedbackUpdate(BaseModel):
+    """Body PATCH /api/feedbacks/{id} — partial.
+
+    `feedback_text` mới → re-sanitize + embedding NULL (vector cũ sai cho text
+    mới). `ai_analysis` là partial dict — route merge vào dict hiện có (nhãn
+    người dùng sửa = ground truth cho agent)."""
+    # py3.12: dùng model_fields_set để phân biệt "không gửi" vs "gửi null"
+    feedback_text: str | None = Field(default=None, min_length=1)
+    source: str | None = Field(default=None, min_length=1, max_length=100)
+    occurred_at: datetime | None = None
+    ai_analysis: dict[str, Any] | None = None
+
+
+class FeedbackBulkDeleteIn(BaseModel):
+    """Body POST /api/feedbacks/bulk-delete."""
+
+    ids: list[UUID] = Field(min_length=1, max_length=500)
+
+
+class BulkDeleteOut(BaseModel):
+    deleted: int
 
 
 class CsvImportError(BaseModel):

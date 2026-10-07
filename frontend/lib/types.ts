@@ -211,6 +211,132 @@ export type ActivitySummary = {
   primaryActivity: ActivityRef | null;
 };
 
+// ------------------------------------------------------------------ agent (UNDERSTAND graph)
+
+export type AgentRunStatus =
+  | "running"
+  | "pending_approval"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export type InsightDraft = {
+  title: string;
+  finding: string;
+  finding_confidence: number;
+  hypothesis_statement?: string | null;
+  hypothesis_confidence?: number | null;
+  affected_context: Record<string, unknown>;
+  impact: string[];
+  limitations: string[];
+};
+
+export type PendingApproval = {
+  insight_id: string | null;
+  insight: InsightDraft;
+  evidence: { evidence_id: string; statement: string }[];
+  options: string[];
+};
+
+export type AgentRunProgress = {
+  iteration: number;
+  max_iterations: number;
+  last_tool: string | null;
+  llm_calls_used: number;
+  llm_budget: number;
+  evidence_count: number;
+};
+
+/** Metadata-only trace row (HAX G4/G16) — no prompt/response ever. */
+export type AgentTraceRow = {
+  call_type: string;
+  status: "ok" | "error";
+  latency_ms: number;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  model: string;
+  prompt_version: string;
+  error: string | null;
+  created_at: string;
+};
+
+export type AgentTraceResponse = {
+  run_id: string;
+  items: AgentTraceRow[];
+};
+
+export type AgentRunStatusResponse = {
+  run_id: string;
+  status: string;
+  error: string | null;
+  pipeline_version: string;
+  started_at: string;
+  completed_at: string | null;
+  pending_approval: PendingApproval | null;
+  progress?: AgentRunProgress | null;
+};
+
+export type AgentDecision = "approve" | "edit" | "investigate_more" | "reject";
+
+// ------------------------------------------------------------------ actions (ACT shape)
+
+export type BusinessFunction =
+  | "MARKETING"
+  | "LEGAL"
+  | "DESIGN"
+  | "FINANCE"
+  | "ENGINEERING"
+  | "OPERATION"
+  | "SALES"
+  | "SUPPORT";
+
+export type ActionStatus = "proposed" | "edited" | "accepted" | "rejected";
+
+export type ActionItem = {
+  id: string;
+  insight_id: string;
+  function: BusinessFunction;
+  recommendation: string;
+  rationale: string;
+  impact: number;
+  effort: number;
+  urgency: number;
+  confidence: number;
+  priority_score: number;
+  human_impact: number | null;
+  human_effort: number | null;
+  human_urgency: number | null;
+  override_reason: string | null;
+  status: ActionStatus;
+  created_at: string;
+};
+
+export type Quadrant = "quick_wins" | "strategic_investments" | "low_priority" | "reconsider";
+
+export type ActionsListResponse = {
+  items: ActionItem[];
+  matrix: Record<Quadrant, string[]>;
+};
+
+export type ActionUpdateInput = {
+  recommendation?: string;
+  rationale?: string;
+  impact?: number;
+  effort?: number;
+  urgency?: number;
+  override_reason?: string;
+  status?: "accepted" | "rejected";
+};
+
+export type HumanActionInput = {
+  function: BusinessFunction;
+  recommendation: string;
+  rationale?: string;
+  impact: number;
+  effort: number;
+  urgency: number;
+};
+
 // ------------------------------------------------------------------ insights (UNDERSTAND shape)
 
 export type InsightEvidenceRef = {

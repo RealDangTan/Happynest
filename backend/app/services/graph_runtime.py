@@ -29,11 +29,21 @@ class CheckpointUnavailable(Exception):
 
 
 def _conn_string() -> str:
-    """psycopg URI thuần cho AsyncPostgresSaver — bỏ prefix dialect SQLAlchemy."""
+    """psycopg URI thuần cho AsyncPostgresSaver — bỏ prefix dialect SQLAlchemy.
+
+    TCP keepalive aggressive (idle 15s): Supabase pooler ngắt connection idle
+    ~1-2 phút — graph UNDERSTAND đứng yên trong lúc chờ LLM (~30-120s/call)
+    rồi chết đúng ở checkpoint write (Gate #2). Xem decisions.md 2026-09-24.
+    """
     from app.core.config import get_settings
 
-    return get_settings().database_url_sqla.replace(
+    url = get_settings().database_url_sqla.replace(
         "postgresql+psycopg://", "postgresql://", 1
+    )
+    sep = "&" if "?" in url else "?"
+    return (
+        f"{url}{sep}keepalives=1&keepalives_idle=15"
+        "&keepalives_interval=5&keepalives_count=3"
     )
 
 

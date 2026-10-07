@@ -23,3 +23,35 @@ export function useCreateProduct() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["products"] }),
   });
 }
+
+/** Settings — rename / re-describe the active product. 409 on duplicate name. */
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { name?: string; description?: string | null } }) =>
+      apiFetch<Product>(`/api/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+/** DELETE /api/products/{id} (pm) — cascade toàn bộ feedback/imports/insights. */
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ product_id: string; deleted_counts: Record<string, number> }>(
+        `/api/products/${id}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["products"] });
+      void qc.invalidateQueries({ queryKey: ["feedbacks"] });
+      void qc.invalidateQueries({ queryKey: ["imports"] });
+      void qc.invalidateQueries({ queryKey: ["insights"] });
+    },
+  });
+}

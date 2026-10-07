@@ -24,11 +24,15 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_role
 from app.models.feedback import Feedback
 from app.schemas.feedback import (
+    BulkDeleteOut,
+    FeedbackBulkDeleteIn,
     FeedbackIn,
     FeedbackListOut,
     FeedbackOut,
+    FeedbackUpdate,
 )
 from app.services.ingest_service import get_default_product, ingest_one
+from app.services.presidio_service import sanitize
 
 router = APIRouter(
     prefix="/api",
@@ -37,7 +41,17 @@ router = APIRouter(
     dependencies=[Depends(require_role("pm", "operations"))],
 )
 
+# Destructive ops (PATCH/DELETE) siết thêm: chỉ pm.
+_pm_only = [Depends(require_role("pm"))]
+
 _SNIPPET_CHARS = 200
+
+
+def _get_feedback_or_404(session: Session, feedback_id: uuid.UUID) -> Feedback:
+    feedback = session.get(Feedback, feedback_id)
+    if feedback is None:
+        raise HTTPException(status_code=404, detail="Feedback không tồn tại.")
+    return feedback
 
 
 @router.post("/feedbacks", status_code=status.HTTP_201_CREATED)
@@ -173,3 +187,70 @@ def similar_feedbacks(
         }
         for row in rows
     ]
+
+
+@router.patch("/feedbacks/{feedback_id}", dependencies=_pm_only)
+def update_feedback(
+    feedback_id: uuid.UUID,
+    item: FeedbackUpdate,
+    session: Session = Depends(get_db),
+) -> FeedbackOut:
+    """Sửa feedback — hard rule #2: text mới qua lại `sanitize()`; raw_content
+    được thay bằng text mới do chính người dùng nhập. Text đổi → embedding NULL
+    (vector cũ mô tả text cũ; `/similar` đã 409 cho embedding NULL)."""
+    feedback = _get_feedback_or_404(session, feedback_id)
+    changed = item.model_fields_set
+
+    if "feedback_text" in changed and item.feedback_text is not None:
+        result = sanitize(item.feedback_text)
+        feedback.raw_content = item.feedback_text
+        feedback.feedback_text = result.sanitized_text
+        feedback.pii_detected = result.pii_detected
+        feedback.pii_entities = [e.model_dump() for e in result.entities]
+        feedback.embedding = None
+        feedback.embedding_model = None
+        feedback.embedding_dim = None
+
+    if "source" in changed and item.source is not None:
+        feedback.source = item.source
+    if "occurred_at" in changed and item.occurred_at is not None:
+        feedback.occurred_at = item.occurred_at
+    if "ai_analysis" in changed and item.ai_analysis is not None:
+        # Partial merge — nhãn người dùng sửa đè nhãn AI, phần còn lại giữ nguyên.
+        merged = dict(feedback.ai_analysis or {})
+        merged.update(item.ai_analysis)
+        feedback.ai_analysis = merged
+
+    session.commit()
+    session.refresh(feedback)
+    return FeedbackOut.model_validate(feedback)
+
+
+@router.delete(
+    "/feedbacks/{feedback_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=_pm_only,
+)
+def delete_feedback(
+    feedback_id: uuid.UUID, session: Session = Depends(get_db)
+) -> None:
+    """Hard delete 1 feedback — không có bảng con tham chiếu (embedding nằm
+    trên row; cluster_id chỉ là con trỏ) nên xoá là sạch."""
+    feedback = _get_feedback_or_404(session, feedback_id)
+    session.delete(feedback)
+    session.commit()
+
+
+@router.post("/feedbacks/bulk-delete", dependencies=_pm_only)
+def bulk_delete_feedbacks(
+    body: FeedbackBulkDeleteIn, session: Session = Depends(get_db)
+) -> BulkDeleteOut:
+    """Hard delete nhiều feedback trong 1 transaction; id lạ bị bỏ qua
+    (deleted = số row thật sự mất)."""
+    rows = session.scalars(
+        select(Feedback).where(Feedback.id.in_(body.ids))
+    ).all()
+    for row in rows:
+        session.delete(row)
+    session.commit()
+    return BulkDeleteOut(deleted=len(rows))

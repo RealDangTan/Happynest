@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { PageHeader } from "@/components/page-header";
 
 const SORT_OPTIONS: { value: ClusterSort; label: string }[] = [
   { value: "feedback_count", label: "Nhiều phản hồi nhất" },
@@ -226,25 +227,28 @@ function ClustersInner() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-2xl">Cụm chủ đề</h1>
-        <DictionaryPopover />
-        <div className="ml-auto flex items-center gap-2">
-          <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {(clusters.data?.items.length ?? 0) > 0 ? <RebuildButton /> : null}
-        </div>
-      </div>
+      <PageHeader
+        title="Cụm chủ đề"
+        description="Các phản hồi được gộp theo ý nghĩa — kèm phát hiện vấn đề mới nổi và tăng đột biến."
+        actions={
+          <>
+            <DictionaryPopover />
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(clusters.data?.items.length ?? 0) > 0 ? <RebuildButton /> : null}
+          </>
+        }
+      />
 
       {clusters.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
