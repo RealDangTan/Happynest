@@ -1,15 +1,42 @@
 export type Severity = "low" | "medium" | "high" | "critical";
 export type Sentiment = "positive" | "negative" | "neutral" | "mixed";
+export type Emotion =
+  | "frustration"
+  | "anger"
+  | "disappointment"
+  | "confusion"
+  | "anxiety"
+  | "satisfaction"
+  | "delight"
+  | "neutral";
+export type Intent =
+  | "bug_report"
+  | "feature_request"
+  | "question"
+  | "complaint"
+  | "praise"
+  | "other";
 
-/** ai_analysis JSONB — pipeline ghi sau classify (VoC OS §17). */
+/** Score có kèm xác suất — enrich v3 (spec Listen 2026-10-07). */
+export type LabelScore = { id?: string; label?: string; probability: number };
+
+/** ai_analysis JSONB — enrich v3 ghi (spec Listen 2026-10-07, plans 31–32). */
 export type AiAnalysis = {
   topics: string[] | null;
+  /** probability từng topic — enrich v3; rỗng với dataset cũ */
+  topic_scores?: LabelScore[] | null;
+  topic_confidence?: number | null;
+  uncategorized?: boolean | null;
+  emotions?: string[] | null;
+  emotion_scores?: LabelScore[] | null;
+  intent?: Intent | null;
   ai_issue: string | null;
   sentiment: Sentiment | null;
   severity: Severity | null;
   safety_issue: boolean | null;
   confidence: number | null;
   rationale: string | null;
+  taxonomy_version?: number | null;
   analysis_version: string | null;
 };
 
@@ -43,10 +70,80 @@ export type Product = {
   id: string;
   name: string;
   description: string | null;
+  /** bump mỗi lần human apply taxonomy (plan 31) */
+  taxonomy_version?: number;
   created_at: string;
 };
 
 export type ProductListResponse = { items: Product[]; total: number };
+
+// ------------------------------------------------------------- taxonomy (plans 31/34)
+
+export type TaxonomyNode = {
+  id: string;
+  product_id: string;
+  parent_id: string | null;
+  name: string;
+  /** id ổn định cho topic label — bất biến khi rename */
+  slug: string | null;
+  description: string | null;
+  kind: "canonical" | "emerging";
+  status: "active" | "pending_review" | "merged" | "rejected";
+  evidence_count: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  created_at: string;
+};
+
+export type TaxonomyListResponse = { items: TaxonomyNode[]; total: number };
+
+/** Một node trong proposal PHẲNG của GPT — parent là NAME của topic khác. */
+export type ProposedTopic = {
+  name: string;
+  parent: string | null;
+  description?: string | null;
+  /** FE-only: trạng thái chọn khi review (mặc định true) */
+  selected?: boolean;
+};
+
+export type TaxonomyProposal = { topics: ProposedTopic[] };
+
+export type TaxonomyGenerateRequest = {
+  product_id: string;
+  sample_size?: number;
+  product_type?: string | null;
+  use_case?: string | null;
+  persona?: string | null;
+};
+
+export type TaxonomyGenerateResponse = {
+  product_id: string;
+  sample_count: number;
+  proposal: TaxonomyProposal;
+};
+
+export type TaxonomyApplyResponse = {
+  created: TaxonomyNode[];
+  skipped: number;
+  taxonomy_version: number;
+};
+
+export type TopicRecommendation = {
+  name: string;
+  parent: string | null;
+  evidence_count: number;
+  examples: string[];
+  /** FE-only: trạng thái chọn khi review */
+  selected?: boolean;
+};
+
+export type TopicRecommendResponse = {
+  product_id: string;
+  pool_count: number;
+  recommendations: TopicRecommendation[];
+};
+
+export type ReEnrichResponse = { released: number; hint: string };
 
 export type ImportStatus =
   | "pending"

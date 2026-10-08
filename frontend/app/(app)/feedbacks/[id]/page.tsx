@@ -76,6 +76,9 @@ export default function FeedbackDetailPage() {
             {ai?.sentiment ? (
               <Badge variant="secondary">{SENTIMENT_LABEL[ai.sentiment]}</Badge>
             ) : null}
+            {ai?.uncategorized ? (
+              <Badge variant="outline">UNCATEGORIZED</Badge>
+            ) : null}
             {d.pii_detected ? <Badge variant="outline">Phát hiện PII</Badge> : null}
             {!ai ? <Badge variant="outline">Chưa phân tích</Badge> : null}
           </div>
@@ -107,6 +110,18 @@ export default function FeedbackDetailPage() {
                   ))
                 : "—"}
             </dd>
+            <dt className="text-muted-foreground">Cảm xúc</dt>
+            <dd className="flex flex-wrap gap-1">
+              {(ai?.emotions ?? []).length > 0
+                ? ai!.emotions!.map((e) => (
+                    <Badge key={e} variant="outline">
+                      {e}
+                    </Badge>
+                  ))
+                : "—"}
+            </dd>
+            <dt className="text-muted-foreground">Ý định</dt>
+            <dd>{ai?.intent ?? "—"}</dd>
             <dt className="text-muted-foreground">Confidence</dt>
             <dd>{ai?.confidence != null ? `${Math.round(ai.confidence * 100)}%` : "—"}</dd>
             <dt className="text-muted-foreground">An toàn</dt>

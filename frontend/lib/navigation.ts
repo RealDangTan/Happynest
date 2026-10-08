@@ -2,6 +2,7 @@ import {
   FileText,
   Inbox,
   LayoutGrid,
+  ListTree,
   Upload,
   Users,
   Waypoints,
@@ -19,6 +20,7 @@ export const STAGES: {
     items: [
       { href: "/importer", label: "Importer", icon: Upload },
       { href: "/vault", label: "Feedback Vault", icon: Inbox },
+      { href: "/taxonomy", label: "Taxonomy", icon: ListTree },
     ],
   },
   {

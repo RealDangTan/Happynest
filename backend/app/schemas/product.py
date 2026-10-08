@@ -22,6 +22,8 @@ class ProductOut(BaseModel):
     id: UUID
     name: str
     description: str | None
+    # plan 31: bump mỗi lần human apply taxonomy — FE badge "Taxonomy vN".
+    taxonomy_version: int = 1
     created_at: datetime
 
 

@@ -337,9 +337,45 @@ function FeedbackDetailDrawer({
                 <dd className="font-mono text-xs">{shortDate(item.occurred_at)}</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Topic</dt>
-                <dd>{analysis?.topics?.[0] ?? "—"}</dd>
+                <dt className="shrink-0 text-muted-foreground">Topic</dt>
+                <dd className="flex min-w-0 flex-wrap justify-end gap-1">
+                  {analysis?.uncategorized ? (
+                    <Badge variant="outline">UNCATEGORIZED</Badge>
+                  ) : null}
+                  {(analysis?.topics ?? []).length > 0 ? (
+                    (analysis?.topics ?? []).map((t) => (
+                      <code
+                        key={t}
+                        className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+                      >
+                        {t}
+                      </code>
+                    ))
+                  ) : analysis?.uncategorized ? null : (
+                    "—"
+                  )}
+                </dd>
               </div>
+              {(analysis?.emotions ?? []).length > 0 || analysis?.intent ? (
+                <>
+                  <div className="flex justify-between gap-4">
+                    <dt className="shrink-0 text-muted-foreground">Emotions</dt>
+                    <dd className="flex flex-wrap justify-end gap-1">
+                      {(analysis?.emotions ?? []).length > 0
+                        ? analysis!.emotions!.map((e) => (
+                            <Badge key={e} variant="secondary">
+                              {e}
+                            </Badge>
+                          ))
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="shrink-0 text-muted-foreground">Intent</dt>
+                    <dd>{analysis?.intent ?? "—"}</dd>
+                  </div>
+                </>
+              ) : null}
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Sentiment</dt>
                 <dd>{analysis?.sentiment ?? "—"}</dd>
@@ -796,7 +832,11 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                           {row.source}
                         </TableCell>
                         <TableCell className="break-words text-sm">
-                          {row.ai_analysis?.topics?.[0] ?? "—"}
+                          {row.ai_analysis?.uncategorized ? (
+                            <Badge variant="outline">UNCATEGORIZED</Badge>
+                          ) : (
+                            (row.ai_analysis?.topics?.[0] ?? "—")
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={ready ? "secondary" : "outline"}>

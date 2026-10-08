@@ -47,7 +47,13 @@ export type FeedbackUpdateIn = {
   feedback_text?: string;
   source?: string;
   occurred_at?: string;
-  ai_analysis?: { severity?: string; sentiment?: string; topics?: string[] };
+  ai_analysis?: {
+    severity?: string;
+    sentiment?: string;
+    topics?: string[];
+    emotions?: string[];
+    intent?: string;
+  };
 };
 
 function invalidateFeedbacks(qc: ReturnType<typeof useQueryClient>) {
