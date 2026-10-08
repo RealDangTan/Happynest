@@ -46,3 +46,8 @@
 - Risk #1 (model chết) ĐÃ GIẢI QUYẾT: probe firsthand OpenRouter (credit còn ~$2.60), live-call test 3 vòng gồm schema THẬT, rồi fill `backend/.env`: qwen3-30b-a3b-instruct-2507 (default + enrich), mistral-small-24b (schema_map + cluster_name), gpt-4o-mini (taxonomy/recommend/understand/act). Chi tiết + rejected alternatives: decisions.md addendum 2026-10-07.
 - Verify cuối: enrich 1 feedback VI thật qua app path → JSONB đúng shape; `llm_call_logs` `call_type=enrich, model=qwen/..., error=NULL`. Backend restart (task `s1c6j316`, PID 20204) — `/api/health.models` khớp .env.
 - Còn lại: S7 chờ `JEV_API_KEY` (risk #2), FE-14 (risk #3).
+
+## Addendum 2 (2026-10-08) — Enrich ĐỔI sang `typesafe/jev-router` (owner chỉ đạo) + fix regression routing
+- Owner thấy Jev có trên OpenRouter → probe firsthand: strict json_schema PASS với schema THẬT EnrichmentOut, credit delta $0. Đã đổi `MODEL_ENRICH=typesafe/jev-router`. Không cần jev_client (34B bỏ) hay key typesafe.ai — S7 trực tiếp API giờ là tùy chọn nghiên cứu, không còn gate.
+- **Bắt được 1 regression thầm lặng khi verify:** `_CALL_TYPE_USE_CASE` thiếu `"enrich"` → enrich ăn LLM_MODEL (qwen) dù health map báo jev-router. Chỉ nhìn thấy qua `llm_call_logs.model`. Fixed + 2 guard test (`test_chat_structured_enrich_call_type_routes`, `test_call_type_map_covers_all_enum_chat_values`); fixture routing giờ cô lập khỏi .env thật. Verify cuối: trace `enrich | typesafe/jev-router | error=NULL`; 92 unit xanh. Commit `7decb9e`.
+- Backend đang chạy: task `s03m33bi` (PID 20532). Lưu ý vận hành: jev-router ~7-9s/call (có reasoning) — dùng batch mode khi enrich số lượng lớn; nếu OpenRouter tính phí, đổi về qwen = 1 dòng .env.
