@@ -48,12 +48,17 @@ class LLMStructureError(RuntimeError):
 #: theo bảng này — caller KHÔNG phải truyền model trừ khi muốn override tường minh.
 _CALL_TYPE_USE_CASE: dict[str, str] = {
     "classify": "enrich",
+    "enrich": "enrich",  # plan 32: call_type riêng của enricher — KHÔNG bỏ (regression 2026-10-07)
     "schema_map": "schema_map",
     "name_cluster": "cluster_name",
     "generate_insight": "insight",
     "plan": "understand",
     "evaluate": "understand",
     "synthesize": "understand",
+    # route/critic: call_type PG còn sống nhưng graph đã strip (2026-08-28) —
+    # map luôn để mọi LlmCallType đều có entry (guard test routing).
+    "route": "understand",
+    "critic": "understand",
     "act_generate": "act",
     "taxonomy_generate": "taxonomy_generate",
     "topic_recommend": "topic_recommend",
