@@ -2,7 +2,7 @@
 
 > **Mục đích:** bản đồ chức năng toàn hệ thống xếp theo khung VoC 3 trụ cột — dùng làm mốc tham chiếu để cải tiến UX/chức năng theo thời gian mà vẫn thấy mình đang cải tiến điểm nào của vòng lặp.
 >
-> **Nguồn bám (không phát minh endpoint/schema):** [`plans/UF-01-information-architecture.md`](plans/UF-01-information-architecture.md) (IA + trạng thái UI) · [`api-checklist.md`](api-checklist.md) (16 endpoint thật, snapshot 2026-08-25) · [`plans/delivery-contracts.md`](plans/delivery-contracts.md) C1–C6 · [`user-flows.md`](user-flows.md) F1–F7.
+> **Nguồn bám:** snapshot IA/contracts/flows ngày 2026-08-25; plan lịch sử đã được dọn, tra lại trong Git. Trạng thái triển khai hiện tại xem [tóm tắt kế hoạch](plan_report.md) và [API checklist](api-checklist.md).
 >
 > **Ký hiệu trạng thái:** ✅ production · 🔶 đã có hook/API client nhưng chưa gắn UI · 🚧 stub 501 · ⬜ kế hoạch (đã có plan) · 💡 ý tưởng backlog (chưa có contract).
 > **Ngày lập:** 2026-08-25 · sau khi Phase 13 (HITL backend) đóng.
@@ -107,7 +107,7 @@ Sidebar hiện tại 6 mục theo thứ tự: Tổng quan · Phản hồi · Ana
 | P4 | Plan 15 insights · plan 16 reports + dashboard chart | Understand + Act | UF-05 (phần còn lại) |
 | P5 | Polish `[tuỳ chọn]` + data demo bảo vệ (FE-07) | tất cả | — |
 
-Thứ tự cứng P0→P5 xem [`plans/delivery-execute-plan.md`](plans/delivery-execute-plan.md) §1 — file này KHÔNG đổi thứ tự, chỉ map chức năng.
+Lộ trình P0→P5 ở trên là snapshot lịch sử; trạng thái hiện tại xem [tóm tắt kế hoạch](plan_report.md). Execute plan gốc được giữ trong Git history.
 
 ---
 

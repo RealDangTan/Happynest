@@ -12,12 +12,12 @@ Standing context for AI coding agents (Claude Code, Cursor, Codex, …) working 
 
 ## ⚠️ CURRENT PHASE — Delivery: Frontend + Pipeline Completion (khai báo 2026-08-25)
 
-Backend Foundation đã đóng 12/12 phase ✅ (bằng chứng: [docs/plans/00-index.md](docs/plans/00-index.md), [backend-foundation-report.md](docs/backend-foundation-report.md)). Owner khai báo giai đoạn tiếp theo cùng ngày — các mục từng out-of-scope sau đây CHÍNH THỨC IN SCOPE:
+Backend Foundation đã đóng 12/12 phase ✅ (bằng chứng: [tóm tắt kế hoạch](docs/plan_report.md), [backend-foundation-report.md](docs/backend-foundation-report.md)). Owner khai báo giai đoạn tiếp theo cùng ngày — các mục từng out-of-scope sau đây CHÍNH THỨC IN SCOPE:
 
 - **Frontend** Next.js trong `frontend/` (shadcn/ui, preset `b4IdeDqtkJ`) — plan series mới trong `docs/plans/`
 - **4 nhóm route stub → production**: `GET /api/clusters`, `GET /api/insights`, `POST /api/reviews/{id}` + `POST /api/corrections/{id}` (HITL), `GET /api/reports/summary`
 - **Production LangGraph HITL graph + correction→few-shot loop** (spike S5 đã PASS làm bằng chứng khả thi)
-- **Agent module — series 17–20** (khai báo 2026-08-26, xem [decisions](docs/decisions.md) cùng ngày): LangGraph graph fully LLM-routed (router node + budget cap + critic + risk gate) + toolbox + closed-loop KPIs — plans [17–20](docs/plans/00-index.md), đăng ký là pha P6 của delivery; runner phase 09 KHÔNG bị thay thế
+- **Agent module — series 17–20** (khai báo 2026-08-26, xem [decisions](docs/decisions.md) cùng ngày): LangGraph graph fully LLM-routed (router node + budget cap + critic + risk gate) + toolbox + closed-loop KPIs — lịch sử plans [17–20](docs/plan_report.md), đăng ký là pha P6 của delivery; runner phase 09 KHÔNG bị thay thế
 
 Vẫn OUT OF SCOPE (không đổi):
 
@@ -49,7 +49,7 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 ├── README.md                  # human-facing quickstart (Vietnamese)
 ├── .gitattributes             # line-ending hygiene (commit #1)
 ├── docs/
-│   ├── plans/backend-foundation-execute-plan.md   # ACTIVE MISSION (§0–§10)
+│   ├── plans/00-index.md      # việc còn mở; plan hoàn tất xem plan_report.md
 │   └── decisions.md           # Decision Log — every deviation goes here
 ├── infra/
 │   ├── supabase_setup.md      # agent tạo: note setup 1 lần trên Supabase (extension vector, connection string)

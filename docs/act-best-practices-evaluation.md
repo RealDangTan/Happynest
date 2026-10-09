@@ -41,4 +41,4 @@ Retained demo product: `ACT best-practices demo e7c021eb` (`e7c021eb-e5df-42b5-b
 
 Matrix drawer and Stakeholders detail panel were inspected in the local browser with synthetic records: internal evidence, multiple perspectives, reference links/sections, applicability limits and alternatives render in both places. Unit/UI tests cover invalid IDs, missing evidence, distinct lenses, legacy/manual null support, safe links and original-proposal notices after edits. DB integration covers JSONB persistence and preserving edited/accepted/rejected decisions.
 
-Implementation details and final command outcomes are recorded in the [plan](plans/35-act-best-practices.md) and [session handoff](handoffs/2026-10-09-codex-act-best-practices.md).
+Implementation status and final command outcomes are recorded in the [plan summary](plan_report.md) and [session handoff](handoffs/2026-10-09-codex-act-best-practices.md). Completed plan 35 is preserved in Git history at commit `ea6535c`.

@@ -2,7 +2,7 @@
 
 Append-only records passed between AI coding agents (Claude Code ↔ Codex ↔ Cursor ↔ Gemini/Antigravity ↔ human).
 
-**Protocol of record:** [`.claude/skills/agent-handoff/SKILL.md`](../../.claude/skills/agent-handoff/SKILL.md) — read it before writing here.
+**Protocol of record:** [`.agents/skills/agent-handoff/SKILL.md`](../../.agents/skills/agent-handoff/SKILL.md) — read it before writing here.
 
 Quick rules:
 

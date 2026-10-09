@@ -2,6 +2,8 @@
 
 > Nguồn: thoả thuận spike-first (taste/decisions 2026-10-07) · Blocked by: 32 (baseline = enricher v3). **App code KHÔNG đổi.**
 
+> **Trạng thái 2026-10-09:** script đã viết, spike chưa chạy. Đây là nghiên cứu tùy chọn, không còn chặn delivery: quyết định 2026-10-08 dùng `typesafe/jev-router` qua OpenRouter, bỏ tích hợp trực tiếp 34B. Baseline plan 32 đã hoàn tất; xem [tóm tắt](../plan_report.md) và [decision log](../decisions.md).
+
 ## PASS criteria (chốt trước, không đổi khi chạy)
 
 1. Per-split accuracy (topic/sentiment/emotion/intent/severity) lệch ≤ 5 điểm % vs LLM baseline.
