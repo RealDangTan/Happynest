@@ -27,6 +27,7 @@ from app.models.insight import Insight
 from app.models.product import Product
 from app.services import act_agent
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
+from tests.act_fixtures import support_draft
 
 pytestmark = pytest.mark.integration
 
@@ -40,11 +41,11 @@ def _proposal():
                 {"function": "ENGINEERING", "relevance": 0.96,
                  "recommendation": "Investigate citation-validation changes in v2.17",
                  "rationale": "Concentrated in v2.17", "impact": 9, "effort": 4,
-                 "urgency": 9, "confidence": 0.88},
+                 "urgency": 9, "confidence": 0.88, "decision_support": support_draft()},
                 {"function": "SUPPORT", "relevance": 0.88,
                  "recommendation": "Prepare temp guidance for customers",
                  "rationale": "Users need workaround", "impact": 5, "effort": 2,
-                 "urgency": 8, "confidence": 0.92},
+                 "urgency": 8, "confidence": 0.92, "decision_support": support_draft()},
                 {"function": "FINANCE", "relevance": 0.12, "recommendation": None},
             ]
         }
@@ -139,6 +140,10 @@ def test_generate_creates_candidates_and_priority_formula(client, monkeypatch, a
     # Công thức §49 với weights mặc định: 9*0.4 + 9*0.3 + 0.88*10*0.2 + (10-4)*0.1
     expected = round(9 * 0.4 + 9 * 0.3 + 0.88 * 10 * 0.2 + 6 * 0.1, 3)
     assert eng["priority_score"] == pytest.approx(expected)
+    assert eng["decision_support"]["library_version"] == "act-practices-v1"
+    assert eng["decision_support"]["basis_recommendation"] == eng["recommendation"]
+    assert eng["decision_support"]["references"][0]["section"] == "G9 — Support efficient correction"
+    assert eng["decision_support"]["kind"] == "investigate"
     # ENGINEERING (impact 9, effort 4) → quick_wins; matrix có id
     assert str(eng["id"]) in listing["matrix"]["quick_wins"]
     # Trong list, priority giảm dần
@@ -168,6 +173,13 @@ def test_human_override_keeps_agent_values_and_recomputes(client, monkeypatch, a
     expected = round(7 * 0.4 + 9 * 0.3 + 0.88 * 10 * 0.2 + 3 * 0.1, 3)
     assert updated["priority_score"] == pytest.approx(expected)
     assert updated["status"] == "edited"
+    assert updated["decision_support"] == eng["decision_support"]
+
+    content_edit = client.patch(
+        f"/api/actions/{eng['id']}", json={"recommendation": "Human chosen action"}, headers=auth,
+    )
+    assert content_edit.status_code == 200
+    assert content_edit.json()["decision_support"]["basis_recommendation"] == eng["recommendation"]
     # (7,7) → high impact + high effort → strategic_investments
     listing2 = client.get(f"/api/insights/{act_env.id}/actions", headers=auth).json()
     assert str(eng["id"]) in listing2["matrix"]["strategic_investments"]
@@ -196,6 +208,54 @@ def test_human_adds_own_action(client, act_env) -> None:
     assert resp.status_code == 201, resp.text
     body = resp.json()
     assert body["status"] == "accepted"
+    assert body["decision_support"] is None
     assert body["priority_score"] == pytest.approx(
         round(6 * 0.4 + 5 * 0.3 + 1.0 * 10 * 0.2 + 8 * 0.1, 3)
     )
+
+
+def test_invalid_grounding_preserves_portfolio(client, monkeypatch, act_env):
+    auth = _login(client)
+    _patch_llm(monkeypatch)
+    path = f"/api/insights/{act_env.id}/actions"
+    client.post(path + "/generate", headers=auth)
+    before = client.get(path, headers=auth).json()
+
+    invalid = _proposal()
+    invalid.functions[0].decision_support.references[0].card_id = "invented-source"
+    monkeypatch.setattr(act_agent, "chat_structured", lambda *a, **kw: invalid)
+    response = client.post(path + "/generate", headers=auth)
+    assert response.status_code == 200
+    assert response.json()["actions_created"] == 0
+    assert response.json()["generation_error"].startswith("ACTGroundingError")
+    assert client.get(path, headers=auth).json() == before
+
+
+def test_rejected_action_survives_regeneration(client, monkeypatch, act_env):
+    auth = _login(client)
+    _patch_llm(monkeypatch)
+    path = f"/api/insights/{act_env.id}/actions"
+    client.post(path + "/generate", headers=auth)
+    original = client.get(path, headers=auth).json()["items"][0]
+    rejected = client.patch(f"/api/actions/{original['id']}", json={"status": "rejected"}, headers=auth)
+    assert rejected.status_code == 200
+    regenerated = client.post(path + "/generate", headers=auth)
+    assert regenerated.status_code == 200
+    items = client.get(path, headers=auth).json()["items"]
+    kept = next(item for item in items if item["id"] == original["id"])
+    assert kept["status"] == "rejected"
+    assert kept["decision_support"] == original["decision_support"]
+
+
+def test_legacy_action_returns_null_support(client, act_env):
+    auth = _login(client)
+    with SessionLocal() as db:
+        db.add(Action(
+            insight_id=act_env.id, function="SUPPORT", recommendation="Legacy action",
+            rationale="Old record", impact=5, effort=2, urgency=3, confidence=0.5,
+            priority_score=4.5, status="proposed", decision_support=None,
+        ))
+        db.commit()
+    response = client.get(f"/api/insights/{act_env.id}/actions", headers=auth)
+    assert response.status_code == 200
+    assert response.json()["items"][0]["decision_support"] is None

@@ -1,12 +1,12 @@
 """Pydantic schemas cho ACT layer (plan 26) — actions + priority matrix."""
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import BusinessFunction
+from app.schemas.action_support import ActionDecisionSupport
 
 
 class ActionOut(BaseModel):
@@ -17,6 +17,7 @@ class ActionOut(BaseModel):
     function: BusinessFunction
     recommendation: str
     rationale: str
+    decision_support: ActionDecisionSupport | None = None
     impact: int
     effort: int
     urgency: int

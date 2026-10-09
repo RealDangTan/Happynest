@@ -35,6 +35,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AiBadge } from "@/components/ai/ai-badge";
+import { ActionDecisionSupport } from "@/components/actions/action-decision-support";
 import { PageHeader } from "@/components/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { useInsights } from "@/hooks/use-insights";
@@ -167,12 +168,14 @@ function ActionDrawer({
               Supported by the reviewed finding.{" "}
               <Link
                 className="text-signal underline"
-                href={`/matrix?report=${action.insight_id}`}
+                href={`/reports?report=${action.insight_id}`}
               >
                 Open report
               </Link>
             </p>
           </section>
+
+          <ActionDecisionSupport action={action} />
 
           <section>
             <table className="w-full text-sm">

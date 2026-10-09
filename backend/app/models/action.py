@@ -7,9 +7,10 @@ vào human_* columns, vị trí agent giữ nguyên làm evaluation data (§52).
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -28,6 +29,8 @@ class Action(Base):
     )
     recommendation: Mapped[str] = mapped_column(Text, nullable=False)
     rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    # Immutable AI reasoning and canonical references; legacy/manual actions = NULL.
+    decision_support: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     impact: Mapped[int] = mapped_column(Integer, nullable=False)
     effort: Mapped[int] = mapped_column(Integer, nullable=False)
     urgency: Mapped[int] = mapped_column(Integer, nullable=False)

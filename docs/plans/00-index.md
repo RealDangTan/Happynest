@@ -34,3 +34,9 @@ Checklist:
 | # | File | Phạm vi | Blocked by | Status |
 |---|---|---|---|---|
 | FE-14 | [FE-14-taxonomy-setup-ui.md](FE-14-taxonomy-setup-ui.md) | Trang /taxonomy (generate → review → apply, recommend, re-enrich) + feedback v3 chips + nav LISTEN | 30–34 | ✅ 2026-10-08 |
+
+## ACT best practices — owner approved 2026-10-09
+
+| # | File | Phạm vi | Status |
+|---|---|---|---|
+| 35 | [35-act-best-practices.md](35-act-best-practices.md) | 18 practice cards, act-v2 grounding, migration 0017, shared Matrix/Stakeholders analysis | ✅ 2026-10-09 — 107 unit + 10 integration + 49 FE tests; live 4/4; build passed |

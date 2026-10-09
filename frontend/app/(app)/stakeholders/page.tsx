@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useInsights } from "@/hooks/use-insights";
 import { useActions } from "@/hooks/use-actions";
+import { ActionDecisionSupport } from "@/components/actions/action-decision-support";
 import { useProduct } from "@/hooks/use-product";
 import { DEPARTMENTS, departmentLabel, toDepartment } from "@/lib/departments";
 import { effectiveScores } from "@/lib/matrix";
@@ -278,6 +279,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
                   {effectiveScores(selected).effort}
                 </p>
               </div>
+              <ActionDecisionSupport action={selected} />
               <div className="flex flex-col gap-2">
                 <Button size="sm" variant="outline" asChild>
                   <Link href={`/reports?report=${selected.insight_id}`}>Open report</Link>

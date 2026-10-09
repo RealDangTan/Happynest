@@ -389,12 +389,42 @@ export type BusinessFunction =
 
 export type ActionStatus = "proposed" | "edited" | "accepted" | "rejected";
 
+export type ActionLens = "product" | "discovery" | "engineering" | "ux" | "risk" | "customer_success" | "finance";
+
+export type ActionDecisionSupportData = {
+  library_version: string;
+  basis_recommendation: string;
+  basis_rationale: string;
+  kind: "mitigate" | "improve" | "investigate";
+  evidence: { evidence_id: string; statement: string; source_tool: string }[];
+  perspectives: { lens: ActionLens; assessment: string }[];
+  references: {
+    card_id: string;
+    lens: ActionLens;
+    source_title: string;
+    url: string;
+    section: string;
+    principle: string;
+    applies_when: string;
+    limitations: string;
+    reviewed_on: string;
+    application: string;
+  }[];
+  source_gap: string | null;
+  alternative: { recommendation: string; tradeoff: string };
+  tradeoff: string;
+  assumptions: string[];
+  success_criteria: string;
+  estimate_basis: string;
+};
+
 export type ActionItem = {
   id: string;
   insight_id: string;
   function: BusinessFunction;
   recommendation: string;
   rationale: string;
+  decision_support?: ActionDecisionSupportData | null;
   impact: number;
   effort: number;
   urgency: number;

@@ -145,7 +145,7 @@ def _login(client: TestClient) -> dict[str, str]:
 
 def test_impact_check_measures_before_after_and_idempotent(kpi_env) -> None:
     with SessionLocal() as db:
-        results = run_impact_checks(db)
+        results = [r for r in run_impact_checks(db) if r["action_id"] == str(kpi_env.id)]
         assert len(results) == 1
         r = results[0]
         assert r["before_count"] == 2  # 2 row match trong window TRƯỚC action
@@ -153,7 +153,7 @@ def test_impact_check_measures_before_after_and_idempotent(kpi_env) -> None:
         assert r["delta_ratio"] == pytest.approx(0.5)
 
         # idempotent: chạy lại → không đo lần 2
-        assert run_impact_checks(db) == []
+        assert all(r["action_id"] != str(kpi_env.id) for r in run_impact_checks(db))
 
 
 def test_patch_action_writes_decision_log(client, kpi_env) -> None:
