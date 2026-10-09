@@ -1,0 +1,226 @@
+{
+  "experiment": "s7-openrouter-v2-production-cap",
+  "engine": "systemone",
+  "timestamp_utc": "2026-10-09T10:48:34.284882+00:00",
+  "endpoint": "https://openrouter.ai/api/v1/systemone",
+  "direct_typesafe_status": "BLOCKED_MISSING_JEV_API_KEY",
+  "models_requested": {
+    "jev_router": "jev-latest",
+    "baseline": "qwen/qwen3-30b-a3b-instruct-2507"
+  },
+  "records": 16,
+  "primary_threshold": 0.6,
+  "fixture_sha256": "044ed166fcd8deb0ad6c97e1c3a49cdf47bbff98f9eec5d02bfd61322b7f503e",
+  "prompt_sha256": "b957ab94d884cf3bec4c92f74fdc54c7cbae7c9ad2a41c9c316bf896b0f489b6",
+  "max_tokens": 8192,
+  "budget100_usd": null,
+  "calibration_gaps_choice_splits": {
+    "sentiment": 0.06812499999999999,
+    "intent": 0.30874999999999997,
+    "severity": 0.08125000000000004
+  },
+  "summary": {
+    "jev_router": {
+      "metrics_by_threshold": {
+        "0.5": {
+          "topic_micro_f1": 0.742857142857143,
+          "topic_precision": 0.6842105263157895,
+          "topic_exact_accuracy": 0.5,
+          "emotion_micro_f1": 0.547945205479452,
+          "emotion_precision": 0.38461538461538464,
+          "emotion_exact_accuracy": 0.0625,
+          "sentiment_accuracy": 0.875,
+          "intent_accuracy": 0.5625,
+          "severity_accuracy": 0.8125
+        },
+        "0.6": {
+          "topic_micro_f1": 0.7647058823529411,
+          "topic_precision": 0.7222222222222222,
+          "topic_exact_accuracy": 0.5625,
+          "emotion_micro_f1": 0.5882352941176471,
+          "emotion_precision": 0.425531914893617,
+          "emotion_exact_accuracy": 0.0625,
+          "sentiment_accuracy": 0.875,
+          "intent_accuracy": 0.5625,
+          "severity_accuracy": 0.8125
+        },
+        "0.7": {
+          "topic_micro_f1": 0.7647058823529411,
+          "topic_precision": 0.7222222222222222,
+          "topic_exact_accuracy": 0.5625,
+          "emotion_micro_f1": 0.5714285714285714,
+          "emotion_precision": 0.42857142857142855,
+          "emotion_exact_accuracy": 0.125,
+          "sentiment_accuracy": 0.875,
+          "intent_accuracy": 0.5625,
+          "severity_accuracy": 0.8125
+        }
+      },
+      "latency_p95_s": 1.0606984999976703,
+      "failures": 0,
+      "unrecovered_429": 0,
+      "rate_limit_responses": 0,
+      "cost_usd": 0.0007392,
+      "cost_estimate100_usd": 0.00462
+    },
+    "baseline": {
+      "metrics_by_threshold": {
+        "0.5": {
+          "topic_micro_f1": 0.8571428571428572,
+          "topic_precision": 0.7894736842105263,
+          "topic_exact_accuracy": 0.6875,
+          "emotion_micro_f1": 0.5833333333333334,
+          "emotion_precision": 0.5185185185185185,
+          "emotion_exact_accuracy": 0.25,
+          "sentiment_accuracy": 0.9375,
+          "intent_accuracy": 0.75,
+          "severity_accuracy": 0.75
+        },
+        "0.6": {
+          "topic_micro_f1": 0.8571428571428572,
+          "topic_precision": 0.7894736842105263,
+          "topic_exact_accuracy": 0.6875,
+          "emotion_micro_f1": 0.6086956521739131,
+          "emotion_precision": 0.56,
+          "emotion_exact_accuracy": 0.3125,
+          "sentiment_accuracy": 0.9375,
+          "intent_accuracy": 0.75,
+          "severity_accuracy": 0.75
+        },
+        "0.7": {
+          "topic_micro_f1": 0.9090909090909091,
+          "topic_precision": 0.8823529411764706,
+          "topic_exact_accuracy": 0.8125,
+          "emotion_micro_f1": 0.6,
+          "emotion_precision": 0.631578947368421,
+          "emotion_exact_accuracy": 0.375,
+          "sentiment_accuracy": 0.9375,
+          "intent_accuracy": 0.75,
+          "severity_accuracy": 0.75
+        }
+      },
+      "latency_p95_s": 12.481612400002632,
+      "failures": 0,
+      "unrecovered_429": 0,
+      "rate_limit_responses": 0,
+      "cost_usd": 0.0015746506500000001,
+      "cost_estimate100_usd": 0.009841566562500001
+    }
+  },
+  "checks": {
+    "1_accuracy_within_5pts": false,
+    "2_calibration_gap_le_0.10": false,
+    "3_zero_unrecovered_429": true,
+    "4_p95_latency_lt_2s": true,
+    "5_cost_within_budget": null,
+    "all_predictions_valid": true
+  },
+  "verdict": "FAIL",
+  "models_returned": {
+    "jev_router": [
+      "typesafe/jev-1.13-20260917"
+    ],
+    "baseline": [
+      "qwen/qwen3-30b-a3b-instruct-2507"
+    ]
+  },
+  "pilot_800_token_cap_excluded_from_primary": {
+    "summary": {
+      "jev_router": {
+        "metrics_by_threshold": {
+          "0.5": {
+            "topic_micro_f1": 0.6666666666666666,
+            "topic_precision": 0.8181818181818182,
+            "topic_exact_accuracy": 0.5625,
+            "emotion_micro_f1": 0.5,
+            "emotion_precision": 0.4782608695652174,
+            "emotion_exact_accuracy": 0.1875,
+            "sentiment_accuracy": 0.625,
+            "intent_accuracy": 0.5625,
+            "severity_accuracy": 0.75
+          },
+          "0.6": {
+            "topic_micro_f1": 0.6666666666666666,
+            "topic_precision": 0.8181818181818182,
+            "topic_exact_accuracy": 0.5625,
+            "emotion_micro_f1": 0.46511627906976744,
+            "emotion_precision": 0.45454545454545453,
+            "emotion_exact_accuracy": 0.1875,
+            "sentiment_accuracy": 0.625,
+            "intent_accuracy": 0.5625,
+            "severity_accuracy": 0.75
+          },
+          "0.7": {
+            "topic_micro_f1": 0.6153846153846154,
+            "topic_precision": 0.8,
+            "topic_exact_accuracy": 0.5625,
+            "emotion_micro_f1": 0.4615384615384615,
+            "emotion_precision": 0.5,
+            "emotion_exact_accuracy": 0.25,
+            "sentiment_accuracy": 0.625,
+            "intent_accuracy": 0.5625,
+            "severity_accuracy": 0.75
+          }
+        },
+        "latency_p95_s": 9.506558900000528,
+        "failures": 3,
+        "unrecovered_429": 0,
+        "rate_limit_responses": 0,
+        "cost_usd": 0.023042778,
+        "cost_estimate100_usd": 0.1440173625
+      },
+      "baseline": {
+        "metrics_by_threshold": {
+          "0.5": {
+            "topic_micro_f1": 0.7894736842105263,
+            "topic_precision": 0.6818181818181818,
+            "topic_exact_accuracy": 0.5625,
+            "emotion_micro_f1": 0.5,
+            "emotion_precision": 0.4444444444444444,
+            "emotion_exact_accuracy": 0.1875,
+            "sentiment_accuracy": 0.875,
+            "intent_accuracy": 0.75,
+            "severity_accuracy": 0.75
+          },
+          "0.6": {
+            "topic_micro_f1": 0.8108108108108109,
+            "topic_precision": 0.7142857142857143,
+            "topic_exact_accuracy": 0.625,
+            "emotion_micro_f1": 0.5217391304347826,
+            "emotion_precision": 0.48,
+            "emotion_exact_accuracy": 0.1875,
+            "sentiment_accuracy": 0.875,
+            "intent_accuracy": 0.75,
+            "severity_accuracy": 0.75
+          },
+          "0.7": {
+            "topic_micro_f1": 0.8484848484848485,
+            "topic_precision": 0.8235294117647058,
+            "topic_exact_accuracy": 0.8125,
+            "emotion_micro_f1": 0.5128205128205129,
+            "emotion_precision": 0.5555555555555556,
+            "emotion_exact_accuracy": 0.25,
+            "sentiment_accuracy": 0.875,
+            "intent_accuracy": 0.75,
+            "severity_accuracy": 0.75
+          }
+        },
+        "latency_p95_s": 24.026922699998977,
+        "failures": 0,
+        "unrecovered_429": 0,
+        "rate_limit_responses": 0,
+        "cost_usd": 0.0017025896,
+        "cost_estimate100_usd": 0.010641185
+      }
+    },
+    "checks": {
+      "1_accuracy_within_5pts": false,
+      "2_calibration_gap_le_0.10": null,
+      "3_zero_unrecovered_429": true,
+      "4_p95_latency_lt_2s": false,
+      "5_cost_within_budget": null,
+      "all_predictions_valid": false
+    },
+    "verdict": "FAIL"
+  }
+}

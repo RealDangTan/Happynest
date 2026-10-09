@@ -3,13 +3,11 @@
 > Cập nhật 2026-10-09. Plan hoàn tất đã được xóa khỏi thư mục; xem [tóm tắt trạng thái](../plan_report.md), [decision log](../decisions.md) và [handoffs](../handoffs/). Bản gốc vẫn nằm trong Git history.
 > Quy tắc: lệch kế hoạch → entry dated trong decisions; không Docker, không subagent, giữ PII boundary và đồng bộ API checklist.
 
-## Nghiên cứu tùy chọn chưa hoàn tất
+## Không còn plan đang mở
 
-| # | File | Phạm vi | Trạng thái |
-|---|---|---|---|
-| 33 | [33-spike-s7-jev.md](33-spike-s7-jev.md) | Benchmark trực tiếp TypeSafe/Jev với baseline enricher v3 | Script đã có (`168b3b4`); chưa chạy, chờ key. Không chặn delivery |
+Plan 33 đã chạy ngày 2026-10-09 qua endpoint System One tương thích TypeSafe trên OpenRouter: **FAIL** vì accuracy/calibration; p95 1.0607 s và 0 unrecovered 429. Xem [báo cáo S7](../s7-jev-evaluation.md). Plan đã đóng và được xóa theo yêu cầu dọn docs; bản gốc còn trong Git history.
 
-Quyết định 2026-10-08 dùng `typesafe/jev-router` qua OpenRouter đã bỏ điều kiện tích hợp 34B. Không coi spike S7 là PASS khi chưa có số đo.
+Quyết định 2026-10-08 dùng `typesafe/jev-router` qua OpenRouter đã bỏ điều kiện tích hợp 34B. S7 không thay model production; Jev System One và Jev Router là hai đường khác nhau.
 
 ## Đã đóng
 

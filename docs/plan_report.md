@@ -3,11 +3,11 @@
 > Cập nhật: 2026-10-09. Tóm tắt trạng thái và nơi tìm bằng chứng sau khi dọn các plan đã hoàn tất.
 > Các plan file đã xong đã bị XÓA khỏi `docs/plans/` (file nào đã commit vẫn lấy lại được từ git history: `git log --diff-filter=D -- docs/plans/`).
 
-## Việc còn mở trong plans
+## Trạng thái plans
 
-Chỉ còn [plan 33 — Spike S7](plans/33-spike-s7-jev.md): script đã có (`168b3b4`), chưa chạy benchmark trực tiếp TypeSafe vì thiếu key. Đây là nghiên cứu **tùy chọn**, không chặn delivery; xem [`plans/00-index.md`](plans/00-index.md).
+Không còn plan mở. Plan 33 đã chạy và đóng **FAIL** ngày 2026-10-09 qua Jev System One trên OpenRouter (16 mẫu so với Qwen enricher v3): accuracy/calibration chưa đạt, p95 1.0607 s và 0 unrecovered 429; cost ngoại suy $0.00462/100 record, budget chưa định lượng. Xem [báo cáo S7](s7-jev-evaluation.md) và [`plans/00-index.md`](plans/00-index.md). File plan hoàn tất đã xóa; model production không đổi.
 
-Quyết định 2026-10-08 dùng `MODEL_ENRICH=typesafe/jev-router` qua OpenRouter đã thay điều kiện tích hợp trực tiếp 34B. Các phần delivery của series 30–34 và FE-14 đều đã hoàn tất; không ghi S7 là PASS khi chưa có kết quả benchmark.
+Quyết định 2026-10-08 dùng `MODEL_ENRICH=typesafe/jev-router` qua OpenRouter đã thay điều kiện tích hợp trực tiếp 34B. Các phần delivery của series 30–34 và FE-14 đều đã hoàn tất; Jev Router khác model Jev System One vừa benchmark.
 
 Nguyên tắc series: **GPT khám phá label space · JEV gán nhãn quy mô lớn · Người kiểm soát taxonomy.**
 
@@ -28,6 +28,7 @@ Nguyên tắc series: **GPT khám phá label space · JEV gán nhãn quy mô l�
 | 34 | Topic recommendation + apply + re-enrich + e2e (`86d5e22`); 34B bỏ theo quyết định dùng Jev qua OpenRouter | 2026-10-07/08 |
 | FE-14 | Taxonomy Setup UI, review/apply, v3 chips và vòng re-enrich (`60aa7bf`) | 2026-10-08 |
 | 35 | ACT v2: 18 practice cards / 7 lenses, evidence grounding, JSONB snapshot, Matrix/Stakeholders (`ea6535c`) | 2026-10-09 |
+| 33 | S7: Jev System One vs Qwen v3, 16 mẫu/engine; outcome FAIL, không mở 34B; [bằng chứng](s7-jev-evaluation.md) | 2026-10-09 |
 
 Bằng chứng thực thi (commit, verify, bài học) vẫn nằm nguyên trong [`handoffs/`](handoffs/) — không xóa.
 
@@ -45,7 +46,7 @@ docs/
 ├── ai-agent-success-story.md ← narrative vision (tư liệu chương 1)
 ├── google-oauth-setup.md     ← hướng dẫn GCP khi làm Google login thật
 ├── sitemap-voc.md            ← bản đồ chức năng theo khung VoC
-├── plans/                    ← 00-index + plan 33 nghiên cứu tùy chọn chưa chạy
+├── plans/                    ← 00-index; không còn plan mở
 ├── handoffs/                 ← append-only, bắt buộc theo giao thức handoff
 ├── design/2026-09-15-ui-flow/ ← design source UI hiện tại
 ├── thesis/                   ← bản thảo luận văn (chương 0–9 + build docx)

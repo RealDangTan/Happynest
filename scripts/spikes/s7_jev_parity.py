@@ -1,7 +1,9 @@
 """SPIKE S7 — Jev (TypeSafe System One) vs LLM baseline trên feedback VI/EN.
 
-⚠️ SPIKE-ONLY: script này KHÔNG đụng app code. Kết quả PASS/FAIL là GATE cho
-việc bật `ENRICH_ENGINE=jev` (plans 32/34B — docs/plans/33-spike-s7-jev.md).
+⚠️ Historical direct-host runner; metric limitations documented in
+docs/s7-jev-evaluation.md. Use s7_openrouter.py for the verified 2026-10-09
+experiment (real System One through OpenRouter, not Jev Router).
+Spike-only: no application changes. Phase 34B was superseded on 2026-10-08.
 
 VENDOR FACTS (pinned firsthand từ https://docs.typesafe.ai/api, fetch
 2026-10-07 — KHÔNG suy đoán):
@@ -19,7 +21,7 @@ VENDOR FACTS (pinned firsthand từ https://docs.typesafe.ai/api, fetch
 - `questions` là MAP → MỘT request mang NHIỀU câu hỏi song song (per-emotion
   Noul chạy trong cùng 1 call, đúng thiết kế multi-label đã chốt).
 
-PASS CRITERIA (chốt trước 2026-10-07, KHÔNG đổi khi chạy — docs/plans/33):
+PASS CRITERIA (chốt trước 2026-10-07; retained in docs/s7-jev-evaluation.md):
 1. Per-split accuracy (topic/sentiment/intent/severity/emotion) lệch ≤ 5 điểm %
    so với LLM baseline trên CÙNG bộ ground truth.
 2. Calibration gap ≤ 0.10 (|avg confidence − accuracy| mỗi split).
