@@ -100,12 +100,14 @@ def main() -> int:
             print("    (kiểm tra GET /api/agent/runs để lấy insight_id)")
             return 1
 
-        # 10. Gate #2 approve (seed user pm)
+        # 10. Gate #2 approve (seed account)
         from app.models.user import User
 
-        pm = db.query(User).filter_by(role="pm").first()
+        reviewer = db.query(User).order_by(User.created_at, User.id).first()
+        if reviewer is None:
+            raise RuntimeError("Chưa có tài khoản; chạy scripts/seed_users.py.")
         values = u_runner.resume_with_decision(
-            run.id, {"action": "approve", "reviewer_id": str(pm.id)}
+            run.id, {"action": "approve", "reviewer_id": str(reviewer.id)}
         )
         print(f"[7] Gate #2 approved → final_status={values.get('final_status')}")
 

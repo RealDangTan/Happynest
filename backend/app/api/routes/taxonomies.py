@@ -5,10 +5,10 @@ GET  /api/taxonomies?product_id=         : tree (canonical + emerging, filter st
 GET  /api/taxonomies/review?product_id=  : hàng chờ emerging pending_review (legacy)
 POST /api/taxonomies/review/{id}         : Gate: approve | merge | reject
                                            — AI KHÔNG BAO GIỜ gọi endpoint này.
-POST /api/taxonomies/generate            : GPT sinh proposal (pm-only, tốn LLM)
+POST /api/taxonomies/generate            : GPT sinh proposal (tốn LLM)
 POST /api/taxonomies/apply               : HUMAN apply proposal → Active Taxonomy
                                            — AI KHÔNG BAO GIỜ gọi endpoint này.
-POST /api/taxonomies/recommend           : GPT đề xuất topic từ pool uncategorized (pm-only)
+POST /api/taxonomies/recommend           : GPT đề xuất topic từ pool uncategorized
 POST /api/taxonomies/recommend/apply     : HUMAN nhận topic đề xuất → Taxonomy v2
 """
 
@@ -18,8 +18,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, require_role
-from app.models.product import Product
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    product_or_404,
+)
 from app.models.taxonomy import Taxonomy
 from app.models.user import User
 from app.schemas.taxonomy import (
@@ -41,10 +44,8 @@ from app.services import taxonomy_service
 router = APIRouter(
     prefix="/api/taxonomies",
     tags=["taxonomies"],
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
-
-_pm_only = [Depends(require_role("pm"))]
 
 
 @router.get("")
@@ -56,6 +57,7 @@ def list_taxonomies(
     session: Session = Depends(get_db),
 ) -> TaxonomyListOut:
     """Tree taxonomy của product; mặc định trả mọi status (FE tự dựng tree)."""
+    product_or_404(session, product_id)
     conditions = [Taxonomy.product_id == product_id]
     if status_filter is not None:
         conditions.append(Taxonomy.status == status_filter)
@@ -77,6 +79,7 @@ def review_queue(
     session: Session = Depends(get_db),
 ) -> TaxonomyListOut:
     """Hàng chờ emerging theme chờ human review (§21 — accumulate evidence)."""
+    product_or_404(session, product_id)
     rows = session.scalars(
         select(Taxonomy)
         .where(
@@ -102,6 +105,7 @@ def review_theme(
     theme = session.get(Taxonomy, taxonomy_id)
     if theme is None:
         raise HTTPException(status_code=404, detail="Taxonomy node không tồn tại.")
+    product_or_404(session, theme.product_id)
     if theme.kind != "emerging" or theme.status != "pending_review":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -154,17 +158,13 @@ def review_theme(
     return result
 
 
-@router.post("/generate", dependencies=_pm_only)
+@router.post("/generate")
 def generate_taxonomy(
     body: TaxonomyGenerateIn,
     session: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> TaxonomyGenerateOut:
-    """GPT sinh proposal taxonomy từ sample (đã sanitize) + context — pm-only
-    vì tốn LLM credit. Proposal STATELESS; chỉ `apply` đụng DB."""
-    product = session.get(Product, body.product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    """GPT sinh proposal taxonomy từ sample (đã sanitize) + context. Proposal STATELESS; chỉ `apply` đụng DB."""
+    product = product_or_404(session, body.product_id)
     context = {
         "product_type": body.product_type,
         "use_case": body.use_case,
@@ -186,9 +186,7 @@ def apply_taxonomy(
 ) -> TaxonomyApplyOut:
     """HUMAN gate: apply proposal (có thể đã sửa generate/recommend) → tạo
     node canonical/active + bump taxonomy_version + decision memory."""
-    product = session.get(Product, body.product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product = product_or_404(session, body.product_id)
     try:
         result = taxonomy_service.apply_proposal(session, product, body.proposal)
     except ValueError as exc:
@@ -215,17 +213,14 @@ def apply_taxonomy(
     )
 
 
-@router.post("/recommend", dependencies=_pm_only)
+@router.post("/recommend")
 def recommend_topics(
     body: TopicRecommendIn,
     session: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
 ) -> TopicRecommendGenerateOut:
     """Plan 34 — GPT đọc pool uncategorized/low-confidence → đề xuất topic mới
     (STATELESS). Pool rỗng → recommendations rỗng, không gọi LLM."""
-    product = session.get(Product, body.product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product = product_or_404(session, body.product_id)
     result, pool_count = taxonomy_service.recommend_topics(
         session, product, pool_limit=body.pool_limit
     )
@@ -242,9 +237,7 @@ def apply_recommended_topics(
 ) -> TaxonomyApplyOut:
     """HUMAN gate: nhận topic đề xuất → tạo canonical/active (tái dùng
     apply_proposal: idempotent + bump version + decision memory)."""
-    product = session.get(Product, body.product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product = product_or_404(session, body.product_id)
     proposal = TaxonomyProposalOut(
         topics=[
             ProposedTopic(name=t.name, parent=t.parent, description=None)

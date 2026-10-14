@@ -80,8 +80,8 @@ class FlowWizard:
             email = self.ask("Email đăng nhập")
             password = self.password("Mật khẩu (ẩn): ")
             try:
-                user = self.client.login(email, password)
-                self.output("Đã đăng nhập; role=" + user["role"])
+                self.client.login(email, password)
+                self.output("Đã đăng nhập.")
                 return
             except TerminalError as exc:
                 self.output(str(exc))

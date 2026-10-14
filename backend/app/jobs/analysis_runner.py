@@ -207,6 +207,13 @@ def _process_chunk(
 
 
 def run_analysis(run_id: uuid.UUID) -> None:
+    from app.core.observability import telemetry
+
+    with telemetry.operation("listen", run_id) as measurement:
+        measurement["outcome"] = _run_analysis(run_id)
+
+
+def _run_analysis(run_id: uuid.UUID) -> str:
     """Chạy batch cho `run_id` (idempotent — gọi lại được sau crash, xem header).
 
     Session RIÊNG của job (không dùng session request). Lỗi ngoài `_ITEM_ERRORS`
@@ -218,7 +225,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
         run = db.get(AnalysisRun, run_id)
         if run is None:
             logger.error("run_analysis: run %s không tồn tại — bỏ qua.", run_id)
-            return
+            return "missing"
 
         attempted: set[uuid.UUID] = set()
         errors: list[str] = []
@@ -234,7 +241,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
                     run.status = RunStatus.cancelled
                     run.completed_at = datetime.now(timezone.utc)
                     db.commit()
-                    return
+                    return "cancelled"
 
                 rows = (
                     [_pick_next(db, run.id, attempted)]
@@ -275,7 +282,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
                         logger.error(
                             "run %s dừng sớm: %d/%d item lỗi.", run.id, len(errors), run.total_count
                         )
-                        return
+                        return "failed"
                     # Commit NGAY bookkeeping lỗi (unclaim + failed_count): vòng
                     # lặp mở đầu bằng db.refresh(run) — refresh sẽ DISCARD mọi
                     # mutation chưa commit của run (failed_count từng âm thầm
@@ -301,7 +308,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
             run.completed_at = datetime.now(timezone.utc)
             db.commit()
             logger.exception("run %s crashed sau %d item:", run.id, processed_this_pass)
-            return
+            return "failed"
 
     logger.info(
         "run %s hoàn tất: +%d item trong %.1fs",
@@ -309,6 +316,7 @@ def run_analysis(run_id: uuid.UUID) -> None:
         processed_this_pass,
         time.perf_counter() - started,
     )
+    return "completed"
 
 
 def _join_errors(errors: list[str]) -> str:

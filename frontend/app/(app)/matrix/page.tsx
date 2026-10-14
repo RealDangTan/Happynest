@@ -1,8 +1,8 @@
-"use client";
-import { Suspense, useMemo, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+"use client"
+import { Suspense, useMemo, useState } from "react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
 import {
   Dialog,
   DialogContent,
@@ -20,34 +20,50 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Spinner } from "@/components/ui/spinner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AiBadge } from "@/components/ai/ai-badge";
-import { ActionDecisionSupport } from "@/components/actions/action-decision-support";
-import { PageHeader } from "@/components/page-header";
-import { Textarea } from "@/components/ui/textarea";
-import { useInsights } from "@/hooks/use-insights";
+} from "@/components/ui/empty"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
-  useActions,
-  useAddAction,
-  useUpdateAction,
-} from "@/hooks/use-actions";
-import { useProduct } from "@/hooks/use-product";
-import { departmentLabel } from "@/lib/departments";
-import { effectiveScores, QUADRANT_LABEL, quadrantOf } from "@/lib/matrix";
-import type { ActionItem, BusinessFunction, Quadrant } from "@/lib/types";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { Spinner } from "@/components/ui/spinner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AiBadge } from "@/components/ai/ai-badge"
+import { ActionDecisionSupport } from "@/components/actions/action-decision-support"
+import { PageHeader } from "@/components/page-header"
+import { Textarea } from "@/components/ui/textarea"
+import { useInsights } from "@/hooks/use-insights"
+import { useActions, useAddAction, useUpdateAction } from "@/hooks/use-actions"
+import { useProduct } from "@/hooks/use-product"
+import { departmentLabel } from "@/lib/departments"
+import { effectiveScores, QUADRANT_LABEL, quadrantOf } from "@/lib/matrix"
+import type { ActionItem, BusinessFunction, Quadrant } from "@/lib/types"
 
 const BUSINESS_FUNCTIONS: { value: BusinessFunction; label: string }[] = [
   { value: "ENGINEERING", label: "Engineering" },
@@ -58,22 +74,27 @@ const BUSINESS_FUNCTIONS: { value: BusinessFunction; label: string }[] = [
   { value: "FINANCE", label: "Finance" },
   { value: "OPERATION", label: "Operations" },
   { value: "SALES", label: "Sales" },
-];
+]
 
 type Draft = {
-  impact: number;
-  effort: number;
-  urgency: number;
-  reason: string;
-};
+  impact: number
+  effort: number
+  urgency: number
+  reason: string
+}
 
 function draftFrom(action: ActionItem): Draft {
-  const eff = effectiveScores(action);
-  return { impact: eff.impact, effort: eff.effort, urgency: eff.urgency, reason: "" };
+  const eff = effectiveScores(action)
+  return {
+    impact: eff.impact,
+    effort: eff.effort,
+    urgency: eff.urgency,
+    reason: "",
+  }
 }
 
 function toQuadrantLabel(q: Quadrant): string {
-  return QUADRANT_LABEL[q];
+  return QUADRANT_LABEL[q]
 }
 
 // ------------------------------------------------------------------ D02 drawer
@@ -83,15 +104,15 @@ function ActionDrawer({
   initialDraft,
   onClose,
 }: {
-  action: ActionItem | null;
-  initialDraft?: Draft | null;
-  onClose: () => void;
+  action: ActionItem | null
+  initialDraft?: Draft | null
+  onClose: () => void
 }) {
-  const update = useUpdateAction();
+  const update = useUpdateAction()
   // Initialized per session — the parent remounts the drawer via `key`.
   const [draft, setDraft] = useState<Draft | null>(() =>
-    action ? (initialDraft ?? draftFrom(action)) : null,
-  );
+    action ? (initialDraft ?? draftFrom(action)) : null
+  )
 
   const dirty =
     action && draft
@@ -99,49 +120,52 @@ function ActionDrawer({
         draft.effort !== effectiveScores(action).effort ||
         draft.urgency !== effectiveScores(action).urgency ||
         draft.reason.trim() !== ""
-      : false;
+      : false
 
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const requestClose = () => {
-    if (dirty) setConfirmDiscard(true);
-    else onClose();
-  };
+    if (dirty) setConfirmDiscard(true)
+    else onClose()
+  }
 
   const patch = (body: Record<string, unknown>, successMsg: string) => {
-    if (!action) return;
+    if (!action) return
     update.mutate(
       { actionId: action.id, body },
       {
         onSuccess: () => {
-          toast.success(successMsg);
-          onClose();
+          toast.success(successMsg)
+          onClose()
         },
-        onError: (err) => toast.error(err instanceof Error ? err.message : "Update failed"),
-      },
-    );
-  };
+        onError: (err) =>
+          toast.error(err instanceof Error ? err.message : "Update failed"),
+      }
+    )
+  }
 
   if (!action || !draft) {
     return (
       <Sheet open={false} onOpenChange={() => {}}>
         <SheetContent />
       </Sheet>
-    );
+    )
   }
 
-  const previewQuadrant = quadrantOf(draft.impact, draft.effort);
+  const previewQuadrant = quadrantOf(draft.impact, draft.effort)
   const originalQuadrant = quadrantOf(
     effectiveScores(action).impact,
-    effectiveScores(action).effort,
-  );
+    effectiveScores(action).effort
+  )
 
   return (
     <Sheet open onOpenChange={(open) => !open && requestClose()}>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <span className="font-mono text-signal">A-{action.id.slice(0, 8)}</span>
+            <span className="font-mono text-signal">
+              A-{action.id.slice(0, 8)}
+            </span>
             <span className="truncate">{action.recommendation}</span>
           </SheetTitle>
           <SheetDescription>
@@ -149,19 +173,21 @@ function ActionDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 px-4 pb-8">
-          <section className="space-y-1">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="flex flex-col gap-6 px-4 pb-8">
+          <section className="flex flex-col gap-1">
+            <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               What
             </h3>
             <p className="text-sm">{action.recommendation}</p>
             {action.rationale ? (
-              <p className="text-sm text-muted-foreground">{action.rationale}</p>
+              <p className="text-sm text-muted-foreground">
+                {action.rationale}
+              </p>
             ) : null}
           </section>
 
-          <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <section className="flex flex-col gap-2">
+            <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Why
             </h3>
             <p className="text-sm">
@@ -180,7 +206,7 @@ function ActionDrawer({
           <section>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="text-left text-xs tracking-wide text-muted-foreground uppercase">
                   <th className="pb-2 font-medium">AI estimate</th>
                   <th className="pb-2 font-medium">Your decision</th>
                 </tr>
@@ -203,8 +229,9 @@ function ActionDrawer({
                         className="h-8 w-20 font-mono"
                         value={draft[key]}
                         onChange={(e) => {
-                          const v = Number(e.target.value);
-                          if (v >= 1 && v <= 10) setDraft({ ...draft, [key]: v });
+                          const v = Number(e.target.value)
+                          if (v >= 1 && v <= 10)
+                            setDraft({ ...draft, [key]: v })
                         }}
                         aria-label={`${label} decision (1-10)`}
                       />
@@ -222,14 +249,16 @@ function ActionDrawer({
               <p className="mt-2 text-xs">
                 Preview: moves to{" "}
                 <strong>{toQuadrantLabel(previewQuadrant)}</strong> (from{" "}
-                {toQuadrantLabel(originalQuadrant)}). Nothing changes until Save or
-                Accept.
+                {toQuadrantLabel(originalQuadrant)}). Nothing changes until Save
+                or Accept.
               </p>
             ) : null}
           </section>
 
-          <section className="space-y-1">
-            <Label htmlFor="override-reason">Reason for changes</Label>
+          <Field>
+            <FieldLabel htmlFor="override-reason">
+              Reason for changes
+            </FieldLabel>
             <Textarea
               id="override-reason"
               rows={2}
@@ -237,18 +266,25 @@ function ActionDrawer({
               value={draft.reason}
               onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
             />
-          </section>
+          </Field>
 
-          <div className="rounded-lg border border-pollen/60 bg-pollen/10 p-3 text-sm">
-            G3 — You decide the final priority. Saving an edit never implies
-            acceptance.
-          </div>
+          <Alert>
+            <AlertDescription>
+              G3 — You decide the final priority. Saving an edit never implies
+              acceptance.
+            </AlertDescription>
+          </Alert>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Button
               variant="outline"
               disabled={update.isPending}
-              onClick={() => patch({ status: "rejected" }, "Action rejected — kept in history.")}
+              onClick={() =>
+                patch(
+                  { status: "rejected" },
+                  "Action rejected — kept in history."
+                )
+              }
             >
               Reject
             </Button>
@@ -264,7 +300,7 @@ function ActionDrawer({
                       urgency: draft.urgency,
                       override_reason: draft.reason || undefined,
                     },
-                    "Edits saved — awaiting decision.",
+                    "Edits saved — awaiting decision."
                   )
                 }
               >
@@ -281,7 +317,7 @@ function ActionDrawer({
                       urgency: draft.urgency,
                       override_reason: draft.reason || undefined,
                     },
-                    "Action accepted.",
+                    "Action accepted."
                   )
                 }
               >
@@ -303,8 +339,8 @@ function ActionDrawer({
               <AlertDialogCancel>Keep editing</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
-                  setConfirmDiscard(false);
-                  onClose();
+                  setConfirmDiscard(false)
+                  onClose()
                 }}
               >
                 Discard changes
@@ -314,7 +350,7 @@ function ActionDrawer({
         </AlertDialog>
       </SheetContent>
     </Sheet>
-  );
+  )
 }
 
 // ------------------------------------------------------------------ Matrix point
@@ -323,13 +359,13 @@ function MatrixPoint({
   action,
   onOpen,
 }: {
-  action: ActionItem;
-  onOpen: () => void;
+  action: ActionItem
+  onOpen: () => void
 }) {
-  const eff = effectiveScores(action);
+  const eff = effectiveScores(action)
   // Kẹp trong canvas: chip có -translate-x-1/2 nên mép 0%/100% sẽ tràn ra ngoài.
-  const left = Math.min(94, Math.max(6, (eff.effort / 10) * 100));
-  const bottom = Math.min(94, Math.max(6, (eff.impact / 10) * 100));
+  const left = Math.min(94, Math.max(6, (eff.effort / 10) * 100))
+  const bottom = Math.min(94, Math.max(6, (eff.impact / 10) * 100))
   return (
     <button
       draggable
@@ -347,7 +383,7 @@ function MatrixPoint({
     >
       o {action.id.slice(0, 4)}
     </button>
-  );
+  )
 }
 
 // ------------------------------------------------------------------ Add action dialog
@@ -357,16 +393,16 @@ function AddActionDialog({
   open,
   onOpenChange,
 }: {
-  insightId: string;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
+  insightId: string
+  open: boolean
+  onOpenChange: (v: boolean) => void
 }) {
-  const add = useAddAction();
-  const [fn, setFn] = useState<BusinessFunction>("ENGINEERING");
-  const [recommendation, setRecommendation] = useState("");
-  const [impact, setImpact] = useState(5);
-  const [effort, setEffort] = useState(5);
-  const [urgency, setUrgency] = useState(5);
+  const add = useAddAction()
+  const [fn, setFn] = useState<BusinessFunction>("ENGINEERING")
+  const [recommendation, setRecommendation] = useState("")
+  const [impact, setImpact] = useState(5)
+  const [effort, setEffort] = useState(5)
+  const [urgency, setUrgency] = useState(5)
 
   const submit = () => {
     add.mutate(
@@ -376,15 +412,17 @@ function AddActionDialog({
       },
       {
         onSuccess: () => {
-          toast.success("Action added and accepted.");
-          onOpenChange(false);
-          setRecommendation("");
+          toast.success("Action added and accepted.")
+          onOpenChange(false)
+          setRecommendation("")
         },
         onError: (err) =>
-          toast.error(err instanceof Error ? err.message : "Could not add action"),
-      },
-    );
-  };
+          toast.error(
+            err instanceof Error ? err.message : "Could not add action"
+          ),
+      }
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -392,14 +430,17 @@ function AddActionDialog({
         <DialogHeader>
           <DialogTitle>Add manual action</DialogTitle>
           <DialogDescription>
-            Requires a department, recommendation, and scores. The final button makes
-            the acceptance decision explicit.
+            Requires a department, recommendation, and scores. The final button
+            makes the acceptance decision explicit.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>Department</Label>
-            <Select value={fn} onValueChange={(v) => setFn(v as BusinessFunction)}>
+        <FieldGroup>
+          <Field>
+            <FieldLabel>Department</FieldLabel>
+            <Select
+              value={fn}
+              onValueChange={(v) => setFn(v as BusinessFunction)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -411,16 +452,16 @@ function AddActionDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1">
-            <Label>Recommendation</Label>
+          </Field>
+          <Field>
+            <FieldLabel>Recommendation</FieldLabel>
             <Textarea
               rows={2}
               value={recommendation}
               onChange={(e) => setRecommendation(e.target.value)}
               placeholder="What should be done?"
             />
-          </div>
+          </Field>
           <div className="grid grid-cols-3 gap-2">
             {(
               [
@@ -429,8 +470,8 @@ function AddActionDialog({
                 ["Urgency", urgency, setUrgency],
               ] as const
             ).map(([label, value, set]) => (
-              <div key={label} className="space-y-1">
-                <Label>{label}</Label>
+              <Field key={label}>
+                <FieldLabel>{label}</FieldLabel>
                 <Input
                   type="number"
                   min={1}
@@ -438,41 +479,44 @@ function AddActionDialog({
                   className="font-mono"
                   value={value}
                   onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (v >= 1 && v <= 10) set(v);
+                    const v = Number(e.target.value)
+                    if (v >= 1 && v <= 10) set(v)
                   }}
                 />
-              </div>
+              </Field>
             ))}
           </div>
-        </div>
+        </FieldGroup>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={recommendation.trim().length < 3 || add.isPending} onClick={submit}>
+          <Button
+            disabled={recommendation.trim().length < 3 || add.isPending}
+            onClick={submit}
+          >
             Add and accept action
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 // ------------------------------------------------------------------ Screen
 
 function Matrix({ initialReportId }: { initialReportId: string | null }) {
-  const { product } = useProduct();
-  const insights = useInsights();
-  const [reportId, setReportId] = useState<string | null>(initialReportId);
-  const [department, setDepartment] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
-  const [openActionId, setOpenActionId] = useState<string | null>(null);
+  const { product } = useProduct()
+  const insights = useInsights()
+  const [reportId, setReportId] = useState<string | null>(initialReportId)
+  const [department, setDepartment] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("active")
+  const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [dropPreview, setDropPreview] = useState<{
-    actionId: string;
-    draft: Draft;
-  } | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
+    actionId: string
+    draft: Draft
+  } | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
 
   const eligibleReports = useMemo(
     () =>
@@ -481,88 +525,96 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
           i.status === "approved" ||
           i.status === "edited" ||
           i.status === "pending" ||
-          i.status === "investigating",
+          i.status === "investigating"
       ),
-    [insights.data],
-  );
+    [insights.data]
+  )
 
   // Derived selection: falls back to the first eligible report.
-  const effectiveReportId = reportId ?? eligibleReports[0]?.id ?? null;
+  const effectiveReportId = reportId ?? eligibleReports[0]?.id ?? null
 
-  const actions = useActions(effectiveReportId);
-  const allItems = useMemo(() => actions.data?.items ?? [], [actions.data]);
+  const actions = useActions(effectiveReportId)
+  const allItems = useMemo(() => actions.data?.items ?? [], [actions.data])
 
   const items = useMemo(() => {
     return allItems.filter((a) => {
-      if (department !== "all" && departmentLabel(a.function).toLowerCase() !== department)
-        return false;
-      if (statusFilter === "active") return a.status !== "rejected";
-      if (statusFilter === "rejected") return a.status === "rejected";
-      if (statusFilter === "accepted") return a.status === "accepted";
-      return true;
-    });
-  }, [allItems, department, statusFilter]);
+      if (
+        department !== "all" &&
+        departmentLabel(a.function).toLowerCase() !== department
+      )
+        return false
+      if (statusFilter === "active") return a.status !== "rejected"
+      if (statusFilter === "rejected") return a.status === "rejected"
+      if (statusFilter === "accepted") return a.status === "accepted"
+      return true
+    })
+  }, [allItems, department, statusFilter])
 
-  const openAction = items.find((a) => a.id === openActionId) ?? null;
-  const matrix = actions.data?.matrix;
+  const openAction = items.find((a) => a.id === openActionId) ?? null
+  const matrix = actions.data?.matrix
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={product?.name ?? "Priority Matrix"}
         description="Ưu tiên hành động theo tác động và nỗ lực — giữ khuyến nghị gốc của hệ thống khi ghi đè."
         actions={
-          <Button disabled={!effectiveReportId} onClick={() => setAddOpen(true)}>
+          <Button
+            disabled={!effectiveReportId}
+            onClick={() => setAddOpen(true)}
+          >
             + Add action
           </Button>
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Select value={effectiveReportId ?? ""} onValueChange={setReportId}>
-          <SelectTrigger className="w-72">
-            <SelectValue placeholder="Report: choose one" />
-          </SelectTrigger>
-          <SelectContent>
-            {eligibleReports.map((r) => (
-              <SelectItem key={r.id} value={r.id}>
-                Report: {r.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={department} onValueChange={setDepartment}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Department: All</SelectItem>
-            {BUSINESS_FUNCTIONS.map((f) => (
-              <SelectItem key={f.value} value={f.label.toLowerCase()}>
-                Department: {f.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Status: Active</SelectItem>
-            <SelectItem value="accepted">Status: Accepted</SelectItem>
-            <SelectItem value="rejected">Status: Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Card size="sm">
+        <CardContent className="flex-row flex-wrap items-center gap-2">
+          <Select value={effectiveReportId ?? ""} onValueChange={setReportId}>
+            <SelectTrigger className="w-72">
+              <SelectValue placeholder="Report: choose one" />
+            </SelectTrigger>
+            <SelectContent>
+              {eligibleReports.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  Report: {r.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={department} onValueChange={setDepartment}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Department: All</SelectItem>
+              {BUSINESS_FUNCTIONS.map((f) => (
+                <SelectItem key={f.value} value={f.label.toLowerCase()}>
+                  Department: {f.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Status: Active</SelectItem>
+              <SelectItem value="accepted">Status: Accepted</SelectItem>
+              <SelectItem value="rejected">Status: Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {!effectiveReportId ? (
         <Empty className="border">
           <EmptyHeader>
             <EmptyTitle>No reviewed report yet</EmptyTitle>
             <EmptyDescription>
-              Approve a finding in Reports first — actions are generated from reviewed
-              findings only.
+              Approve a finding in Reports first — actions are generated from
+              reviewed findings only.
             </EmptyDescription>
           </EmptyHeader>
           <Button asChild>
@@ -595,91 +647,127 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
             </EmptyDescription>
           </EmptyHeader>
           <Button asChild>
-            <Link href={`/reports?report=${effectiveReportId}`}>Open source report</Link>
+            <Link href={`/reports?report=${effectiveReportId}`}>
+              Open source report
+            </Link>
           </Button>
         </Empty>
       ) : (
-        <div className="space-y-4">
-          <div className="flex justify-between px-1 text-xs text-muted-foreground">
-            <span>Expected customer impact — High ↑</span>
-            <span>Effort → High</span>
-          </div>
-          <div
-            className="relative h-[480px] overflow-hidden rounded-xl border bg-card"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const id = e.dataTransfer.getData("text/action-id");
-              const dropped = allItems.find((a) => a.id === id);
-              if (!dropped || !e.currentTarget) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = (e.clientX - rect.left) / rect.width;
-              const y = (e.clientY - rect.top) / rect.height;
-              const effort = Math.min(10, Math.max(1, Math.round(x * 10)));
-              const impact = Math.min(10, Math.max(1, Math.round((1 - y) * 10)));
-              setDropPreview({
-                actionId: id,
-                draft: { impact, effort, urgency: effectiveScores(dropped).urgency, reason: "" },
-              });
-              setOpenActionId(id);
-            }}
-          >
-            {/* quadrant midlines */}
-            <div className="absolute left-1/2 top-0 h-full w-px bg-border" />
-            <div className="absolute left-0 top-1/2 h-px w-full bg-border" />
-            {/* quadrant labels */}
-            {(
-              [
-                ["Quick wins", "left-3 top-3"],
-                ["Strategic investments", "right-3 top-3"],
-                ["Low priority", "left-3 bottom-3"],
-                ["Reconsider", "right-3 bottom-3"],
-              ] as const
-            ).map(([label, pos]) => (
-              <span
-                key={label}
-                className={`absolute ${pos} text-xs font-semibold uppercase tracking-wide text-muted-foreground/70`}
-              >
-                {label}
-              </span>
-            ))}
-            {items.map((a) => (
-              <MatrixPoint key={a.id} action={a} onOpen={() => setOpenActionId(a.id)} />
-            ))}
-            {matrix ? null : null}
-          </div>
-          <div className="flex justify-between px-1 text-xs text-muted-foreground">
-            <span>Low effort</span>
-            <span>
-              Points are actions. Priority also considers urgency and confidence.
+        <Card>
+          <CardHeader>
+            <CardTitle>Ma trận ưu tiên</CardTitle>
+            <CardDescription>
+              Bấm một điểm để mở chi tiết, hoặc kéo thả vào vùng khác để xem
+              trước thay đổi — điểm chỉ di chuyển khi Save/Accept.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex justify-between px-1 text-xs text-muted-foreground">
+              <span>Expected customer impact — High ↑</span>
+              <span>Effort → High</span>
+            </div>
+            <div
+              className="relative h-[480px] overflow-hidden rounded-lg border bg-card"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const id = e.dataTransfer.getData("text/action-id")
+                const dropped = allItems.find((a) => a.id === id)
+                if (!dropped || !e.currentTarget) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const x = (e.clientX - rect.left) / rect.width
+                const y = (e.clientY - rect.top) / rect.height
+                const effort = Math.min(10, Math.max(1, Math.round(x * 10)))
+                const impact = Math.min(
+                  10,
+                  Math.max(1, Math.round((1 - y) * 10))
+                )
+                setDropPreview({
+                  actionId: id,
+                  draft: {
+                    impact,
+                    effort,
+                    urgency: effectiveScores(dropped).urgency,
+                    reason: "",
+                  },
+                })
+                setOpenActionId(id)
+              }}
+            >
+              {/* quadrant midlines */}
+              <div className="absolute top-0 left-1/2 h-full w-px bg-border" />
+              <div className="absolute top-1/2 left-0 h-px w-full bg-border" />
+              {/* quadrant labels */}
+              {(
+                [
+                  ["Quick wins", "left-3 top-3"],
+                  ["Strategic investments", "right-3 top-3"],
+                  ["Low priority", "left-3 bottom-3"],
+                  ["Reconsider", "right-3 bottom-3"],
+                ] as const
+              ).map(([label, pos]) => (
+                <span
+                  key={label}
+                  className={`absolute ${pos} text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase`}
+                >
+                  {label}
+                </span>
+              ))}
+              {items.map((a) => (
+                <MatrixPoint
+                  key={a.id}
+                  action={a}
+                  onOpen={() => setOpenActionId(a.id)}
+                />
+              ))}
+              {matrix ? null : null}
+            </div>
+            <div className="flex justify-between px-1 text-xs text-muted-foreground">
+              <span>Low effort</span>
+              <span>High effort</span>
+            </div>
+          </CardContent>
+          <CardFooter className="flex-wrap justify-between gap-2">
+            <span className="text-xs text-muted-foreground">
+              Points are actions. Priority also considers urgency and
+              confidence.
             </span>
-            <span>High effort</span>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/reports?report=${effectiveReportId}`}>View source report</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/stakeholders?report=${effectiveReportId}`}>View by department</Link>
-            </Button>
-          </div>
-        </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/reports?report=${effectiveReportId}`}>
+                  View source report
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/stakeholders?report=${effectiveReportId}`}>
+                  View by department
+                </Link>
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
       )}
 
       <ActionDrawer
         key={openActionId ?? "none"}
         action={openAction}
-        initialDraft={dropPreview?.actionId === openActionId ? dropPreview.draft : null}
+        initialDraft={
+          dropPreview?.actionId === openActionId ? dropPreview.draft : null
+        }
         onClose={() => {
-          setOpenActionId(null);
-          setDropPreview(null);
+          setOpenActionId(null)
+          setDropPreview(null)
         }}
       />
       {effectiveReportId ? (
-        <AddActionDialog insightId={effectiveReportId} open={addOpen} onOpenChange={setAddOpen} />
+        <AddActionDialog
+          insightId={effectiveReportId}
+          open={addOpen}
+          onOpenChange={setAddOpen}
+        />
       ) : null}
     </div>
-  );
+  )
 }
 
 export default function MatrixPage() {
@@ -687,10 +775,10 @@ export default function MatrixPage() {
     <Suspense fallback={<Spinner />}>
       <MatrixWithParams />
     </Suspense>
-  );
+  )
 }
 
 function MatrixWithParams() {
-  const params = useSearchParams();
-  return <Matrix initialReportId={params.get("report")} />;
+  const params = useSearchParams()
+  return <Matrix initialReportId={params.get("report")} />
 }

@@ -16,9 +16,14 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_role
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    product_or_404,
+)
 from app.jobs.analysis_runner import PIPELINE_VERSION, run_analysis
 from app.models.analysis_run import AnalysisRun
+from app.models.import_ import Import
 from app.models.enums import RunStatus
 from app.models.feedback import Feedback
 from app.schemas.analysis import (
@@ -44,9 +49,24 @@ from app.services.analysis_service import (
 router = APIRouter(
     prefix="/api",
     tags=["analysis"],
-    # Guard toàn router: chỉ pm | operations (job tốn tiền LLM tokens).
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
+
+
+def _get_run_or_404(
+    session: Session,
+    run_id: uuid.UUID,
+    *,
+    with_for_update: bool = False,
+) -> AnalysisRun:
+    """Load an existing run, including legacy runs without product_id."""
+    stmt = select(AnalysisRun).where(AnalysisRun.id == run_id)
+    if with_for_update:
+        stmt = stmt.with_for_update()
+    run = session.scalar(stmt)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Run không tồn tại.")
+    return run
 
 
 @router.post("/analysis/runs", status_code=201)
@@ -56,6 +76,10 @@ def create_analysis_run(
     session: Session = Depends(get_db),
 ) -> RunCreatedOut:
     """Claim exactly the import-scoped rows covered by a confirmed receipt."""
+    import_row = session.get(Import, body.import_id)
+    if import_row is None:
+        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    product_or_404(session, import_row.product_id)
     settings = get_settings()
     scope = AnalysisScopeIn.model_validate(body.model_dump())
     try:
@@ -77,6 +101,7 @@ def create_analysis_run(
         prompt_version=PROMPT_VERSION,
         embedding_model=settings.EMBEDDING_MODEL,
         import_id=body.import_id,
+        product_id=import_row.product_id,
         mode=body.mode,
         chunk_size=1 if body.mode == "selected" else settings.ANALYSIS_BATCH_SIZE,
         total_count=len(rows),
@@ -97,6 +122,10 @@ def preview_analysis_run(
     body: AnalysisScopeIn,
     session: Session = Depends(get_db),
 ) -> AnalysisCostPreviewOut:
+    import_row = session.get(Import, body.import_id)
+    if import_row is None:
+        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    product_or_404(session, import_row.product_id)
     try:
         return preview_analysis(session, body)
     except SelectionChangedError:
@@ -135,11 +164,7 @@ def cancel_analysis_run(
     run_id: uuid.UUID,
     session: Session = Depends(get_db),
 ) -> RunProgressOut:
-    run = session.scalar(
-        select(AnalysisRun).where(AnalysisRun.id == run_id).with_for_update()
-    )
-    if run is None:
-        raise HTTPException(status_code=404, detail="Run không tồn tại.")
+    run = _get_run_or_404(session, run_id, with_for_update=True)
     if run.status != RunStatus.running:
         raise HTTPException(status_code=409, detail="Run không còn chạy.")
     run.cancel_requested_at = datetime.now(timezone.utc)
@@ -150,12 +175,11 @@ def cancel_analysis_run(
 
 @router.get("/analysis/runs/{run_id}")
 def get_run_progress(
-    run_id: uuid.UUID, session: Session = Depends(get_db)
+    run_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> RunProgressOut:
     """Progress một run: status + processed/total + error summary."""
-    run = session.get(AnalysisRun, run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail="Run không tồn tại.")
+    run = _get_run_or_404(session, run_id)
     return RunProgressOut.model_validate(run)
 
 
@@ -168,8 +192,7 @@ def get_run_results(
 ) -> FeedbackListOut:
     """Feedback thuộc run (phân trang) kèm kết quả phân loại. Item chưa được
     xử lý xong vẫn nằm trong results với labels NULL — caller tự lọc."""
-    if session.get(AnalysisRun, run_id) is None:
-        raise HTTPException(status_code=404, detail="Run không tồn tại.")
+    _get_run_or_404(session, run_id)
 
     conditions = [Feedback.analysis_run_id == run_id]
     total = session.scalar(select(func.count()).select_from(Feedback).where(*conditions))
@@ -196,5 +219,6 @@ def re_enrich_uncategorized(
     """Plan 32 — vòng lặp taxonomy evolution: sau khi human apply taxonomy v2,
     clear nhãn các row UNCATEGORIZED để run Analysis kế tiếp enrich lại theo
     nhãn mới. Chỉ đụng nhãn dẫn xuất (raw + embedding giữ nguyên)."""
+    product_or_404(session, body.product_id)
     released = reset_uncategorized(session, body.product_id)
     return ReEnrichOut(released=released)

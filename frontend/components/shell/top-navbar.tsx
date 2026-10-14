@@ -36,11 +36,10 @@ import {
   useDeleteProduct,
   useUpdateProduct,
 } from "@/hooks/use-products";
-import { useMe } from "@/hooks/use-me";
 import { toast } from "sonner";
 import { usePanel } from "./panel-provider";
 import { useChat } from "./chat-provider";
-import { AccountMenu } from "./account-menu";
+import { ProfilePanel } from "./profile-panel";
 import { ActivityNavButton } from "@/components/activity/activity-nav-button";
 import { WhatsNew } from "./whats-new";
 import { CommandPalette } from "./command-palette";
@@ -59,8 +58,6 @@ function Breadcrumb() {
   const [description, setDescription] = useState("");
   const createProduct = useCreateProduct();
 
-  const me = useMe();
-  const isPm = me.data?.role === "pm";
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   const [renameOpen, setRenameOpen] = useState(false);
@@ -154,7 +151,7 @@ function Breadcrumb() {
             <Plus data-icon="inline-start" />
             Create product
           </DropdownMenuItem>
-          {isPm && product ? (
+          {product ? (
             <>
               <DropdownMenuItem
                 onSelect={() => {
@@ -393,7 +390,7 @@ export function TopNavbar() {
           </div>
 
           <div className="hidden md:block">
-            <AccountMenu />
+            <ProfilePanel />
           </div>
         </div>
       </div>

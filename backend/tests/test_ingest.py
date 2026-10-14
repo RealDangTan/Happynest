@@ -15,13 +15,9 @@ import uuid
 from datetime import datetime, timezone
 
 import pytest
-from fastapi import APIRouter, Depends
 from sqlalchemy import or_
 
-from app.api.deps import require_role
 from app.db.session import SessionLocal
-from app.main import app
-from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
@@ -31,11 +27,11 @@ pytestmark = pytest.mark.integration
 # ---------------------------------------------------------------- helpers
 
 
-def _login_headers(client, role: UserRole) -> dict[str, str]:
+def _login_headers(client, account: str) -> dict[str, str]:
     """Login lấy JWT rồi dùng Bearer header (đường song song cookie, Phase 04)."""
     response = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[role], "password": TEST_PASSWORDS[role]},
+        data={"username": SEED_EMAILS[account], "password": TEST_PASSWORDS[account]},
     )
     assert response.status_code == 200, response.text
     token = response.json()["access_token"]
@@ -64,7 +60,7 @@ def clean_feedbacks():
 
 class TestPostSingle:
     def test_stores_fields_and_fallback_occurred_at(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.pm)
+        headers = _login_headers(client, "primary")
         content = "Ứng dụng hay nhưng hay lag khi dịch"
         before = datetime.now(timezone.utc)
         response = client.post(
@@ -95,7 +91,7 @@ class TestPostSingle:
             assert row.import_id is None  # POST đơn lẻ không qua import lô
 
     def test_preserves_explicit_event_time(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.operations)
+        headers = _login_headers(client, "secondary")
         event_time = "2025-01-15T10:00:00+00:00"
         response = client.post(
             "/api/feedbacks",
@@ -143,7 +139,7 @@ def _make_rows(client, headers, clean_feedbacks, n=3):
 
 class TestListAndDetail:
     def test_pagination_and_filters(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.pm)
+        headers = _login_headers(client, "primary")
         ids = _make_rows(client, headers, clean_feedbacks, n=3)
 
         # Mô phỏng hậu classify: severity/topics nằm trong ai_analysis JSONB —
@@ -186,12 +182,12 @@ class TestListAndDetail:
         assert sen["total"] == 3
 
     def test_limit_over_100_rejected(self, client):
-        headers = _login_headers(client, UserRole.pm)
+        headers = _login_headers(client, "primary")
         response = client.get("/api/feedbacks", params={"limit": 101}, headers=headers)
         assert response.status_code == 422
 
     def test_detail_never_exposes_raw(self, client, clean_feedbacks):
-        headers = _login_headers(client, UserRole.pm)
+        headers = _login_headers(client, "primary")
         content = "SĐT tôi là 0987654321, đừng lộ"
         fid = uuid.UUID(
             client.post(
@@ -208,7 +204,7 @@ class TestListAndDetail:
         assert "0987654321" not in safe["feedback_text"]
 
     def test_detail_404_unknown_id(self, client):
-        headers = _login_headers(client, UserRole.pm)
+        headers = _login_headers(client, "primary")
         missing = uuid.uuid4()
         response = client.get(f"/api/feedbacks/{missing}", headers=headers)
         assert response.status_code == 404
@@ -217,18 +213,18 @@ class TestListAndDetail:
 # ------------------------------------------------------------------ guard
 
 
-class TestRoleGuard:
-    def test_anonymous_rejected_both_roles_allowed_then_403_on_pm_only_route(
+class TestAuthentication:
+    def test_anonymous_rejected_authenticated_account_can_ingest(
         self, client, clean_feedbacks
     ):
-        # Vô danh → 401 (chưa xác thực, khác 403)
+        # Vô danh → 401 (chưa xác thực)
         response = client.post(
             "/api/feedbacks", json={"source": "s", "content": "c"}
         )
         assert response.status_code == 401
 
-        # Cả hai role seeded đều được phép ingestion
-        ops_headers = _login_headers(client, UserRole.operations)
+        # Tài khoản đăng nhập được phép ingestion
+        ops_headers = _login_headers(client, "secondary")
         response = client.post(
             "/api/feedbacks",
             json={"source": "s", "content": "ops được phép"},
@@ -236,21 +232,3 @@ class TestRoleGuard:
         )
         assert response.status_code == 201
         clean_feedbacks.append(uuid.UUID(response.json()["id"]))
-
-        # 403: RBAC universe chỉ có pm|operations (đều được phép trên route
-        # thật) nên tái hiện đúng precedent phase 04 — mount route pm-only tạm.
-        routes_before = len(app.routes)
-        demo = APIRouter()
-
-        # Path 2 segment để KHÔNG bị nuốt bởi pattern `/feedbacks/{id}`
-        # (1 segment, UUID-typed → sẽ 422 trước khi tới route tạm).
-        @demo.get("/api/feedbacks/_guard/demo")
-        def guard_demo(user=Depends(require_role("pm"))):  # noqa: F821
-            return {"ok": True}
-
-        app.include_router(demo)
-        try:
-            forbidden = client.get("/api/feedbacks/_guard/demo", headers=ops_headers)
-            assert forbidden.status_code == 403
-        finally:
-            del app.routes[routes_before:]

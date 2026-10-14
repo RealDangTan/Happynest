@@ -145,9 +145,7 @@ class TestIngestWiring:
         from tests.test_ingest import _login_headers
 
         try:
-            from app.models.enums import UserRole
-
-            headers = _login_headers(client, UserRole.pm)
+            headers = _login_headers(client, "primary")
             content = "Liên hệ tran.van.b@example.com hoặc 0987654321 để được hỗ trợ"
             response = client.post(
                 "/api/feedbacks",

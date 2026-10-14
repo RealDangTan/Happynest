@@ -18,7 +18,6 @@ from datetime import datetime, timezone
 import pytest
 
 from app.db.session import SessionLocal
-from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from app.services.embedder import store_embedding
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
@@ -38,8 +37,8 @@ def ops_headers(client):
     resp = client.post(
         "/api/auth/token",
         data={
-            "username": SEED_EMAILS[UserRole.operations],
-            "password": TEST_PASSWORDS[UserRole.operations],
+            "username": SEED_EMAILS["secondary"],
+            "password": TEST_PASSWORDS["secondary"],
         },
     )
     assert resp.status_code == 200, resp.text

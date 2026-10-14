@@ -249,8 +249,10 @@ def main() -> int:
 
         from app.models.user import User
 
-        pm = db.query(User).filter_by(role="pm").first()
-        values = u_runner.resume_with_decision(u_run.id, {"action": "approve", "reviewer_id": str(pm.id)})
+        reviewer = db.query(User).order_by(User.created_at, User.id).first()
+        if reviewer is None:
+            raise RuntimeError("Chưa có tài khoản; chạy scripts/seed_users.py.")
+        values = u_runner.resume_with_decision(u_run.id, {"action": "approve", "reviewer_id": str(reviewer.id)})
         print(f"[7] Gate #2 approved → final_status={values.get('final_status')}")
 
         from app.models.insight import Insight

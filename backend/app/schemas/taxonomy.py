@@ -220,7 +220,7 @@ class TopicRecommendationOut(BaseModel):
 
 
 class TopicRecommendIn(BaseModel):
-    """POST /api/taxonomies/recommend — pm-only (tốn LLM)."""
+    """POST /api/taxonomies/recommend — tốn LLM."""
 
     product_id: UUID
     pool_limit: int = Field(default=100, ge=10, le=200)

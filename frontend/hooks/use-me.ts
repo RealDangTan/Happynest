@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
-export type User = { id: string; email: string; role: "pm" | "operations" };
+export type User = { id: string; email: string };
 
 export function useMe() {
   return useQuery({

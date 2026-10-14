@@ -1,20 +1,13 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LifeBuoy,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Settings,
-} from "lucide-react";
+import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePanel } from "./panel-provider";
 import { useChat } from "./chat-provider";
 import { ChatThread } from "./chat-thread";
-import { SettingsDialog } from "./settings-dialog";
 import { WhatsNew } from "./whats-new";
 
 function NavItem({
@@ -87,7 +80,6 @@ export function LeftPanel() {
   const { collapsed, toggle, setCollapsed, mobileOpen, setMobileOpen } = usePanel();
   const { chatOpen, openChat, closeChat } = useChat();
   const pathname = usePathname();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   // Fully separate tabs: Chat replaces the dock content, Home brings it back.
   const tab: "home" | "chat" = chatOpen ? "chat" : "home";
 
@@ -255,18 +247,18 @@ export function LeftPanel() {
             )}
           >
             <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-end")}>
-              <button
-                onClick={() => setSettingsOpen(true)}
+              <Link
+                href="/settings"
                 title="Settings"
                 aria-label="Settings"
                 className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
                 <Settings className="size-4" />
-              </button>
+              </Link>
               <Link
-                href="/qna"
-                title="Contact us"
-                aria-label="Contact us"
+                href="/help"
+                title="Help & contact"
+                aria-label="Help & contact"
                 className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
                 <LifeBuoy className="size-4" />
@@ -286,8 +278,6 @@ export function LeftPanel() {
           <ChatThread />
         </div>
       </aside>
-
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }

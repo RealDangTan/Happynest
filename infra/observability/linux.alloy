@@ -1,0 +1,84 @@
+logging {
+  level = "warn"
+}
+
+prometheus.exporter.unix "host" {
+  set_collectors = ["cpu", "meminfo", "filesystem"]
+}
+
+prometheus.scrape "host" {
+  targets         = prometheus.exporter.unix.host.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.relabel.host.receiver]
+}
+
+prometheus.relabel "host" {
+  forward_to = [prometheus.remote_write.cloud.receiver]
+  rule {
+    target_label = "instance"
+    replacement  = sys.env("HAPPYNEST_INSTANCE")
+  }
+  rule {
+    target_label = "job"
+    replacement  = "happynest-host"
+  }
+  rule {
+    source_labels = ["__name__"]
+    regex = "node_(cpu_seconds_total|memory_MemAvailable_bytes|memory_MemTotal_bytes|filesystem_avail_bytes|filesystem_size_bytes)"
+    action = "keep"
+  }
+}
+
+prometheus.scrape "backend" {
+  targets = [{ "__address__" = sys.env("HAPPYNEST_METRICS_TARGET"), "job" = "happynest-backend", "instance" = sys.env("HAPPYNEST_INSTANCE") }]
+  metrics_path    = "/metrics"
+  scrape_interval = "30s"
+  scrape_timeout  = "10s"
+  authorization {
+    type        = "Bearer"
+    credentials = sys.env("METRICS_TOKEN")
+  }
+  forward_to = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_METRICS_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_METRICS_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}
+
+loki.source.file "backend" {
+  targets = [{ "__path__" = sys.env("HAPPYNEST_LOG_PATH"), "service_name" = "happynest-backend", "instance" = sys.env("HAPPYNEST_INSTANCE") }]
+  forward_to = [loki.process.metadata.receiver]
+}
+
+loki.process "metadata" {
+  stage.json {
+    expressions = { level = "level", event = "event", timestamp = "timestamp" }
+  }
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339Nano"
+  }
+  stage.labels {
+    values = { level = "", event = "" }
+  }
+  stage.label_drop {
+    values = ["filename"]
+  }
+  forward_to = [loki.write.cloud.receiver]
+}
+
+loki.write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOGS_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOGS_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}

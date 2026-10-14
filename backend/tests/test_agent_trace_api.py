@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import LlmCallType, RunStatus, UserRole
+from app.models.enums import LlmCallType, RunStatus
 from app.services import act_agent
 from app.services.llm_client import LLMStructureError
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
@@ -112,8 +112,8 @@ def _login(client: TestClient) -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
         data={
-            "username": SEED_EMAILS[UserRole.pm],
-            "password": TEST_PASSWORDS[UserRole.pm],
+            "username": SEED_EMAILS["primary"],
+            "password": TEST_PASSWORDS["primary"],
         },
     )
     assert resp.status_code == 200, resp.text

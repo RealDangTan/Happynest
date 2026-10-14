@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str = ""  # Phase 04 enforce bắt buộc khi bật JWT
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # Dedicated operator credential; unrelated to user JWTs. Empty disables scraping.
+    METRICS_TOKEN: str = ""
+    OBSERVABILITY_LOG_DIR: str = "storage/observability"
+
     # --- Database ---
     DATABASE_URL: str = Field(
         validation_alias=AliasChoices("DATABASE_URL", "DB_CONNECT_STRING"),

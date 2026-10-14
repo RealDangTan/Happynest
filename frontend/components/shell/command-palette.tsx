@@ -12,7 +12,7 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useChat } from "./chat-provider";
 import { apiFetch } from "@/lib/api";
-import { STAGES } from "@/lib/navigation";
+import { STAGES, UTILITY_SCREENS } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import type { FeedbackListResponse, InsightsListResponse } from "@/lib/types";
 
@@ -113,6 +113,23 @@ export function CommandPalette({
           run: () => go(item.href),
         });
       }
+    }
+
+    // Màn ngoại lai — tìm được từ palette như mọi màn hình khác.
+    for (const item of UTILITY_SCREENS) {
+      if (
+        q &&
+        !item.label.toLowerCase().includes(q) &&
+        !item.description.toLowerCase().includes(q)
+      )
+        continue;
+      list.push({
+        key: `util-${item.href}`,
+        group: "App",
+        label: item.label,
+        icon: item.icon,
+        run: () => go(item.href),
+      });
     }
 
     for (const r of query.trim().length >= 2 ? reports?.items.slice(0, 5) ?? [] : []) {

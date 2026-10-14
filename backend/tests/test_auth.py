@@ -1,4 +1,4 @@
-"""Auth & RBAC tests — Phase 04 (docs/plans/04-auth-rbac.md §3.6).
+"""Authentication tests — shared access, identity-only tokens.
 
 ⚠️ Marker `integration` — chạm DB Supabase thật qua fixture `client`/`seeded_users`
 (cần .env + internet). Marker bổ sung Phase 11: từ Phase 04 file này thiếu marker
@@ -13,8 +13,8 @@ from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
 pytestmark = pytest.mark.integration
 
-PM_EMAIL = SEED_EMAILS["pm"]
-OPS_EMAIL = SEED_EMAILS["operations"]
+PM_EMAIL = SEED_EMAILS["primary"]
+OPS_EMAIL = SEED_EMAILS["secondary"]
 
 
 def _unique_email() -> str:
@@ -31,7 +31,7 @@ def _login(client, email: str, password: str):
 
 class TestLogin:
     def test_login_success_returns_body_and_cookie(self, client):
-        resp = _login(client, PM_EMAIL, TEST_PASSWORDS["pm"])
+        resp = _login(client, PM_EMAIL, TEST_PASSWORDS["primary"])
         assert resp.status_code == 200
         body = resp.json()
         assert body["token_type"] == "bearer"
@@ -43,9 +43,9 @@ class TestLogin:
         assert "Path=/" in set_cookie
         assert "Secure" not in set_cookie  # dev → secure=False
 
-    def test_login_operations_role_ok(self, client):
-        """DoD 04: login cả 2 role seeded thành công."""
-        resp = _login(client, OPS_EMAIL, TEST_PASSWORDS["operations"])
+    def test_login_second_account_ok(self, client):
+        """Both demo accounts can sign in."""
+        resp = _login(client, OPS_EMAIL, TEST_PASSWORDS["secondary"])
         assert resp.status_code == 200
 
     def test_login_wrong_password_401(self, client):
@@ -62,24 +62,24 @@ class TestLogin:
 
 class TestMe:
     def test_me_with_cookie(self, client):
-        login = _login(client, PM_EMAIL, TEST_PASSWORDS["pm"])
+        login = _login(client, PM_EMAIL, TEST_PASSWORDS["primary"])
         token = login.json()["access_token"]
 
         me = client.get("/api/auth/me", cookies={"access_token": token})
         assert me.status_code == 200
         data = me.json()
         assert data["email"] == PM_EMAIL
-        assert data["role"] == "pm"
+        assert set(data) == {"id", "email"}
         assert data["id"]
 
     def test_me_with_bearer_header(self, client):
         """Cơ chế song song Bearer (decisions.md 2026-08-24) — Swagger/curl dùng."""
-        login = _login(client, OPS_EMAIL, TEST_PASSWORDS["operations"])
+        login = _login(client, OPS_EMAIL, TEST_PASSWORDS["secondary"])
         token = login.json()["access_token"]
 
         me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
         assert me.status_code == 200
-        assert me.json()["role"] == "operations"
+        assert me.json()["email"] == OPS_EMAIL
 
     def test_me_without_credentials_401(self, client):
         assert client.get("/api/auth/me").status_code == 401
@@ -93,7 +93,7 @@ class TestMe:
 
         tampered = (
             create_access_token(
-                sub="00000000-0000-0000-0000-000000000000", role="pm"
+                sub="00000000-0000-0000-0000-000000000000"
             )
             + "x"
         )
@@ -102,9 +102,9 @@ class TestMe:
 
 
 class TestRegister:
-    """P1.5 / FE-08 — POST /api/auth/register, role mặc định `operations`."""
+    """P1.5 / FE-08 — POST /api/auth/register returns identity."""
 
-    def test_register_creates_operations_user_201(self, client):
+    def test_register_creates_user_201(self, client):
         email = _unique_email()
         resp = client.post(
             "/api/auth/register", json={"email": email, "password": "mat-khau-8kt"}
@@ -112,7 +112,7 @@ class TestRegister:
         assert resp.status_code == 201
         data = resp.json()
         assert data["email"] == email
-        assert data["role"] == "operations"
+        assert set(data) == {"id", "email"}
         assert data["id"]
 
     def test_register_then_login_ok(self, client):
@@ -157,7 +157,7 @@ class TestLogout:
     """P1.5 / FE-08 — POST /api/auth/logout xoá cookie httpOnly."""
 
     def test_logout_clears_cookie_204(self, client):
-        login = _login(client, PM_EMAIL, TEST_PASSWORDS["pm"])
+        login = _login(client, PM_EMAIL, TEST_PASSWORDS["primary"])
         assert "access_token" in client.cookies
 
         resp = client.post("/api/auth/logout")
@@ -170,29 +170,3 @@ class TestLogout:
         """Idempotent — gọi khi chưa login vẫn 204."""
         resp = client.post("/api/auth/logout")
         assert resp.status_code == 204
-
-
-class TestRoleGuard:
-    """Route guard demo — route pm-only gắn tạm trong fixture pm_guarded_client."""
-
-    def test_pm_allowed_on_pm_only_route(self, pm_guarded_client):
-        login = _login(pm_guarded_client, PM_EMAIL, TEST_PASSWORDS["pm"])
-        token = login.json()["access_token"]
-        resp = pm_guarded_client.get(
-            "/api/auth/_guard-demo", cookies={"access_token": token}
-        )
-        assert resp.status_code == 200
-        assert resp.json() == {"ok": True}
-
-    def test_operations_gets_403_on_pm_only_route(self, pm_guarded_client):
-        """DoD 04: route guarded trả 403 với role sai."""
-        login = _login(pm_guarded_client, OPS_EMAIL, TEST_PASSWORDS["operations"])
-        token = login.json()["access_token"]
-        resp = pm_guarded_client.get(
-            "/api/auth/_guard-demo", cookies={"access_token": token}
-        )
-        assert resp.status_code == 403
-
-    def test_anonymous_gets_401_not_403(self, pm_guarded_client):
-        resp = pm_guarded_client.get("/api/auth/_guard-demo")
-        assert resp.status_code == 401

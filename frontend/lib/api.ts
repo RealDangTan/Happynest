@@ -33,8 +33,28 @@ export class ApiError extends Error {
   }
 }
 
+let sessionExpiring = false;
+
+async function expireSession(): Promise<void> {
+  if (sessionExpiring) return;
+  sessionExpiring = true;
+  try {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  } catch {
+    /* vẫn chuyển về /login kể cả khi logout lỗi */
+  }
+  if (typeof window === "undefined") return;
+  window.location.replace("/login");
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, { credentials: "include", ...init });
-  if (!res.ok) throw await ApiError.from(res);
+  if (!res.ok) {
+    // 401 = cookie còn nhưng JWT hết hạn/không hợp lệ — dọn session và đá về /login
+    if (res.status === 401 && path !== "/api/auth/logout") {
+      void expireSession();
+    }
+    throw await ApiError.from(res);
+  }
   return (await res.json()) as T;
 }

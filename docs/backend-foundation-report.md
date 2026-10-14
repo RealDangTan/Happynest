@@ -1,5 +1,7 @@
 # Backend Foundation — Kết quả xây dựng hệ thống
 
+> Báo cáo Backend Foundation; hợp đồng triển khai hiện hành nằm trong [API checklist](api-checklist.md).
+
 > Sweep Definition of Done (execute-plan §9) thực hiện **2026-08-25** trên máy dev thật
 > (Windows 11, Python 3.12 + uv, Supabase PostgreSQL ap-southeast-2, không Docker).
 > Tư liệu chương "kết quả xây dựng hệ thống" của khóa luận.
@@ -9,7 +11,7 @@
 | # | Điều kiện | Kết quả | Bằng chứng |
 |---|---|---|---|
 | 1 | Fresh-machine path: Supabase → `uv sync` → `.env` → `alembic upgrade head` → seed → uvicorn green | ✅ | Chuỗi lệnh chạy lại trọn vẹn 2026-08-25: `uv sync` 149 packages; `alembic current` → `0004 (head)`; `seed_users.py` idempotent upsert; `GET /api/health` → `{"status":"ok","db":"ok","pii_mode":"full","llm_model":"gemini-3-flash","embedding_model":"text-embedding-3-small"}` |
-| 2 | Login cả 2 role; role sai bị 403 | ✅ | curl live: PM + operations login 200 nhận JWT; vô danh POST `/api/feedbacks` → 401. Case 403 (role sai trên route pm-only): integration test `test_auth.py::TestRoleGuard` xanh — API production không có route pm-only thật nên 403 được tái hiện qua guard-demo route mount tạm (thiết kế từ Phase 04) |
+| 2 | Đăng nhập và phiên xác thực | ✅ | Đăng nhập nhận JWT; vô danh POST `/api/feedbacks` → 401. Hợp đồng phiên dùng cookie httpOnly hoặc Bearer. |
 | 3 | Import CSV 20 rows mixed VN-EN (fake PII) | ✅ | curl live `POST /api/feedbacks/import-csv` với fixture 20 dòng → `{"imported":20,"failed":0,"errors":[]}`; dấu tiếng Việt nguyên vẹn sau UTF-8/BOM decode |
 | 4 | raw ≠ sanitized; `pii_entities` có; sanitized mặc định, raw cần flag | ✅ | curl live cùng row: mặc định response KHÔNG chứa `raw_content`, sanitized hiển thị `Anh <PERSON> - SĐT <PHONE_NUMBER>…`; `?include_raw=true` mới trả raw. DB: `pii_entities = [{type:"PERSON",start,end,score}, {type:"VN_PHONE",…}]` — metadata thuần, không text |
 | 5 | 1 run đầy đủ trên 20 rows: labels + severity + confidence + review flag + embeddings(model+dim); crash→resume không trùng | ✅ | **Run thật** `9c6687bc`: `completed 22/22` (~4 phút 26 giây, error=null) — 22/22 có categories mixed VN-EN, severity/confidence đầy đủ, 4 row `requires_human_review=true` (mệnh đề pii_detected của công thức HITL); DB: 22 embedding `(text-embedding-3-small, dim 1536)`. Crash→resume: test idempotency Phase 09 — crash tại item 5 → run failed/4 processed → resume CÙNG run → completed 10/10, tổng classify success ĐÚNG 10 (không phải 14) |

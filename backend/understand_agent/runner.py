@@ -15,6 +15,7 @@ from typing import Any
 from sqlalchemy import select
 
 from app.core.config import get_settings
+from app.core.observability import observe_pipeline
 from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
 from app.models.enums import RunStatus
@@ -45,6 +46,7 @@ def start_understand_run(
         llm_model=settings.LLM_MODEL,
         prompt_version="understand-v1",
         embedding_model=settings.EMBEDDING_MODEL,
+        product_id=product_id,  # isolation 0018 — route scope theo owner
         total_count=1,  # 1 investigation per run
     )
     db.add(run)
@@ -115,6 +117,7 @@ def _thread_config(run_id: uuid.UUID) -> dict:
     return {"configurable": {"thread_id": f"understand-{run_id}"}}
 
 
+@observe_pipeline("understand")
 def _run_graph(start_payload: dict | None, run_id: uuid.UUID, product_id: uuid.UUID) -> dict:
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
     from langgraph.types import Command
@@ -158,6 +161,7 @@ def submit_or_start(
     return _run_graph(start_payload, run_id, product_id)
 
 
+@observe_pipeline("understand")
 def resume_with_decision(run_id: uuid.UUID, payload: dict) -> dict:
     """Gate #2 resume — classify thread phase (start/resume/continue/completed).
 

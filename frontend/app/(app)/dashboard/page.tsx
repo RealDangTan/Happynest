@@ -8,15 +8,10 @@ import { PageHeader } from "@/components/page-header"
 import type { EmergingClusterItem } from "@/lib/types"
 import { ReportTiles } from "@/components/report-tiles"
 import { SeverityBars } from "@/components/severity-bars"
-import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-
-const ROLE_LABEL = {
-  pm: "Quản trị sản phẩm",
-  operations: "Vận hành",
-} as const
 
 /** ≤3 cụm đang nổi — rỗng thì ẩn khối (không mời đọc danh sách trống). */
 function EmergingMini({ items }: { items: EmergingClusterItem[] }) {
@@ -57,11 +52,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={`Xin chào${me.data ? `, ${me.data.email}` : ""}`}
-        actions={
-          me.data ? (
-            <Badge variant="secondary">{ROLE_LABEL[me.data.role]}</Badge>
-          ) : undefined
-        }
+        documentTitle="Tổng quan"
       />
 
       <FirstRunGuide />
@@ -92,17 +83,21 @@ export default function DashboardPage() {
           <Skeleton className="h-64 w-full" />
         </>
       ) : summary.isError ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-          Could not load the summary — {summary.error.message}
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2 block"
-            onClick={() => void summary.refetch()}
-          >
-            Retry
-          </Button>
-        </div>
+        <Alert variant="destructive">
+          <AlertTitle>Không tải được tổng quan</AlertTitle>
+          <AlertDescription className="flex flex-col gap-3">
+            <span>{summary.error.message}</span>
+            <div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void summary.refetch()}
+              >
+                Thử lại
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
       ) : (
         <>
           <ReportTiles totals={summary.data.totals} />

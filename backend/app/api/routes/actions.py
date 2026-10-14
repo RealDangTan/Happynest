@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, require_role
+from app.api.deps import get_current_user, get_db, product_or_404
 from app.models.action import Action
 from app.models.enums import BusinessFunction
 from app.models.insight import Insight
@@ -29,14 +29,16 @@ from app.services import presidio_service
 router = APIRouter(
     prefix="/api",
     tags=["actions"],
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
 
 
 def _load_insight(db: Session, insight_id: uuid.UUID) -> Insight:
+    """Load an existing insight; missing rows return 404."""
     insight = db.get(Insight, insight_id)
     if insight is None:
         raise HTTPException(status_code=404, detail="Insight không tồn tại.")
+    product_or_404(db, insight.product_id)
     return insight
 
 
@@ -55,7 +57,8 @@ def _matrix(items: list[Action]) -> dict[str, list[str]]:
 
 @router.post("/insights/{insight_id}/actions/generate")
 def generate_actions(
-    insight_id: uuid.UUID, db: Session = Depends(get_db)
+    insight_id: uuid.UUID,
+    db: Session = Depends(get_db),
 ) -> ActionGenerateOut:
     """Sinh action portfolio từ insight ĐÃ DUYỆT — 409 nếu insight pending/rejected."""
     insight = _load_insight(db, insight_id)
@@ -74,7 +77,8 @@ def generate_actions(
 
 @router.get("/insights/{insight_id}/actions")
 def list_actions(
-    insight_id: uuid.UUID, db: Session = Depends(get_db)
+    insight_id: uuid.UUID,
+    db: Session = Depends(get_db),
 ) -> ActionsListOut:
     _load_insight(db, insight_id)
     items = db.scalars(
@@ -90,7 +94,9 @@ def list_actions(
 
 @router.post("/insights/{insight_id}/actions", status_code=status.HTTP_201_CREATED)
 def add_human_action(
-    insight_id: uuid.UUID, body: HumanActionIn, db: Session = Depends(get_db)
+    insight_id: uuid.UUID,
+    body: HumanActionIn,
+    db: Session = Depends(get_db),
 ) -> ActionOut:
     """Human tự thêm action — priority tính bằng cùng công thức deterministic."""
     _load_insight(db, insight_id)
@@ -124,6 +130,8 @@ def update_action(
     action = db.get(Action, action_id)
     if action is None:
         raise HTTPException(status_code=404, detail="Action không tồn tại.")
+    insight = db.get(Insight, action.insight_id)
+    product_or_404(db, insight.product_id)
 
     touched_scores = False
     if body.impact is not None:

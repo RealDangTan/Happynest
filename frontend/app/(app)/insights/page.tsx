@@ -1,29 +1,24 @@
-"use client";
-import { CircleHelp } from "lucide-react";
-import { useInsights } from "@/hooks/use-insights";
-import type { InsightItem } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
-import { AiBadge } from "@/components/ai/ai-badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+"use client"
+import { CircleHelp } from "lucide-react"
+import { useInsights } from "@/hooks/use-insights"
+import type { InsightItem } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
+import { AiBadge } from "@/components/ai/ai-badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@/components/ui/empty"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/page-header";
+} from "@/components/ui/popover"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PageHeader } from "@/components/page-header"
 
 const DICTIONARY: [string, string][] = [
   [
@@ -34,7 +29,7 @@ const DICTIONARY: [string, string][] = [
     "Bằng chứng",
     "Kết quả tool phân tích được ghi lại từng bước — insight phải truy ngược được về bằng chứng",
   ],
-];
+]
 
 const STATUS_LABEL: Record<InsightItem["status"], string> = {
   pending: "Chờ duyệt",
@@ -42,7 +37,7 @@ const STATUS_LABEL: Record<InsightItem["status"], string> = {
   edited: "Đã sửa",
   rejected: "Đã loại",
   investigating: "Đang điều tra thêm",
-};
+}
 
 function DictionaryPopover() {
   return (
@@ -64,7 +59,7 @@ function DictionaryPopover() {
         </dl>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 function InsightCard({ insight }: { insight: InsightItem }) {
@@ -75,7 +70,9 @@ function InsightCard({ insight }: { insight: InsightItem }) {
           <CardTitle className="text-base leading-snug">
             {insight.title}
           </CardTitle>
-          <Badge variant={insight.status === "pending" ? "secondary" : "outline"}>
+          <Badge
+            variant={insight.status === "pending" ? "secondary" : "outline"}
+          >
             {STATUS_LABEL[insight.status]}
           </Badge>
           <Badge variant="outline">
@@ -128,11 +125,11 @@ function InsightCard({ insight }: { insight: InsightItem }) {
         ) : null}
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export default function InsightsPage() {
-  const insights = useInsights();
+  const insights = useInsights()
 
   return (
     <div className="flex flex-col gap-6">
@@ -174,5 +171,5 @@ export default function InsightsPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

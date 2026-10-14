@@ -261,7 +261,7 @@ Hóa ra phần lớn feedback là:
 
 > “I can't login with Google.”
 
-Nhưng tất cả đến từ cùng một enterprise customer vừa tắt Google OAuth trong tenant của họ.
+Nhưng tất cả đến từ cùng một enterprise customer vừa tắt Google OAuth trong môi trường của họ.
 
 Đây không phải product-wide outage.
 

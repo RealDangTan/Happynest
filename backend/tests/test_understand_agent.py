@@ -25,7 +25,7 @@ from app.analytics.tools import TOOLS
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import RunStatus, UserRole
+from app.models.enums import RunStatus
 from app.models.evidence import Evidence
 from app.models.feedback import Feedback
 from app.models.insight import Insight
@@ -157,7 +157,7 @@ def u_product():
 def _login(client: TestClient) -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[UserRole.pm], "password": TEST_PASSWORDS[UserRole.pm]},
+        data={"username": SEED_EMAILS["primary"], "password": TEST_PASSWORDS["primary"]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}

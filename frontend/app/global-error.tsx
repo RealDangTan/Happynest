@@ -1,23 +1,23 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
+import { useEffect } from "react"
 
 /** Prod error surface: the default Next error page hides the message — show it. */
 export default function GlobalError({
   error,
   reset,
 }: {
-  error: Error & { digest?: string };
-  reset: () => void;
+  error: Error & { digest?: string }
+  reset: () => void
 }) {
   useEffect(() => {
-    console.error("global-error:", error);
-  }, [error]);
+    console.error("global-error:", error)
+  }, [error])
 
   return (
     <html lang="en">
       <body className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="max-w-md space-y-3 text-center">
+        <div className="flex max-w-md flex-col gap-3 text-center">
           <h1 className="font-heading text-xl">This page couldn&apos;t load</h1>
           <p className="font-mono text-sm text-destructive">{error.message}</p>
           {error.digest ? (
@@ -42,5 +42,5 @@ export default function GlobalError({
         </div>
       </body>
     </html>
-  );
+  )
 }

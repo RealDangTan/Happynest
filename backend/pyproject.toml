@@ -8,6 +8,8 @@ dependencies = [
     "fastapi",
     "uvicorn>=0.30",
     "python-multipart",
+    # Native Prometheus instrumentation (decision 2026-10-14).
+    "prometheus-client==0.26.0",
     # --- DB / pgvector (Supabase session pooler, amendment v1.1) ---
     "sqlalchemy>=2",
     "alembic",

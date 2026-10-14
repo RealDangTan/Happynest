@@ -19,7 +19,7 @@
 - DoD "không ANN index": `pg_indexes WHERE tablename='feedbacks'` → chỉ `pk_feedbacks`. Leftover test rows = 0 (cleanup fixture chạy sạch).
 
 ## Not done / gaps
-- `/similar` CHƯA có guard role — deps auth đã sẵn sàng (phase 04); phase 05 wire auth cho cả router feedback khi mở rộng CRUD.
+- `/similar` CHƯA nối xác thực — deps auth đã sẵn sàng (phase 04); phase 05 wire auth cho cả router feedback khi mở rộng CRUD.
 - Retry test không viết (timing flaky) — cấu hình nằm lộ trong embedder.py, đã chứng minh bằng smoke thật ở trên.
 
 ## Blocked / risks
@@ -27,6 +27,6 @@
 - SECRET_KEY trong .env chỉ 28 bytes (<32 khuyến nghị RFC 7518 cho HS256) — warning từ PyJWT trong lúc test auth. Nên regenerate 32+ bytes trước deploy.
 
 ## Next steps
-1. Phase 05 (ingestion): mở rộng `routes/feedback.py` hiện có (đừng viết lại — đọc docstring scaffold đầu file), thêm CRUD + wire `require_role("pm","operations")`.
+1. Phase 05 (ingestion): mở rộng `routes/feedback.py` hiện có (đừng viết lại — đọc docstring scaffold đầu file), thêm CRUD + wire `get_current_user`.
 2. Phase 06 (Presidio): lifespan singleton tại main.py dòng neo sẵn.
 3. Phase 09 sẽ gọi `store_embedding(session, feedback, vec)` sau classify — đừng gán cột embedding tay.

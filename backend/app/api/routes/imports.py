@@ -23,7 +23,11 @@ from fastapi import (
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, require_role
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    product_or_404,
+)
 from app.models.analysis_run import AnalysisRun
 from app.models.evidence import Evidence
 from app.models.feedback import Feedback
@@ -50,14 +54,28 @@ from app.services.import_service import (
 router = APIRouter(
     prefix="/api/imports",
     tags=["imports"],
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
-
-# Destructive ops siết thêm: chỉ pm.
-_pm_only = [Depends(require_role("pm"))]
 
 # Import đang có job nền chạy → cấm xoá (đợi hoàn tất hoặc cancel trước).
 _BUSY_STATUSES = {ImportStatus.mapping_generating, ImportStatus.importing}
+
+
+def _get_import_or_404(
+    session: Session,
+    import_id: uuid.UUID,
+    *,
+    with_for_update: bool = False,
+) -> Import:
+    """Load an existing import; missing rows return 404."""
+    stmt = select(Import).where(Import.id == import_id)
+    if with_for_update:
+        stmt = stmt.with_for_update()
+    import_row = session.scalar(stmt)
+    if import_row is None:
+        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    product_or_404(session, import_row.product_id)
+    return import_row
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -79,6 +97,8 @@ def create_import(
             product_id = get_default_product(session).id
         except LookupError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    else:
+        product_or_404(session, product_id)
 
     raw = file.file.read()
     try:
@@ -111,6 +131,7 @@ def list_imports(
 ) -> ImportListOut:
     conditions = []
     if product_id is not None:
+        product_or_404(session, product_id)
         conditions.append(Import.product_id == product_id)
     if statuses:
         conditions.append(Import.status.in_(statuses))
@@ -149,9 +170,7 @@ def get_import_preview(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
 ) -> ImportPreviewOut:
-    import_row = session.get(Import, import_id)
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    import_row = _get_import_or_404(session, import_id)
     return ImportPreviewOut(
         id=import_row.id,
         original_filename=import_row.original_filename,
@@ -161,21 +180,21 @@ def get_import_preview(
 
 
 @router.get("/{import_id}")
-def get_import(import_id: uuid.UUID, session: Session = Depends(get_db)) -> ImportOut:
-    import_row = session.get(Import, import_id)
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+def get_import(
+    import_id: uuid.UUID,
+    session: Session = Depends(get_db),
+) -> ImportOut:
+    import_row = _get_import_or_404(session, import_id)
     return ImportOut.model_validate(import_row)
 
 
 @router.get("/{import_id}/mapping")
 def get_import_mapping(
-    import_id: uuid.UUID, session: Session = Depends(get_db)
+    import_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> MappingProposalOut:
     """Proposal mapping của import (Gate #1 input)."""
-    import_row = session.get(Import, import_id)
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    import_row = _get_import_or_404(session, import_id)
     try:
         return get_proposal(import_row)
     except ImportStateError as exc:
@@ -189,11 +208,9 @@ def propose_import_mapping(
     session: Session = Depends(get_db),
 ) -> dict:
     """Explicit paid gate. A row lock prevents duplicate provider jobs."""
-    import_row = session.scalar(
-        select(Import).where(Import.id == import_id).with_for_update()
+    import_row = _get_import_or_404(
+        session, import_id, with_for_update=True
     )
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
     try:
         import_service.begin_mapping_proposal(session, import_row)
     except ValueError as exc:
@@ -210,11 +227,9 @@ def cancel_import(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
 ) -> ImportOut:
-    import_row = session.scalar(
-        select(Import).where(Import.id == import_id).with_for_update()
+    import_row = _get_import_or_404(
+        session, import_id, with_for_update=True
     )
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
     try:
         import_service.cancel_import_file(import_row)
     except ValueError as exc:
@@ -239,9 +254,7 @@ def decide_import_mapping(
     BackgroundTasks; FE poll `GET /api/imports/{id}` tới status imported/failed
     rồi đọc `report`. 409 khi import không ở mapping_review; 422 decision sai.
     """
-    import_row = session.get(Import, import_id)
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    import_row = _get_import_or_404(session, import_id)
     try:
         final_map, meta_fields = begin_mapping_decision(session, import_row, body.decisions)
     except ImportStateError as exc:
@@ -276,17 +289,15 @@ def decide_import_mapping(
 @router.delete(
     "/{import_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=_pm_only,
 )
 def delete_import(
-    import_id: uuid.UUID, session: Session = Depends(get_db)
+    import_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> None:
     """Hard delete cả lô import: feedback + analysis_runs (+ evidence,
     llm_call_logs, insights tham chiếu run) — db nhẹ thật sau import nhầm.
     409 khi import đang có job nền chạy."""
-    import_row = session.get(Import, import_id)
-    if import_row is None:
-        raise HTTPException(status_code=404, detail="Import không tồn tại.")
+    import_row = _get_import_or_404(session, import_id)
     if import_row.status in _BUSY_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

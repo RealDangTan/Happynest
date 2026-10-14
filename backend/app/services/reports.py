@@ -62,16 +62,38 @@ _AGG_SQL = text(f"""
 """)
 
 
-def build_summary(db: Session, days: int, now: datetime) -> dict:
+def build_summary(db: Session, days: int, now: datetime, product_ids=None) -> dict:
     """Aggregate C4 field-by-field trên cửa sổ event-time. Không LLM.
 
     Số round-trip được siết tối đa (pooler Supabase có RTT đáng kể):
     totals + 2 bộ key severity/sentiment trong MỘT select FILTER; query
     samples chỉ chạy khi emerging khác rỗng.
+    `product_ids` (optional business filter): chỉ aggregate feedback thuộc các product
+    này; None = toàn bộ dữ liệu dùng chung.
     """
     cut = now - timedelta(days=days)
+    params: dict = {"cut": cut}
 
-    row = db.execute(_AGG_SQL, {"cut": cut}).one()
+    agg_sql = _AGG_SQL
+    top_sql = _TOP_CATEGORIES_SQL
+    if product_ids is not None:
+        params["pids"] = list(product_ids)
+        # Chèn đúng vào WHERE (top-categories có GROUP BY/LIMIT sau WHERE —
+        # append cuối string sẽ phá query).
+        agg_sql = text(
+            str(_AGG_SQL).replace(
+                "WHERE f.occurred_at >= :cut",
+                "WHERE f.occurred_at >= :cut AND f.product_id = ANY(:pids)",
+            )
+        )
+        top_sql = text(
+            str(_TOP_CATEGORIES_SQL).replace(
+                "WHERE f.occurred_at >= :cut",
+                "WHERE f.occurred_at >= :cut AND f.product_id = ANY(:pids)",
+            )
+        )
+
+    row = db.execute(agg_sql, params).one()
     total, pii = int(row[0]), int(row[1])
     n_sev = len(SEVERITY_KEYS)
     # FILTER so sánh string JSONB — NULL/không khớp → 0; key luôn đủ theo enum
@@ -80,22 +102,36 @@ def build_summary(db: Session, days: int, now: datetime) -> dict:
 
     top_categories = [
         {"category": r.category, "count": r.count}
-        for r in db.execute(_TOP_CATEGORIES_SQL, {"cut": cut, "lim": _TOP_CATEGORIES_LIMIT})
+        for r in db.execute(top_sql, {**params, "lim": _TOP_CATEGORIES_LIMIT})
     ]
 
+    emerging_conditions = [
+        Cluster.is_emerging.is_(True) | Cluster.is_spike.is_(True)
+    ]
+    if product_ids is not None:
+        emerging_conditions.append(
+            Cluster.id.in_(
+                select(Feedback.cluster_id).where(
+                    Feedback.cluster_id.is_not(None),
+                    Feedback.product_id.in_(product_ids),
+                )
+            )
+        )
     emerging_rows = (
         db.execute(
             select(Cluster)
-            .where(
-                Cluster.is_emerging.is_(True) | Cluster.is_spike.is_(True)
-            )
+            .where(*emerging_conditions)
             .order_by(Cluster.suggested_priority.desc().nullslast())
             .limit(_EMERGING_LIMIT)
         )
         .scalars()
         .all()
     )
-    samples = sample_feedback_ids_by_cluster(db) if emerging_rows else {}
+    samples = (
+        sample_feedback_ids_by_cluster(db, product_ids=product_ids)
+        if emerging_rows
+        else {}
+    )
     emerging = [
         {
             "id": c.id,

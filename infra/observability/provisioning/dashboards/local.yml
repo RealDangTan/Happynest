@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: HappyNest operations
+    orgId: 1
+    folder: HappyNest
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: ${HAPPYNEST_DASHBOARD_DIR}

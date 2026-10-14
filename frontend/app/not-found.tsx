@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import "./landing/landing.css";
-import { silkscreen } from "./landing/fonts";
-import { BirdSvg, SignalField } from "./landing/motion";
+import type { Metadata } from "next"
+import Link from "next/link"
+import "./landing/landing.css"
+import { silkscreen } from "./landing/fonts"
+import { BirdSvg, SignalField } from "./landing/motion"
 
 export const metadata: Metadata = {
   title: "404 — Happynest",
-};
+}
 
 export default function NotFound() {
   return (
@@ -31,16 +31,30 @@ export default function NotFound() {
               className="mx-auto -mt-1"
             >
               <rect x="1" y="0" width="12" height="2" fill="var(--hn-olive)" />
-              <rect x="2" y="2" width="10" height="2" fill="var(--hn-olive)" opacity="0.7" />
-              <rect x="3" y="4" width="8" height="1" fill="var(--hn-olive)" opacity="0.4" />
+              <rect
+                x="2"
+                y="2"
+                width="10"
+                height="2"
+                fill="var(--hn-olive)"
+                opacity="0.7"
+              />
+              <rect
+                x="3"
+                y="4"
+                width="8"
+                height="1"
+                fill="var(--hn-olive)"
+                opacity="0.4"
+              />
             </svg>
           </div>
           <h1 className="hn-display mt-6 text-2xl font-semibold md:text-3xl">
             This branch has no nest yet.
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--hn-stone)]">
-            The page you&apos;re after drifted out of the canopy. The signal dots are
-            already searching for it.
+            The page you&apos;re after drifted out of the canopy. The signal
+            dots are already searching for it.
           </p>
           <Link href="/" className="hn-btn mt-8 inline-flex">
             Back to the nest
@@ -48,5 +62,5 @@ export default function NotFound() {
         </div>
       </main>
     </div>
-  );
+  )
 }

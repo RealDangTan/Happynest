@@ -95,7 +95,7 @@ def test_csv_three_gates_real_persistence_and_scoped_impact(tmp_path, monkeypatc
     # Third record deliberately fails date validation; error must not echo it.
     csv.write_text("message,date\nỨng dụng rất chậm,2026-09-01T00:00:00Z\nThe app is slow,2026-09-02T00:00:00Z\nInvalid date,test@example.com\n", encoding="utf-8")
     with SessionLocal() as db:
-        user = User(email=email, password_hash=hash_password("synthetic-test-password"), role="pm")
+        user = User(email=email, password_hash=hash_password("synthetic-test-password"))
         other_product = Product(name=f"terminal-other-{suffix}")
         db.add(user)
         db.add(other_product)

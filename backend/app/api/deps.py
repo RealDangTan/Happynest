@@ -1,4 +1,4 @@
-"""Dependencies dùng chung cho routes — Phase 04 hoàn thiện (04-auth-rbac.md §3.3).
+"""Shared database and authentication dependencies.
 
 Lịch sử file: Phase 08 (thực thi trước 04 theo quyết định owner — xem
 docs/decisions.md 2026-08-24) dựng scaffold với `get_db`; Phase 04 MỞ RỘNG
@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import decode_token
 from app.db.session import SessionLocal
+from app.models.product import Product
 from app.models.user import User
 
 COOKIE_NAME = "access_token"  # trùng field OAuth2 mặc định để Swagger Authorize khớp
@@ -67,20 +68,11 @@ def get_current_user(
     return user
 
 
-def require_role(*roles: str):
-    """Factory dependency: chặn role ngoài danh sách bằng 403.
 
-    Dùng: `Depends(require_role("pm", "operations"))`.
-    """
-
-    allowed = set(roles)
-
-    def checker(user: User = Depends(get_current_user)) -> User:
-        if user.role.value not in allowed:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role '{user.role.value}' không có quyền truy cập tài nguyên này.",
-            )
-        return user
-
-    return checker
+def product_or_404(session: Session, product_id: uuid.UUID) -> Product:
+    """Load an existing shared product; missing rows return 404."""
+    product = session.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Product không tồn tại.")
+    return product

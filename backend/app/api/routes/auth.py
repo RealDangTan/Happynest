@@ -1,8 +1,7 @@
-"""Auth routes — Phase 04 (docs/plans/04-auth-rbac.md §3.4) + P1.5 register/logout.
+"""Authentication routes: login, registration, logout, current identity.
 
 OAuth2 password flow do FastAPI sở hữu; JWT nằm trong cookie httpOnly
-SameSite=Lax. P1.5 / FE-08: thêm POST /register (role mặc định `operations`,
-đáp ứng roadmap delivery-execute-plan.md) và POST /logout (xoá cookie).
+SameSite=Lax. All authenticated accounts have the same access.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -17,7 +16,6 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.auth import RegisterIn, TokenOut, UserOut
 
@@ -51,7 +49,7 @@ def login_for_access_token(
         raise _CREDENTIALS_ERROR
 
     settings = get_settings()
-    token = create_access_token(sub=str(user.id), role=user.role.value)
+    token = create_access_token(sub=str(user.id))
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
@@ -60,7 +58,7 @@ def login_for_access_token(
         secure=(settings.APP_ENV == "prod"),
         path="/",
     )
-    logger.info("login ok role=%s", user.role.value)  # không log email/PII
+    logger.info("login ok")  # không log email/PII
     return TokenOut(access_token=token)
 
 
@@ -70,7 +68,7 @@ def login_for_access_token(
     status_code=status.HTTP_201_CREATED,
 )
 def register(payload: RegisterIn, db: Session = Depends(get_db)) -> UserOut:
-    """Đăng ký public — role LUÔN là `operations` (FE-08 / P1.5).
+    """Đăng ký tài khoản mới.
 
     Không set cookie ở đây: FE gọi lại /token ngay sau 201 để vào thẳng app.
     """
@@ -84,11 +82,10 @@ def register(payload: RegisterIn, db: Session = Depends(get_db)) -> UserOut:
     user = User(
         email=email,
         password_hash=hash_password(payload.password),
-        role=UserRole.operations,
     )
     db.add(user)
     db.commit()
-    logger.info("register ok role=operations")  # không log email/PII
+    logger.info("register ok")  # không log email/PII
     return UserOut.model_validate(user)
 
 

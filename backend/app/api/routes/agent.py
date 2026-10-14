@@ -14,7 +14,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, require_role
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    product_or_404,
+)
 from app.core.config import get_settings
 from app.models.analysis_run import AnalysisRun
 from app.models.evidence import Evidence
@@ -41,18 +45,17 @@ from understand_agent import runner as understand_runner
 router = APIRouter(
     prefix="/api",
     tags=["agent"],
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
-
-# Destructive ops siết thêm: chỉ pm.
-_pm_only = [Depends(require_role("pm"))]
 
 
 @router.post("/agent/runs", status_code=status.HTTP_200_OK)
 def create_agent_run(
-    body: AgentRunCreateIn, db: Session = Depends(get_db)
+    body: AgentRunCreateIn,
+    db: Session = Depends(get_db),
 ) -> AgentRunCreatedOut:
     """Trigger investigation — graph chạy nền, dừng ở Gate #2 interrupt."""
+    product_or_404(db, body.product_id)
     run = understand_runner.start_understand_run(
         db, body.product_id, body.question, body.trigger_type
     )
@@ -60,6 +63,7 @@ def create_agent_run(
 
 
 def _load_run(db: Session, run_id: uuid.UUID) -> AnalysisRun:
+    """Load an existing run, including legacy runs without product_id."""
     run = db.get(AnalysisRun, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Run không tồn tại.")
@@ -101,7 +105,10 @@ def _run_progress(db: Session, run: AnalysisRun) -> RunProgressOut | None:
 
 
 @router.get("/agent/runs/{run_id}")
-def get_agent_run(run_id: uuid.UUID, db: Session = Depends(get_db)) -> AgentRunStatusOut:
+def get_agent_run(
+    run_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> AgentRunStatusOut:
     run = _load_run(db, run_id)
     payload = understand_runner.get_run_snapshot(run_id)
     return AgentRunStatusOut(
@@ -118,7 +125,8 @@ def get_agent_run(run_id: uuid.UUID, db: Session = Depends(get_db)) -> AgentRunS
 
 @router.get("/agent/runs/{run_id}/trace")
 def get_agent_run_trace(
-    run_id: uuid.UUID, db: Session = Depends(get_db)
+    run_id: uuid.UUID,
+    db: Session = Depends(get_db),
 ) -> AgentTraceOut:
     """Trace metadata-only các LLM call của run (HAX G4/G16) — FE live trace.
 
@@ -201,9 +209,11 @@ def list_insights(
     ),
     db: Session = Depends(get_db),
 ) -> InsightsListOut:
-    """Insights shape mới; evidence_ids mở rộng thành statements (PII-safe)."""
+    """Insights shape mới; evidence_ids mở rộng thành statements (PII-safe).
+    Có thể lọc theo product; dữ liệu dùng chung cho các tài khoản."""
     conditions = []
     if product_id is not None:
+        product_or_404(db, product_id)
         conditions.append(Insight.product_id == product_id)
     if status_filter is not None:
         conditions.append(Insight.status == status_filter)
@@ -249,7 +259,7 @@ def list_insights(
     return InsightsListOut(items=items, total=int(total or 0))
 
 
-@router.patch("/insights/{insight_id}", dependencies=_pm_only)
+@router.patch("/insights/{insight_id}")
 def update_insight(
     insight_id: uuid.UUID,
     body: InsightUpdateIn,
@@ -261,6 +271,7 @@ def update_insight(
     insight = db.get(Insight, insight_id)
     if insight is None:
         raise HTTPException(status_code=404, detail="Insight không tồn tại.")
+    product_or_404(db, insight.product_id)
 
     original = {"title": insight.title, "finding": insight.finding}
     edited: dict[str, str] = {}
@@ -294,15 +305,16 @@ def update_insight(
 @router.delete(
     "/insights/{insight_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=_pm_only,
 )
 def delete_insight(
-    insight_id: uuid.UUID, db: Session = Depends(get_db)
+    insight_id: uuid.UUID,
+    db: Session = Depends(get_db),
 ) -> None:
     """Hard delete insight sai/hallucinate — actions, insight_reviews,
     impact_checks cascade sẵn ở DB (ondelete=CASCADE)."""
     insight = db.get(Insight, insight_id)
     if insight is None:
         raise HTTPException(status_code=404, detail="Insight không tồn tại.")
+    product_or_404(db, insight.product_id)
     db.delete(insight)
     db.commit()

@@ -1,8 +1,8 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+"use client"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -10,40 +10,35 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { Feedback } from "@/lib/types";
-import { CsvImportWizard } from "./csv-import-wizard";
-import { useActivity } from "@/components/activity/activity-provider";
+} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
+import { apiFetch, ApiError } from "@/lib/api"
+import type { Feedback } from "@/lib/types"
+import { CsvImportWizard } from "./csv-import-wizard"
+import { useActivity } from "@/components/activity/activity-provider"
 
 export function DataEntryDialog() {
-  const router = useRouter();
-  const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const activity = useActivity();
+  const router = useRouter()
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const activity = useActivity()
 
   function refreshList() {
-    void qc.invalidateQueries({ queryKey: ["feedbacks"] });
-    router.refresh();
+    void qc.invalidateQueries({ queryKey: ["feedbacks"] })
+    router.refresh()
   }
 
   const createOne = useMutation({
     mutationFn: (body: {
-      source: string;
-      content: string;
-      source_record_id?: string;
-      occurred_at?: string;
+      source: string
+      content: string
+      source_record_id?: string
+      occurred_at?: string
     }) =>
       apiFetch<Feedback>("/api/feedbacks", {
         method: "POST",
@@ -51,12 +46,13 @@ export function DataEntryDialog() {
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      toast.success("Đã thêm phản hồi.");
-      setOpen(false);
-      refreshList();
+      toast.success("Đã thêm phản hồi.")
+      setOpen(false)
+      refreshList()
     },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Lỗi không rõ"),
-  });
+    onError: (e) =>
+      toast.error(e instanceof ApiError ? e.message : "Lỗi không rõ"),
+  })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -81,13 +77,13 @@ export function DataEntryDialog() {
             <form
               className="flex flex-col gap-4"
               onSubmit={(e) => {
-                e.preventDefault();
-                const f = new FormData(e.currentTarget);
-                const content = String(f.get("content") ?? "").trim();
-                const occurred = String(f.get("occurred_at") ?? "").trim();
+                e.preventDefault()
+                const f = new FormData(e.currentTarget)
+                const content = String(f.get("content") ?? "").trim()
+                const occurred = String(f.get("occurred_at") ?? "").trim()
                 if (!content) {
-                  toast.error("Nội dung không được rỗng.");
-                  return;
+                  toast.error("Nội dung không được rỗng.")
+                  return
                 }
                 createOne.mutate({
                   source: String(f.get("source") ?? "").trim() || "manual",
@@ -95,7 +91,7 @@ export function DataEntryDialog() {
                   source_record_id:
                     String(f.get("source_record_id") ?? "").trim() || undefined,
                   occurred_at: occurred || undefined,
-                });
+                })
               }}
             >
               <FieldGroup>
@@ -134,21 +130,25 @@ export function DataEntryDialog() {
                 </Field>
               </FieldGroup>
               <Button type="submit" disabled={createOne.isPending}>
-                {createOne.isPending ? <Spinner data-icon="inline-start" /> : null}
+                {createOne.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : null}
                 Lưu
               </Button>
             </form>
           </TabsContent>
 
           <TabsContent value="csv">
-            <CsvImportWizard onProfiled={(importId) => {
-              setOpen(false);
-              void qc.invalidateQueries({ queryKey: ["imports"] });
-              activity.openImport(importId);
-            }} />
+            <CsvImportWizard
+              onProfiled={(importId) => {
+                setOpen(false)
+                void qc.invalidateQueries({ queryKey: ["imports"] })
+                activity.openImport(importId)
+              }}
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

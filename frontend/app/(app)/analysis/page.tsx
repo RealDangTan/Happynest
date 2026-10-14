@@ -1,19 +1,16 @@
-"use client";
-import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+"use client"
+import { Suspense, useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import {
   useRunProgress,
   useRunResults,
   RUN_RESULTS_PAGE_SIZE,
-} from "@/hooks/use-analysis";
-import type { Feedback } from "@/lib/types";
-import {
-  SENTIMENT_LABEL,
-  SEVERITY_LABEL,
-} from "@/lib/labels";
-import { formatDate } from "@/lib/format";
+} from "@/hooks/use-analysis"
+import type { Feedback } from "@/lib/types"
+import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels"
+import { formatDate } from "@/lib/format"
 import {
   Table,
   TableBody,
@@ -21,118 +18,124 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/page-header";
-import { useActivity } from "@/components/activity/activity-provider";
+} from "@/components/ui/empty"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PageHeader } from "@/components/page-header"
+import { useActivity } from "@/components/activity/activity-provider"
 
 const STATUS_LABEL: Record<string, string> = {
   running: "Đang chạy",
   completed: "Hoàn tất",
   failed: "Thất bại",
-};
+}
 
 function RunResults({ runId }: { runId: string }) {
-  const [page, setPage] = useState(1);
-  const results = useRunResults(runId, page);
-  const total = results.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / RUN_RESULTS_PAGE_SIZE));
+  const [page, setPage] = useState(1)
+  const results = useRunResults(runId, page)
+  const total = results.data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / RUN_RESULTS_PAGE_SIZE))
 
   if (results.isPending)
     return (
-      <div className="flex flex-col gap-2">
+      <CardContent className="flex flex-col gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
-      </div>
-    );
+      </CardContent>
+    )
   if (results.isError)
     return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyTitle>Không tải được kết quả</EmptyTitle>
-          <EmptyDescription>{results.error.message}</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
+      <CardContent>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Không tải được kết quả</EmptyTitle>
+            <EmptyDescription>{results.error.message}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </CardContent>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[45%]">Nội dung</TableHead>
-            <TableHead>Nguồn</TableHead>
-            <TableHead>Mức độ</TableHead>
-            <TableHead>Cảm xúc</TableHead>
-            <TableHead>Confidence</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {results.data.items.map((fb: Feedback) => {
-            const ai = fb.ai_analysis;
-            return (
-              <TableRow key={fb.id} className="cursor-pointer">
-                <TableCell className="max-w-md">
-                  <Link href={`/feedbacks/${fb.id}`} className="block">
-                    <span className="line-clamp-2">
-                      {fb.feedback_text ?? "(trống)"}
-                    </span>
-                  </Link>
-                </TableCell>
-                <TableCell>{fb.source}</TableCell>
-                <TableCell>
-                  {ai?.severity ? (
-                    <Badge
-                      variant={
-                        ai.severity === "critical" || ai.severity === "high"
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {SEVERITY_LABEL[ai.severity]}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">…đang xử lý</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {ai?.sentiment ? (
-                    SENTIMENT_LABEL[ai.sentiment]
-                  ) : (
-                    <span className="text-muted-foreground">…đang xử lý</span>
-                  )}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {ai?.confidence != null
-                    ? `${Math.round(ai.confidence * 100)}%`
-                    : (
+    <>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[45%]">Nội dung</TableHead>
+              <TableHead>Nguồn</TableHead>
+              <TableHead>Mức độ</TableHead>
+              <TableHead>Cảm xúc</TableHead>
+              <TableHead>Confidence</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {results.data.items.map((fb: Feedback) => {
+              const ai = fb.ai_analysis
+              return (
+                <TableRow key={fb.id} className="cursor-pointer">
+                  <TableCell className="max-w-md">
+                    <Link href={`/feedbacks/${fb.id}`} className="block">
+                      <span className="line-clamp-2">
+                        {fb.feedback_text ?? "(trống)"}
+                      </span>
+                    </Link>
+                  </TableCell>
+                  <TableCell>{fb.source}</TableCell>
+                  <TableCell>
+                    {ai?.severity ? (
+                      <Badge
+                        variant={
+                          ai.severity === "critical" || ai.severity === "high"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
+                        {SEVERITY_LABEL[ai.severity]}
+                      </Badge>
+                    ) : (
                       <span className="text-muted-foreground">…đang xử lý</span>
                     )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-between">
+                  </TableCell>
+                  <TableCell>
+                    {ai?.sentiment ? (
+                      SENTIMENT_LABEL[ai.sentiment]
+                    ) : (
+                      <span className="text-muted-foreground">…đang xử lý</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {ai?.confidence != null ? (
+                      `${Math.round(ai.confidence * 100)}%`
+                    ) : (
+                      <span className="text-muted-foreground">…đang xử lý</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+      <CardFooter className="justify-between border-t">
         <span className="text-sm text-muted-foreground">
           {total} item · trang {page}/{totalPages}
         </span>
@@ -154,46 +157,48 @@ function RunResults({ runId }: { runId: string }) {
             Sau
           </Button>
         </div>
-      </div>
-    </div>
-  );
+      </CardFooter>
+    </>
+  )
 }
 
 function AnalysisInner() {
-  const router = useRouter();
-  const sp = useSearchParams();
-  const runId = sp.get("run");
-  const activity = useActivity();
-  const progress = useRunProgress(runId);
-  const [notified, setNotified] = useState<string | null>(null);
+  const router = useRouter()
+  const sp = useSearchParams()
+  const runId = sp.get("run")
+  const activity = useActivity()
+  const progress = useRunProgress(runId)
+  const [notified, setNotified] = useState<string | null>(null)
 
   // Toast tổng kết CHỈ 1 lần cho mỗi lần run đổi trạng thái kết thúc.
   useEffect(() => {
-    const d = progress.data;
-    if (!d || d.status === "running" || notified === d.id) return;
+    const d = progress.data
+    if (!d || d.status === "running" || notified === d.id) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot completion toast guard
-    setNotified(d.id);
+    setNotified(d.id)
     if (d.status === "completed") {
       toast.success("Phân loại hoàn tất", {
         description: `${d.processed_count}/${d.total_count} phản hồi đã có nhãn.`,
-      });
-      router.refresh();
+      })
+      router.refresh()
     }
-  }, [progress.data, notified, router]);
+  }, [progress.data, notified, router])
 
   const pct =
     progress.data && progress.data.total_count > 0
       ? Math.round(
-          (progress.data.processed_count / progress.data.total_count) * 100,
+          (progress.data.processed_count / progress.data.total_count) * 100
         )
-      : 0;
+      : 0
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Phân tích"
         description="Trang này giữ vai trò xem kết quả chi tiết — tạo run có scope và xem cost receipt trong Activity Center trên navbar."
-        actions={<Button onClick={activity.openQueue}>Mở Activity Center</Button>}
+        actions={
+          <Button onClick={activity.openQueue}>Mở Activity Center</Button>
+        }
       />
 
       {!runId ? (
@@ -229,27 +234,28 @@ function AnalysisInner() {
       {runId && progress.data ? (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <CardTitle>Tiến độ run</CardTitle>
-                <CardDescription>
-                  {progress.data.id.slice(0, 8)} · bắt đầu{" "}
-                  {formatDate(progress.data.started_at)}
-                </CardDescription>
-              </div>
+            <CardTitle>Tiến độ run</CardTitle>
+            <CardDescription>
+              {progress.data.id.slice(0, 8)} · bắt đầu{" "}
+              {formatDate(progress.data.started_at)}
+            </CardDescription>
+            <CardAction>
               <Badge
                 variant={
-                  progress.data.status === "failed" ? "destructive" : "secondary"
+                  progress.data.status === "failed"
+                    ? "destructive"
+                    : "secondary"
                 }
               >
                 {STATUS_LABEL[progress.data.status]}
               </Badge>
-            </div>
+            </CardAction>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Progress value={pct} />
             <p className="text-sm text-muted-foreground">
-              {progress.data.processed_count}/{progress.data.total_count} đã xử lý
+              {progress.data.processed_count}/{progress.data.total_count} đã xử
+              lý
             </p>
             {progress.data.status === "failed" ? (
               <Alert variant="destructive">
@@ -260,7 +266,15 @@ function AnalysisInner() {
                     tạo run mới — chỉ phần chưa xử lý được nhặt, không nhân đôi
                     kết quả.
                   </span>
-                  <div><Button size="sm" variant="outline" onClick={activity.openQueue}>Chọn lại scope trong Activity Center</Button></div>
+                  <div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={activity.openQueue}
+                    >
+                      Chọn lại scope trong Activity Center
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
             ) : null}
@@ -278,13 +292,19 @@ function AnalysisInner() {
       ) : null}
 
       {runId ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-lg">Kết quả của run</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Kết quả của run</CardTitle>
+            <CardDescription>
+              Nhãn do LLM gán cho từng phản hồi — bấm vào nội dung để mở chi
+              tiết.
+            </CardDescription>
+          </CardHeader>
           <RunResults runId={runId} />
-        </section>
+        </Card>
       ) : null}
     </div>
-  );
+  )
 }
 
 export default function AnalysisPage() {
@@ -292,5 +312,5 @@ export default function AnalysisPage() {
     <Suspense fallback={<Skeleton className="h-64 w-full" />}>
       <AnalysisInner />
     </Suspense>
-  );
+  )
 }

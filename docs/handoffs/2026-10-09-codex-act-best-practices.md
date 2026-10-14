@@ -35,7 +35,7 @@
 - Existing useInsights fetches globally; product-filtering that hook was outside this plan.
 
 ## Blocked / risks
-- No implementation blocker. See decisions 2026-10-09 for strict-schema and shared-DB KPI test-isolation fixes.
+- No implementation blocker. See decisions 2026-10-09 for strict-schema and shared-DB KPI fixture-scope fixes.
 - Tests need elevated access to Stanza/Supabase here; use UV_CACHE_DIR under TEMP and STANZA_RESOURCES_DIR=D:\stanza_resources. No secrets in docs.
 - Retained demo: ACT best-practices demo e7c021eb (e7c021eb-e5df-42b5-bc7a-a08ecef55e5a), artificial records only.
 - Local preview left running: FastAPI :8000 (exec session 49322, restarted with final code), Next production :3000 (session 30308). Browser deliverable opens Matrix correction report; frontend edits need rebuild/restart.

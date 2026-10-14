@@ -9,7 +9,7 @@
 
 ## Done
 
-- UF-01-information-architecture.md — sitemap khớp thực tế `frontend/app/`, ma trận role×screen, ánh xạ F1–F7→screen, quy ước nav + URL params (= tên query API), inventory trạng thái + map badge ngữ nghĩa.
+- UF-01-information-architecture.md — sitemap khớp thực tế `frontend/app/`, danh mục màn hình, ánh xạ F1–F7→screen, quy ước nav + URL params (= tên query API), inventory trạng thái + map badge ngữ nghĩa.
 - UF-02-specs-auth-feedback.md — login, shell, feedback list, detail+similar, dialog nhập tay + CSV; verify code BE (`routes/feedback.py`): không filter `source`, sort cứng created_at DESC, `category` = containment chính xác JSONB.
 - UF-03-spec-analysis-runs.md — trigger + confirm, polling 4s chỉ khi running, run_id trên URL (`?run=`), results table; verify `routes/analysis.py` + `schemas/analysis.py`.
 - UF-04-spec-hitl-review.md — queue = filter pending, approve/edit/reject tại detail, correction dialog; verify `schemas/hitl.py` (ReviewIn có `reason?`; CorrectionIn null = không đổi → không xoá nhãn về null được).

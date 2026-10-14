@@ -57,6 +57,11 @@ def _log_call(
 ) -> None:
     """Ghi llm_call_logs (call_type=embed) bằng session ngắn hạn riêng —
     không ràng buộc transaction của caller. Lỗi logging KHÔNG được giết flow."""
+    from app.core.observability import telemetry
+
+    telemetry.record_llm(call_type="embed", latency_ms=latency_ms,
+                         prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
+                         error=bool(error))
     try:
         with _session_factory() as session:
             write_llm_call_log(

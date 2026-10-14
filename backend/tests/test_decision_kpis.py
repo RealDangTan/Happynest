@@ -16,7 +16,7 @@ from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models.action import Action
 from app.models.decision_log import DecisionLog
-from app.models.enums import BusinessFunction, UserRole
+from app.models.enums import BusinessFunction
 from app.models.feedback import Feedback
 from app.models.insight import Insight
 from app.models.product import Product
@@ -137,7 +137,7 @@ def kpi_env():
 def _login(client: TestClient) -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[UserRole.pm], "password": TEST_PASSWORDS[UserRole.pm]},
+        data={"username": SEED_EMAILS["primary"], "password": TEST_PASSWORDS["primary"]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}

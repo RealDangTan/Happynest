@@ -6,7 +6,7 @@ draft_kind, draft_status) — sentiment/severity/business labels giờ sống TR
 `feedback.ai_analysis` JSONB dưới dạng string. Các Python enum giữ lại làm
 validation giá trị khi ghi/đọc JSONB, KHÔNG còn cột PG enum tương ứng.
 
-Enum PG còn sống: user_role (0001), run_status + llm_call_type (0002),
+Enum PG còn sống: run_status + llm_call_type (0002),
 import_status_enum (0008). Đổi bộ giá trị phải ALTER TYPE ADD VALUE qua
 migration mới — không sửa tay.
 """
@@ -14,11 +14,6 @@ migration mới — không sửa tay.
 import enum
 
 from sqlalchemy import Enum as SaEnum
-
-
-class UserRole(str, enum.Enum):
-    pm = "pm"
-    operations = "operations"
 
 
 class AiIssue(str, enum.Enum):
@@ -160,7 +155,6 @@ def _pg(py_enum: type[enum.Enum], type_name: str) -> SaEnum:
     )
 
 
-USER_ROLE_ENUM = _pg(UserRole, "user_role")
 RUN_STATUS_ENUM = _pg(RunStatus, "run_status")
 LLM_CALL_TYPE_ENUM = _pg(LlmCallType, "llm_call_type")
 IMPORT_STATUS_ENUM = _pg(ImportStatus, "import_status_enum")

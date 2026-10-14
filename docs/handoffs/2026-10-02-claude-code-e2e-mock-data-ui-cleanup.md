@@ -62,7 +62,7 @@ break được, (4) scroll ngang chỉ nằm TRONG container bảng.
   formatRelative, reports: updateInsight, vault: useEffect, top-navbar: STAGES).
 - **Kiểm chứng**: script đo `documentElement.scrollWidth vs innerWidth` trên
   9 trang × 2 viewport (1280/390) — tất cả "X vs X" = 0 overflow. Screenshot:
-  docs/e2e-screenshots/fix-01…fix-07. Gates: typecheck ✓, eslint các file
+  docs/e2e-screenshots/. Gates: typecheck ✓, eslint các file
   sửa ✓ (0 problems), vitest 39/39 ✓.
 - Lưu ý dev: /vault từng 404 do Turbopack stale module graph sau khi edit —
   restart `npm run dev` là hết (không phải bug app).

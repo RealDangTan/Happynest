@@ -29,6 +29,14 @@ Thumbs.db
 backend/evidence-server-*.log
 backend/cookie.txt
 backend/storage/
+.tools/
+infra/observability/.runtime/
+# Local dev junk — never commit
+frontend/dev.*.log
+~$*
+~WRL*
+tmp/
+.zcodeignore
 
 # PII: survey responses tho (email/ten that) — KHONG BAO GIO commit (Hard Rule 2)
 docs/thesis/*Form Responses*.csv

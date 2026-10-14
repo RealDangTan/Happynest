@@ -25,7 +25,7 @@ export function useTaxonomy(productId: string | null) {
   });
 }
 
-/** GPT sinh proposal (pm-only, tốn LLM) — proposal STATELESS. */
+/** GPT sinh proposal (tốn LLM) — proposal STATELESS. */
 export function useGenerateProposal() {
   return useMutation({
     mutationFn: (body: TaxonomyGenerateRequest) =>
@@ -55,7 +55,7 @@ export function useApplyProposal(productId: string | null) {
   });
 }
 
-/** GPT đề xuất topic từ pool uncategorized (pm-only) — pool rỗng không tốn LLM. */
+/** GPT đề xuất topic từ pool uncategorized — pool rỗng không tốn LLM. */
 export function useRecommendTopics() {
   return useMutation({
     mutationFn: (body: { product_id: string; pool_limit?: number }) =>

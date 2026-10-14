@@ -17,7 +17,6 @@ from sqlalchemy import func, select
 
 from app.db.session import SessionLocal
 from app.models.cluster import Cluster
-from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from app.services.embedder import store_embedding
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
@@ -34,10 +33,10 @@ _SEED_SOURCE = "test-clusters-api"
 _DIM = 1536
 
 
-def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
+def _login(client: TestClient, account: str = "primary") -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[role], "password": TEST_PASSWORDS[role]},
+        data={"username": SEED_EMAILS[account], "password": TEST_PASSWORDS[account]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}

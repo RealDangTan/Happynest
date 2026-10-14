@@ -32,5 +32,5 @@
 
 ## Next steps
 1. Người dùng: reset DB password (xem risk ở trên), copy `.env` từ root vào `backend/.env` nếu bị mất lần nữa (file root `.env` hiện vẫn còn giữ nguyên).
-2. Phase 04 (auth + RBAC): docs/plans/04-auth-rbac.md — triển khai `core/security.py` (argon2 + JWT cookie), `api/deps.py`, routes auth, `scripts/seed_users.py`.
+2. Phase 04 (xác thực): docs/api-checklist.md — triển khai `core/security.py` (argon2 + JWT cookie), `api/deps.py`, routes auth, `scripts/seed_users.py`.
 3. Khi deploy VPS (nối thẳng không qua pooler): connect_args search_path sẽ áp dụng thật — rà lại entry "PgBouncer strips options" trước khi tin rằng nó vô hại vĩnh viễn.

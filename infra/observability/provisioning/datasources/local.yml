@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: HappyNest metrics
+    uid: happynest-metrics
+    type: prometheus
+    access: proxy
+    url: http://127.0.0.1:9090
+    isDefault: true
+    editable: false
+  - name: HappyNest logs
+    uid: happynest-logs
+    type: loki
+    access: proxy
+    url: http://127.0.0.1:3100
+    editable: false

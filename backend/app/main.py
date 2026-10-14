@@ -1,7 +1,7 @@
 """App factory FastAPI — skeleton Phase 03 (execute-plan §4).
 
 Phase sau cắm vào khung này:
-- Phase 04: routes auth + deps (get_current_user, require_role)
+- Phase 04: routes auth + deps (get_current_user)
 - Phase 05: routes feedback
 - Phase 06: lifespan khởi tạo Presidio analyzer singleton
 - Phase 07/08: LLM client, embedder; health mở rộng check DB + LLM mode
@@ -29,6 +29,7 @@ from app.api.routes import (
 )
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
+from app.core.observability import attach_observability
 from app.db.session import engine
 from app.services import graph_runtime, llm_client, presidio_service, tracing
 
@@ -83,7 +84,7 @@ def _enforce_secret_key(settings) -> None:
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    configure_logging()
+    configure_logging(log_dir=settings.OBSERVABILITY_LOG_DIR)
     _enforce_secret_key(settings)
 
     app = FastAPI(
@@ -92,6 +93,8 @@ def create_app() -> FastAPI:
         description="Backend foundation — khoa luan (phase skeleton)",
         lifespan=lifespan,
     )
+
+    attach_observability(app, settings)
 
     app.add_middleware(
         CORSMiddleware,
@@ -104,8 +107,9 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
         # ⚠️ PII rule: chỉ log method + path, KHÔNG log body/query của request.
-        logger.error("unhandled error on %s %s: %s", request.method, request.url.path, exc)
-        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+        logger.exception("Unhandled request error", extra={"event": "http_error", "request_id": getattr(request.state, "request_id", None)})
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"},
+                            headers={"X-Request-ID": getattr(request.state, "request_id", "")})
 
     @app.get("/api/health", tags=["health"])
     def health():

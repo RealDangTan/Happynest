@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import "./landing.css";
-import { lora, silkscreen } from "./fonts";
+import type { Metadata } from "next"
+import "./landing.css"
+import { lora, silkscreen } from "./fonts"
 import {
   BirdSvg,
   ConfidenceRing,
@@ -10,13 +10,13 @@ import {
   PublicFooter,
   Reveal,
   SignalField,
-} from "./motion";
+} from "./motion"
 
 export const metadata: Metadata = {
   title: "Happynest — Where feedback finds a home",
   description:
     "Happynest aggregates user feedback about AI products, classifies and clusters it into evidence-backed insights, and puts a human in the loop before anything becomes action.",
-};
+}
 
 function SteppedConnector({ delay }: { delay: string }) {
   return (
@@ -37,7 +37,7 @@ function SteppedConnector({ delay }: { delay: string }) {
         strokeDasharray="4 4"
       />
     </svg>
-  );
+  )
 }
 
 const PIPE_STEPS = [
@@ -46,7 +46,7 @@ const PIPE_STEPS = [
   { label: "Evidence", desc: "Every claim links back to its signals." },
   { label: "Human review", desc: "Nothing ships without a person's OK." },
   { label: "Action", desc: "Approved insights become work." },
-];
+]
 
 function Pipeline() {
   return (
@@ -72,11 +72,46 @@ function Pipeline() {
                   <div className="flex h-12 items-center">
                     {i === 0 && (
                       <div className="hn-cluster" aria-hidden>
-                        <i style={{ "--x": "2px", "--y": "30px" } as React.CSSProperties} />
-                        <i style={{ "--x": "40px", "--y": "6px" } as React.CSSProperties} />
-                        <i style={{ "--x": "36px", "--y": "38px" } as React.CSSProperties} />
-                        <i style={{ "--x": "6px", "--y": "8px" } as React.CSSProperties} />
-                        <i style={{ "--x": "24px", "--y": "20px" } as React.CSSProperties} />
+                        <i
+                          style={
+                            {
+                              "--x": "2px",
+                              "--y": "30px",
+                            } as React.CSSProperties
+                          }
+                        />
+                        <i
+                          style={
+                            {
+                              "--x": "40px",
+                              "--y": "6px",
+                            } as React.CSSProperties
+                          }
+                        />
+                        <i
+                          style={
+                            {
+                              "--x": "36px",
+                              "--y": "38px",
+                            } as React.CSSProperties
+                          }
+                        />
+                        <i
+                          style={
+                            {
+                              "--x": "6px",
+                              "--y": "8px",
+                            } as React.CSSProperties
+                          }
+                        />
+                        <i
+                          style={
+                            {
+                              "--x": "24px",
+                              "--y": "20px",
+                            } as React.CSSProperties
+                          }
+                        />
                       </div>
                     )}
                     {i === 1 && <ConfidenceRing value={87} size={48} />}
@@ -88,12 +123,22 @@ function Pipeline() {
                     {i === 3 && (
                       <div className="flex flex-col gap-1.5" aria-hidden>
                         <span className="hn-check">
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                          >
                             <path d="M2 6 L5 9 L10 3" strokeWidth="2" />
                           </svg>
                         </span>
                         <span className="hn-check">
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                          >
                             <path d="M2 6 L5 9 L10 3" strokeWidth="2" />
                           </svg>
                         </span>
@@ -103,10 +148,12 @@ function Pipeline() {
                       <span className="hn-stamp hn-pixel">APPROVED</span>
                     )}
                   </div>
-                  <p className="hn-pixel mt-4 text-[11px] uppercase tracking-widest text-[var(--hn-soft)]">
+                  <p className="hn-pixel mt-4 text-[11px] tracking-widest text-[var(--hn-soft)] uppercase">
                     {step.label}
                   </p>
-                  <p className="mt-1 text-sm text-[var(--hn-stone)]">{step.desc}</p>
+                  <p className="mt-1 text-sm text-[var(--hn-stone)]">
+                    {step.desc}
+                  </p>
                 </div>
               </li>
             ))}
@@ -114,7 +161,7 @@ function Pipeline() {
         </Reveal>
       </div>
     </section>
-  );
+  )
 }
 
 const MARQUEE_ROW_1 = [
@@ -126,7 +173,7 @@ const MARQUEE_ROW_1 = [
   { text: "muốn tích hợp Slack", tag: "Request" },
   { text: "response time is night and day", tag: "Praise" },
   { text: "biểu đồ bị sai số liệu tuần trước", tag: "Bug" },
-];
+]
 
 const MARQUEE_ROW_2 = [
   { text: "please add dark mode", tag: "Request" },
@@ -137,10 +184,16 @@ const MARQUEE_ROW_2 = [
   { text: "logo bị vỡ trên màn hình nhỏ", tag: "Bug" },
   { text: "integracja with Notion?", tag: "Request" },
   { text: "email thông báo trễ 2 tiếng", tag: "Bug" },
-];
+]
 
-function ChipRow({ items, reverse }: { items: typeof MARQUEE_ROW_1; reverse?: boolean }) {
-  const doubled = [...items, ...items];
+function ChipRow({
+  items,
+  reverse,
+}: {
+  items: typeof MARQUEE_ROW_1
+  reverse?: boolean
+}) {
+  const doubled = [...items, ...items]
   return (
     <div className={`hn-marquee-row ${reverse ? "hn-marquee-rev" : ""}`}>
       <div className="hn-marquee py-2">
@@ -148,7 +201,9 @@ function ChipRow({ items, reverse }: { items: typeof MARQUEE_ROW_1; reverse?: bo
           <span
             key={i}
             className="hn-chip"
-            style={{ "--d": `${(i % items.length) * 0.9}s` } as React.CSSProperties}
+            style={
+              { "--d": `${(i % items.length) * 0.9}s` } as React.CSSProperties
+            }
           >
             {chip.text}
             <span className="hn-chip-tag">{chip.tag}</span>
@@ -156,7 +211,7 @@ function ChipRow({ items, reverse }: { items: typeof MARQUEE_ROW_1; reverse?: bo
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 function Marquee() {
@@ -169,8 +224,9 @@ function Marquee() {
             What Happynest hears.
           </h2>
           <p className="mt-3 max-w-xl text-[var(--hn-stone)]">
-            Vietnamese, English, or both in one sentence — every piece of feedback
-            lands, gets read, and finds its category. PII never leaves the nest.
+            Vietnamese, English, or both in one sentence — every piece of
+            feedback lands, gets read, and finds its category. PII never leaves
+            the nest.
           </p>
         </Reveal>
       </div>
@@ -179,45 +235,113 @@ function Marquee() {
         <ChipRow items={MARQUEE_ROW_2} reverse />
       </Reveal>
     </section>
-  );
+  )
 }
 
 function NestIllustration() {
   return (
-    <svg width="56" height="48" viewBox="0 0 14 12" shapeRendering="crispEdges" aria-hidden>
+    <svg
+      width="56"
+      height="48"
+      viewBox="0 0 14 12"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
       <g className="hn-feat-group">
         <rect x="5" y="1" width="4" height="3" fill="var(--hn-ivory)" />
-        <rect x="6" y="2" width="1" height="1" className="hn-eye" fill="var(--hn-deep)" />
+        <rect
+          x="6"
+          y="2"
+          width="1"
+          height="1"
+          className="hn-eye"
+          fill="var(--hn-deep)"
+        />
         <rect x="9" y="2" width="1" height="1" fill="var(--hn-gold)" />
         <rect x="3" y="4" width="8" height="3" fill="var(--hn-ivory)" />
         <rect x="2" y="7" width="10" height="2" fill="var(--hn-olive)" />
-        <rect x="3" y="9" width="8" height="2" fill="var(--hn-olive)" opacity="0.7" />
-        <rect x="4" y="11" width="6" height="1" fill="var(--hn-olive)" opacity="0.4" />
+        <rect
+          x="3"
+          y="9"
+          width="8"
+          height="2"
+          fill="var(--hn-olive)"
+          opacity="0.7"
+        />
+        <rect
+          x="4"
+          y="11"
+          width="6"
+          height="1"
+          fill="var(--hn-olive)"
+          opacity="0.4"
+        />
       </g>
     </svg>
-  );
+  )
 }
 
 function LanternIllustration() {
   return (
-    <svg width="56" height="48" viewBox="0 0 14 12" shapeRendering="crispEdges" aria-hidden>
-      <circle className="hn-glow" cx="7" cy="7" r="5" fill="var(--hn-gold)" opacity="0.5" />
+    <svg
+      width="56"
+      height="48"
+      viewBox="0 0 14 12"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
+      <circle
+        className="hn-glow"
+        cx="7"
+        cy="7"
+        r="5"
+        fill="var(--hn-gold)"
+        opacity="0.5"
+      />
       <rect x="5" y="1" width="4" height="1" fill="var(--hn-stone)" />
       <rect x="4" y="2" width="6" height="1" fill="var(--hn-olive)" />
       <rect x="5" y="3" width="4" height="6" fill="var(--hn-gold)" />
       <rect x="6" y="5" width="2" height="2" fill="var(--hn-ivory)" />
       <rect x="4" y="9" width="6" height="1" fill="var(--hn-olive)" />
     </svg>
-  );
+  )
 }
 
 function ClipboardIllustration() {
   return (
-    <svg width="56" height="48" viewBox="0 0 14 12" shapeRendering="crispEdges" aria-hidden>
-      <rect x="3" y="1" width="8" height="10" fill="none" stroke="var(--hn-olive)" strokeWidth="1" />
+    <svg
+      width="56"
+      height="48"
+      viewBox="0 0 14 12"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
+      <rect
+        x="3"
+        y="1"
+        width="8"
+        height="10"
+        fill="none"
+        stroke="var(--hn-olive)"
+        strokeWidth="1"
+      />
       <rect x="5" y="0" width="4" height="2" fill="var(--hn-stone)" />
-      <rect x="5" y="4" width="4" height="1" fill="var(--hn-stone)" opacity="0.6" />
-      <rect x="5" y="6" width="3" height="1" fill="var(--hn-stone)" opacity="0.6" />
+      <rect
+        x="5"
+        y="4"
+        width="4"
+        height="1"
+        fill="var(--hn-stone)"
+        opacity="0.6"
+      />
+      <rect
+        x="5"
+        y="6"
+        width="3"
+        height="1"
+        fill="var(--hn-stone)"
+        opacity="0.6"
+      />
       <path
         className="hn-clipcheck"
         d="M5 9 L7 11 L11 6"
@@ -226,7 +350,7 @@ function ClipboardIllustration() {
         fill="none"
       />
     </svg>
-  );
+  )
 }
 
 const FEATURES = [
@@ -245,7 +369,7 @@ const FEATURES = [
     desc: "Nothing ships without review. A human signs off in the loop, and corrections make the model smarter.",
     art: <ClipboardIllustration />,
   },
-];
+]
 
 function Features() {
   return (
@@ -262,7 +386,9 @@ function Features() {
             <Reveal key={f.title} delay={i * 100}>
               <div className="hn-card hn-feat h-full p-6">
                 <div className="flex h-14 items-end">{f.art}</div>
-                <h3 className="hn-display mt-5 text-xl font-semibold">{f.title}</h3>
+                <h3 className="hn-display mt-5 text-xl font-semibold">
+                  {f.title}
+                </h3>
                 <p className="mt-2 text-sm leading-relaxed text-[var(--hn-stone)]">
                   {f.desc}
                 </p>
@@ -272,7 +398,7 @@ function Features() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 const SOURCES = [
@@ -282,7 +408,7 @@ const SOURCES = [
   ["Email", "thread + timestamp"],
   ["In-product", "event + context"],
   ["CSV exports", "your schema"],
-] as const;
+] as const
 
 function Sources() {
   return (
@@ -294,9 +420,9 @@ function Sources() {
             Every channel speaks a different dialect.
           </h2>
           <p className="mt-5 max-w-xl leading-relaxed text-[var(--hn-stone)]">
-            Happynest profiles each import, proposes a reusable source schema, and
-            shows its coverage before anything enters analysis. You approve the map;
-            the system remembers the structure.
+            Happynest profiles each import, proposes a reusable source schema,
+            and shows its coverage before anything enters analysis. You approve
+            the map; the system remembers the structure.
           </p>
           <a href="/docs#import" className="hn-link mt-7 inline-flex text-sm">
             Read the import guide →
@@ -309,7 +435,9 @@ function Sources() {
                 <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">
                   {(index + 1).toString().padStart(2, "0")}
                 </span>
-                <h3 className="hn-display mt-4 text-xl font-semibold">{name}</h3>
+                <h3 className="hn-display mt-4 text-xl font-semibold">
+                  {name}
+                </h3>
                 <p className="mt-2 text-sm text-[var(--hn-stone)]">{meta}</p>
               </article>
             ))}
@@ -317,7 +445,7 @@ function Sources() {
         </Reveal>
       </div>
     </section>
-  );
+  )
 }
 
 function EvidenceAnatomy() {
@@ -340,12 +468,13 @@ function EvidenceAnatomy() {
                 <ConfidenceRing value={87} size={52} />
               </div>
               <h3 className="hn-display mt-8 text-2xl font-semibold md:text-3xl">
-                Upload failures concentrate on older Android devices after the latest release.
+                Upload failures concentrate on older Android devices after the
+                latest release.
               </h3>
               <p className="mt-5 leading-relaxed text-[var(--hn-stone)]">
-                The statement stays paired with scope, time window, confidence, and
-                evidence IDs. If support is weak or contradictory, it remains a
-                hypothesis instead of being polished into certainty.
+                The statement stays paired with scope, time window, confidence,
+                and evidence IDs. If support is weak or contradictory, it
+                remains a hypothesis instead of being polished into certainty.
               </p>
               <div className="hn-evidence-meta mt-8">
                 <span>WINDOW · 14 DAYS</span>
@@ -357,12 +486,29 @@ function EvidenceAnatomy() {
           <Reveal delay={120}>
             <ol className="hn-trace-list">
               {[
-                ["01", "App review", "Crash after selecting a large file", "Android 11"],
-                ["02", "Support", "Upload reaches 82%, then returns to start", "Ticket queue"],
-                ["03", "In-product", "Repeated upload_error after release 2.4", "Event context"],
+                [
+                  "01",
+                  "App review",
+                  "Crash after selecting a large file",
+                  "Android 11",
+                ],
+                [
+                  "02",
+                  "Support",
+                  "Upload reaches 82%, then returns to start",
+                  "Ticket queue",
+                ],
+                [
+                  "03",
+                  "In-product",
+                  "Repeated upload_error after release 2.4",
+                  "Event context",
+                ],
               ].map(([id, source, quote, meta]) => (
                 <li key={id} className="hn-trace-item">
-                  <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">{id}</span>
+                  <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">
+                    {id}
+                  </span>
                   <div>
                     <p className="text-sm text-[var(--hn-ivory)]">{quote}</p>
                     <p className="mt-2 text-xs text-[var(--hn-stone)]">
@@ -376,7 +522,7 @@ function EvidenceAnatomy() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 const GATES = [
@@ -395,7 +541,7 @@ const GATES = [
     title: "Approve action",
     body: "Keep or override the proposed owner and priority while preserving the system’s original recommendation.",
   },
-] as const;
+] as const
 
 function HumanGates() {
   return (
@@ -410,16 +556,20 @@ function HumanGates() {
           </div>
           <p className="max-w-xl leading-relaxed text-[var(--hn-stone)] lg:justify-self-end">
             Each gate records what the system proposed, what a reviewer decided,
-            and why. Corrections become evaluation evidence rather than disappearing
-            inside a chat transcript.
+            and why. Corrections become evaluation evidence rather than
+            disappearing inside a chat transcript.
           </p>
         </Reveal>
         <div className="mt-12 grid gap-px bg-[var(--hn-olive)] lg:grid-cols-3">
           {GATES.map((gate, index) => (
             <Reveal key={gate.gate} delay={index * 90}>
               <article className="hn-gate h-full">
-                <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">{gate.gate}</span>
-                <h3 className="hn-display mt-6 text-2xl font-semibold">{gate.title}</h3>
+                <span className="hn-pixel text-[10px] text-[var(--hn-gold)]">
+                  {gate.gate}
+                </span>
+                <h3 className="hn-display mt-6 text-2xl font-semibold">
+                  {gate.title}
+                </h3>
                 <p className="mt-4 text-sm leading-relaxed text-[var(--hn-stone)]">
                   {gate.body}
                 </p>
@@ -429,7 +579,7 @@ function HumanGates() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function Teams() {
@@ -444,31 +594,58 @@ function Teams() {
         </Reveal>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {[
-            ["Product", "See recurring friction with scope, severity, and customer language attached."],
-            ["Operations", "Review source quality, route accountable action, and keep decision latency visible."],
-            ["AI quality", "Track safety signals, model-behavior complaints, and taxonomy drift over time."],
+            [
+              "Product",
+              "See recurring friction with scope, severity, and customer language attached.",
+            ],
+            [
+              "Operations",
+              "Review source quality, route accountable action, and keep decision latency visible.",
+            ],
+            [
+              "AI quality",
+              "Track safety signals, model-behavior complaints, and taxonomy drift over time.",
+            ],
           ].map(([role, outcome], index) => (
             <Reveal key={role} delay={index * 90}>
               <article className="hn-role-card h-full">
-                <span className="hn-pixel text-[10px] text-[var(--hn-soft)]">FOR {role.toUpperCase()}</span>
-                <h3 className="hn-display mt-8 text-2xl font-semibold">{role}</h3>
-                <p className="mt-4 leading-relaxed text-[var(--hn-stone)]">{outcome}</p>
+                <span className="hn-pixel text-[10px] text-[var(--hn-soft)]">
+                  FOR {role.toUpperCase()}
+                </span>
+                <h3 className="hn-display mt-8 text-2xl font-semibold">
+                  {role}
+                </h3>
+                <p className="mt-4 leading-relaxed text-[var(--hn-stone)]">
+                  {outcome}
+                </p>
               </article>
             </Reveal>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function Questions() {
   const questions = [
-    ["Does raw feedback go to the model?", "The intended boundary sanitizes PII before prompts, traces, or durable model-call logs."],
-    ["What happens when evidence is weak?", "The system can label a synthesis as a hypothesis or loop back to investigate more."],
-    ["Can it read Vietnamese and English together?", "Yes. Mixed-language and code-switched feedback are core design assumptions."],
-    ["Is this a production service?", "It is a production-shaped undergraduate thesis prototype, not a commercial service guarantee."],
-  ] as const;
+    [
+      "Does raw feedback go to the model?",
+      "The intended boundary sanitizes PII before prompts, traces, or durable model-call logs.",
+    ],
+    [
+      "What happens when evidence is weak?",
+      "The system can label a synthesis as a hypothesis or loop back to investigate more.",
+    ],
+    [
+      "Can it read Vietnamese and English together?",
+      "Yes. Mixed-language and code-switched feedback are core design assumptions.",
+    ],
+    [
+      "Is this a production service?",
+      "It is a production-shaped undergraduate thesis prototype, not a commercial service guarantee.",
+    ],
+  ] as const
 
   return (
     <section id="questions" className="py-24 md:py-32">
@@ -486,22 +663,26 @@ function Questions() {
           <div className="hn-question-list">
             {questions.map(([question, answer]) => (
               <details key={question} className="hn-question">
-                <summary className="hn-display text-xl font-semibold">{question}</summary>
-                <p className="mt-4 max-w-2xl leading-relaxed text-[var(--hn-stone)]">{answer}</p>
+                <summary className="hn-display text-xl font-semibold">
+                  {question}
+                </summary>
+                <p className="mt-4 max-w-2xl leading-relaxed text-[var(--hn-stone)]">
+                  {answer}
+                </p>
               </details>
             ))}
           </div>
         </Reveal>
       </div>
     </section>
-  );
+  )
 }
 
 const STATS = [
   { to: 3, suffix: "", label: "human decision gates" },
   { to: 9, suffix: "", label: "bounded analytics tools" },
   { to: 1, suffix: "", label: "linked decision trail" },
-];
+]
 
 function Proof() {
   return (
@@ -525,8 +706,9 @@ function Proof() {
             <span className="hn-tick hn-tick-tl" />
             <span className="hn-tick hn-tick-br" />
             <blockquote className="hn-display text-lg leading-relaxed">
-              “The thesis is not that an agent should decide faster. It is that a
-              team should see the evidence, intervention, and outcome in one place.”
+              “The thesis is not that an agent should decide faster. It is that
+              a team should see the evidence, intervention, and outcome in one
+              place.”
             </blockquote>
             <figcaption className="mt-4 text-sm text-[var(--hn-stone)]">
               Happynest design principle · research prototype
@@ -535,7 +717,7 @@ function Proof() {
         </Reveal>
       </div>
     </section>
-  );
+  )
 }
 
 function FinalCta() {
@@ -561,7 +743,7 @@ function FinalCta() {
         </Reveal>
       </div>
     </section>
-  );
+  )
 }
 
 export default function LandingPage() {
@@ -574,12 +756,15 @@ export default function LandingPage() {
           <div className="hn-hero-shade" aria-hidden />
           <SignalField />
           <div className="hn-hero-content relative mx-auto flex max-w-6xl items-end px-4">
-            <div className="max-w-2xl pb-24 pt-28 md:pb-32">
-              <p className="hn-eyebrow hn-enter" style={{ "--d": "0s" } as React.CSSProperties}>
+            <div className="max-w-2xl pt-28 pb-24 md:pb-32">
+              <p
+                className="hn-eyebrow hn-enter"
+                style={{ "--d": "0s" } as React.CSSProperties}
+              >
                 Feedback finds a home
               </p>
               <h1
-                className="hn-hero-title hn-display hn-enter mt-5 font-semibold leading-tight"
+                className="hn-hero-title hn-display hn-enter mt-5 leading-tight font-semibold"
                 style={{ "--d": "0.12s" } as React.CSSProperties}
               >
                 Where feedback finds a home, insights find clarity.
@@ -588,9 +773,9 @@ export default function LandingPage() {
                 className="hn-enter mt-6 max-w-lg leading-relaxed text-[var(--hn-stone)]"
                 style={{ "--d": "0.24s" } as React.CSSProperties}
               >
-                Happynest gathers what users say about your AI product, separates
-                signal from noise, and carries traceable insight through three human
-                decision gates.
+                Happynest gathers what users say about your AI product,
+                separates signal from noise, and carries traceable insight
+                through three human decision gates.
               </p>
               <div
                 className="hn-enter mt-8 flex flex-wrap gap-4"
@@ -626,5 +811,5 @@ export default function LandingPage() {
       </main>
       <PublicFooter />
     </div>
-  );
+  )
 }

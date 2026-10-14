@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
-from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from app.models.product import Product
 from app.models.taxonomy import Taxonomy
@@ -28,10 +27,10 @@ from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 pytestmark = pytest.mark.integration
 
 
-def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
+def _login(client: TestClient, account: str = "primary") -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[role], "password": TEST_PASSWORDS[role]},
+        data={"username": SEED_EMAILS[account], "password": TEST_PASSWORDS[account]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
@@ -206,14 +205,16 @@ def test_routes_generate_and_apply(client, gen_env, monkeypatch) -> None:
     assert tree["total"] == 4
 
 
-def test_generate_is_pm_only(client, gen_env) -> None:
-    ops = _login(client, UserRole.operations)
+def test_second_account_can_generate(client, gen_env, monkeypatch) -> None:
+    monkeypatch.setattr(taxonomy_service, "chat_structured",
+                        lambda *args, **kwargs: _FIXTURE_PROPOSAL)
+    ops = _login(client, "secondary")
     resp = client.post(
         "/api/taxonomies/generate",
         json={"product_id": str(gen_env.id)},
         headers=ops,
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 200, resp.text
 
 
 def test_apply_unknown_parent_maps_422(client, gen_env) -> None:

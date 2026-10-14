@@ -6,11 +6,11 @@ sẽ dựng trên nền này.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_role
+from app.api.deps import get_db, get_current_user, product_or_404
 from app.models.analysis_run import AnalysisRun
 from app.models.decision_log import DecisionLog
 from app.models.evidence import Evidence
@@ -30,11 +30,8 @@ from app.services import schema_registry
 router = APIRouter(
     prefix="/api/products",
     tags=["products"],
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
-
-# Destructive ops siết thêm: chỉ pm.
-_pm_only = [Depends(require_role("pm"))]
 
 _BUSY_STATUSES = {ImportStatus.mapping_generating, ImportStatus.importing}
 
@@ -43,8 +40,18 @@ _BUSY_STATUSES = {ImportStatus.mapping_generating, ImportStatus.importing}
 def list_products(
     session: Session = Depends(get_db),
 ) -> ProductListOut:
-    total = session.scalar(select(func.count()).select_from(Product))
-    rows = session.scalars(select(Product).order_by(Product.created_at)).all()
+    """List all shared products."""
+    total = session.scalar(
+        select(func.count()).select_from(Product)
+    )
+    rows = (
+        session.scalars(
+            select(Product)
+
+            .order_by(Product.created_at)
+        )
+        .all()
+    )
     return ProductListOut(
         items=[ProductOut.model_validate(r) for r in rows],
         total=int(total or 0),
@@ -52,16 +59,23 @@ def list_products(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_product(item: ProductIn, session: Session = Depends(get_db)) -> ProductOut:
+def create_product(
+    item: ProductIn,
+    session: Session = Depends(get_db),
+) -> ProductOut:
     exists = session.scalars(
-        select(Product).where(Product.name == item.name)
+        select(Product).where(
+            Product.name == item.name
+        )
     ).first()
     if exists is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Product '{item.name}' đã tồn tại.",
         )
-    product = Product(name=item.name, description=item.description)
+    product = Product(
+        name=item.name, description=item.description
+    )
     session.add(product)
     session.commit()
     session.refresh(product)
@@ -69,12 +83,13 @@ def create_product(item: ProductIn, session: Session = Depends(get_db)) -> Produ
 
 
 @router.get("/{product_id}/schema", response_model=None)
-def get_active_schema(product_id: uuid.UUID, session: Session = Depends(get_db)):
+def get_active_schema(
+    product_id: uuid.UUID,
+    session: Session = Depends(get_db),
+):
     """Schema ACTIVE hiện hành (definition + version) — null `schema` khi chưa
     bootstrap (product mới, chưa import CSV nào qua Gate #1)."""
-    product = session.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product_or_404(session, product_id)
     active = schema_registry.get_active_schema(session, product_id)
     return {
         "product_id": product_id,
@@ -85,12 +100,11 @@ def get_active_schema(product_id: uuid.UUID, session: Session = Depends(get_db))
 
 @router.get("/{product_id}/schema/versions")
 def list_schema_versions(
-    product_id: uuid.UUID, session: Session = Depends(get_db)
+    product_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> ProductSchemaListOut:
     """Toàn bộ version schema của product (mới nhất trước) + version active."""
-    product = session.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product_or_404(session, product_id)
     versions = schema_registry.list_versions(session, product_id)
     active = next((v for v in versions if v.status == "active"), None)
     return ProductSchemaListOut(
@@ -101,12 +115,11 @@ def list_schema_versions(
 
 @router.get("/{product_id}/schema/coverage")
 def get_schema_coverage(
-    product_id: uuid.UUID, session: Session = Depends(get_db)
+    product_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> FieldCoverageOut:
     """Coverage per product field từ `data` JSONB (VoC OS §19)."""
-    product = session.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product_or_404(session, product_id)
     from sqlalchemy import text
 
     total = int(
@@ -122,25 +135,25 @@ def get_schema_coverage(
 
 
 @router.get("/{product_id}")
-def get_product(product_id: uuid.UUID, session: Session = Depends(get_db)) -> ProductOut:
-    product = session.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
-    return ProductOut.model_validate(product)
+def get_product(
+    product_id: uuid.UUID,
+    session: Session = Depends(get_db),
+) -> ProductOut:
+    return ProductOut.model_validate(product_or_404(session, product_id))
 
 
-@router.patch("/{product_id}", dependencies=_pm_only)
+@router.patch("/{product_id}")
 def update_product(
     product_id: uuid.UUID,
     item: ProductUpdate,
     session: Session = Depends(get_db),
 ) -> ProductOut:
-    product = session.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product = product_or_404(session, product_id)
     if item.name is not None and item.name != product.name:
         exists = session.scalars(
-            select(Product).where(Product.name == item.name)
+            select(Product).where(
+                Product.name == item.name
+            )
         ).first()
         if exists is not None:
             raise HTTPException(
@@ -155,18 +168,17 @@ def update_product(
     return ProductOut.model_validate(product)
 
 
-@router.delete("/{product_id}", dependencies=_pm_only)
+@router.delete("/{product_id}")
 def delete_product(
-    product_id: uuid.UUID, session: Session = Depends(get_db)
+    product_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> dict:
     """Hard delete product + TOÀN BỘ dữ liệu con trong 1 transaction (VoC OS:
     product = workspace — xoá workspace là dọn sạch theo cụm). Thứ tự tuân thủ
     FK không-cascade: feedback → evidence → llm_call_logs → insights (con
     cascade DB) → taxonomies → product_schemas → decision_logs → analysis_runs
     → imports → product. 409 khi còn import đang xử lý nền."""
-    product = session.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Product không tồn tại.")
+    product = product_or_404(session, product_id)
 
     busy = session.scalar(
         select(func.count())

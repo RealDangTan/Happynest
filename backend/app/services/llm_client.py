@@ -145,6 +145,12 @@ def _record_attempt(  # noqa: PLR0913 — metadata call đủ đầy quan trọn
     session_factory: Any,
 ) -> None:
     """Ghi CẢ HAI lớp trace cho một attempt. Log-fail chỉ warn — không phá pipeline."""
+    from app.core.observability import telemetry
+
+    telemetry.record_llm(call_type=call_type, latency_ms=latency_ms,
+                         prompt_tokens=usage["prompt"] if usage else None,
+                         completion_tokens=usage["completion"] if usage else None,
+                         error=bool(error), run_id=analysis_run_id)
     error_short = error[:500] if error else None
     try:
         tracing.trace_llm_call(

@@ -40,7 +40,7 @@ flowchart LR
 
 ## 2 · Sitemap theo 3 trụ cột
 
-Sidebar hiện tại 6 mục theo thứ tự: Tổng quan · Phản hồi · Analysis · Clusters · Insights · Báo cáo — cả 2 role (`pm`, `operations`) dùng chung toàn bộ (v1 khai báo KHÔNG scale theo role, xem UF-01 §2).
+Sidebar hiện tại 6 mục theo thứ tự: Tổng quan · Phản hồi · Analysis · Clusters · Insights · Báo cáo — mọi tài khoản đăng nhập dùng chung chức năng.
 
 ### 2.1 🎧 LISTEN — Thu thập & lưu trữ tiếng nói khách hàng
 
@@ -88,10 +88,10 @@ Sidebar hiện tại 6 mục theo thứ tự: Tổng quan · Phản hồi · Ana
 | Thành phần | Chi tiết | Trạng thái |
 |---|---|---|
 | `/login` | JWT cookie httpOnly SameSite=Lax; guard middleware toàn khu `(app)`; 401 giữa phiên → redirect login | ✅ |
-| RBAC | Đúng 2 role `pm` \| `operations`, guard tầng router, UI không ẩn/hiện theo role (v1) | ✅ |
-| Đăng ký + Google OAuth + logout | Email/mật khẩu (role mặc định operations) + Google (email lạ tự tạo user) | ⬜ P1.5 (FE-08, backlog) |
+| Truy cập dùng chung | Mọi tài khoản đăng nhập dùng chung workspace và thao tác | ✅ |
+| Đăng ký + Google OAuth + logout | Email/mật khẩu + Google (email lạ tự tạo user) | ⬜ P1.5 (FE-08, backlog) |
 | Health | `GET /api/health`: DB, structured_output_mode, models, pii_mode | ✅ (debug/deploy) |
-| Bộ lỗi chuẩn | 401/403/404/409/422/500 — inventory xử lý thống nhất ở UF-01 §5 | ✅ quy ước |
+| Bộ lỗi chuẩn | 401/404/409/422/500 — inventory xử lý thống nhất ở UF-01 §5 | ✅ quy ước |
 | Root `/` | Đích thiết kế redirect `/dashboard` — hiện còn placeholder template | 💡 OQ-3 (việc FE nhỏ) |
 
 ---
@@ -142,7 +142,6 @@ Lộ trình P0→P5 ở trên là snapshot lịch sử; trạng thái hiện t�
 ### NỀN TẢNG
 - [ ] Logout + đăng ký + Google OAuth (đã có plan FE-08 — kéo lên sớm nếu demo cần nhiều vai)
 - [ ] Dark mode toggle (FE-07 `[tuỳ chọn]`)
-- [ ] Phân quyền sâu hơn pm vs operations (hiện KHÔNG scale v1 — muốn làm phải qua decisions.md đổi scope)
 
 ---
 

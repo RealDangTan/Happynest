@@ -1,0 +1,404 @@
+{
+  "generator": "Create Image / built-in image_gen",
+  "created_local": "2026-10-12T19:07:31+07:00",
+  "postprocessing": "None; native PNG copies only",
+  "reference_images": [
+    "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/frontend/public/assets/@DO_NOT_TOUCH/mascot.png",
+    "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/frontend/public/assets/@DO_NOT_TOUCH/moodboard.png",
+    "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/frontend/public/assets/@DO_NOT_TOUCH/UIchart.png"
+  ],
+  "source_outline": "source-outline.md",
+  "selected_outputs": [
+    {
+      "slide": 1,
+      "agent": "slide_opening_closing",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-e9183487-997b-4892-a956-b805c716ef88.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-01.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-01.png"
+    },
+    {
+      "slide": 2,
+      "agent": "slide_opening_closing",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-c3389cc1-9623-48ab-a3a2-ea92300859a8.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-02.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-02.png"
+    },
+    {
+      "slide": 3,
+      "agent": "slide_opening_closing",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-a19b00e6-30ec-431d-bcbb-621fdd47eab4.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-03-v2.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-03.png"
+    },
+    {
+      "slide": 4,
+      "agent": "slide_pipeline",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-f4f3-7bc0-8afb-ba255cf733fc/exec-6cf3ac2b-890d-46bd-a8ae-efd0a9aa5e55.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-pipeline-20261012/slide-04.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-04.png"
+    },
+    {
+      "slide": 5,
+      "agent": "slide_pipeline",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-33c99ada-4237-40cb-a253-e2501b7127ed.png",
+      "selected": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-05.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-05.png"
+    },
+    {
+      "slide": 6,
+      "agent": "slide_pipeline",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-ce08657f-08d0-4cac-927f-796f96e16d9b.png",
+      "selected": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-06.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-06.png"
+    },
+    {
+      "slide": 7,
+      "agent": "slide_pipeline",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-bb7fbb8b-f0b1-4868-a045-4b760a43824b.png",
+      "selected": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-07.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-07.png"
+    },
+    {
+      "slide": 8,
+      "agent": "slide_pipeline",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-756a0e7d-2e85-4037-866f-b31f025a5eca.png",
+      "selected": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-08-v2.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-08.png"
+    },
+    {
+      "slide": 9,
+      "agent": "slide_pipeline",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-2a38d7f0-cb46-4523-9eb5-2fe4994e8b6a.png",
+      "selected": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-09.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-09.png"
+    },
+    {
+      "slide": 10,
+      "agent": "slide_opening_closing",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-8e4b3a59-eafc-4ced-8835-4617f5869b67.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-10.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-10.png"
+    },
+    {
+      "slide": 11,
+      "agent": "slide_opening_closing",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-4f8ea747-0be8-4866-a1e4-5dc104e4be24.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-11.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-11.png"
+    },
+    {
+      "slide": 12,
+      "agent": "slide_opening_closing",
+      "native_source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-a1a2228b-9504-464a-b870-f0a42525a34a.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-12.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-12.png"
+    },
+    {
+      "slide": 13,
+      "agent": "slide_appendices",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-2da833ef-bf5b-4ee9-85e3-5e2ba6a5f619.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-13.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-13.png"
+    },
+    {
+      "slide": 14,
+      "agent": "slide_appendices",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-7b4f27a5-b9c8-4770-8bdf-2d90a535fb98.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-14.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-14.png"
+    },
+    {
+      "slide": 15,
+      "agent": "slide_appendices",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-6d1a65be-4b37-4866-b751-e62c22abec8a.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-15.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-15.png"
+    },
+    {
+      "slide": 16,
+      "agent": "slide_appendices",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-6f0ab28b-9585-4c88-b941-51f9ca5d1b12.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-16.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-16.png"
+    },
+    {
+      "slide": 17,
+      "agent": "slide_appendices",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-07014fc1-36e9-400d-b744-7d025a8fc33f.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-17.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-17.png"
+    },
+    {
+      "slide": 18,
+      "agent": "slide_appendices",
+      "native_source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-41b6d403-6519-4309-9e31-497fdd99032d.png",
+      "selected": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-18.png",
+      "workspace_file": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/docs/thesis/HappyNest-slide-images-2026-10-12/slide-18.png"
+    }
+  ],
+  "agent_prompt_manifests": [
+    {
+      "agent": "slide_opening_closing",
+      "manifest": {
+        "generator": "built-in image_gen / Create Image",
+        "date": "2026-10-12",
+        "mode": "whole-slide raster image generation; slide03 targeted mascot edit",
+        "requestedDimensions": [
+          2048,
+          1152
+        ],
+        "nativeDimensions": [
+          1672,
+          941
+        ],
+        "postprocessing": "None. Native PNGs copied only.",
+        "inputs": [
+          {
+            "role": "style reference",
+            "path": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/frontend/public/assets/@DO_NOT_TOUCH/mascot.png"
+          },
+          {
+            "role": "style reference",
+            "path": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/frontend/public/assets/@DO_NOT_TOUCH/moodboard.png"
+          },
+          {
+            "role": "style reference",
+            "path": "D:/AITHUCCHIEN/11236199-LeDangTan-Happynest-Thesis/frontend/public/assets/@DO_NOT_TOUCH/UIchart.png"
+          }
+        ],
+        "selectedFinals": [
+          {
+            "slide": 1,
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-e9183487-997b-4892-a956-b805c716ef88.png",
+            "final": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-01.png",
+            "dimensions": [
+              1672,
+              941
+            ]
+          },
+          {
+            "slide": 2,
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-c3389cc1-9623-48ab-a3a2-ea92300859a8.png",
+            "final": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-02.png",
+            "dimensions": [
+              1672,
+              941
+            ]
+          },
+          {
+            "slide": 3,
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-a19b00e6-30ec-431d-bcbb-621fdd47eab4.png",
+            "final": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-03-v2.png",
+            "dimensions": [
+              1672,
+              941
+            ],
+            "originalSource": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-1506de82-ac38-4f34-97a9-29f0b5a5c8c8.png",
+            "originalFinal": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-03.png",
+            "revision": "Only lower-right realistic sparrow replaced with cream round mascot using built-in imagegen; all text visually intact."
+          },
+          {
+            "slide": 10,
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-8e4b3a59-eafc-4ced-8835-4617f5869b67.png",
+            "final": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-10.png",
+            "dimensions": [
+              1672,
+              941
+            ]
+          },
+          {
+            "slide": 11,
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-4f8ea747-0be8-4866-a1e4-5dc104e4be24.png",
+            "final": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-11.png",
+            "dimensions": [
+              1672,
+              941
+            ]
+          },
+          {
+            "slide": 12,
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-35be-7301-b28c-eae8c81f2362/exec-a1a2228b-9504-464a-b870-f0a42525a34a.png",
+            "final": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-opening-20261012/slide-12.png",
+            "dimensions": [
+              1672,
+              941
+            ]
+          }
+        ],
+        "prompts": [
+          {
+            "slide": 1,
+            "prompt": "Use case: productivity-visual. Generate ONE FINISHED FLAT PRESENTATION SLIDE IMAGE, slide 01 of a coherent undergraduate thesis defense deck HappyNest. Canvas 16:9 landscape 2048x1152, edge-to-edge artwork, no monitor, no perspective, no mockup. Presentation must have exceptionally clear Vietnamese typography and all accents exact. Brand from provided references: quiet warm near-black #0D0D0C, charcoal #181A17, ivory #E9E7DF, soft olive #B7BF9A, muted gold #DCC892; elegant high-contrast serif like Fraunces for headings, clean modern sans for supporting copy. Tiny square pixel particles and understated warm grain, mature restrained academic editorial layout, 6% safe margins. Background almost black, calm soft olive vignette only on right.\n\nCOVER composition: left 65% text, right 30% a beautifully detailed original small cream round bird with charcoal wings, black eyes, amber beak, sitting in a woven moss-and-olive pixel-art nest with a few leaves. Pixel illustration small, tasteful, warm lantern glow, avoid childish look. Typography is smooth, NOT pixelated.\n\nTop left two small uppercase lines exactly:\n\"ĐẠI HỌC KINH TẾ QUỐC DÂN\"\n\"TRƯỜNG CÔNG NGHỆ\"\nA thin olive divider beneath.\nSmall muted-gold eyebrow exactly \"KHÓA LUẬN TỐT NGHIỆP\"\nVery large ivory serif wordmark hero exactly \"HappyNest\"\nBelow, official title in medium legible sans broken into 4 natural lines, exact full text:\n\"Thiết kế và phát triển hệ thống AI Agent hỗ trợ thu thập, phân tích phản hồi người dùng và đề xuất cải tiến – HappyNest\"\nKeep full official title readable with correct accents, no abbreviations, no missing words.\nLower left two aligned credit lines, exact:\n\"Sinh viên: Lê Đăng Tấn · 11236199\"\n\"Hướng dẫn: TS. Lê Hoài Thu\"\nBottom small exact \"Hà Nội · 11/2026\"\nFooter HappyNest miniature wordmark at far left and two-digit index \"01\" at far right.\nNo extra logos, no invented institution crest, no extra claims, no extra English slogans. Beautiful finished slide with ample negative space."
+          },
+          {
+            "slide": 2,
+            "prompt": "Use case: productivity-visual. Generate ONE FINISHED FLAT PRESENTATION SLIDE IMAGE, slide 02, HappyNest undergraduate thesis defense. 16:9 landscape 2048x1152 requested, image is entire canvas, no monitor/perspective/mockup. Follow the HappyNest brand: warm near-black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF, soft olive #B7BF9A, muted gold #DCC892; very subtle grain. Elegant smooth Fraunces-like high-contrast serif title, clean large sans-serif body text with exact Vietnamese accents. Text must never be pixelated. 6% margins, thin olive divider below title, small bottom-left HappyNest serif wordmark, footer baseline olive hairline, bottom-right index \"02\". Tiny sparse olive/gold square particles only as restrained accents.\n\nTitle top-left in huge serif exactly \"Bài toán từ phản hồi phân tán\"\nSmall upper context line beneath title exactly \"Nhiều nguồn · Khác cấu trúc · Việt–Anh\"\n\nMain area: three equal independent elegant cards horizontally, with clear space between them. NO bar chart, NO pie chart, NO shared axis, NO percentages, because these are different measures. Each card has small subdued pixel motif near top (scattered message squares, emerging signal cluster, repeated stepped paths). Dominant numeric ratio in large 100px ivory serif. The labels are large readable sans with two natural lines if needed. Each card has a separate outlined pill near its base with a measurement qualifier.\nCard left:\n\"24/36\"\n\"Khó khăn do phản hồi phân tán\"\n\"Mức 4–5\"\nCard middle:\n\"25/36\"\n\"Khó nhận ra chủ đề mới\"\n\"Mức 4–5\"\nCard right:\n\"36/36\"\n\"Từng phát hiện muộn vấn đề lặp lại\"\n\"Ít nhất thỉnh thoảng\"\n\nBelow the cards, a concise prominent olive text sentence exactly:\n\"Căn cứ xác định yêu cầu, chưa đo hiệu quả HappyNest\"\nA small original cream bird with charcoal wings and amber beak on a branch can sit at the right end of this note but no competing hero illustration.\n\nSmall research source footer above brand baseline exactly:\n\"Khảo sát định hướng yêu cầu, n = 36, 10–20/8/2026, mẫu thuận tiện\"\nAll content spelled verbatim with Vietnamese accents; hierarchy mature and restrained; presentation-ready. Avoid clutter and invented facts."
+          },
+          {
+            "slide": 3,
+            "prompt": "Use case: productivity-visual. Generate ONE FINISHED FLAT PRESENTATION SLIDE IMAGE, HappyNest thesis defense slide 03. 16:9 landscape 2048x1152 requested, edge-to-edge full image, no monitor/no perspective/no mockup. Consistent brand: near-black #0D0D0C with subtle warm grain, charcoal #181A17, ivory #E9E7DF, soft olive #B7BF9A, muted gold #DCC892. Mature calm editorial presentation, large elegant smooth Fraunces-style serif title and modern sans body with all Vietnamese diacritics correct. 6% safe margins. Thin olive divider under header and footer, bottom-left small HappyNest serif wordmark, bottom-right index \"03\". A few tiny square pixels as discreet accents. Typography never pixelated.\n\nVery large top-left title exactly \"Mục tiêu và đóng góp\"\nSubheading under title, large sans exactly \"Hỗ trợ quyết định cải tiến có thể truy vết\"\n\nMain central area: one elegant left-to-right four-step linked diagram, each step equal visual weight and linked with thin arrows. These are abstract product-journey panels, NOT screenshot widgets. Large text exact, one step each:\n\"Phản hồi\" → \"Nhận định\" → \"Phương án\" → \"Quyết định\"\nAbove each label a small olive/gold pixel motif: scattered message squares; evidence-linked nodes; well-ordered document with options; human approval check in circle. Only these four nodes, no extra steps or numbers.\n\nLower band: three quiet columns of contribution labels, each with a small olive line/icon, text exact:\n\"Taxonomy có phiên bản\"\n\"Điều tra gắn evidence\"\n\"Lịch sử phê duyệt\"\nNo long explanatory paragraphs; keep each text readable and roomy.\n\nNear bottom above footer put exact audience sentence:\n\"Người quản lý sản phẩm & vận hành · Nhóm nhỏ / SMEs\"\nThen a restrained muted gold capsule with exact:\n\"Đóng góp: tích hợp và kiểm soát quy trình\"\nTiny original cream bird with charcoal wings and amber beak perched on leaves at far lower right, visually subordinate. Clean meaningful connectors, no fabricated metrics, no claim of outperforming commercial platforms. High clarity and generous negative space."
+          },
+          {
+            "slide": 10,
+            "prompt": "Use case: productivity-visual. Generate ONE FINISHED FLAT PRESENTATION SLIDE IMAGE, HappyNest thesis defense slide 10. Canvas 16:9 landscape 2048x1152 requested. Flat slide fills image, no screen/mockup/no perspective. Brand precisely: warm near-black #0D0D0C background, charcoal #181A17 table backdrop, ivory #E9E7DF type, soft olive #B7BF9A lines and muted gold #DCC892 important note. Mature minimal academic editorial composition with generous 6% safe margin and almost invisible warm grain. Elegant high-contrast serif heading like Fraunces, modern smooth sans body, exact Vietnamese diacritics. ALL typography crisp not pixel art. Footer small HappyNest left and index \"10\" right with thin olive baseline; just two or three tiny square pixels near corner. No mascot needed on this data slide.\n\nTop-left huge heading exactly:\n\"Kết quả và phạm vi kiểm chứng\"\n\nBelow title and thin olive divider, a clear large THREE-COLUMN FOUR-ROW TABLE occupies main area, comfortable row spacing. Header muted olive, rows ivory with hairline separators. Columns aligned left, widths approximately 29%,34%,37%. Font large enough to read easily.\nExact table text (pipe separates columns, DO NOT print pipe characters):\n\"Hạng mục\" | \"Kết quả ghi nhận\" | \"Phạm vi\"\n\"Frontend unit\" | \"45/45 test · 10 tệp\" | \"Lượt 9/10/2026\"\n\"Frontend typecheck\" | \"Mã thoát 0\" | \"Chưa xác nhận production build\"\n\"Backend unit đủ quyền\" | \"92 đạt · 106 bị loại\" | \"Không integration · 65,31 giây\"\n\"Integration / E2E\" | \"Không chạy lại\" | \"Chưa có số mới\"\n\nMake numerical results large legible but not triumphal celebratory. No checkmarks suggesting production validated. Some long cells may wrap naturally within their own row. Do not omit any cells.\n\nBelow table in a separate muted-gold outlined strip, exact caveat:\n\"Kết quả lịch sử trong khóa luận; chưa xác nhận ACT v2 sau lượt chạy.\"\nAt bottom just above footer, exact sentence:\n\"Chưa có gold label, đối chứng thời gian hay tác động nghiệp vụ.\"\nThis historical nature and limited validation are essential content. Do not add F1, percentages, new tests, success badges, other facts. Fit all text elegantly with ample contrast and exact copy."
+          },
+          {
+            "slide": 11,
+            "prompt": "Use case: productivity-visual. Generate ONE FINISHED FLAT PRESENTATION SLIDE IMAGE, HappyNest undergraduate thesis defense slide 11. 16:9 landscape 2048x1152 requested. Flat full canvas no screen/mockup/perspective. Consistent brand: near-black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF, soft olive #B7BF9A, muted gold #DCC892. Very subtle warm grain and minimal tiny square pixel accents. Large smooth elegant Fraunces-like serif title, modern sans supporting text, all Vietnamese accents exact. Typography never pixelated. 6% margins. Thin olive divider beneath title. Footer small HappyNest wordmark bottom left, olive baseline, two-digit index \"11\" bottom right.\n\nTitle huge top-left exactly:\n\"Giới hạn và bước kiểm chứng tiếp\"\n\nMain content: three generous horizontal paired rows, each current limitation on left and next validation step on right, linked by a single small thin olive arrow. Quiet two-column layout, roomy charcoal row panels with subtle olive hairlines and no crowded boxes inside. Header over left column exactly \"Giới hạn hiện tại\"; header over right column exactly \"Bước kiểm chứng tiếp\". Column widths 38% and 58%. Each row number is a very small muted gold \"01\", \"02\", \"03\". Use clean academic document, evidence, and measuring glyphs, avoid a huge mascot.\n\nRow 1 left exact:\n\"Chưa có tập nhãn độc lập\"\nRow 1 right exact, wrap in two natural lines:\n\"Tập Việt–Anh / code-switching; đo F1 và UNCATEGORIZED\"\n\nRow 2 left exact:\n\"Mã evidence hợp lệ chưa đủ\"\nRow 2 right exact:\n\"Chấm độc lập finding / evidence và phương án\"\n\nRow 3 left exact:\n\"Chưa có đối chứng hiệu quả\"\nRow 3 right exact:\n\"Cố định phiên bản; kiểm toán request / token và công sức duyệt\"\n\nBelow rows one wide restrained gold/olive note strip, exact:\n\"Ưu tiên: guard nhãn · chất lượng evidence · budget\"\n\nMake content high contrast and readable, with deliberate generous row spacing. All words and punctuation exact. No invented metrics, no suggestion that planned evaluations already occurred, no percentages. Clean mature coordinated presentation design."
+          },
+          {
+            "slide": 12,
+            "prompt": "Use case: productivity-visual. Generate ONE FINISHED FLAT PRESENTATION SLIDE IMAGE, HappyNest thesis defense closing slide 12. Landscape 16:9, 2048x1152 requested; artwork fills the entire slide canvas, no monitor/no mockup/no perspective. Brand matches cover: warm almost-black #0D0D0C, charcoal #181A17, ivory #E9E7DF, soft olive #B7BF9A, muted gold #DCC892, elegant high contrast serif like Fraunces and smooth modern sans Vietnamese body. Very subtle grain, tiny square pixel glints, calm warm intelligent mood. Typography always smooth and readable, never pixelated. 6% safe margins. A thin olive title divider, small HappyNest wordmark bottom left and index \"12\" bottom right with thin footer hairline.\n\nComposition: spacious editorial conclusion, left two-thirds textual and right third a beautifully detailed original small round cream bird with charcoal wings, black eyes, amber beak in a woven olive moss nest and leafy branch, restrained warm glow and sparse golden square particles; pixel-art illustration harmonizes with HappyNest moodboard. Bird/nest should resemble an observant friendly tiny companion, not a cartoon person or realistic photograph. Do not fill background with forest landscape, stay minimal.\n\nLarge elegant title across upper left, exact in two lines if needed:\n\"Phản hồi → Bằng chứng → Quyết định\"\nMake arrows thin clean ivory/gold, preserve exact words and correct accents.\n\nBelow title three short concluding statements as three well-spaced large lines or quiet text groups with tiny olive square marker, exact:\n\"Một quy trình có thể truy vết\"\n\"Con người phê duyệt tại các điểm xác định\"\n\"Đánh giá AI trên dữ liệu độc lập là bước tiếp theo\"\n\nLower-left below thin short olive divider, warm ivory large serif thank-you exact:\n\"Em xin cảm ơn Hội đồng\"\nBelow it a small muted gold text exact:\n\"Trao đổi & hỏi đáp\"\n\nElegant academic final slide, strong negative space, calm not celebratory, no new claims or extra slogans, no metrics. Keep all accents exact and fit content without cropping."
+          },
+          {
+            "slide": 3,
+            "revision": 2,
+            "prompt": "Use case: precise-object-edit. Target image 1 is a finished HappyNest slide 03, the ONLY editable canvas. Supporting image 2 is mascot character reference board, NOT a target to modify and NOT something to add into the slide. Make one very targeted correction: replace ONLY the small realistic gray sparrow perched on the leafy branch in the bottom-right corner of target slide 03 with the HappyNest mascot from reference board — a very round plump tiny cream-white bird, charcoal-gray small wings, shiny black eyes, tiny amber beak, friendly observant expression, softly rendered pixel-art illustration like reference. Keep bird position, approximate scale, branch, leaf composition and all surrounding pixels consistent. The bird must look round and cream like the reference, NOT a slender realistic gray sparrow.\nStrict invariants: preserve entire slide canvas and dimensions; preserve every piece of Vietnamese text EXACTLY; do not change any heading, word, accent, icon, diagram node, arrow, divider, number, wordmark, typography, panel or layout. Preserve all original background, color palette, textures and styling. No text editing. The only change is this small lower-right bird's character style, body shape and cream coloration.",
+            "editTarget": "slide-03.png",
+            "supportingReference": "mascot.png"
+          }
+        ],
+        "visualQA": "All six selected final images inspected at readable resolution. Exact figures, wording and Vietnamese accents checked. No visible text defects. Native ratio is approximately 16:9 because generator returned1672x941. Slide03v2 has consistent round cream mascot."
+      }
+    },
+    {
+      "agent": "slide_pipeline",
+      "manifest": {
+        "generator": "built-in image_gen__imagegen / Create Image",
+        "date": "2026-10-12",
+        "agent": "slide_pipeline",
+        "dimensions": {
+          "width": 1672,
+          "height": 941
+        },
+        "outputPolicy": "Original tool PNGs copied exactly, no resizing, code rendering or postprocessing.",
+        "slides": [
+          {
+            "slide": "04",
+            "source": "C:/Users/ADMIN/.codex/generated_images/01a12ff6-f4f3-7bc0-8afb-ba255cf733fc/exec-6cf3ac2b-890d-46bd-a8ae-efd0a9aa5e55.png",
+            "output": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-pipeline-20261012/slide-04.png",
+            "prompt": "Generate ONE finished academic thesis defense slide, a flat full-frame raster slide 16:9 landscape 1920x1080 or 2048x1152, edge-to-edge image, no photographic mockup, no perspective, no surrounding screen. Premium HappyNest brand from the supplied context references: warm nearly black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF text, soft olive #B7BF9A lines and highlights, restrained muted gold #DCC892. Elegant high-contrast serif title like Fraunces, impeccably crisp contemporary sans-serif Vietnamese body text with exact diacritics. Generous 6% safe margins; thin olive divider under title; quiet small 'HappyNest' wordmark bottom left, slide number bottom right. Sophisticated academic information design, controlled rhythm, legible at projection scale. Fine restrained grain, sparse tiny square pixel motifs, delicate olive linework. Tiny round cream bird mascot, charcoal gray wings, little amber beak, pixel-art twig nest and olive leaves as restrained decorative accent, not distracting. ALL typography sharp, smooth, high-contrast and readable, never pixelated. Reference sheets only inform brand style, do not reproduce their text or layout. Render only the specified slide content, no invented claims, no extra numbers or statistics.\nUse case: productivity-visual. Slide 04.\nTitle at top left, very large: \"LISTEN · UNDERSTAND · ACT\"\nSubtitle: \"Quy trình có con người phê duyệt tại các điểm quyết định\".\nMain composition: three equally weighted horizontally connected wide stage regions in middle, stage labels LISTEN, UNDERSTAND, ACT. Beautiful sparse diagram, three groups, olive dotted pixel path joining stages. Main labels beneath:\nLISTEN: \"Nhập dữ liệu · Che PII · Taxonomy\"\nUNDERSTAND: \"Điều tra bằng công cụ\" and \"Insight + evidence\"\nACT: \"Phương án có căn cứ\" and \"Quyết định\".\nMust precisely convey Gate 1 before import. Inside LISTEN draw a smaller sequence: gold gate \"Gate 1 · Duyệt mapping\" → import icon labeled \"Import\". This gate visibly precedes import, not after it. Under LISTEN small management badge with human icon \"Duyệt taxonomy\".\nAt end of UNDERSTAND put gate badge \"Gate 2 · Duyệt nhận định\".\nAt end of ACT put gate badge \"Gate 3 · Duyệt phương án\".\nThe three gate badges use muted gold outline and small human approval icon, connected with their stage. Do not add a fourth gate. Simple visual metaphors: LISTEN small pixel signal squares collected into nest outline; UNDERSTAND evidence nodes; ACT approval check. Tiny cream bird perched on branch at far lower right away from text.\nBottom above thin footer rule, readable note: \"Khung VoC được vận dụng; các gate và giới hạn là lựa chọn hiện thực HappyNest\".\nFooter wordmark HappyNest, number \"04\". All text exactly correct Vietnamese, large body, the title English stage names intentionally kept. Whole slide must be complete and ready for presenting.",
+            "qa": "Inspected full output: all exact labels, Gate 1 before import, Gate 2/3, taxonomy and caveat correct; no defects observed."
+          },
+          {
+            "slide": "05",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-33c99ada-4237-40cb-a253-e2501b7127ed.png",
+            "output": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-05.png",
+            "prompt": "Generate ONE finished academic thesis defense slide, a flat full-frame raster slide 16:9 landscape 1920x1080 or 2048x1152, edge-to-edge image, no photographic mockup, no perspective, no surrounding screen. Premium HappyNest brand from the supplied context references: warm nearly black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF text, soft olive #B7BF9A lines and highlights, restrained muted gold #DCC892. Elegant high-contrast serif title like Fraunces, impeccably crisp contemporary sans-serif Vietnamese body text with exact diacritics. Generous 6% safe margins; thin olive divider under title; quiet small 'HappyNest' wordmark bottom left, slide number bottom right. Sophisticated academic information design, controlled rhythm, legible at projection scale. Fine restrained grain, sparse tiny square pixel motifs, delicate olive linework. Tiny round cream bird mascot, charcoal gray wings, little amber beak, pixel-art twig nest and olive leaves as restrained decorative accent, not distracting. ALL typography sharp, smooth, high-contrast and readable, never pixelated. Reference sheets only inform brand style, do not reproduce their text or layout. Render only the specified slide content, no invented claims, no extra numbers or statistics.\nUse case: productivity-visual. Slide 05.\nTitle top left: \"Kiến trúc và chuỗi truy vết\"\nSmall top-right outlined badge: \"Kiến trúc nguyên mẫu\".\nMain composition three tiers in upper/middle two-thirds: first broad node \"Next.js · Giao diện\"; clear arrow down to broad node \"FastAPI · Nghiệp vụ & quyền\". This central backend connects via three neat arrows down to three side-by-side modules:\nleft \"PostgreSQL / Supabase\" second line \"+ pgvector\"\ncenter \"LangGraph\" second line \"Điều phối & checkpoint\"\nright \"LLM / Embedding\".\nUse sparse olive architecture lines, database cylinder icon left, graph nodes center, subtle sparkle icon right. Separate the right AI service boundary with shield badge: \"Chỉ nội dung đã che PII vào AI\". Do not place raw data in prompt or imply raw goes to AI. Nodes are charcoal with subtle thin olive outlines, clean serif section text and clear sans descriptions. Diagram occupies 55 percent of slide with generous negative space.\nLower third features elegant horizontal seven-step chain with correct one-way arrows and tiny nodes; exact text: \"Product → Feedback → Run → Evidence → Insight → Action → Decision log\". The full chain reads as ONE coherent left-to-right row, no extra nodes, no cycles. Directly above chain readable subtitle: \"Product là ranh giới dữ liệu xuyên suốt\".\nTiny cream bird nestled with leaves at lower right without interfering with chain. Footer HappyNest left, \"05\" right.\nNo VPS, no production deployment claims, no added metrics. Finished full slide image, readable detailed typography.",
+            "qa": "Inspected full output: three-tier architecture, PII boundary and Product→Decision log chain correct, no production claims. No material defect."
+          },
+          {
+            "slide": "06",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-ce08657f-08d0-4cac-927f-796f96e16d9b.png",
+            "output": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-06.png",
+            "prompt": "Generate ONE finished academic thesis defense slide, a flat full-frame raster slide 16:9 landscape 1920x1080 or 2048x1152, edge-to-edge image, no photographic mockup, no perspective, no surrounding screen. Premium HappyNest brand from the supplied context references: warm nearly black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF text, soft olive #B7BF9A lines and highlights, restrained muted gold #DCC892. Elegant high-contrast serif title like Fraunces, impeccably crisp contemporary sans-serif Vietnamese body text with exact diacritics. Generous 6% safe margins; thin olive divider under title; quiet small 'HappyNest' wordmark bottom left, slide number bottom right. Sophisticated academic information design, controlled rhythm, legible at projection scale. Fine restrained grain, sparse tiny square pixel motifs, delicate olive linework. Tiny round cream bird mascot, charcoal gray wings, little amber beak, pixel-art twig nest and olive leaves as restrained decorative accent, not distracting. ALL typography sharp, smooth, high-contrast and readable, never pixelated. Reference sheets only inform brand style, do not reproduce their text or layout. Render only the specified slide content, no invented claims, no extra numbers or statistics.\nUse case: productivity-visual. Slide 06.\nTitle top left: \"LISTEN: dữ liệu sạch, nhãn có quản trị\"\nMain layout balanced two large panels, left 56%, right 44%, under title. Left panel title \"Từ CSV đến dữ liệu sẵn sàng\". Clearly marked small muted-gold badge \"VÍ DỤ GIẢ LẬP\". Render one small schematic CSV table with only headers \"content | source | date\" and a clean sanitized example content text \"Thanh toán chậm khi xác nhận đơn.\" Keep source and date cells empty or dashes; no personal data. This is an example, not live application data. Below table a horizontal numbered-free workflow, exact correct order: \"Hồ sơ cột → Mapping → Gate 1 → Che PII → Import\". Make Gate 1 distinct muted gold, shield at Che PII. Line-break long labels if required. No AI step before Che PII in this chain. Small line below: \"Nội dung được che PII trước khi dùng cho AI\".\nRight panel title \"Taxonomy có phiên bản\". Elegant tree: parent \"Trải nghiệm\", three child branches \"Thanh toán\", \"Hiệu năng\", and \"UNCATEGORIZED\". Leaf nodes olive outlines, UNCATEGORIZED gold accent instead of forcing assignment. Show clean tree connectors from parent to all three children, no random data or counts.\nA full-width mini sequence underneath panels reads exactly: \"AI đề xuất → Người phụ trách rà soát → Apply phiên bản\". Small human approval icon next to review step.\nBottom readable note in wide quiet charcoal strip: \"Enrichment dùng nhãn hiện hành; không đạt ngưỡng → UNCATEGORIZED\".\nTiny round cream bird with little clipboard on lower right, small enough not to crowd diagram. Footer HappyNest left, \"06\" right. Never claim complete backend valid-slug enforcement. This is complete slide not just illustration. Crisp well-spaced Vietnamese typography, 3 main information groups.",
+            "qa": "Inspected full output: example labeled, no personal data, Gate1→ChePII→Import correct, taxonomy tree and human review sequence exact. No material defect."
+          },
+          {
+            "slide": "07",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-bb7fbb8b-f0b1-4868-a045-4b760a43824b.png",
+            "output": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-07.png",
+            "prompt": "Generate ONE finished academic thesis defense slide, a flat full-frame raster slide 16:9 landscape 1920x1080 or 2048x1152, edge-to-edge image, no photographic mockup, no perspective, no surrounding screen. Premium HappyNest brand from the supplied context references: warm nearly black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF text, soft olive #B7BF9A lines and highlights, restrained muted gold #DCC892. Elegant high-contrast serif title like Fraunces, impeccably crisp contemporary sans-serif Vietnamese body text with exact diacritics. Generous 6% safe margins; thin olive divider under title; quiet small 'HappyNest' wordmark bottom left, slide number bottom right. Sophisticated academic information design, controlled rhythm, legible at projection scale. Fine restrained grain, sparse tiny square pixel motifs, delicate olive linework. Tiny round cream bird mascot, charcoal gray wings, little amber beak, pixel-art twig nest and olive leaves as restrained decorative accent, not distracting. ALL typography sharp, smooth, high-contrast and readable, never pixelated. Reference sheets only inform brand style, do not reproduce their text or layout. Render only the specified slide content, no invented claims, no extra numbers or statistics.\nUse case: productivity-visual. Slide 07.\nTitle: \"UNDERSTAND: Agent điều tra có giới hạn\".\nThis is precise graph diagram slide. Main graph in upper-middle should occupy full width but be uncluttered, a large 3-node investigation loop left (about 50% width) and synthesis / draft / human gate pipeline right (about 50% width).\nLoop nodes exactly \"Planner\" → \"Dispatch\" → \"Evaluator\", arranged left-to-right, and ONE return arrow from Evaluator looping underneath back into Planner. Return path label \"Điều tra tiếp\". Under each node small brief role:\nPlanner: \"Chọn công cụ\"\nDispatch: \"Kiểm tham số, chạy & lưu evidence\"\nEvaluator: \"Đánh giá kết quả\".\nEvaluator also has a clearly separate RIGHT exit arrow to \"Synthesizer\", then down/right arrow to \"Lưu bản nháp\", then arrow to gold-highlighted \"Gate 2 · Interrupt\". No other random nodes, do not confuse return arrow with exit. Nodes all have correct direction.\nBelow gate show human decision options on one row: \"Duyệt · Sửa · Từ chối · Điều tra thêm\".\nBelow loop show TWO readable budget chips: \"Tối đa 8 vòng\" and \"Ngân sách logic: 18 bản ghi gọi\". Beneath chips small readable caveat \"Fallback / retry có thể tăng request vật lý\".\nBottom across width a simple shield or code bracket icon and important text, 2 lines if necessary: \"Query compiler kiểm schema; Agent không tự chạy SQL do LLM sinh\".\nSmall separate bottom note: \"Mã evidence hợp lệ chưa bảo đảm hỗ trợ finding về ngữ nghĩa\".\nVery restrained pixel evidence path, tiny cream bird reading clipboard tucked near far right footer, avoid distracting. Thin title divider, footer HappyNest and \"07\".\nMaintain all exact English node names and Vietnamese diacritics. Keep typography readable at presentation size. Do not invent extra live metrics or stats. Correct graph is more important than decorative detail. A complete finished full-slide image.",
+            "qa": "Inspected full output: Planner→Dispatch→Evaluator, return arrow into Planner and exit to Synthesizer→draft→Gate2 correct; budget 8/18 and physical request caveat exact. No material defect."
+          },
+          {
+            "slide": "08",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-22f2a091-a2db-4c2d-95ee-163edb1bde53.png",
+            "output": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-08.png",
+            "prompt": "Generate ONE finished academic thesis defense slide, a flat full-frame raster slide 16:9 landscape 1920x1080 or 2048x1152, edge-to-edge image, no photographic mockup, no perspective, no surrounding screen. Premium HappyNest brand from the supplied context references: warm nearly black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF text, soft olive #B7BF9A lines and highlights, restrained muted gold #DCC892. Elegant high-contrast serif title like Fraunces, impeccably crisp contemporary sans-serif Vietnamese body text with exact diacritics. Generous 6% safe margins; thin olive divider under title; quiet small 'HappyNest' wordmark bottom left, slide number bottom right. Sophisticated academic information design, controlled rhythm, legible at projection scale. Fine restrained grain, sparse tiny square pixel motifs, delicate olive linework. Tiny round cream bird mascot, charcoal gray wings, little amber beak, pixel-art twig nest and olive leaves as restrained decorative accent, not distracting. ALL typography sharp, smooth, high-contrast and readable, never pixelated. Reference sheets only inform brand style, do not reproduce their text or layout. Render only the specified slide content, no invented claims, no extra numbers or statistics.\nUse case: productivity-visual. Slide 08.\nTitle: \"ACT: đề xuất và quyền quyết định\".\nCreate two strong columns, left about 60% wide a specimen recommendation card, right 40% priority and human decision area. Simulated action card clearly badge \"VÍ DỤ GIẢ LẬP\". Card headline: \"Cải thiện phản hồi trạng thái thanh toán\". Four readable rows with thin delicate dividers and understated icons:\n\"Căn cứ: Insight đã duyệt + evidence\"\n\"Tham khảo: Thực hành có nguồn\"\n\"Đánh đổi: Công sức triển khai / độ rõ ràng\"\n\"Thành công: Tiêu chí cần đo sau triển khai\"\nDo not invent URLs, measurements or factual run results.\nRight upper panel heading \"Điểm ưu tiên\", four elegant chips arranged 2x2, exact labels \"Impact\", \"Urgency\", \"Confidence\", \"Effort\". Below exact line \"Backend tính điểm ưu tiên\". No numeric scores or formula on this slide.\nRight lower panel has muted-gold heading \"Gate 3 · Duyệt phương án\". Below three clearly spaced human options \"Sửa ước lượng\", \"Chấp nhận\", \"Từ chối\". These can be three stacked UI-style buttons with clear role icons, but remain schematic, not pretend real screenshot. Below readable note \"Giữ giá trị AI và lịch sử quyết định\".\nWide bottom caveat with subtle evidence/ledger icon, exact text: \"Accepted ghi nhận lựa chọn; chưa chứng minh triển khai hay tác động\".\nA tiny round cream bird holding a leaf at lower left or lower right, avoid text. Footer HappyNest left, \"08\" right.\nUse clear editorial hierarchy, charcoal panels, warm ivory type, olive outlines, a little gold only for review and simulation badge. Whole finished slide image, proper diacritics, no extraneous data.",
+            "qa": "Inspected full output: all four specimen rows and four priority factors correct, no numeric score invented, Gate3 options and accepted caveat present. No material defect. Two small mascot accents rather than one.",
+            "revision": {
+              "generator": "built-in image_gen__imagegen targeted edit",
+              "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-756a0e7d-2e85-4037-866f-b31f025a5eca.png",
+              "output": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-08-v2.png",
+              "reference": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-08.png",
+              "prompt": "Use case: text-localization / precise-object-edit. Edit the supplied finished HappyNest slide 08. Make ONLY ONE change: In the LEFT main card's second content row, directly BELOW the existing text \"Tham khảo: Thực hành có nguồn\", add a smaller but clearly readable ivory sans-serif second line with this EXACT Vietnamese text:\n\"Điều kiện áp dụng · Phương án thay thế\"\nThere is ample room between the existing row text and the divider beneath. Keep the original line in place; if necessary move that existing line upward a few pixels only to fit the new second line, within the same row. The new line must fit on one line and maintain correct diacritics.\n\nPreserve EVERYTHING else from the input image: full 16:9 flat slide, warm black/olive/ivory/gold palette, exact title \"ACT: đề xuất và quyền quyết định\", all existing action card text and dividers, every UI button and factor label, \"VÍ DỤ GIẢ LẬP\", \"Điểm ưu tiên\", Impact/Urgency/Confidence/Effort, \"Backend tính điểm ưu tiên\", \"Gate 3 · Duyệt phương án\", \"Sửa ước lượng\", \"Chấp nhận\", \"Từ chối\", \"Giữ giá trị AI và lịch sử quyết định\", bottom Accepted caveat, two mascot accents, wordmark and number08. Do not redraw or recompose slide, do not introduce any new numbers or text. No cropping, no perspective, no framing. Keep all text crisp.",
+              "qa": "Inspected: exactly one additional readable line Điều kiện áp dụng · Phương án thay thế under Tham khảo, all existing copy/layout unchanged. Select this version."
+            },
+            "selectedOutput": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-08-v2.png"
+          },
+          {
+            "slide": "09",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff6-f4f3-7bc0-8afb-ba255cf733fc\\exec-2a38d7f0-cb46-4523-9eb5-2fe4994e8b6a.png",
+            "output": "C:\\Users\\ADMIN\\.codex\\generated_images\\happynest-slide-pipeline-20261012\\slide-09.png",
+            "prompt": "Generate ONE finished academic thesis defense slide, a flat full-frame raster slide 16:9 landscape 1920x1080 or 2048x1152, edge-to-edge image, no photographic mockup, no perspective, no surrounding screen. Premium HappyNest brand from the supplied context references: warm nearly black #0D0D0C background, charcoal #181A17 panels, ivory #E9E7DF text, soft olive #B7BF9A lines and highlights, restrained muted gold #DCC892. Elegant high-contrast serif title like Fraunces, impeccably crisp contemporary sans-serif Vietnamese body text with exact diacritics. Generous 6% safe margins; thin olive divider under title; quiet small 'HappyNest' wordmark bottom left, slide number bottom right. Sophisticated academic information design, controlled rhythm, legible at projection scale. Fine restrained grain, sparse tiny square pixel motifs, delicate olive linework. Tiny round cream bird mascot, charcoal gray wings, little amber beak, pixel-art twig nest and olive leaves as restrained decorative accent, not distracting. ALL typography sharp, smooth, high-contrast and readable, never pixelated. Reference sheets only inform brand style, do not reproduce their text or layout. Render only the specified slide content, no invented claims, no extra numbers or statistics.\nUse case: productivity-visual. Slide 09.\nTitle top left: \"Một tình huống xuyên suốt\"\nA very prominent gold-outlined pill directly under title: \"DỮ LIỆU GIẢ LẬP · STORYBOARD\".\nReadable subtitle: \"Phản hồi về thao tác thanh toán bị chậm\".\nMain content exactly THREE equally sized chronological panels in horizontal row, with clean arrows between them. Their headings:\n\"1 · LISTEN\"\n\"2 · UNDERSTAND\"\n\"3 · ACT\".\nUnder each heading, schematic illustrated UI fragments, each visibly distinct, with clean charcoal window chrome and minimal placeholder lines. These are process illustrations and never realistic screenshots or factual run results; no real numbers or scores anywhere. \nPanel1 uses an abstract tiny CSV table with checked mapping rows and a little shield icon. Panel caption exactly \"Dữ liệu đã che · Mapping đã duyệt\".\nPanel2 uses question bubble linked to evidence document cards and one larger insight card, all schematic; no invented chart bars or claims. Panel caption exactly \"Câu hỏi điều tra · Insight + evidence\".\nPanel3 uses approved insight icon leading to an estimate slider with no numeric value, one decision-history ledger with a check. Caption exactly \"Duyệt insight · Sửa ước lượng · Lịch sử Gate 3\".\nAbove or below panels add small tasteful label \"Minh họa quy trình\".\nPixel motifs connect panels from scattered feedback squares to evidence nodes to approval check. Small cream round bird on twig branch at lower right. Keep meaningful whitespace.\nBottom above footer, clear readable caveat: \"Không gán số lượng, mức tăng hay nguyên nhân khi chưa có kết quả run.\"\nFooter wordmark HappyNest left, slide number \"09\" right.\nEnsure no unrequested text, no tiny gibberish UI labels; schematic UI should use unlabeled lines and icons only, captions carry the exact readable Vietnamese. Beautiful complete flat finished slide with coherent wide composition, no perspective, no external framing.",
+            "qa": "Inspected full output: three chronological UI illustration panels, large simulated storyboard label, captions correct, no invented quantities or run evidence. Small phrase Minh họa quy trình omitted by renderer but prominent STORYBOARD and GIẢ LẬP labels convey this clearly."
+          }
+        ]
+      }
+    },
+    {
+      "agent": "slide_appendices",
+      "manifest": {
+        "slides": [
+          {
+            "slide": 13,
+            "title": "Định vị và phạm vi đóng góp",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-2da833ef-bf5b-4ee9-85e3-5e2ba6a5f619.png",
+            "destination": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-13.png",
+            "prompt": "Use case: productivity-visual. Create ONE finished academic defense SLIDE IMAGE, landscape exactly 16:9, target resolution 2048x1152. This is a flat full-bleed slide, no photo of a screen, no mockup, no multiple-slide grid. HappyNest reference style: warm near-black #0D0D0C background, charcoal #181A17 panels, warm ivory #E9E7DF type, soft olive #B7BF9A accents, gold mist #DCC892 sparingly. Elegant editorial Fraunces-like serif main title upper-left, crisp modern Inter-like sans body with accurate Vietnamese diacritics, high contrast, generous line spacing, 6% safe margins. Warm subtle grain, whisper of olive grid and sparse tiny gold/olive pixel-square particles; no large illustrations competing with information. A small cream round bird with gray wings, tiny amber beak and nest may sit near lower-right as charming brand accent. Main title approximately 64px, body at least 30px, small footnotes 22px at 2048x1152. Thin olive divider under title. Consistent small eyebrow upper-left exactly 'PHỤ LỤC · HỎI ĐÁP'. Footer left wordmark exactly 'HappyNest', footer right two-digit slide number. Use at most four primary content groups. Never add data, percentages, checkmarks claiming competitor superiority or unsupported conclusions. Render every requested text exactly, proofreading Vietnamese spelling. Do not include prompt labels on image.\nSlide number 13. Title verbatim 'Định vị và phạm vi đóng góp'.\nComposition: four generous parallel vertical cards occupying middle band, no dense table. Each has a refined minimal olive line icon above short heading and brief description. The fourth HappyNest card uses softly glowing olive border and dark olive fill to signal integration, not performance ranking. Four exact card heading/body pairs:\n1 'VoC / khai phá ý kiến' / 'Tổ chức và phân tích phản hồi'\n2 'Nền tảng thương mại' / 'Phạm vi nghiệp vụ rộng'\n3 'Fider' / 'Thu thập ý tưởng và bình chọn'\n4 'HappyNest' / 'Taxonomy + điều tra + evidence + phê duyệt'\nBelow cards draw one calm integration path of four small connected labeled steps, exact text 'Phản hồi → Nhận định → Phương án → Quyết định'. Small bird beside terminal decision, not covering text.\nFooter caveat prominently readable above footer rule: 'So sánh phạm vi chức năng; chưa có benchmark chung để xếp hạng'.\nAvoid fake rankings, star ratings, invented product logos, competitor checkmark matrices. Make this a beautifully typeset self-contained academic slide with exact text.",
+            "mode": "built-in image_gen",
+            "width": 1672,
+            "height": 941,
+            "qa": "Visually inspected generated image at native display: exact requested copy present, no known content defect."
+          },
+          {
+            "slide": 14,
+            "title": "Vì sao cần Agent, và giới hạn ở đâu?",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-7b4f27a5-b9c8-4770-8bdf-2d90a535fb98.png",
+            "destination": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-14.png",
+            "prompt": "Use case: productivity-visual. Create ONE finished academic defense SLIDE IMAGE, landscape exactly 16:9, target resolution 2048x1152. This is a flat full-bleed slide, no photo of a screen, no mockup, no multiple-slide grid. HappyNest reference style: warm near-black #0D0D0C background, charcoal #181A17 panels, warm ivory #E9E7DF type, soft olive #B7BF9A accents, gold mist #DCC892 sparingly. Elegant editorial Fraunces-like serif main title upper-left, crisp modern Inter-like sans body with accurate Vietnamese diacritics, high contrast, generous line spacing, 6% safe margins. Warm subtle grain, whisper of olive grid and sparse tiny gold/olive pixel-square particles; no large illustrations competing with information. A small cream round bird with gray wings, tiny amber beak and nest may sit near lower-right as charming brand accent. Main title approximately 64px, body at least 30px, small footnotes 22px at 2048x1152. Thin olive divider under title. Consistent small eyebrow upper-left exactly 'PHỤ LỤC · HỎI ĐÁP'. Footer left wordmark exactly 'HappyNest', footer right two-digit slide number. Use at most four primary content groups. Never add data, percentages, checkmarks claiming competitor superiority or unsupported conclusions. Render every requested text exactly, proofreading Vietnamese spelling. Do not include prompt labels on image.\nSlide number 14. Title exactly 'Vì sao cần Agent, và giới hạn ở đâu?'.\nComposition: two large balanced columns. Left, a beautiful clear simplified graph in roomy dark panel with arrows showing loop Planner -> Dispatch -> Evaluator -> back to Planner; below loop one outgoing arrow from Evaluator toward Synthesizer then Gate 2. Graph labels verbatim 'Planner', 'Dispatch', 'Evaluator', 'Synthesizer', 'Gate 2'. Gate 2 uses warm gold border and a small approval hand icon. Only these five labels; do not fabricate names of other nodes. Above graph a row of three big numeric chips: '7 node', '3 node gọi LLM', '9 công cụ'.\nRight column three generous constraint rows, each with tiny pixel icon and exact labels:\n'Phạm vi sản phẩm + query compiler'\n'Tối đa 8 vòng · 18 bản ghi gọi logic'\n'Interrupt / resume theo phê duyệt'\nAt lower area wide two-line takeaway text exactly:\n'Chương trình thực thi truy vấn và phép đếm; LLM chọn hướng điều tra.'\n'Retry / fallback có thể tăng request vật lý.'\nSmall bird watching Gate 2 at the far edge. Thin lines, restrained illustration, large legible text. Academic conceptual graph, not screenshot.",
+            "mode": "built-in image_gen",
+            "width": 1672,
+            "height": 941,
+            "qa": "Visually inspected: exact copy, correct Planner → Dispatch → Evaluator → Planner loop plus Evaluator → Synthesizer → Gate 2. No known defect."
+          },
+          {
+            "slide": 15,
+            "title": "Taxonomy, cluster và confidence",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-6d1a65be-4b37-4866-b751-e62c22abec8a.png",
+            "destination": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-15.png",
+            "prompt": "Use case: productivity-visual. Create ONE finished academic defense SLIDE IMAGE, landscape exactly 16:9, target resolution 2048x1152. This is a flat full-bleed slide, no photo of a screen, no mockup, no multiple-slide grid. HappyNest reference style: warm near-black #0D0D0C background, charcoal #181A17 panels, warm ivory #E9E7DF type, soft olive #B7BF9A accents, gold mist #DCC892 sparingly. Elegant editorial Fraunces-like serif main title upper-left, crisp modern Inter-like sans body with accurate Vietnamese diacritics, high contrast, generous line spacing, 6% safe margins. Warm subtle grain, whisper of olive grid and sparse tiny gold/olive pixel-square particles; no large illustrations competing with information. A small cream round bird with gray wings, tiny amber beak and nest may sit near lower-right as charming brand accent. Main title approximately 64px, body at least 30px, small footnotes 22px at 2048x1152. Thin olive divider under title. Consistent small eyebrow upper-left exactly 'PHỤ LỤC · HỎI ĐÁP'. Footer left wordmark exactly 'HappyNest', footer right two-digit slide number. Use at most four primary content groups. Never add data, percentages, checkmarks claiming competitor superiority or unsupported conclusions. Render every requested text exactly, proofreading Vietnamese spelling. Do not include prompt labels on image.\nSlide number 15. Title exactly 'Taxonomy, cluster và confidence'.\nComposition three broad parallel cards across middle. Each card has beautiful restrained conceptual olive/gold pixel art above large readable label/body. TAXONOMY has a simple organized branching tree. CLUSTER has three irregular groups of tiny squares and sparse isolated squares, conceptual not measured. CONFIDENCE has an incomplete soft olive arc, without percent, without numeric calibration or chart axes.\nThree card exact text pairs:\n'TAXONOMY' / 'Nhãn có quản trị và phiên bản'\n'CLUSTER' / 'Nhóm phụ thuộc dữ liệu và tham số'\n'CONFIDENCE' / 'Chưa hiệu chuẩn thành xác suất đúng'\nUnder the three cards, one wide evidence strip with small evidence-document line icon and exact text:\n'Sweep 25 phản hồi: toàn nhiễu tại các min_cluster_size đã thử'\nBelow this strip a prominent warm-ivory conclusion, exact:\n'Kết quả này chưa chứng minh không có vấn đề.'\nA small cream bird on a branch at the far-right lower margin. Keep any conceptual art distinct from data; no fake chart, axes or fabricated measurements. All text large and accurate.",
+            "mode": "built-in image_gen",
+            "width": 1672,
+            "height": 941,
+            "qa": "Visually inspected: exact requested text, no percent or fake chart, conceptual cluster illustration. No known defect."
+          },
+          {
+            "slide": 16,
+            "title": "Công thức ưu tiên phương án",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-6f0ab28b-9585-4c88-b941-51f9ca5d1b12.png",
+            "destination": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-16.png",
+            "prompt": "Use case: productivity-visual. Create ONE finished academic defense SLIDE IMAGE, landscape exactly 16:9, target resolution 2048x1152. This is a flat full-bleed slide, no photo of a screen, no mockup, no multiple-slide grid. HappyNest reference style: warm near-black #0D0D0C background, charcoal #181A17 panels, warm ivory #E9E7DF type, soft olive #B7BF9A accents, gold mist #DCC892 sparingly. Elegant editorial Fraunces-like serif main title upper-left, crisp modern Inter-like sans body with accurate Vietnamese diacritics, high contrast, generous line spacing, 6% safe margins. Warm subtle grain, whisper of olive grid and sparse tiny gold/olive pixel-square particles; no large illustrations competing with information. A small cream round bird with gray wings, tiny amber beak and nest may sit near lower-right as charming brand accent. Main title approximately 64px, body at least 30px, small footnotes 22px at 2048x1152. Thin olive divider under title. Consistent small eyebrow upper-left exactly 'PHỤ LỤC · HỎI ĐÁP'. Footer left wordmark exactly 'HappyNest', footer right two-digit slide number. Use at most four primary content groups. Never add data, percentages, checkmarks claiming competitor superiority or unsupported conclusions. Render every requested text exactly, proofreading Vietnamese spelling. Do not include prompt labels on image.\nSlide number 16. Title exactly 'Công thức ưu tiên phương án'.\nComposition: wide spacious upper formula panel with one giant perfectly typeset mathematical equation. Equation must be exact with decimal comma, multiplication implied, parentheses and MINUS SIGN:\n'P = 0,4I + 0,3U + 0,2(10C) + 0,1(10 − E)'\nBelow equation, readable variable legend exactly:\n'I: impact · U: urgency · C: confidence · E: effort'\nBelow this two generous side-by-side example panels, clearly labeled 'VÍ DỤ GIẢ LẬP' for both. Left text line exactly 'I = 8 · U = 7 · C = 0,8 · E = 3' and large result 'P = 7,6'. Right text line exactly 'Đổi I = 6, giữ các giá trị khác' and large result 'P = 6,8'.\nFootnote two lines, verbatim:\n'Hàm trọng số của đề tài; không phải RICE.'\n'Điểm do backend tính; người dùng có thể sửa ước lượng.'\nSmall tiny cream bird observing simple olive calculator motif lower-right but never overlapping the equation or text.\nAccuracy is paramount: 0,4*8 + 0,3*7 + 0,2*(10*0,8) + 0,1*(10-3) = 7,6; replace only I=6 -> 6,8. Render only the single main equation and the two result examples, not arithmetic expansion. No fake methodology attribution. Avoid broken plus/minus signs or decimal dots.",
+            "mode": "built-in image_gen",
+            "width": 1672,
+            "height": 941,
+            "qa": "Visually inspected: equation exact including coefficients, commas and minus. Both synthetic examples exact and arithmetic independently checked 7.6 and 6.8. No known defect."
+          },
+          {
+            "slide": 17,
+            "title": "Dữ liệu, kiểm thử và an toàn",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-07014fc1-36e9-400d-b744-7d025a8fc33f.png",
+            "destination": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-17.png",
+            "prompt": "Use case: productivity-visual. Create ONE finished academic defense SLIDE IMAGE, landscape exactly 16:9, target resolution 2048x1152. This is a flat full-bleed slide, no photo of a screen, no mockup, no multiple-slide grid. HappyNest reference style: warm near-black #0D0D0C background, charcoal #181A17 panels, warm ivory #E9E7DF type, soft olive #B7BF9A accents, gold mist #DCC892 sparingly. Elegant editorial Fraunces-like serif main title upper-left, crisp modern Inter-like sans body with accurate Vietnamese diacritics, high contrast, generous line spacing, 6% safe margins. Warm subtle grain, whisper of olive grid and sparse tiny gold/olive pixel-square particles; no large illustrations competing with information. A small cream round bird with gray wings, tiny amber beak and nest may sit near lower-right as charming brand accent. Main title approximately 64px, body at least 30px, small footnotes 22px at 2048x1152. Thin olive divider under title. Consistent small eyebrow upper-left exactly 'PHỤ LỤC · HỎI ĐÁP'. Footer left wordmark exactly 'HappyNest', footer right two-digit slide number. Use at most four primary content groups. Never add data, percentages, checkmarks claiming competitor superiority or unsupported conclusions. Render every requested text exactly, proofreading Vietnamese spelling. Do not include prompt labels on image.\nSlide number 17. Title exactly 'Dữ liệu, kiểm thử và an toàn'.\nThis image has compact but readable data. Composition four primary groups: title; row of four equal independent data chips; elegant three-row test table; safety/caveat footer area. Small mascot near footer edge only.\nFour independent data chips, not bar chart, all exact paired value/label:\n'36 người' / 'Khảo sát yêu cầu'\n'25 phản hồi' / 'Sweep clustering'\n'19 dòng' / 'Demo'\n'650 dòng' / 'Kế hoạch, chưa là kết quả'\nThe 650 planned chip must use outlined muted style, clearly distinguished from achieved evidence, no checkmark.\n\nBelow row a spacious two-column table (three rows, no extra invented headings needed) with exact test name and value:\n'Frontend unit' | '45/45 · 10 tệp'\n'Frontend typecheck' | 'Exit 0'\n'Backend unit đủ quyền' | '92 đạt · 106 bị loại · 65,31 giây'\nThin warm olive horizontal rules, generous cell spacing, modern sans text.\n\nUnder test table visible two-line note in readable ivory, exact:\n'Số kiểm thử lịch sử: 9/10/2026.'\n'Integration / E2E chưa chạy lại; chưa xác nhận ACT v2 sau lượt chạy.'\nAt lower edge above HappyNest footer, safety strip exact:\n'Che PII trước AI · Dữ liệu theo Product · Giữ lịch sử quyết định'\nNo claim that PII guarantees complete, no production completion claim, no green ticks for unrun integration. Ensure all numerals and Vietnamese text exact.",
+            "mode": "built-in image_gen",
+            "width": 1672,
+            "height": 941,
+            "qa": "Visually inspected: all four data counts exact; planned 650 chip is muted/dashed; historical test counts/date/caveat exact and safety strip complete. No known defect."
+          },
+          {
+            "slide": 18,
+            "title": "Nguồn ACT và cấu hình mô hình",
+            "source": "C:\\Users\\ADMIN\\.codex\\generated_images\\01a12ff7-9771-7a12-af4c-32cefbe18995\\exec-41b6d403-6519-4309-9e31-497fdd99032d.png",
+            "destination": "C:/Users/ADMIN/.codex/generated_images/happynest-slide-appendices-20261012/slide-18.png",
+            "prompt": "Use case: productivity-visual. Create ONE finished academic defense SLIDE IMAGE, landscape exactly 16:9, target resolution 2048x1152. This is a flat full-bleed slide, no photo of a screen, no mockup, no multiple-slide grid. HappyNest reference style: warm near-black #0D0D0C background, charcoal #181A17 panels, warm ivory #E9E7DF type, soft olive #B7BF9A accents, gold mist #DCC892 sparingly. Elegant editorial Fraunces-like serif main title upper-left, crisp modern Inter-like sans body with accurate Vietnamese diacritics, high contrast, generous line spacing, 6% safe margins. Warm subtle grain, whisper of olive grid and sparse tiny gold/olive pixel-square particles; no large illustrations competing with information. A small cream round bird with gray wings, tiny amber beak and nest may sit near lower-right as charming brand accent. Main title approximately 64px, body at least 30px, small footnotes 22px at 2048x1152. Thin olive divider under title. Consistent small eyebrow upper-left exactly 'PHỤ LỤC · HỎI ĐÁP'. Footer left wordmark exactly 'HappyNest', footer right two-digit slide number. Use at most four primary content groups. Never add data, percentages, checkmarks claiming competitor superiority or unsupported conclusions. Render every requested text exactly, proofreading Vietnamese spelling. Do not include prompt labels on image.\nSlide number 18. Title exactly 'Nguồn ACT và cấu hình mô hình'.\nComposition four primary content groups: large title; upper half two balanced content columns; lower-left separate model box; lower-right one illustrative practice card.\n\nUpper-left content exact:\n'18 thẻ thực hành'\n'7 góc nhìn · 8 nhóm nhận action'\nAdd a refined conceptual stack of a few olive cards with zero invented source names or metadata.\nUpper-right content exact:\n'Nguồn chuẩn'\n'Xác thực mã thẻ / evidence; lấy metadata nguồn'\nShow restrained warm olive evidence-node path linking document to approved source, conceptual not claiming semantic quality.\n\nLower-left separate wide charcoal model box exact:\n'typesafe/jev-router ≠ API Jev trực tiếp'\n'Không suy chất lượng mô hình từ tên router'\nThe inequality symbol must be clear. The model router name MUST have lowercase typesafe/jev-router spelled perfectly, no alteration or extra spaces.\nBelow that prominent caveat exact:\n'Nguồn hợp lệ chưa bảo đảm áp dụng đúng ngữ cảnh'.\n\nLower-right one beautiful small practice card with warm olive border titled EXACTLY 'MINH HỌA CẤU TRÚC THẺ' and only these three generic field labels on separate spacious rows:\n'Điều kiện áp dụng'\n'Đánh đổi'\n'Tiêu chí thành công'\nNo specific practice advice, no invented source name, no filled field values.\nSmall cream bird by the practice-card corner. Keep all copy exact and large legible.",
+            "mode": "built-in image_gen",
+            "width": 1672,
+            "height": 941,
+            "qa": "Visually inspected: all 18/7/8 counts and router inequality exact; card fields are unfilled generic structure; applicability caveat complete. No known defect."
+          }
+        ]
+      }
+    }
+  ]
+}

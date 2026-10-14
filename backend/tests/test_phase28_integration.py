@@ -9,7 +9,7 @@ import pytest
 from app.db.session import SessionLocal
 from app.jobs import analysis_runner
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import ImportStatus, RunStatus, UserRole
+from app.models.enums import ImportStatus, RunStatus
 from app.models.feedback import Feedback
 from app.models.import_ import Import
 from app.services import import_service
@@ -22,8 +22,8 @@ def _auth(client) -> dict[str, str]:
     response = client.post(
         "/api/auth/token",
         data={
-            "username": SEED_EMAILS[UserRole.pm],
-            "password": TEST_PASSWORDS[UserRole.pm],
+            "username": SEED_EMAILS["primary"],
+            "password": TEST_PASSWORDS["primary"],
         },
     )
     assert response.status_code == 200

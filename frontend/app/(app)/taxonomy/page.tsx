@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   ArrowRight,
@@ -6,12 +6,12 @@ import {
   Loader2,
   RefreshCcw,
   Sparkles,
-} from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+import { toast } from "sonner"
 
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,33 +22,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
+} from "@/components/ui/field"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { useProduct } from "@/hooks/use-product";
+} from "@/components/ui/empty"
+import { Input } from "@/components/ui/input"
+import { useProduct } from "@/hooks/use-product"
 import {
   useApplyProposal,
   useApplyRecommendations,
@@ -56,65 +64,65 @@ import {
   useRecommendTopics,
   useReEnrichUncategorized,
   useTaxonomy,
-} from "@/hooks/use-taxonomy";
+} from "@/hooks/use-taxonomy"
 import {
   displaySlug,
   groupProposalTree,
   groupTaxonomyTree,
   selectedProposalPayload,
-} from "@/lib/taxonomy";
-import type { ProposedTopic, TopicRecommendation } from "@/lib/types";
-import { ApiError } from "@/lib/api";
+} from "@/lib/taxonomy"
+import type { ProposedTopic, TopicRecommendation } from "@/lib/types"
+import { ApiError } from "@/lib/api"
 
 /** Đổi tên một node trong proposal — cập nhật cả parent của con trỏ tới tên cũ. */
 function renameTopic(
   topics: ProposedTopic[],
   oldName: string,
-  newName: string,
+  newName: string
 ): ProposedTopic[] {
-  const name = newName.trim();
+  const name = newName.trim()
   return topics.map((t) => {
-    if (t.name === oldName) return { ...t, name };
-    if (t.parent === oldName) return { ...t, parent: name || null };
-    return t;
-  });
+    if (t.name === oldName) return { ...t, name }
+    if (t.parent === oldName) return { ...t, parent: name || null }
+    return t
+  })
 }
 
 export default function TaxonomyPage() {
-  const { product, productId } = useProduct();
-  const taxonomy = useTaxonomy(productId);
-  const generate = useGenerateProposal();
-  const applyProposal = useApplyProposal(productId);
-  const recommend = useRecommendTopics();
-  const applyRecommendations = useApplyRecommendations(productId);
-  const reEnrich = useReEnrichUncategorized();
+  const { product, productId } = useProduct()
+  const taxonomy = useTaxonomy(productId)
+  const generate = useGenerateProposal()
+  const applyProposal = useApplyProposal(productId)
+  const recommend = useRecommendTopics()
+  const applyRecommendations = useApplyRecommendations(productId)
+  const reEnrich = useReEnrichUncategorized()
 
   // Proposal đang review (stateless từ BE — FE giữ draft cho human duyệt).
-  const [proposal, setProposal] = useState<ProposedTopic[] | null>(null);
+  const [proposal, setProposal] = useState<ProposedTopic[] | null>(null)
   const [proposalMeta, setProposalMeta] = useState<{
-    sampleCount: number;
-    model: string;
-  } | null>(null);
-  const [generateOpen, setGenerateOpen] = useState(false);
+    sampleCount: number
+    model: string
+  } | null>(null)
+  const [generateOpen, setGenerateOpen] = useState(false)
   const [form, setForm] = useState({
     product_type: "",
     use_case: "",
     persona: "",
     sample_size: 30,
-  });
+  })
   const [recommendations, setRecommendations] = useState<
     TopicRecommendation[] | null
-  >(null);
+  >(null)
 
-  const items = taxonomy.data?.items ?? [];
-  const activeItems = items.filter((n) => n.status === "active");
-  const tree = groupTaxonomyTree(activeItems);
-  const version = product?.taxonomy_version ?? 1;
+  const items = taxonomy.data?.items ?? []
+  const activeItems = items.filter((n) => n.status === "active")
+  const tree = groupTaxonomyTree(activeItems)
+  const version = product?.taxonomy_version ?? 1
   const selectedCount =
-    proposal?.filter((t) => t.selected !== false).length ?? 0;
+    proposal?.filter((t) => t.selected !== false).length ?? 0
 
   function onGenerate() {
-    if (!productId) return;
+    if (!productId) return
     generate.mutate(
       {
         product_id: productId,
@@ -125,102 +133,106 @@ export default function TaxonomyPage() {
       },
       {
         onSuccess: (res) => {
-          setGenerateOpen(false);
+          setGenerateOpen(false)
           setProposal(
-            res.proposal.topics.map((t) => ({ ...t, selected: true })),
-          );
+            res.proposal.topics.map((t) => ({ ...t, selected: true }))
+          )
           setProposalMeta({
             sampleCount: res.sample_count,
             model: "GPT",
-          });
+          })
           toast.success(
-            `Đã sinh ${res.proposal.topics.length} chủ đề đề xuất từ ${res.sample_count} mẫu phản hồi.`,
-          );
+            `Đã sinh ${res.proposal.topics.length} chủ đề đề xuất từ ${res.sample_count} mẫu phản hồi.`
+          )
         },
         onError: (err) =>
           toast.error(
             err instanceof ApiError
               ? err.message
-              : "Không sinh được đề xuất — thử lại sau.",
+              : "Không sinh được đề xuất — thử lại sau."
           ),
-      },
-    );
+      }
+    )
   }
 
   function onApplyProposal() {
-    if (!proposal) return;
+    if (!proposal) return
     applyProposal.mutate(
       { topics: selectedProposalPayload(proposal) },
       {
         onSuccess: (res) => {
-          setProposal(null);
-          setProposalMeta(null);
+          setProposal(null)
+          setProposalMeta(null)
           toast.success(
-            `Đã áp dụng ${res.created.length} chủ đề — Taxonomy v${res.taxonomy_version}.`,
-          );
+            `Đã áp dụng ${res.created.length} chủ đề — Taxonomy v${res.taxonomy_version}.`
+          )
         },
         onError: (err) =>
           toast.error(
-            err instanceof ApiError ? err.message : "Không áp dụng được đề xuất.",
+            err instanceof ApiError
+              ? err.message
+              : "Không áp dụng được đề xuất."
           ),
-      },
-    );
+      }
+    )
   }
 
   function onRecommend() {
-    if (!productId) return;
+    if (!productId) return
     recommend.mutate(
       { product_id: productId },
       {
         onSuccess: (res) => {
           if (res.pool_count === 0) {
-            toast.info("Chưa có feedback nào chưa phân loại — chạy Analysis trước.");
-            return;
+            toast.info(
+              "Chưa có feedback nào chưa phân loại — chạy Analysis trước."
+            )
+            return
           }
           if (res.recommendations.length === 0) {
             toast.info(
-              `Đã đọc ${res.pool_count} feedback chưa phân loại — không có chủ đề mới đủ dữ kiện.`,
-            );
-            return;
+              `Đã đọc ${res.pool_count} feedback chưa phân loại — không có chủ đề mới đủ dữ kiện.`
+            )
+            return
           }
           setRecommendations(
-            res.recommendations.map((r) => ({ ...r, selected: true })),
-          );
+            res.recommendations.map((r) => ({ ...r, selected: true }))
+          )
           toast.success(
-            `GPT đề xuất ${res.recommendations.length} chủ đề từ ${res.pool_count} feedback.`,
-          );
+            `GPT đề xuất ${res.recommendations.length} chủ đề từ ${res.pool_count} feedback.`
+          )
         },
         onError: (err) =>
           toast.error(
             err instanceof ApiError
               ? err.message
-              : "Không đọc được pool chưa phân loại.",
+              : "Không đọc được pool chưa phân loại."
           ),
-      },
-    );
+      }
+    )
   }
 
   function onApplyRecommendations() {
-    if (!recommendations) return;
+    if (!recommendations) return
     applyRecommendations.mutate(
       recommendations.filter((r) => r.selected !== false),
       {
         onSuccess: (res) => {
-          setRecommendations(null);
+          setRecommendations(null)
           toast.success(
-            `Đã nhận ${res.created.length} chủ đề — Taxonomy v${res.taxonomy_version}. Bấm "Mở khoá feedback chưa phân loại" để enrich lại theo nhãn mới.`,
-          );
+            `Đã nhận ${res.created.length} chủ đề — Taxonomy v${res.taxonomy_version}. Bấm "Mở khoá feedback chưa phân loại" để enrich lại theo nhãn mới.`
+          )
         },
         onError: (err) =>
           toast.error(
-            err instanceof ApiError ? err.message : "Không nhận được chủ đề.",
+            err instanceof ApiError ? err.message : "Không nhận được chủ đề."
           ),
-      },
-    );
+      }
+    )
   }
 
   function onReEnrich() {
-    if (!productId) return;
+    if (!productId) return
     reEnrich.mutate(
       { product_id: productId },
       {
@@ -228,24 +240,26 @@ export default function TaxonomyPage() {
           toast.success(
             res.released > 0
               ? `Đã mở khoá ${res.released} feedback — sang Feedback Vault bấm Run analysis để enrich lại.`
-              : "Không có feedback chưa phân loại nào cần mở khoá.",
+              : "Không có feedback chưa phân loại nào cần mở khoá."
           ),
         onError: (err) =>
           toast.error(
-            err instanceof ApiError ? err.message : "Không mở khoá được feedback.",
+            err instanceof ApiError
+              ? err.message
+              : "Không mở khoá được feedback."
           ),
-      },
-    );
+      }
+    )
   }
 
   const busy =
     generate.isPending ||
     applyProposal.isPending ||
     recommend.isPending ||
-    applyRecommendations.isPending;
+    applyRecommendations.isPending
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Taxonomy"
         description="Bộ nhãn chủ đề cho việc phân loại phản hồi. AI chỉ đề xuất — bạn là người duyệt và áp dụng."
@@ -263,15 +277,17 @@ export default function TaxonomyPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Gọi AI sinh đề xuất taxonomy?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  Gọi AI sinh đề xuất taxonomy?
+                </AlertDialogTitle>
                 <AlertDialogDescription>
                   Sẽ đọc tối đa {form.sample_size} phản hồi đã ẩn danh của sản
                   phẩm{" "}
                   <span className="font-medium text-foreground">
                     {product?.name}
                   </span>{" "}
-                  và gọi GPT để đề xuất cây chủ đề — tốn một lần gọi AI nhỏ.
-                  Đề xuất chỉ là bản nháp, chưa đổi gì tới taxonomy hiện có.
+                  và gọi GPT để đề xuất cây chủ đề — tốn một lần gọi AI nhỏ. Đề
+                  xuất chỉ là bản nháp, chưa đổi gì tới taxonomy hiện có.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -289,97 +305,105 @@ export default function TaxonomyPage() {
         <div className="flex min-w-0 flex-col gap-6">
           {/* ---------------------------------------------- proposal review */}
           {proposal ? (
-            <section className="rounded-xl border bg-card px-6 py-6 animate-in fade-in">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <h2 className="font-heading text-lg">
-                    Đề xuất từ AI — {proposal.length} chủ đề
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Đọc {proposalMeta?.sampleCount ?? 0} mẫu phản hồi. Bỏ chọn
-                    hoặc sửa tên ngay tại chỗ — parent bị bỏ thì con tự nâng
-                    lên gốc.
-                  </p>
-                </div>
-                <Badge variant="secondary">bản nháp</Badge>
-              </div>
-              <Separator className="my-4" />
-              <div className="flex flex-col gap-2">
-                {groupProposalTree(proposal).map(({ root, children }, rootIdx) => (
-                  <div key={`root-${rootIdx}-${root.name}`} className="flex flex-col gap-2">
-                    <ProposalRow
-                      topic={root}
-                      depth={0}
-                      onToggle={(selected) =>
-                        setProposal((prev) =>
-                          (prev ?? []).map((t) =>
-                            t === root ? { ...t, selected } : t,
-                          ),
-                        )
-                      }
-                      onRename={(name) =>
-                        setProposal((prev) => renameTopic(prev ?? [], root.name, name))
-                      }
-                    />
-                    {children.length > 0 ? (
-                      <div className="ml-6 flex flex-col gap-2 border-l pl-4">
-                        {children.map((child, childIdx) => (
-                          <ProposalRow
-                            key={`child-${rootIdx}-${childIdx}-${child.name}`}
-                            topic={child}
-                            depth={1}
-                            onToggle={(selected) =>
-                              setProposal((prev) =>
-                                (prev ?? []).map((t) =>
-                                  t === child ? { ...t, selected } : t,
-                                ),
-                              )
-                            }
-                            onRename={(name) =>
-                              setProposal((prev) =>
-                                renameTopic(prev ?? [], child.name, name),
-                              )
-                            }
-                          />
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+            <Card className="animate-in fade-in">
+              <CardHeader>
+                <CardTitle>Đề xuất từ AI — {proposal.length} chủ đề</CardTitle>
+                <CardDescription>
+                  Đọc {proposalMeta?.sampleCount ?? 0} mẫu phản hồi. Bỏ chọn
+                  hoặc sửa tên ngay tại chỗ — parent bị bỏ thì con tự nâng lên
+                  gốc.
+                </CardDescription>
+                <CardAction>
+                  <Badge variant="secondary">bản nháp</Badge>
+                </CardAction>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                {groupProposalTree(proposal).map(
+                  ({ root, children }, rootIdx) => (
+                    <div
+                      key={`root-${rootIdx}-${root.name}`}
+                      className="flex flex-col gap-2"
+                    >
+                      <ProposalRow
+                        topic={root}
+                        depth={0}
+                        onToggle={(selected) =>
+                          setProposal((prev) =>
+                            (prev ?? []).map((t) =>
+                              t === root ? { ...t, selected } : t
+                            )
+                          )
+                        }
+                        onRename={(name) =>
+                          setProposal((prev) =>
+                            renameTopic(prev ?? [], root.name, name)
+                          )
+                        }
+                      />
+                      {children.length > 0 ? (
+                        <div className="ml-6 flex flex-col gap-2 border-l pl-4">
+                          {children.map((child, childIdx) => (
+                            <ProposalRow
+                              key={`child-${rootIdx}-${childIdx}-${child.name}`}
+                              topic={child}
+                              depth={1}
+                              onToggle={(selected) =>
+                                setProposal((prev) =>
+                                  (prev ?? []).map((t) =>
+                                    t === child ? { ...t, selected } : t
+                                  )
+                                )
+                              }
+                              onRename={(name) =>
+                                setProposal((prev) =>
+                                  renameTopic(prev ?? [], child.name, name)
+                                )
+                              }
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                )}
+              </CardContent>
+              <CardFooter className="justify-end gap-2">
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    setProposal(null);
-                    setProposalMeta(null);
+                    setProposal(null)
+                    setProposalMeta(null)
                   }}
                 >
                   Bỏ bản nháp
                 </Button>
-                <Button onClick={onApplyProposal} disabled={applyProposal.isPending || selectedCount === 0}>
+                <Button
+                  onClick={onApplyProposal}
+                  disabled={applyProposal.isPending || selectedCount === 0}
+                >
                   {applyProposal.isPending ? (
-                    <Loader2 data-icon="inline-start" className="animate-spin" />
+                    <Loader2
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
                   ) : (
                     <ListTree data-icon="inline-start" />
                   )}
                   Áp dụng {selectedCount} chủ đề
                 </Button>
-              </div>
-            </section>
+              </CardFooter>
+            </Card>
           ) : null}
 
           {/* ---------------------------------------------- active taxonomy */}
-          <section className="rounded-xl border bg-card px-6 py-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="space-y-1">
-                <h2 className="font-heading text-lg">Taxonomy đang hoạt động</h2>
-                <p className="text-sm text-muted-foreground">
-                  Nhãn đóng cho engine phân loại. Mỗi chủ đề có slug cố định —
-                  đổi tên hiển thị không làm vỡ dữ liệu cũ.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Taxonomy đang hoạt động</CardTitle>
+              <CardDescription>
+                Nhãn đóng cho engine phân loại. Mỗi chủ đề có slug cố định — đổi
+                tên hiển thị không làm vỡ dữ liệu cũ.
+              </CardDescription>
+              <CardAction className="flex items-center gap-2">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -388,7 +412,10 @@ export default function TaxonomyPage() {
                       disabled={!productId || busy}
                     >
                       {recommend.isPending ? (
-                        <Loader2 data-icon="inline-start" className="animate-spin" />
+                        <Loader2
+                          data-icon="inline-start"
+                          className="animate-spin"
+                        />
                       ) : (
                         <Sparkles data-icon="inline-start" />
                       )}
@@ -415,62 +442,66 @@ export default function TaxonomyPage() {
                   </AlertDialogContent>
                 </AlertDialog>
                 <Badge variant="outline">v{version}</Badge>
-              </div>
-            </div>
-            <Separator className="my-4" />
-            {taxonomy.isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" /> Đang tải…
-              </div>
-            ) : tree.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <ListTree />
-                  </EmptyMedia>
-                  <EmptyTitle>Chưa có taxonomy nào</EmptyTitle>
-                  <EmptyDescription>
-                    Sinh đề xuất bằng AI từ chính phản hồi của sản phẩm, rồi
-                    duyệt và áp dụng — hoặc nhập thử vài feedback trước để AI
-                    có dữ kiện.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {tree.map(({ node, children }) => (
-                  <div key={node.id} className="flex flex-col gap-1.5">
-                    <TaxonomyRow node={node} depth={0} />
-                    {children.length > 0 ? (
-                      <div className="ml-6 flex flex-col gap-1.5 border-l pl-4">
-                        {children.map((child) => (
-                          <TaxonomyRow key={child.id} node={child} depth={1} />
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              {taxonomy.isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Đang tải…
+                </div>
+              ) : tree.length === 0 ? (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <ListTree />
+                    </EmptyMedia>
+                    <EmptyTitle>Chưa có taxonomy nào</EmptyTitle>
+                    <EmptyDescription>
+                      Sinh đề xuất bằng AI từ chính phản hồi của sản phẩm, rồi
+                      duyệt và áp dụng — hoặc nhập thử vài feedback trước để AI
+                      có dữ kiện.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {tree.map(({ node, children }) => (
+                    <div key={node.id} className="flex flex-col gap-1.5">
+                      <TaxonomyRow node={node} depth={0} />
+                      {children.length > 0 ? (
+                        <div className="ml-6 flex flex-col gap-1.5 border-l pl-4">
+                          {children.map((child) => (
+                            <TaxonomyRow
+                              key={child.id}
+                              node={child}
+                              depth={1}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* ------------------------------------------- recommendations */}
           {recommendations ? (
-            <section className="rounded-xl border bg-card px-6 py-6 animate-in fade-in">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <h2 className="font-heading text-lg">
-                    Chủ đề đề xuất mới — {recommendations.length}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    GPT gom từ các phản hồi chưa phân loại được. Ví dụ là trích
-                    nguyên văn (đã ẩn danh).
-                  </p>
-                </div>
-                <Badge variant="secondary">chờ bạn duyệt</Badge>
-              </div>
-              <Separator className="my-4" />
-              <div className="flex flex-col gap-3">
+            <Card className="animate-in fade-in">
+              <CardHeader>
+                <CardTitle>
+                  Chủ đề đề xuất mới — {recommendations.length}
+                </CardTitle>
+                <CardDescription>
+                  GPT gom từ các phản hồi chưa phân loại được. Ví dụ là trích
+                  nguyên văn (đã ẩn danh).
+                </CardDescription>
+                <CardAction>
+                  <Badge variant="secondary">chờ bạn duyệt</Badge>
+                </CardAction>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
                 {recommendations.map((rec) => (
                   <label
                     key={rec.name}
@@ -482,8 +513,8 @@ export default function TaxonomyPage() {
                       onCheckedChange={(checked) =>
                         setRecommendations((prev) =>
                           (prev ?? []).map((r) =>
-                            r === rec ? { ...r, selected: checked === true } : r,
-                          ),
+                            r === rec ? { ...r, selected: checked === true } : r
+                          )
                         )
                       }
                     />
@@ -494,7 +525,9 @@ export default function TaxonomyPage() {
                           {rec.evidence_count} phản hồi
                         </Badge>
                         {rec.parent ? (
-                          <Badge variant="secondary">trong “{rec.parent}”</Badge>
+                          <Badge variant="secondary">
+                            trong “{rec.parent}”
+                          </Badge>
                         ) : null}
                       </span>
                       {rec.examples.length > 0 ? (
@@ -509,9 +542,12 @@ export default function TaxonomyPage() {
                     </span>
                   </label>
                 ))}
-              </div>
-              <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-                <Button variant="ghost" onClick={() => setRecommendations(null)}>
+              </CardContent>
+              <CardFooter className="justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setRecommendations(null)}
+                >
                   Bỏ
                 </Button>
                 <Button
@@ -522,7 +558,10 @@ export default function TaxonomyPage() {
                   }
                 >
                   {applyRecommendations.isPending ? (
-                    <Loader2 data-icon="inline-start" className="animate-spin" />
+                    <Loader2
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
                   ) : (
                     <ListTree data-icon="inline-start" />
                   )}
@@ -530,56 +569,71 @@ export default function TaxonomyPage() {
                   {recommendations.filter((r) => r.selected !== false).length}{" "}
                   chủ đề
                 </Button>
-              </div>
-            </section>
+              </CardFooter>
+            </Card>
           ) : null}
         </div>
 
         {/* ------------------------------------------------------- aside */}
         <aside className="flex flex-col gap-6">
-          <section className="rounded-xl border bg-card px-5 py-5">
-            <h3 className="font-heading text-base">Vòng lặp taxonomy</h3>
-            <ol className="mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm text-muted-foreground">
-              <li>Nhập phản hồi tại Importer / Vault.</li>
-              <li>Sinh đề xuất — AI học từ chính phản hồi thật.</li>
-              <li>Duyệt &amp; áp dụng — chỉ bạn thay đổi bộ nhãn.</li>
-              <li>Phản hồi chưa phân loại sẽ được GPT đọc lại để đề xuất chủ đề mới.</li>
-            </ol>
-            <Separator className="my-4" />
-            <p className="text-sm text-muted-foreground">
-              Sau khi nhận chủ đề mới, mở khoá các phản hồi chưa phân loại để
-              chạy lại phân tích theo nhãn mới.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-3 w-full"
-              onClick={onReEnrich}
-              disabled={!productId || reEnrich.isPending}
-            >
-              {reEnrich.isPending ? (
-                <Loader2 data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <RefreshCcw data-icon="inline-start" />
-              )}
-              Mở khoá feedback chưa phân loại
-            </Button>
-            <Button asChild variant="ghost" className="mt-2 w-full">
-              <Link href="/vault">
-                Sang Feedback Vault
-                <ArrowRight data-icon="inline-end" />
-              </Link>
-            </Button>
-          </section>
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Vòng lặp taxonomy</CardTitle>
+            </CardHeader>
+            <CardContent className="gap-3">
+              <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm text-muted-foreground">
+                <li>Nhập phản hồi tại Importer / Vault.</li>
+                <li>Sinh đề xuất — AI học từ chính phản hồi thật.</li>
+                <li>Duyệt &amp; áp dụng — chỉ bạn thay đổi bộ nhãn.</li>
+                <li>
+                  Phản hồi chưa phân loại sẽ được GPT đọc lại để đề xuất chủ đề
+                  mới.
+                </li>
+              </ol>
+              <p className="text-sm text-muted-foreground">
+                Sau khi nhận chủ đề mới, mở khoá các phản hồi chưa phân loại để
+                chạy lại phân tích theo nhãn mới.
+              </p>
+            </CardContent>
+            <CardFooter className="flex-col items-stretch gap-2">
+              <Button
+                variant="outline"
+                onClick={onReEnrich}
+                disabled={!productId || reEnrich.isPending}
+              >
+                {reEnrich.isPending ? (
+                  <Loader2 data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <RefreshCcw data-icon="inline-start" />
+                )}
+                Mở khoá feedback chưa phân loại
+              </Button>
+              <Button asChild variant="ghost">
+                <Link href="/vault">
+                  Sang Feedback Vault
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
 
-          <section className="rounded-xl border bg-card px-5 py-5">
-            <h3 className="font-heading text-base">Sinh đề xuất từ bối cảnh</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Bối cảnh giúp GPT đặt tên chủ đề đúng ngôn ngữ ngành của bạn.
-            </p>
-            <Button variant="outline" className="mt-3 w-full" onClick={() => setGenerateOpen(true)}>
-              Mở form bối cảnh
-            </Button>
-          </section>
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Sinh đề xuất từ bối cảnh</CardTitle>
+              <CardDescription>
+                Bối cảnh giúp GPT đặt tên chủ đề đúng ngôn ngữ ngành của bạn.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setGenerateOpen(true)}
+              >
+                Mở form bối cảnh
+              </Button>
+            </CardFooter>
+          </Card>
         </aside>
       </div>
 
@@ -618,7 +672,9 @@ export default function TaxonomyPage() {
               <FieldDescription>Mô tả ngắn một dòng là đủ.</FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor="tax-persona">Người dùng điển hình</FieldLabel>
+              <FieldLabel htmlFor="tax-persona">
+                Người dùng điển hình
+              </FieldLabel>
               <Input
                 id="tax-persona"
                 placeholder="VD: chủ shop online nhỏ, dùng điện thoại"
@@ -629,7 +685,9 @@ export default function TaxonomyPage() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="tax-sample-size">Số mẫu phản hồi đọc</FieldLabel>
+              <FieldLabel htmlFor="tax-sample-size">
+                Số mẫu phản hồi đọc
+              </FieldLabel>
               <Input
                 id="tax-sample-size"
                 type="number"
@@ -643,7 +701,9 @@ export default function TaxonomyPage() {
                   }))
                 }
               />
-              <FieldDescription>Nhiều mẫu hơn → đề xuất phủ hơn, hơi tốn token hơn.</FieldDescription>
+              <FieldDescription>
+                Nhiều mẫu hơn → đề xuất phủ hơn, hơi tốn token hơn.
+              </FieldDescription>
             </Field>
           </FieldGroup>
           <div className="flex justify-end gap-2">
@@ -654,7 +714,10 @@ export default function TaxonomyPage() {
               <AlertDialogTrigger asChild>
                 <Button disabled={generate.isPending || !productId}>
                   {generate.isPending ? (
-                    <Loader2 data-icon="inline-start" className="animate-spin" />
+                    <Loader2
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
                   ) : (
                     <Sparkles data-icon="inline-start" />
                   )}
@@ -685,7 +748,7 @@ export default function TaxonomyPage() {
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }
 
 function ProposalRow({
@@ -694,12 +757,12 @@ function ProposalRow({
   onToggle,
   onRename,
 }: {
-  topic: ProposedTopic;
-  depth: number;
-  onToggle: (selected: boolean) => void;
-  onRename: (name: string) => void;
+  topic: ProposedTopic
+  depth: number
+  onToggle: (selected: boolean) => void
+  onRename: (name: string) => void
 }) {
-  const selected = topic.selected !== false;
+  const selected = topic.selected !== false
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors ${
@@ -723,10 +786,16 @@ function ProposalRow({
         </span>
       ) : null}
     </div>
-  );
+  )
 }
 
-function TaxonomyRow({ node, depth }: { node: { name: string; slug: string | null; kind: string }; depth: number }) {
+function TaxonomyRow({
+  node,
+  depth,
+}: {
+  node: { name: string; slug: string | null; kind: string }
+  depth: number
+}) {
   return (
     <div
       className={`flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-accent/40 ${
@@ -741,5 +810,5 @@ function TaxonomyRow({ node, depth }: { node: { name: string; slug: string | nul
         <Badge variant="secondary">emerging</Badge>
       ) : null}
     </div>
-  );
+  )
 }

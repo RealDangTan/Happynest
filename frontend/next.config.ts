@@ -1,6 +1,10 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  // Cho phép next dev nhận request/ws từ tunnel public (ngrok/trycloudflare có
+  // domain ngẫu nhiên → wildcard). Không có dòng này, dev server chặn websocket
+  // HMR cross-origin → React không hydrate qua link public (FE-14 addendum).
+  allowedDevOrigins: ["*.trycloudflare.com"],
   // Proxy /api/* về FastAPI giữ same-origin → cookie httpOnly SameSite=Lax
   // hoạt động không cần CORS, backend không đổi (delivery-design-spec §2).
   async rewrites() {

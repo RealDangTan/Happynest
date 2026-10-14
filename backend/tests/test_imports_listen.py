@@ -25,7 +25,6 @@ from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
-from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from app.models.import_ import Import
 from app.models.product_schema import ProductSchema
@@ -35,10 +34,10 @@ from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 pytestmark = pytest.mark.integration
 
 
-def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
+def _login(client: TestClient, account: str = "primary") -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[role], "password": TEST_PASSWORDS[role]},
+        data={"username": SEED_EMAILS[account], "password": TEST_PASSWORDS[account]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}

@@ -6,7 +6,7 @@ cho tới khi FE có product switcher), JSONB zones thay các cột phẳng, tog
 `?include_raw` chết cùng feedback-level HITL (raw KHÔNG BAO GIỜ ra response).
 Phase 22: route import-csv CHUYỂN sang `POST /api/imports` (LISTEN pipeline
 profiler → mapper → Gate #1); POST đơn lẻ giữ nguyên cho nhập tay.
-Guard role pm|operations gắn ở TẦNG ROUTER.
+Tất cả endpoint yêu cầu đăng nhập; không phân quyền theo tài khoản.
 """
 
 import uuid
@@ -21,7 +21,11 @@ from fastapi import (
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_role
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    product_or_404,
+)
 from app.models.feedback import Feedback
 from app.schemas.feedback import (
     BulkDeleteOut,
@@ -37,26 +41,27 @@ from app.services.presidio_service import sanitize
 router = APIRouter(
     prefix="/api",
     tags=["feedback"],
-    # Guard toàn router (kể cả /similar): chỉ pm | operations.
-    dependencies=[Depends(require_role("pm", "operations"))],
+    dependencies=[Depends(get_current_user)],
 )
-
-# Destructive ops (PATCH/DELETE) siết thêm: chỉ pm.
-_pm_only = [Depends(require_role("pm"))]
 
 _SNIPPET_CHARS = 200
 
 
-def _get_feedback_or_404(session: Session, feedback_id: uuid.UUID) -> Feedback:
+def _get_feedback_or_404(
+    session: Session, feedback_id: uuid.UUID
+) -> Feedback:
+    """Load an existing feedback; missing rows return 404."""
     feedback = session.get(Feedback, feedback_id)
     if feedback is None:
         raise HTTPException(status_code=404, detail="Feedback không tồn tại.")
+    product_or_404(session, feedback.product_id)
     return feedback
 
 
 @router.post("/feedbacks", status_code=status.HTTP_201_CREATED)
 def create_feedback(
-    item: FeedbackIn, session: Session = Depends(get_db)
+    item: FeedbackIn,
+    session: Session = Depends(get_db),
 ) -> FeedbackOut:
     """POST đơn lẻ — sanitize tại ingest; gắn product mặc định."""
     try:
@@ -82,9 +87,11 @@ def list_feedbacks(
     session: Session = Depends(get_db),
 ) -> FeedbackListOut:
     """List phân trang + filter trên JSONB `ai_analysis` (severity/sentiment/
-    topic containment) và cột `source`. Dataset ≤1500 nên chấp nhận full scan."""
+    topic containment) và cột `source`. Dataset ≤1500 nên chấp nhận full scan.
+    Có thể lọc theo product; dữ liệu dùng chung cho các tài khoản."""
     conditions = []
     if product_id is not None:
+        product_or_404(session, product_id)
         conditions.append(Feedback.product_id == product_id)
     if import_id is not None:
         conditions.append(Feedback.import_id == import_id)
@@ -124,9 +131,7 @@ def get_feedback(
 ) -> FeedbackOut:
     """Detail — `feedback_text` (đã sanitize) là dữ liệu phân tích; raw_content
     KHÔNG BAO GIỜ nằm trong response (ranh giới PII)."""
-    feedback = session.get(Feedback, feedback_id)
-    if feedback is None:
-        raise HTTPException(status_code=404, detail="Feedback không tồn tại.")
+    feedback = _get_feedback_or_404(session, feedback_id)
     return FeedbackOut.model_validate(feedback)
 
 
@@ -142,9 +147,7 @@ def similar_feedbacks(
     scan qua ~1500 vector 1536-d là tức thời; ANN chỉ đáng khi lớn gấp hàng trăm
     lần — quyết định đã khóa trong AGENTS.md / execute-plan §1.
     """
-    feedback = session.get(Feedback, feedback_id)
-    if feedback is None:
-        raise HTTPException(status_code=404, detail="Feedback không tồn tại.")
+    feedback = _get_feedback_or_404(session, feedback_id)
     if feedback.embedding is None:
         raise HTTPException(
             status_code=409,
@@ -189,7 +192,7 @@ def similar_feedbacks(
     ]
 
 
-@router.patch("/feedbacks/{feedback_id}", dependencies=_pm_only)
+@router.patch("/feedbacks/{feedback_id}")
 def update_feedback(
     feedback_id: uuid.UUID,
     item: FeedbackUpdate,
@@ -229,10 +232,10 @@ def update_feedback(
 @router.delete(
     "/feedbacks/{feedback_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=_pm_only,
 )
 def delete_feedback(
-    feedback_id: uuid.UUID, session: Session = Depends(get_db)
+    feedback_id: uuid.UUID,
+    session: Session = Depends(get_db),
 ) -> None:
     """Hard delete 1 feedback — không có bảng con tham chiếu (embedding nằm
     trên row; cluster_id chỉ là con trỏ) nên xoá là sạch."""
@@ -241,14 +244,17 @@ def delete_feedback(
     session.commit()
 
 
-@router.post("/feedbacks/bulk-delete", dependencies=_pm_only)
+@router.post("/feedbacks/bulk-delete")
 def bulk_delete_feedbacks(
-    body: FeedbackBulkDeleteIn, session: Session = Depends(get_db)
+    body: FeedbackBulkDeleteIn,
+    session: Session = Depends(get_db),
 ) -> BulkDeleteOut:
     """Hard delete nhiều feedback trong 1 transaction; id lạ bị bỏ qua
     (deleted = số row thật sự mất)."""
     rows = session.scalars(
-        select(Feedback).where(Feedback.id.in_(body.ids))
+        select(Feedback).where(
+            Feedback.id.in_(body.ids),
+        )
     ).all()
     for row in rows:
         session.delete(row)

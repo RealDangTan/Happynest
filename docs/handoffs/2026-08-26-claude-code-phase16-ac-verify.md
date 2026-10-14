@@ -11,13 +11,13 @@ Verify độc lập phase 16 (`GET /api/reports/summary`) — kết quả:
 | AC | Bằng chứng |
 |---|---|
 | Shape C4 field-by-field | unit 4/4 + integration 4/4 PASS (`test_reports_service.py`, `test_reports_api_integration.py`) |
-| 422 / 401 / 403 | test riêng PASS; 403 = cùng dependency `require_role` router-level đã assert tại `test_auth.py:109` |
+| 422 / 401 | Kiểm tra schema và phiên xác thực qua integration tests. |
 | Zero-call LLM | imports `services/reports.py` chỉ sqlalchemy/models (grep xác nhận) |
 | Aggregate nhất quán | SQL tay FILTER thuần vs `build_summary(days=30)` → MATCH 100% mọi mảnh, chạy 2026-08-26 |
 | <1s local | warm pool **422 ms** ×3 ổn định; lần đầu ~2.7–3.1 s là TCP/TLS handshake WAN pooler |
 | Evidence | JSON mẫu đã commit `960b73f`; screenshot FE dồn P4 |
 
-→ Tick đủ §4 plan [16-reports-summary.md](../plans/16-reports-summary.md), commit `2efd843`.
+→ Tick đủ §4 plan [16-reports-summary.md](../plan_report.md), commit `2efd843`.
 
 ## Trạng thái để lại
 

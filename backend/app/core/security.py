@@ -1,7 +1,7 @@
-"""Hash mật khẩu + JWT — Phase 04 (docs/plans/04-auth-rbac.md §3.1).
+"""Password hashing and identity-only JWT authentication.
 
 Locked stack (AGENTS.md): argon2 qua `pwdlib[argon2]`, HS256 qua PyJWT,
-token sống 12h, claim `sub` = user id (UUID dạng string), `role`.
+token sống 12h, claim `sub` = user id (UUID dạng string).
 """
 
 from datetime import datetime, timedelta, timezone
@@ -31,8 +31,8 @@ def verify_password(password: str, password_hash: str) -> bool:
     return _password_hasher.verify(password, password_hash)
 
 
-def create_access_token(sub: str, role: str) -> str:
-    """HS256 JWT: sub = user id, role, iat, exp = now + TTL.
+def create_access_token(sub: str) -> str:
+    """HS256 JWT: sub = user id, iat, exp = now + TTL.
 
     SECRET_KEY bắt buộc (config.py ghi chú enforce từ Phase 04) — chặn sớm với
     thông báo rõ thay vì ký token bằng chuỗi rỗng.
@@ -46,7 +46,6 @@ def create_access_token(sub: str, role: str) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": sub,
-        "role": role,
         "iat": now,
         "exp": now + timedelta(hours=ACCESS_TOKEN_TTL_HOURS),
     }

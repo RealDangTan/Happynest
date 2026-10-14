@@ -7,7 +7,7 @@
 - Status: in-progress (FE verify xong, BE pytest BLOCKED)
 
 ## Done
-- BE: `POST /api/auth/register` (role luôn `operations`, 201/409/422, email lowercase,
+- BE: `POST /api/auth/register` (201/409/422, email lowercase,
   validate bằng Pydantic pattern — KHÔNG thêm email-validator) + `POST /api/auth/logout`
   (xoá cookie Max-Age=0, 204 idempotent) trong `backend/app/api/routes/auth.py`,
   schema `RegisterIn` trong `backend/app/schemas/auth.py`.

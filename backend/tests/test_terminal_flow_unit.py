@@ -105,7 +105,7 @@ def test_full_wizard_uses_http_gates_and_persists_ids(tmp_path):
         body = json.loads(req.content) if req.headers.get("content-type") == "application/json" else {}
         data = {}
         if path.endswith("/token"): data = {"access_token": "test-secret"}
-        elif path.endswith("/me"): data = {"role": "pm"}
+        elif path.endswith("/me"): data = {"id": "test-user", "email": "terminal@example.test"}
         elif path == "/api/products": data = {"items": [{"id": pid, "name": "Test"}]}
         elif path == "/api/imports" and req.method == "POST": data = {"id": iid}
         elif path.endswith("/preview") and "/imports/" in path: data = {"source_row_count": 2, "column_profiles": []}

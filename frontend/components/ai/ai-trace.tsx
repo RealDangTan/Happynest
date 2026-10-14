@@ -83,7 +83,7 @@ export function AiTrace({
                 </span>
               </span>
               {row.error ? (
-                <span className="mt-0.5 block text-destructive/80">{row.error}</span>
+                <span className="mt-0.5 block text-destructive">{row.error}</span>
               ) : null}
             </li>
           ))}

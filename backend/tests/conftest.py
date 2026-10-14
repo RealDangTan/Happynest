@@ -20,28 +20,25 @@ if os.environ.get("TEST_DATABASE_URL"):
     os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 
 import pytest
-from fastapi import APIRouter, Depends
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import NullPool
 
-from app.api.deps import require_role
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.main import app
-from app.models.enums import UserRole
 from app.models.product import Product
 from app.models.user import User
 
 # Mật khẩu TEST biết trước (khác fallback seed) để test login deterministic.
 TEST_PASSWORDS = {
-    UserRole.pm: "test-pm-pass-0001",
-    UserRole.operations: "test-ops-pass-0002",
+    "primary": "test-pm-pass-0001",
+    "secondary": "test-ops-pass-0002",
 }
 SEED_EMAILS = {
-    UserRole.pm: "pm@thesis.local",
-    UserRole.operations: "ops@thesis.local",
+    "primary": "test-primary@thesis.local",
+    "secondary": "test-secondary@thesis.local",
 }
 
 
@@ -93,35 +90,33 @@ def integration_needs_real_db(request):
     yield
 
 
-def _upsert(db, email: str, password_hash: str, role: UserRole) -> User:
+def _upsert(db, email: str, password_hash: str) -> User:
     user = db.query(User).filter(User.email == email).first()
     if user is None:
-        user = User(email=email, password_hash=password_hash, role=role)
+        user = User(email=email, password_hash=password_hash)
         db.add(user)
     else:
         user.password_hash = password_hash
-        user.role = role
     return user
 
 
 @pytest.fixture(scope="session")
 def seeded_users():
-    """Upsert cả 2 role với mật khẩu test; assert hash argon2 trong DB (DoD 04)."""
+    """Upsert hai tài khoản cùng quyền truy cập với mật khẩu test; assert hash argon2 trong DB (DoD 04)."""
     if not db_reachable():
         pytest.skip(_SKIP_MSG)  # session-scoped chạy TRƯỚC guard function-scoped
     with SessionLocal() as db:
         users = {}
-        for role, email in SEED_EMAILS.items():
-            h = hash_password(TEST_PASSWORDS[role])
+        for account, email in SEED_EMAILS.items():
+            h = hash_password(TEST_PASSWORDS[account])
             assert h.startswith("$argon2"), f"hash không phải argon2: {h[:16]}…"
-            users[role] = _upsert(db, email, h, role)
+            users[account] = _upsert(db, email, h)
         db.commit()
 
-        # Đối chiếu DB thật: prefix $argon2 + role đúng
-        for role, email in SEED_EMAILS.items():
+        # Đối chiếu DB thật: prefix $argon2
+        for account, email in SEED_EMAILS.items():
             row = db.query(User).filter(User.email == email).one()
             assert row.password_hash.startswith("$argon2")
-            assert row.role is role
     return users
 
 
@@ -168,20 +163,3 @@ def client(seeded_users):
     """TestClient gắn lifespan; phụ thuộc seeded_users để chắc chắn đã seed."""
     with TestClient(app) as c:
         yield c
-
-
-@pytest.fixture()
-def pm_guarded_client(client):
-    """Mount route guard DEMO pm-only rồi gỡ sau test — chứng minh 403 route-level
-    đi qua đúng stack thật (cookie → get_current_user → require_role), không để
-    lại endpoint thừa trong production API."""
-    routes_before = len(app.routes)
-    demo = APIRouter()
-
-    @demo.get("/api/auth/_guard-demo")
-    def guard_demo(user: User = Depends(require_role("pm"))):  # noqa: F821
-        return {"ok": True}
-
-    app.include_router(demo)
-    yield client
-    del app.routes[routes_before:]

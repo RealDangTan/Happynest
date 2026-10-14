@@ -1,0 +1,5 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+# Alloy sends both app and host data to the loopback remote_write receiver.
+scrape_configs: []

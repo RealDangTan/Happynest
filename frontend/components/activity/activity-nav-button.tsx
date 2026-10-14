@@ -14,7 +14,7 @@ export function ActivityNavButton() {
     <Button
       variant="outline"
       size="sm"
-      className="ml-auto rounded-full border-border/80 bg-card shadow-sm"
+      className="rounded-full border-border/80 bg-card shadow-sm"
       aria-label={label}
       onClick={activity.openQueue}
     >

@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
-from app.models.enums import UserRole
 from app.models.feedback import Feedback
 from app.models.product import Product
 from app.models.taxonomy import Taxonomy
@@ -29,10 +28,10 @@ from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 pytestmark = pytest.mark.integration
 
 
-def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
+def _login(client: TestClient, account: str = "primary") -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[role], "password": TEST_PASSWORDS[role]},
+        data={"username": SEED_EMAILS[account], "password": TEST_PASSWORDS[account]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
@@ -193,14 +192,16 @@ def test_recommend_routes_and_re_enrich(client, rec_env, monkeypatch) -> None:
     assert again.json()["released"] == 0
 
 
-def test_recommend_is_pm_only(client, rec_env) -> None:
-    ops = _login(client, UserRole.operations)
+def test_second_account_can_recommend(client, rec_env, monkeypatch) -> None:
+    monkeypatch.setattr(taxonomy_service, "chat_structured",
+                        lambda *args, **kwargs: TopicRecommendationOut(recommendations=[]))
+    ops = _login(client, "secondary")
     resp = client.post(
         "/api/taxonomies/recommend",
         json={"product_id": str(rec_env.id)},
         headers=ops,
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 200, resp.text
 
 
 def test_reset_uncategorized_service_direct(rec_env) -> None:

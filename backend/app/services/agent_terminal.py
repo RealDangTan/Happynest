@@ -308,14 +308,11 @@ class RealTerminalRuntime:
         from sqlalchemy import select
 
         from app.db.session import SessionLocal
-        from app.models.enums import UserRole
         from app.models.user import User
         from understand_agent import runner
 
         with SessionLocal() as db:
-            reviewer = db.scalars(select(User).where(User.role == UserRole.pm)).first()
-            if reviewer is None:
-                reviewer = db.scalars(select(User).order_by(User.id)).first()
+            reviewer = db.scalars(select(User).order_by(User.created_at, User.id)).first()
             if reviewer is None:
                 raise RuntimeError("Chưa có reviewer user; chạy scripts/seed_users.py.")
             reviewer_id = str(reviewer.id)

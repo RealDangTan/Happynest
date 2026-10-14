@@ -38,6 +38,8 @@ curl http://127.0.0.1:8000/api/health
 #    {"status":"ok","db":"ok","pii_mode":"full", ...}
 ```
 
+Mọi tài khoản đăng nhập dùng chung workspace và toàn bộ chức năng. Hợp đồng hiện hành: [docs/README.md](docs/README.md).
+
 Swagger UI: `http://127.0.0.1:8000/docs` — bấm *Authorize*, đăng nhập
 `pm@thesis.local` / mật khẩu đã seed (hoặc lấy token từ `POST /api/auth/token`
 và dán Bearer header — hai cơ chế song song, cookie ưu tiên).

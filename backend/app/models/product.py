@@ -18,7 +18,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Plan 31: bump mỗi lần human apply taxonomy (generate/recommend) — snapshot
     # vào feedback.ai_analysis.taxonomy_version để định danh dataset A/B.

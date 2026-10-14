@@ -216,7 +216,8 @@ def run_clustering(
     unassigned = len(feedbacks) - assigned
 
     # --- Rebuild idempotent trong 1 transaction (thứ tự C5) ---
-    db.execute(delete(Cluster))
+    # NULL feedback.cluster_id TRƯỚC — else DELETE FROM clusters vi phạm FK
+    # fk_feedback_cluster_id_clusters (regression branch activity-center).
     db.execute(
         update(Feedback)
         .values(cluster_id=None)
@@ -224,6 +225,7 @@ def run_clustering(
     )
     for fb in rows:                      # đồng bộ identity map MỌI row đang load
         fb.cluster_id = None
+    db.execute(delete(Cluster))
 
     total_members = 0
     try:
@@ -316,16 +318,20 @@ def compute_trend(
 
 
 def sample_feedback_ids_by_cluster(
-    db: Session, limit: int = _SAMPLES_PER_CLUSTER
+    db: Session, limit: int = _SAMPLES_PER_CLUSTER, product_ids=None
 ) -> dict:
     """≤`limit` member MỚI NHẤT mỗi cụm — 1 query, group python-side.
 
     Dùng chung cho GET /api/clusters (C1) và mảng emerging của C4 — KHÔNG
     copy-paste logic này (plan 16 §3 Task 1 Step 1.1).
+    `product_ids` (optional business filter): chỉ lấy member thuộc các product này.
     """
+    conditions = [Feedback.cluster_id.is_not(None)]
+    if product_ids is not None:
+        conditions.append(Feedback.product_id.in_(product_ids))
     pairs = db.execute(
         select(Feedback.cluster_id, Feedback.id)
-        .where(Feedback.cluster_id.is_not(None))
+        .where(*conditions)
         .order_by(Feedback.occurred_at.desc())
     ).all()
     samples: dict = {}

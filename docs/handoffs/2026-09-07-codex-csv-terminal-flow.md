@@ -32,5 +32,5 @@
 ## Running service / next steps
 1. BE started by launcher is on `127.0.0.1:8000`, launcher PID 11792 (Python worker observed as 7712); process IDs may become stale.
 2. Owner runs `.\scripts\start-be-terminal.ps1` from repo root, logs in and supplies CSV. Wizard defaults to asking for every paid action and gate.
-3. To stop this BE only when no jobs remain: verify PID ownership, then `taskkill /PID 11792 /T /F` (Windows venv Python uses a launcher plus worker).
+3. To stop this BE only when no jobs remain: verify the service PID, then `taskkill /PID 11792 /T /F` (Windows venv Python uses a launcher plus worker).
 4. Existing terminal-only direct-DB mode is still available without `--flow`; prefer new HTTP mode for pre-FE product validation.

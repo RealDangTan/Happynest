@@ -35,9 +35,9 @@ _REQUIRED_COLUMNS = ("source", "content")
 
 
 def get_default_product(session: Session) -> Product:
-    """Product đầu tiên (migration 0008 seed 'Happynest'). Phase 22+ cho phép
-    nhiều product — lúc đó routes sẽ nhận product_id tường minh."""
-    product = session.scalars(select(Product).order_by(Product.created_at).limit(1)).first()
+    """First shared product for legacy ingestion without an explicit product."""
+    stmt = select(Product).order_by(Product.created_at)
+    product = session.scalars(stmt.limit(1)).first()
     if product is None:
         raise LookupError("Chưa có product nào — tạo POST /api/products trước.")
     return product

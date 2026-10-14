@@ -4,6 +4,8 @@ Append-only records passed between AI coding agents (Claude Code ↔ Codex ↔ C
 
 **Protocol of record:** [`.agents/skills/agent-handoff/SKILL.md`](../../.agents/skills/agent-handoff/SKILL.md) — read it before writing here.
 
+Read [the current documentation contract](../README.md) before resuming work. Verification records describe their dated scope; implementation follows current code and API contracts.
+
 Quick rules:
 
 1. One file per handoff: `YYYY-MM-DD-<from-agent>-<slug>.md`

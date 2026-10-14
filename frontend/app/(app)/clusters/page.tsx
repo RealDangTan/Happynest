@@ -1,21 +1,17 @@
-"use client";
-import { Suspense } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  CircleHelp,
-  RefreshCw,
-  TrendingUp,
-} from "lucide-react";
-import { toast } from "sonner";
+"use client"
+import { Suspense } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { CircleHelp, RefreshCw, TrendingUp } from "lucide-react"
+import { toast } from "sonner"
 import {
   useClusters,
   useRunClustering,
   type ClusterSort,
-} from "@/hooks/use-clusters";
-import type { ClusterItem } from "@/lib/types";
-import { formatRelative } from "@/lib/format";
-import { priorityLabel } from "@/lib/labels";
+} from "@/hooks/use-clusters"
+import type { ClusterItem } from "@/lib/types"
+import { formatRelative } from "@/lib/format"
+import { priorityLabel } from "@/lib/labels"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,51 +22,67 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@/components/ui/empty"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
-import { PageHeader } from "@/components/page-header";
+} from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
+import { PageHeader } from "@/components/page-header"
 
 const SORT_OPTIONS: { value: ClusterSort; label: string }[] = [
   { value: "feedback_count", label: "Nhiều phản hồi nhất" },
   { value: "growth_ratio", label: "Tăng nhanh nhất" },
   { value: "recent", label: "Mới nhất" },
-];
+]
 
 const DICTIONARY: [string, string][] = [
-  ["Cluster (cụm)", "Nhóm phản hồi nói về cùng một vấn đề, máy tự gộp theo ý nghĩa"],
-  ["Mới nổi (emerging)", "Vấn đề hoàn toàn mới — kỳ trước chưa ai nhắc, kỳ này xuất hiện đủ nhiều"],
-  ["Tăng đột biến (spike)", "Vấn đề đã có nhưng kỳ này tăng vọt so với kỳ trước"],
-  ["Tỷ lệ tăng", "So số phản hồi kỳ này với kỳ trước: 2.0× = gấp đôi; <1× = đang lắng"],
-  ["Ưu tiên đề xuất", "Điểm 0–1 từ độ phổ biến + tăng trưởng + độ nghiêm trọng — chỉ là gợi ý, người quyết"],
-];
+  [
+    "Cluster (cụm)",
+    "Nhóm phản hồi nói về cùng một vấn đề, máy tự gộp theo ý nghĩa",
+  ],
+  [
+    "Mới nổi (emerging)",
+    "Vấn đề hoàn toàn mới — kỳ trước chưa ai nhắc, kỳ này xuất hiện đủ nhiều",
+  ],
+  [
+    "Tăng đột biến (spike)",
+    "Vấn đề đã có nhưng kỳ này tăng vọt so với kỳ trước",
+  ],
+  [
+    "Tỷ lệ tăng",
+    "So số phản hồi kỳ này với kỳ trước: 2.0× = gấp đôi; <1× = đang lắng",
+  ],
+  [
+    "Ưu tiên đề xuất",
+    "Điểm 0–1 từ độ phổ biến + tăng trưởng + độ nghiêm trọng — chỉ là gợi ý, người quyết",
+  ],
+]
 
 function DictionaryPopover() {
   return (
@@ -92,36 +104,36 @@ function DictionaryPopover() {
         </dl>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 /** Cạm bẫy sentinel 9.99: emerging hiển thị chữ "Mới", không hiện số. */
 function GrowthCell({ c }: { c: ClusterItem }) {
-  if (c.is_emerging) return <Badge variant="default">Mới</Badge>;
-  const ratio = c.growth_ratio >= 10 ? null : `${c.growth_ratio.toFixed(1)}×`;
+  if (c.is_emerging) return <Badge variant="default">Mới</Badge>
+  const ratio = c.growth_ratio >= 10 ? null : `${c.growth_ratio.toFixed(1)}×`
   return (
     <span title={`${c.current_count} so với ${c.previous_count} kỳ trước`}>
       {ratio ?? "—"}
     </span>
-  );
+  )
 }
 
 function ClusterCard({ c }: { c: ClusterItem }) {
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base leading-snug">{c.name}</CardTitle>
-          <div className="flex shrink-0 gap-1">
-            {c.is_emerging ? <Badge variant="default">Mới nổi</Badge> : null}
-            {c.is_spike ? (
-              <Badge variant="destructive">Tăng đột biến</Badge>
-            ) : null}
-          </div>
-        </div>
+        <CardTitle className="text-base leading-snug">{c.name}</CardTitle>
+        <CardAction className="flex gap-1">
+          {c.is_emerging ? <Badge variant="default">Mới nổi</Badge> : null}
+          {c.is_spike ? (
+            <Badge variant="destructive">Tăng đột biến</Badge>
+          ) : null}
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3">
-        <p className="line-clamp-2 text-sm text-muted-foreground">{c.summary}</p>
+        <p className="line-clamp-2 text-sm text-muted-foreground">
+          {c.summary}
+        </p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">Tổng phản hồi</dt>
           <dd className="font-medium">{c.feedback_count}</dd>
@@ -166,11 +178,11 @@ function ClusterCard({ c }: { c: ClusterItem }) {
         <span>{formatRelative(c.last_seen)}</span>
       </CardFooter>
     </Card>
-  );
+  )
 }
 
 function RebuildButton({ disabled }: { disabled?: boolean }) {
-  const run = useRunClustering();
+  const run = useRunClustering()
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -207,22 +219,22 @@ function RebuildButton({ disabled }: { disabled?: boolean }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
 
 function ClustersInner() {
-  const router = useRouter();
-  const sp = useSearchParams();
-  const rawSort = sp.get("sort");
+  const router = useRouter()
+  const sp = useSearchParams()
+  const rawSort = sp.get("sort")
   const sort: ClusterSort = SORT_OPTIONS.some((o) => o.value === rawSort)
     ? (rawSort as ClusterSort)
-    : "feedback_count";
-  const clusters = useClusters(sort);
+    : "feedback_count"
+  const clusters = useClusters(sort)
 
   function setSort(v: string) {
-    const next = new URLSearchParams(sp.toString());
-    next.set("sort", v);
-    router.replace(`/clusters?${next.toString()}`);
+    const next = new URLSearchParams(sp.toString())
+    next.set("sort", v)
+    router.replace(`/clusters?${next.toString()}`)
   }
 
   return (
@@ -269,8 +281,8 @@ function ClustersInner() {
             <EmptyTitle>Chưa có phân cụm nào</EmptyTitle>
             <EmptyDescription className="flex flex-col items-center gap-3">
               <span>
-                Chạy phân cụm để gộp các phản hồi đã phân loại thành nhóm chủ
-                đề — kèm phát hiện vấn đề mới nổi và tăng đột biến.
+                Chạy phân cụm để gộp các phản hồi đã phân loại thành nhóm chủ đề
+                — kèm phát hiện vấn đề mới nổi và tăng đột biến.
               </span>
               <RebuildButton />
             </EmptyDescription>
@@ -291,7 +303,7 @@ function ClustersInner() {
         </>
       )}
     </div>
-  );
+  )
 }
 
 export default function ClustersPage() {
@@ -299,5 +311,5 @@ export default function ClustersPage() {
     <Suspense fallback={<Skeleton className="h-64 w-full" />}>
       <ClustersInner />
     </Suspense>
-  );
+  )
 }

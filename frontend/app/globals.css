@@ -8,136 +8,165 @@
    Pine Ink sidebar/primary · Field Paper workspace · Chalk canvas
    Lichen selected/accepted · Pollen review badges · Signal Blue evidence. */
 :root {
-    --background: #f1f3e9;
-    --foreground: #14251d;
-    --card: #fcfcf8;
-    --card-foreground: #14251d;
-    --popover: #fcfcf8;
-    --popover-foreground: #14251d;
-    --primary: #14251d;
-    --primary-foreground: #fcfcf8;
-    --secondary: #e5e9da;
-    --secondary-foreground: #14251d;
-    --muted: #e5e9da;
-    --muted-foreground: #5c6b5e;
-    --accent: #e2e8d6;
-    --accent-foreground: #14251d;
-    --destructive: #a63a2e;
-    --warning: #dbac3b;
-    --border: #d9ddca;
-    --input: #d9ddca;
-    --ring: #3f738b;
-    --chart-1: #91a873;
-    --chart-2: #3f738b;
-    --chart-3: #dbac3b;
-    --chart-4: #5c6b5e;
-    --chart-5: #14251d;
-    --lichen: #91a873;
-    --pollen: #dbac3b;
-    --signal: #3f738b;
-    --radius: 0.5rem;
-    --sidebar: #14251d;
-    --sidebar-foreground: #eef1e4;
-    --sidebar-primary: #fcfcf8;
-    --sidebar-primary-foreground: #14251d;
-    --sidebar-accent: #22352b;
-    --sidebar-accent-foreground: #fcfcf8;
-    --sidebar-border: #22352b;
-    --sidebar-ring: #91a873;
+  --background: #f1f3e9;
+  --foreground: #14251d;
+  --card: #fcfcf8;
+  --card-foreground: #14251d;
+  --popover: #fcfcf8;
+  --popover-foreground: #14251d;
+  --primary: #14251d;
+  --primary-foreground: #fcfcf8;
+  --secondary: #e5e9da;
+  --secondary-foreground: #14251d;
+  --muted: #e5e9da;
+  --muted-foreground: #5c6b5e;
+  --accent: #e2e8d6;
+  --accent-foreground: #14251d;
+  --destructive: #a63a2e;
+  --warning: #dbac3b;
+  --border: #d9ddca;
+  --input: #d9ddca;
+  --ring: #3f738b;
+  --chart-1: #91a873;
+  --chart-2: #3f738b;
+  --chart-3: #dbac3b;
+  --chart-4: #5c6b5e;
+  --chart-5: #14251d;
+  --lichen: #91a873;
+  --pollen: #dbac3b;
+  --signal: #3f738b;
+  --radius: 0.5rem;
+  --sidebar: #14251d;
+  --sidebar-foreground: #eef1e4;
+  --sidebar-primary: #fcfcf8;
+  --sidebar-primary-foreground: #14251d;
+  --sidebar-accent: #22352b;
+  --sidebar-accent-foreground: #fcfcf8;
+  --sidebar-border: #22352b;
+  --sidebar-ring: #91a873;
 }
 
 .dark {
-    --background: oklch(0.153 0.006 107.1);
-    --foreground: oklch(0.988 0.003 106.5);
-    --card: oklch(0.228 0.013 107.4);
-    --card-foreground: oklch(0.988 0.003 106.5);
-    --popover: oklch(0.228 0.013 107.4);
-    --popover-foreground: oklch(0.988 0.003 106.5);
-    --primary: oklch(0.93 0.007 106.5);
-    --primary-foreground: oklch(0.228 0.013 107.4);
-    --secondary: oklch(0.286 0.016 107.4);
-    --secondary-foreground: oklch(0.988 0.003 106.5);
-    --muted: oklch(0.286 0.016 107.4);
-    --muted-foreground: oklch(0.737 0.021 106.9);
-    --accent: oklch(0.286 0.016 107.4);
-    --accent-foreground: oklch(0.988 0.003 106.5);
-    --destructive: oklch(0.704 0.191 22.216);
-    --warning: oklch(0.828 0.189 84.429);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.58 0.031 107.3);
-    --chart-1: oklch(0.88 0.011 106.6);
-    --chart-2: oklch(0.58 0.031 107.3);
-    --chart-3: oklch(0.466 0.025 107.3);
-    --chart-4: oklch(0.394 0.023 107.4);
-    --chart-5: oklch(0.286 0.016 107.4);
-    --sidebar: oklch(0.228 0.013 107.4);
-    --sidebar-foreground: oklch(0.988 0.003 106.5);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.988 0.003 106.5);
-    --sidebar-accent: oklch(0.286 0.016 107.4);
-    --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.58 0.031 107.3);
+  --background: oklch(0.153 0.006 107.1);
+  --foreground: oklch(0.988 0.003 106.5);
+  --card: oklch(0.228 0.013 107.4);
+  --card-foreground: oklch(0.988 0.003 106.5);
+  --popover: oklch(0.228 0.013 107.4);
+  --popover-foreground: oklch(0.988 0.003 106.5);
+  --primary: oklch(0.93 0.007 106.5);
+  --primary-foreground: oklch(0.228 0.013 107.4);
+  --secondary: oklch(0.286 0.016 107.4);
+  --secondary-foreground: oklch(0.988 0.003 106.5);
+  --muted: oklch(0.286 0.016 107.4);
+  --muted-foreground: oklch(0.737 0.021 106.9);
+  --accent: oklch(0.286 0.016 107.4);
+  --accent-foreground: oklch(0.988 0.003 106.5);
+  --destructive: oklch(0.704 0.191 22.216);
+  --warning: oklch(0.828 0.189 84.429);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.58 0.031 107.3);
+  --chart-1: oklch(0.88 0.011 106.6);
+  --chart-2: oklch(0.58 0.031 107.3);
+  --chart-3: oklch(0.466 0.025 107.3);
+  --chart-4: oklch(0.394 0.023 107.4);
+  --chart-5: oklch(0.286 0.016 107.4);
+  --sidebar: oklch(0.228 0.013 107.4);
+  --sidebar-foreground: oklch(0.988 0.003 106.5);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.988 0.003 106.5);
+  --sidebar-accent: oklch(0.286 0.016 107.4);
+  --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.58 0.031 107.3);
+}
+
+/* Night nest — chat dock surface (2026-10-12). The chat tab keeps the Pine Ink
+   dock dark end-to-end: same token set, remapped for a dark surface, so every
+   shadcn component inside flips without hand-coloring. Primary inverts to
+   Field Paper (user bubble / send button = paper on the dark nest); wells lift
+   to sidebar-accent green; signal + destructive get dark-tuned tints for
+   contrast. Scoped: only the subtree under .chat-night is affected. */
+.chat-night {
+  --background: #14251d;
+  --foreground: #eef1e4;
+  --card: #22352b;
+  --card-foreground: #eef1e4;
+  --popover: #22352b;
+  --popover-foreground: #eef1e4;
+  --primary: #fcfcf8;
+  --primary-foreground: #14251d;
+  --secondary: #33463a;
+  --secondary-foreground: #eef1e4;
+  --muted: #2b3e32;
+  --muted-foreground: #a9b6a4;
+  --accent: #33463a;
+  --accent-foreground: #f4f6ea;
+  --destructive: #e28573;
+  --border: #33463a;
+  --input: #33463a;
+  --ring: #91a873;
+  --signal: #8ab4d6;
 }
 
 @theme inline {
-    --font-sans: var(--font-sans);
-    --font-heading: var(--font-heading);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-warning: var(--warning);
-    --color-lichen: var(--lichen);
-    --color-pollen: var(--pollen);
-    --color-signal: var(--signal);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-lichen: var(--lichen);
+  --color-pollen: var(--pollen);
+  --color-signal: var(--signal);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
     cursor: pointer;
-    }
+  }
   html {
     @apply font-sans;
   }

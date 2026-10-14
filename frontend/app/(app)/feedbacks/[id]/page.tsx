@@ -1,32 +1,38 @@
-"use client";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useFeedbackDetail, useSimilarFeedbacks } from "@/hooks/use-feedback-detail";
-import { ApiError } from "@/lib/api";
-import { formatDate } from "@/lib/format";
-import { SEVERITY_LABEL, SENTIMENT_LABEL } from "@/lib/labels";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+"use client"
+import Link from "next/link"
+import { useParams } from "next/navigation"
+import {
+  useFeedbackDetail,
+  useSimilarFeedbacks,
+} from "@/hooks/use-feedback-detail"
+import { ApiError } from "@/lib/api"
+import { formatDate } from "@/lib/format"
+import { SEVERITY_LABEL, SENTIMENT_LABEL } from "@/lib/labels"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@/components/ui/empty"
+import { usePageTitle } from "@/hooks/use-page-title"
 
 export default function FeedbackDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const fb = useFeedbackDetail(id);
-  const similar = useSimilarFeedbacks(id);
+  usePageTitle("Chi tiết phản hồi")
+  const { id } = useParams<{ id: string }>()
+  const fb = useFeedbackDetail(id)
+  const similar = useSimilarFeedbacks(id)
 
   if (fb.isPending)
     return (
@@ -34,7 +40,7 @@ export default function FeedbackDetailPage() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
       </div>
-    );
+    )
   if (fb.isError)
     return (
       <Empty>
@@ -47,10 +53,10 @@ export default function FeedbackDetailPage() {
           <EmptyDescription>{fb.error.message}</EmptyDescription>
         </EmptyHeader>
       </Empty>
-    );
+    )
 
-  const d = fb.data;
-  const ai = d.ai_analysis;
+  const d = fb.data
+  const ai = d.ai_analysis
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
@@ -60,8 +66,8 @@ export default function FeedbackDetailPage() {
       </div>
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <CardTitle>Phản hồi · {d.source}</CardTitle>
+          <CardTitle>Phản hồi · {d.source}</CardTitle>
+          <CardAction className="flex flex-wrap gap-1">
             {ai?.severity ? (
               <Badge
                 variant={
@@ -79,9 +85,11 @@ export default function FeedbackDetailPage() {
             {ai?.uncategorized ? (
               <Badge variant="outline">UNCATEGORIZED</Badge>
             ) : null}
-            {d.pii_detected ? <Badge variant="outline">Phát hiện PII</Badge> : null}
+            {d.pii_detected ? (
+              <Badge variant="outline">Phát hiện PII</Badge>
+            ) : null}
             {!ai ? <Badge variant="outline">Chưa phân tích</Badge> : null}
-          </div>
+          </CardAction>
           <CardDescription>
             {formatDate(d.occurred_at)}
             {d.source_record_id ? ` · ${d.source_record_id}` : ""}
@@ -89,7 +97,7 @@ export default function FeedbackDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
             {d.feedback_text ?? "(chưa có nội dung đã sanitize)"}
           </p>
           {ai?.rationale ? (
@@ -123,7 +131,11 @@ export default function FeedbackDetailPage() {
             <dt className="text-muted-foreground">Ý định</dt>
             <dd>{ai?.intent ?? "—"}</dd>
             <dt className="text-muted-foreground">Confidence</dt>
-            <dd>{ai?.confidence != null ? `${Math.round(ai.confidence * 100)}%` : "—"}</dd>
+            <dd>
+              {ai?.confidence != null
+                ? `${Math.round(ai.confidence * 100)}%`
+                : "—"}
+            </dd>
             <dt className="text-muted-foreground">An toàn</dt>
             <dd>{ai?.safety_issue ? "⚠ Có vấn đề an toàn" : "—"}</dd>
           </dl>
@@ -178,23 +190,28 @@ export default function FeedbackDetailPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             {similar.data!.map((s) => (
-              <li key={s.id}>
-                <Link
-                  href={`/feedbacks/${s.id}`}
-                  className="flex items-start justify-between gap-4 rounded-lg border p-3 hover:bg-accent"
-                >
-                  <span className="line-clamp-2 flex-1 text-sm">
-                    {s.snippet}
-                  </span>
-                  <Badge variant="secondary">{Math.round(s.score * 100)}%</Badge>
+              <Card
+                key={s.id}
+                size="sm"
+                className="transition-colors hover:bg-accent"
+              >
+                <Link href={`/feedbacks/${s.id}`}>
+                  <CardContent className="flex items-start justify-between gap-4">
+                    <span className="line-clamp-2 flex-1 text-sm">
+                      {s.snippet}
+                    </span>
+                    <Badge variant="secondary">
+                      {Math.round(s.score * 100)}%
+                    </Badge>
+                  </CardContent>
                 </Link>
-              </li>
+              </Card>
             ))}
-          </ul>
+          </div>
         )}
       </section>
     </div>
-  );
+  )
 }

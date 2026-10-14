@@ -14,7 +14,7 @@ agent chạy không có feedback nào, kể cả lỗi):
 - **Backend (3 thay đổi):**
   - `GET /api/agent/runs/{run_id}/trace` — metadata-only trace từ `llm_call_logs`
     (call_type, ok/error, latency, tokens, model, error[:200]; KHÔNG prompt/response —
-    đúng PII boundary plan 29), role pm|operations, 404.
+    đúng PII boundary plan 29), 404.
   - `RunProgressOut` thêm `llm_budget` (từ `UNDERSTAND_LLM_BUDGET_PER_RUN`).
   - ACT generate KHÔNG nuốt lỗi nữa: `act_agent.generate_actions` trả
     `(created, skipped, generation_error)`; response thêm `generation_error`.

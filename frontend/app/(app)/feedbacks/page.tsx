@@ -1,12 +1,12 @@
-"use client";
-import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Settings2 } from "lucide-react";
-import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks";
-import type { Feedback } from "@/lib/types";
-import { formatDate } from "@/lib/format";
-import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels";
+"use client"
+import { Suspense, useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Settings2 } from "lucide-react"
+import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks"
+import type { Feedback } from "@/lib/types"
+import { formatDate } from "@/lib/format"
+import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels"
 import {
   Table,
   TableBody,
@@ -14,14 +14,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -29,19 +29,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { DataEntryDialog } from "./data-entry-dialog";
-import { PageHeader } from "@/components/page-header";
+} from "@/components/ui/empty"
+import { DataEntryDialog } from "./data-entry-dialog"
+import { PageHeader } from "@/components/page-header"
 
 // Cột bật/tắt được. Cột "Nội dung" cố định luôn hiển thị.
 type ColumnKey =
@@ -51,7 +52,7 @@ type ColumnKey =
   | "sentiment"
   | "topics"
   | "confidence"
-  | "pii";
+  | "pii"
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "source", label: "Nguồn" },
@@ -61,21 +62,26 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "topics", label: "Chủ đề" },
   { key: "confidence", label: "Confidence" },
   { key: "pii", label: "PII" },
-];
-const DEFAULT_COLUMNS: ColumnKey[] = ["source", "occurred", "severity", "topics"];
-const STORAGE_KEY = "feedbacks.columns";
+]
+const DEFAULT_COLUMNS: ColumnKey[] = [
+  "source",
+  "occurred",
+  "severity",
+  "topics",
+]
+const STORAGE_KEY = "feedbacks.columns"
 
 function readStoredColumns(): ColumnKey[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_COLUMNS;
-    const parsed = JSON.parse(raw) as string[];
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return DEFAULT_COLUMNS
+    const parsed = JSON.parse(raw) as string[]
     const valid = parsed.filter((k) =>
-      ALL_COLUMNS.some((c) => c.key === k),
-    ) as ColumnKey[];
-    return valid.length > 0 ? valid : DEFAULT_COLUMNS;
+      ALL_COLUMNS.some((c) => c.key === k)
+    ) as ColumnKey[]
+    return valid.length > 0 ? valid : DEFAULT_COLUMNS
   } catch {
-    return DEFAULT_COLUMNS;
+    return DEFAULT_COLUMNS
   }
 }
 
@@ -83,8 +89,8 @@ function ColumnVisibilityMenu({
   visible,
   onToggle,
 }: {
-  visible: ColumnKey[];
-  onToggle: (key: ColumnKey) => void;
+  visible: ColumnKey[]
+  onToggle: (key: ColumnKey) => void
 }) {
   return (
     <DropdownMenu>
@@ -109,67 +115,69 @@ function ColumnVisibilityMenu({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
 
 function FeedbackCell({ fb }: { fb: Feedback }) {
   return (
     <TableCell className="max-w-md break-words">
       <Link href={`/feedbacks/${fb.id}`} className="block">
-        <span className="line-clamp-2">{fb.feedback_text ?? "(chưa phân tích)"}</span>
+        <span className="line-clamp-2">
+          {fb.feedback_text ?? "(chưa phân tích)"}
+        </span>
       </Link>
     </TableCell>
-  );
+  )
 }
 
 function FeedbacksTable() {
-  const router = useRouter();
-  const sp = useSearchParams();
-  const page = Math.max(1, Number(sp.get("page") ?? "1") || 1);
+  const router = useRouter()
+  const sp = useSearchParams()
+  const page = Math.max(1, Number(sp.get("page") ?? "1") || 1)
   const filters = {
     page,
     severity: sp.get("severity") ?? undefined,
     sentiment: sp.get("sentiment") ?? undefined,
     topic: sp.get("topic") ?? undefined,
     source: sp.get("source") ?? undefined,
-  };
-  const { data, isPending, isError, error } = useFeedbacks(filters);
+  }
+  const { data, isPending, isError, error } = useFeedbacks(filters)
 
   // localStorage chỉ đọc sau mount — tránh lệch hydration SSR.
   const [visibleColumns, setVisibleColumns] =
-    useState<ColumnKey[]>(DEFAULT_COLUMNS);
+    useState<ColumnKey[]>(DEFAULT_COLUMNS)
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage chỉ đọc sau mount, tránh lệch hydration SSR
-    setVisibleColumns(readStoredColumns());
-  }, []);
+    setVisibleColumns(readStoredColumns())
+  }, [])
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {
       const next = prev.includes(key)
         ? prev.filter((k) => k !== key)
-        : [...prev, key];
-      if (next.length === 0) return prev; // không cho ẩn hết mọi cột phụ
+        : [...prev, key]
+      if (next.length === 0) return prev // không cho ẩn hết mọi cột phụ
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       } catch {
         // storage bị chặn (private mode…) → vẫn đổi tạm trong phiên
       }
-      return next;
-    });
+      return next
+    })
   }
 
-  const has = (key: ColumnKey) => visibleColumns.includes(key);
+  const has = (key: ColumnKey) => visibleColumns.includes(key)
 
   function setParam(key: string, value: string | null) {
-    const next = new URLSearchParams(sp.toString());
-    if (value) next.set(key, value);
-    else next.delete(key);
-    if (key !== "page") next.delete("page"); // đổi lọc → về trang 1
-    router.replace(`/feedbacks?${next.toString()}`);
+    const next = new URLSearchParams(sp.toString())
+    if (value) next.set(key, value)
+    else next.delete(key)
+    if (key !== "page") next.delete("page") // đổi lọc → về trang 1
+    router.replace(`/feedbacks?${next.toString()}`)
   }
 
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / FEEDBACKS_PAGE_SIZE));
+  const total = data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / FEEDBACKS_PAGE_SIZE))
 
   if (isPending)
     return (
@@ -178,7 +186,7 @@ function FeedbacksTable() {
           <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
-    );
+    )
   if (isError)
     return (
       <Empty>
@@ -187,7 +195,7 @@ function FeedbacksTable() {
           <EmptyDescription>{error.message}</EmptyDescription>
         </EmptyHeader>
       </Empty>
-    );
+    )
 
   return (
     <div className="flex flex-col gap-4">
@@ -238,7 +246,10 @@ function FeedbacksTable() {
           onBlur={(e) => setParam("source", e.target.value.trim() || null)}
         />
         <div className="ml-auto">
-          <ColumnVisibilityMenu visible={visibleColumns} onToggle={toggleColumn} />
+          <ColumnVisibilityMenu
+            visible={visibleColumns}
+            onToggle={toggleColumn}
+          />
         </div>
       </div>
 
@@ -253,99 +264,102 @@ function FeedbacksTable() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[45%]">Nội dung</TableHead>
-                {has("source") && <TableHead>Nguồn</TableHead>}
-                {has("occurred") && <TableHead>Thời điểm</TableHead>}
-                {has("severity") && <TableHead>Mức độ</TableHead>}
-                {has("sentiment") && <TableHead>Cảm xúc</TableHead>}
-                {has("topics") && <TableHead>Chủ đề</TableHead>}
-                {has("confidence") && <TableHead>Confidence</TableHead>}
-                {has("pii") && <TableHead>PII</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((fb: Feedback) => {
-                const ai = fb.ai_analysis;
-                return (
-                  <TableRow key={fb.id} className="cursor-pointer">
-                    <FeedbackCell fb={fb} />
-                    {has("source") && <TableCell>{fb.source}</TableCell>}
-                    {has("occurred") && (
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(fb.occurred_at)}
-                      </TableCell>
-                    )}
-                    {has("severity") && (
-                      <TableCell>
-                        {ai?.severity ? (
-                          <Badge
-                            variant={
-                              ai.severity === "critical" || ai.severity === "high"
-                                ? "destructive"
-                                : "secondary"
-                            }
-                          >
-                            {SEVERITY_LABEL[ai.severity]}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {has("sentiment") && (
-                      <TableCell>
-                        {ai?.sentiment ? (
-                          <Badge variant="secondary">
-                            {SENTIMENT_LABEL[ai.sentiment]}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {has("topics") && (
-                      <TableCell className="max-w-48">
-                        {ai?.topics?.length ? (
-                          <div className="flex flex-wrap gap-1">
-                            {ai.topics.slice(0, 3).map((t) => (
-                              <Badge key={t} variant="outline">
-                                {t}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {has("confidence") && (
-                      <TableCell className="whitespace-nowrap">
-                        {ai?.confidence != null
-                          ? `${Math.round(ai.confidence * 100)}%`
-                          : (
+        <Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[45%]">Nội dung</TableHead>
+                  {has("source") && <TableHead>Nguồn</TableHead>}
+                  {has("occurred") && <TableHead>Thời điểm</TableHead>}
+                  {has("severity") && <TableHead>Mức độ</TableHead>}
+                  {has("sentiment") && <TableHead>Cảm xúc</TableHead>}
+                  {has("topics") && <TableHead>Chủ đề</TableHead>}
+                  {has("confidence") && <TableHead>Confidence</TableHead>}
+                  {has("pii") && <TableHead>PII</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.items.map((fb: Feedback) => {
+                  const ai = fb.ai_analysis
+                  return (
+                    <TableRow key={fb.id} className="cursor-pointer">
+                      <FeedbackCell fb={fb} />
+                      {has("source") && <TableCell>{fb.source}</TableCell>}
+                      {has("occurred") && (
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(fb.occurred_at)}
+                        </TableCell>
+                      )}
+                      {has("severity") && (
+                        <TableCell>
+                          {ai?.severity ? (
+                            <Badge
+                              variant={
+                                ai.severity === "critical" ||
+                                ai.severity === "high"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {SEVERITY_LABEL[ai.severity]}
+                            </Badge>
+                          ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
-                      </TableCell>
-                    )}
-                    {has("pii") && (
-                      <TableCell>
-                        {fb.pii_detected ? (
-                          <Badge variant="outline">PII</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-          <div className="flex items-center justify-between">
+                        </TableCell>
+                      )}
+                      {has("sentiment") && (
+                        <TableCell>
+                          {ai?.sentiment ? (
+                            <Badge variant="secondary">
+                              {SENTIMENT_LABEL[ai.sentiment]}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {has("topics") && (
+                        <TableCell className="max-w-48">
+                          {ai?.topics?.length ? (
+                            <div className="flex flex-wrap gap-1">
+                              {ai.topics.slice(0, 3).map((t) => (
+                                <Badge key={t} variant="outline">
+                                  {t}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {has("confidence") && (
+                        <TableCell className="whitespace-nowrap">
+                          {ai?.confidence != null ? (
+                            `${Math.round(ai.confidence * 100)}%`
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {has("pii") && (
+                        <TableCell>
+                          {fb.pii_detected ? (
+                            <Badge variant="outline">PII</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+          <CardFooter className="flex-wrap justify-between gap-2 border-t">
             <span className="text-sm text-muted-foreground">
               {total} phản hồi · trang {page}/{totalPages}
             </span>
@@ -367,11 +381,11 @@ function FeedbacksTable() {
                 Sau
               </Button>
             </div>
-          </div>
-        </>
+          </CardFooter>
+        </Card>
       )}
     </div>
-  );
+  )
 }
 
 export default function FeedbacksPage() {
@@ -386,5 +400,5 @@ export default function FeedbacksPage() {
         <FeedbacksTable />
       </Suspense>
     </div>
-  );
+  )
 }

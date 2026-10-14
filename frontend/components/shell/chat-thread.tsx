@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUp,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,15 +24,29 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupTextarea,
+} from "@/components/ui/input-group";
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Message } from "@/components/ui/message";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import {
+  MessageScrollerProvider,
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller";
 import { AiTrace } from "@/components/ai/ai-trace";
 import { useAgentRun, useCreateAgentRun } from "@/hooks/use-agent";
 import { useRuns } from "@/hooks/use-analysis";
 import { useProduct } from "@/hooks/use-product";
 import { useChat } from "@/components/shell/chat-provider";
 import { ApiError } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { shortDate } from "@/lib/graph";
 import type { AgentRunStatusResponse } from "@/lib/types";
 
@@ -98,8 +113,8 @@ function RunCard({
   ) : null;
 
   return (
-    <div className="rounded-xl border bg-card p-3 text-left text-foreground shadow-sm">
-      <div className="flex items-center justify-between gap-2">
+    <Card className="w-full gap-2 py-3">
+      <CardHeader className="flex-row items-center justify-between gap-2">
         <span className="font-mono text-[11px] text-signal">
           Investigation {runId.slice(0, 8)}
         </span>
@@ -116,81 +131,82 @@ function RunCard({
             {data.status === "pending_approval" ? "needs review" : data.status}
           </Badge>
         ) : null}
-      </div>
-
-      {run.isError ? (
-        <div className="mt-2 space-y-2">
-          <p className="flex items-start gap-1.5 text-xs text-destructive">
-            <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> Connection lost while
-            checking the investigation.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs"
-            onClick={() => void run.refetch()}
-          >
-            <RefreshCw data-icon="inline-start" />
-            Check again
-          </Button>
-        </div>
-      ) : !data ? (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" /> Connecting to the investigation…
-        </p>
-      ) : data.status === "running" ? (
-        <div className="mt-2 space-y-2">
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {run.isError ? (
+          <div className="space-y-2">
+            <p className="flex items-start gap-1.5 text-xs text-destructive">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> Connection lost while
+              checking the investigation.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => void run.refetch()}
+            >
+              <RefreshCw data-icon="inline-start" />
+              Check again
+            </Button>
+          </div>
+        ) : !data ? (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" /> Investigating — gathering
-            evidence. You can leave this panel.
+            <Loader2 className="size-3.5 animate-spin" /> Connecting to the investigation…
           </p>
-          {data.progress ? (
-            <p className="font-mono text-[11px] text-muted-foreground">
-              step {data.progress.iteration}/{data.progress.max_iterations}
-              {data.progress.last_tool ? ` · ${data.progress.last_tool}` : " · planning"}
-              {" · "}
-              {data.progress.llm_calls_used}/{data.progress.llm_budget} LLM calls
+        ) : data.status === "running" ? (
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" /> Investigating — gathering
+              evidence. You can leave this panel.
             </p>
-          ) : null}
-          <AiTrace runId={runId} active={isRunning} startedAt={data.started_at} />
-        </div>
-      ) : data.status === "failed" ? (
-        <div className="mt-2 space-y-2">
-          <p className="flex items-start gap-1.5 text-xs text-destructive">
-            <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {data.error ?? "The investigation failed."}
-          </p>
-          {retryButton}
-        </div>
-      ) : pending ? (
-        <div className="mt-2 space-y-2">
-          <h3 className="font-heading text-base leading-snug">{pending.insight.title}</h3>
-          <p className="text-xs leading-relaxed">{pending.insight.finding}</p>
-          {pending.evidence.length ? (
-            <p className="font-mono text-[11px] text-muted-foreground">
-              {pending.evidence.length} evidence item(s) recorded
+            {data.progress ? (
+              <p className="font-mono text-[11px] text-muted-foreground">
+                step {data.progress.iteration}/{data.progress.max_iterations}
+                {data.progress.last_tool ? ` · ${data.progress.last_tool}` : " · planning"}
+                {" · "}
+                {data.progress.llm_calls_used}/{data.progress.llm_budget} LLM calls
+              </p>
+            ) : null}
+            <AiTrace runId={runId} active={isRunning} startedAt={data.started_at} />
+          </div>
+        ) : data.status === "failed" ? (
+          <div className="space-y-2">
+            <p className="flex items-start gap-1.5 text-xs text-destructive">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {data.error ?? "The investigation failed."}
             </p>
-          ) : null}
-          <p className="text-[11px] text-muted-foreground">
-            The finding waits for your explicit review (G2) in Reports.
-          </p>
-          <Button size="sm" className="h-7 text-xs" asChild>
-            <Link href={`/reports?run=${runId}`}>
-              <FileText data-icon="inline-start" />
-              Review in Reports
+            {retryButton}
+          </div>
+        ) : pending ? (
+          <div className="space-y-2">
+            <h3 className="font-heading text-base leading-snug">{pending.insight.title}</h3>
+            <p className="text-xs leading-relaxed">{pending.insight.finding}</p>
+            {pending.evidence.length ? (
+              <p className="font-mono text-[11px] text-muted-foreground">
+                {pending.evidence.length} evidence item(s) recorded
+              </p>
+            ) : null}
+            <p className="text-[11px] text-muted-foreground">
+              The finding waits for your explicit review (G2) in Reports.
+            </p>
+            <Button size="sm" className="h-7 text-xs" asChild>
+              <Link href={`/reports?run=${runId}`}>
+                <FileText data-icon="inline-start" />
+                Review in Reports
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+            <CircleCheck className="size-3.5 shrink-0 text-lichen" /> Completed — the report is
+            in{" "}
+            <Link href="/reports" className="text-signal underline">
+              Reports
             </Link>
-          </Button>
-        </div>
-      ) : (
-        <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
-          <CircleCheck className="size-3.5 shrink-0 text-lichen" /> Completed — the report is
-          in{" "}
-          <Link href="/reports" className="text-signal underline">
-            Reports
-          </Link>
-          .
-        </p>
-      )}
-    </div>
+            .
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -205,6 +221,11 @@ type Entry = {
  * The Chat tab content — the whole navigation dock becomes the chat: agent
  * header, thread and composer, sized for the panel. Stays mounted while the
  * panel shows Home so a running investigation keeps its thread.
+ *
+ * Dựng trên chat primitives của shadcn (MessageScroller / Message / Bubble /
+ * Marker / InputGroup) trên surface tối `.chat-night` — mọi component bên trong
+ * dùng semantic tokens gốc; class remap token trong globals.css đảo màu cả
+ * subtree (primary → giấy, card/muted → pine elevation), không pha màu tay.
  */
 export function ChatThread() {
   const { chatOpen, activeRunId, openSeq } = useChat();
@@ -214,7 +235,6 @@ export function ChatThread() {
   const [draft, setDraft] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [historyRunId, setHistoryRunId] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Every openChat resets the thread: a run id seeds it as history, null starts fresh.
   useEffect(() => {
@@ -223,17 +243,6 @@ export function ChatThread() {
     setEntries([]);
     setHistoryRunId(activeRunId);
   }, [openSeq, chatOpen]); // eslint-disable-line react-hooks/exhaustive-deps -- openSeq is the trigger
-
-  // Keep the newest message in view (the viewport lives inside ScrollArea).
-  useEffect(() => {
-    const viewport = scrollRef.current?.querySelector<HTMLElement>(
-      "[data-slot=scroll-area-viewport]",
-    );
-    viewport?.scrollTo({
-      top: viewport.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [entries.length]);
 
   const send = async () => {
     const question = draft.trim();
@@ -303,9 +312,9 @@ export function ChatThread() {
   const showHistory = historyRunId != null && entries.length === 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="chat-night flex min-h-0 flex-1 flex-col bg-background text-foreground">
       {/* agent header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-sidebar-border/60 px-4 py-2.5">
+      <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lichen/20 font-heading text-sm font-semibold text-lichen">
           H
         </span>
@@ -357,103 +366,126 @@ export function ChatThread() {
         </button>
       </div>
 
-      {/* thread */}
-      <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
-        <div className="flex min-h-full flex-col px-4 py-5">
-          {showHistory ? <RunCard runId={historyRunId!} /> : null}
-
-          {entries.length === 0 && !showHistory ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
-            <NestMark />
-            <h2 className="font-heading text-lg leading-snug">
-              What do you want to investigate?
-            </h2>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Happynest digs through {product?.name ?? "your"} feedback, gathers
-              evidence, and waits for your review before anything ships.
-            </p>
-            <p className="text-[11px] leading-relaxed text-muted-foreground/80">
-              It can aggregate feedback, compare time periods, and run semantic
-              search on the selected product. Scope is fixed when the
-              investigation starts.
-            </p>
-            <div className="mt-1 grid w-full gap-1.5">
-              {[
-                "Why did accuracy complaints rise?",
-                "Which problem hurts users the most?",
-                "Summarize this week's regressions",
-                "Which feature confuses new users?",
-              ].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setDraft(s)}
-                  className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2 text-left text-xs text-foreground shadow-sm transition-colors hover:border-signal/50 hover:bg-accent/50"
-                >
-                  <Search className="size-3.5 shrink-0 text-muted-foreground" />
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="space-y-4">
-          {entries.map((entry) => (
-            <div key={entry.runId} className="space-y-2.5">
-              {entry.question ? (
-                <div className="flex justify-end">
-                  <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-xs text-primary-foreground">
-                    {entry.question}
-                  </p>
-                </div>
+      {/* thread — MessageScroller của shadcn lo follow/anchor/jump-to-latest */}
+      <MessageScrollerProvider autoScroll>
+        <MessageScroller className="min-h-0 flex-1">
+          <MessageScrollerViewport>
+            <MessageScrollerContent className="gap-6 px-4 py-5">
+              {showHistory ? (
+                <MessageScrollerItem>
+                  <Message align="start">
+                    <RunCard runId={historyRunId!} />
+                  </Message>
+                </MessageScrollerItem>
               ) : null}
-              {entry.runId.startsWith("failed:") || entry.retrying ? (
-                <div className="space-y-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-                  {entry.retrying ? (
-                    <p className="flex items-center gap-1.5">
-                      <Loader2 className="size-3.5 animate-spin" /> Restarting the
-                      investigation…
+
+              {entries.length === 0 && !showHistory ? (
+                <MessageScrollerItem className="flex-1">
+                  <div className="flex min-h-full flex-col items-center justify-center gap-3 py-6 text-center">
+                    <NestMark />
+                    <h2 className="font-heading text-lg leading-snug">
+                      What do you want to investigate?
+                    </h2>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Happynest digs through {product?.name ?? "your"} feedback, gathers
+                      evidence, and waits for your review before anything ships.
                     </p>
-                  ) : (
-                    <>
-                      <p>
-                        {entry.startError ??
-                          "Could not start the investigation. Check the product and try again."}
-                      </p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 border-destructive/40 text-xs text-destructive"
-                        onClick={() => startRetry(entry.runId, entry.question)}
-                        disabled={createRun.isPending}
-                      >
-                        <RefreshCw data-icon="inline-start" />
-                        Retry investigation
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <RunCard
-                  runId={entry.runId}
-                  question={entry.question}
-                  onRetry={(q) => startRetry(entry.runId, q)}
-                />
-              )}
-            </div>
-          ))}
-          </div>
-        </div>
-      </ScrollArea>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+                      It can aggregate feedback, compare time periods, and run semantic
+                      search on the selected product. Scope is fixed when the
+                      investigation starts.
+                    </p>
+                    <div className="mt-1 grid w-full gap-1.5">
+                      {[
+                        "Why did accuracy complaints rise?",
+                        "Which problem hurts users the most?",
+                        "Summarize this week's regressions",
+                        "Which feature confuses new users?",
+                      ].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setDraft(s)}
+                          className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2 text-left text-xs text-foreground shadow-sm transition-colors hover:bg-accent"
+                        >
+                          <Search className="size-3.5 shrink-0 text-muted-foreground" />
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </MessageScrollerItem>
+              ) : null}
+
+              {entries.map((entry) => (
+                <MessageScrollerItem key={entry.runId} scrollAnchor={!!entry.question}>
+                  <div className="flex flex-col gap-2.5">
+                    {entry.question ? (
+                      <Message align="end">
+                        <Bubble variant="default" align="end" className="max-w-[85%]">
+                          <BubbleContent className="text-xs">
+                            {entry.question}
+                          </BubbleContent>
+                        </Bubble>
+                      </Message>
+                    ) : null}
+                    {entry.runId.startsWith("failed:") || entry.retrying ? (
+                      <Message align="start">
+                        <Bubble variant="destructive" align="start" className="max-w-[95%]">
+                          <BubbleContent className="w-full space-y-2 text-xs">
+                            {entry.retrying ? (
+                              <p className="flex items-center gap-1.5">
+                                <Loader2 className="size-3.5 animate-spin" /> Restarting the
+                                investigation…
+                              </p>
+                            ) : (
+                              <>
+                                <p>
+                                  {entry.startError ??
+                                    "Could not start the investigation. Check the product and try again."}
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 border-destructive/40 text-xs text-destructive"
+                                  onClick={() => startRetry(entry.runId, entry.question)}
+                                  disabled={createRun.isPending}
+                                >
+                                  <RefreshCw data-icon="inline-start" />
+                                  Retry investigation
+                                </Button>
+                              </>
+                            )}
+                          </BubbleContent>
+                        </Bubble>
+                      </Message>
+                    ) : (
+                      <Message align="start">
+                        <RunCard
+                          runId={entry.runId}
+                          question={entry.question}
+                          onRetry={(q) => startRetry(entry.runId, q)}
+                        />
+                      </Message>
+                    )}
+                  </div>
+                </MessageScrollerItem>
+              ))}
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+          <MessageScrollerButton />
+        </MessageScroller>
+      </MessageScrollerProvider>
 
       {/* composer */}
       <div className="shrink-0 px-4 pb-4 pt-2">
-        <p className="mb-1.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <ShieldCheck className="size-3 shrink-0 text-lichen" />
-          Investigations never act without your review.
-        </p>
-        <div className="rounded-2xl border bg-card p-2 text-foreground shadow-sm transition-colors focus-within:border-signal/50">
-          <Textarea
+        <Marker className="mb-1.5 text-[10px] text-muted-foreground">
+          <MarkerIcon className="text-lichen">
+            <ShieldCheck />
+          </MarkerIcon>
+          <MarkerContent>Investigations never act without your review.</MarkerContent>
+        </Marker>
+        <InputGroup className="min-h-9 items-start rounded-2xl bg-muted/50 py-1.5">
+          <InputGroupTextarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -464,36 +496,35 @@ export function ChatThread() {
             }}
             placeholder="What are you wondering about…"
             rows={1}
-            className="max-h-28 min-h-9 resize-none border-0 bg-transparent px-1.5 text-sm shadow-none focus-visible:ring-0"
+            className="max-h-28 min-h-9"
             aria-label="Question"
           />
-          <div className="flex items-center justify-between">
-            <button
-              className="rounded-full p-1.5 text-muted-foreground/70 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <InputGroupAddon align="block-end" className="px-1.5 pb-0.5">
+            <InputGroupButton
               disabled
+              size="icon-xs"
               title="Attachments — coming soon"
               aria-label="Attachments (coming soon)"
+              className="rounded-full text-muted-foreground/70"
             >
-              <Paperclip className="size-3.5" />
-            </button>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground">Enter to send</span>
-              <Button
-                size="icon"
-                className="size-8 rounded-full"
-                onClick={() => void send()}
-                disabled={draft.trim().length < 3 || createRun.isPending || !productId}
-                aria-label="Send question"
-              >
-                {createRun.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ArrowUp className="size-3.5" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
+              <Paperclip />
+            </InputGroupButton>
+            <span className="ml-auto text-[10px] text-muted-foreground">Enter to send</span>
+            <Button
+              size="icon"
+              className="size-8 rounded-full"
+              onClick={() => void send()}
+              disabled={draft.trim().length < 3 || createRun.isPending || !productId}
+              aria-label="Send question"
+            >
+              {createRun.isPending ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <ArrowUp className="size-3.5" />
+              )}
+            </Button>
+          </InputGroupAddon>
+        </InputGroup>
       </div>
     </div>
   );

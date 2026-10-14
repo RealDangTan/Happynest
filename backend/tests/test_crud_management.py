@@ -1,7 +1,7 @@
 """Integration test — CRUD quản lý (plan crud-management-screens 2026-09-16).
 
 PATCH/DELETE feedback (đơn + bulk), DELETE import batch, DELETE product
-cascade, PATCH/DELETE insight. Destructive ops guard pm-only (operations → 403).
+cascade, PATCH/DELETE insight. All authenticated accounts can manage shared data.
 
 Chạy: `uv run pytest -m integration tests/test_crud_management.py -v`
 Suite tự seed product RIÊNG (tên cố định, idempotent) + teardown xoá sạch mọi
@@ -18,7 +18,7 @@ from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models.action import Action
 from app.models.analysis_run import AnalysisRun
-from app.models.enums import BusinessFunction, ImportStatus, LlmCallType, RunStatus, UserRole
+from app.models.enums import BusinessFunction, ImportStatus, LlmCallType, RunStatus
 from app.models.evidence import Evidence
 from app.models.feedback import Feedback
 from app.models.import_ import Import
@@ -34,10 +34,10 @@ _PRODUCT_NAME = "crud-mgmt-test-product"
 _SRC = "test-crud-mgmt"
 
 
-def _login(client: TestClient, role: UserRole = UserRole.pm) -> dict[str, str]:
+def _login(client: TestClient, account: str = "primary") -> dict[str, str]:
     resp = client.post(
         "/api/auth/token",
-        data={"username": SEED_EMAILS[role], "password": TEST_PASSWORDS[role]},
+        data={"username": SEED_EMAILS[account], "password": TEST_PASSWORDS[account]},
     )
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
@@ -158,13 +158,13 @@ def test_patch_feedback_merges_labels_and_metadata(client, crud_product) -> None
     assert body["ai_analysis"]["topics"] == ["t2"]
 
 
-def test_patch_feedback_operations_forbidden(client, crud_product) -> None:
-    ops = _login(client, UserRole.operations)
+def test_second_account_can_patch_feedback(client, crud_product) -> None:
+    ops = _login(client, "secondary")
     fb_id = _seed_feedback(crud_product)
     resp = client.patch(
         f"/api/feedbacks/{fb_id}", headers=ops, json={"source": "email"}
     )
-    assert resp.status_code == 403, resp.text
+    assert resp.status_code == 200, resp.text
 
 
 def test_delete_feedback_single(client, crud_product) -> None:
@@ -393,7 +393,7 @@ def test_delete_product_cascades_everything(client, crud_product) -> None:
         )
 
 
-def test_product_destructive_pm_only(client, crud_product) -> None:
-    ops = _login(client, UserRole.operations)
+def test_second_account_can_delete_product(client, crud_product) -> None:
+    ops = _login(client, "secondary")
     resp = client.delete(f"/api/products/{crud_product}", headers=ops)
-    assert resp.status_code == 403, resp.text
+    assert resp.status_code == 200, resp.text

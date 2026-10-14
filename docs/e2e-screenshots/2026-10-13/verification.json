@@ -1,0 +1,93 @@
+{
+  "verified_at": "2026-10-13 Asia/Saigon",
+  "product_id": "c4f14bbd-a23b-4a8e-8136-d535fb61def5",
+  "taxonomy_version": 2,
+  "feedback_count": 32,
+  "classified_count": 32,
+  "embedded_1536_count": 32,
+  "imports": [
+    {
+      "id": "da7175b1-f519-4d02-85eb-8afc4f42dc3a",
+      "status": "imported",
+      "source_rows": 32,
+      "imported": 32,
+      "failed": 0
+    }
+  ],
+  "runs": [
+    {
+      "id": "57fb7126-7dc1-41f2-8fe5-ba32c3c3b32f",
+      "status": "completed",
+      "processed": 32,
+      "total": 32,
+      "failed": 0
+    },
+    {
+      "id": "31bc138e-6928-404b-aa2b-996990e95bfb",
+      "status": "completed",
+      "processed": 1,
+      "total": 1,
+      "failed": 0
+    },
+    {
+      "id": "4ee2ff86-78ab-453b-8a42-372e1b7771b1",
+      "status": "completed",
+      "processed": 1,
+      "total": 1,
+      "failed": 0
+    }
+  ],
+  "insights": [
+    {
+      "id": "50208119-019b-402f-9718-80c23ace6704",
+      "status": "rejected",
+      "confidence": 1.0,
+      "evidence_count": 1
+    },
+    {
+      "id": "b1d9cd7c-87f0-4d28-b206-b878cf995a4e",
+      "status": "approved",
+      "confidence": 0.5,
+      "evidence_count": 1
+    }
+  ],
+  "approved_evidence_feedbacks": 10,
+  "approved_evidence_all_in_product": true,
+  "actions": [
+    {
+      "id": "37f0a562-2883-48f1-b096-a60e832d171a",
+      "department": "ENGINEERING",
+      "status": "accepted",
+      "ai_impact": 8,
+      "human_impact": 6,
+      "effort": 5,
+      "urgency": 9,
+      "confidence": 0.7,
+      "priority_score": 7.0,
+      "override_reason_saved": true
+    },
+    {
+      "id": "a992a516-604f-4753-b1ef-91399a21f5db",
+      "department": "SUPPORT",
+      "status": "proposed",
+      "ai_impact": 6,
+      "human_impact": null,
+      "effort": 3,
+      "urgency": 7,
+      "confidence": 0.6,
+      "priority_score": 6.4,
+      "override_reason_saved": false
+    }
+  ],
+  "decision_counts": {
+    "taxonomy": 24,
+    "insight": 3,
+    "schema_mapping": 1,
+    "action": 1
+  },
+  "review_decisions": [
+    "investigate_more",
+    "reject",
+    "approve"
+  ]
+}

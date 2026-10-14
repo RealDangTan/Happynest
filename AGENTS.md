@@ -1,6 +1,6 @@
 # AGENTS.md — AI Feedback Agent (Undergraduate Thesis)
 
-Standing context for AI coding agents (Claude Code, Cursor, Codex, …) working in this repository. Read this file FIRST, then the active mission plan referenced below.
+Standing context for AI coding agents (Claude Code, Cursor, Codex, …) working in this repository. Read this file FIRST, then `docs/README.md`, then the active mission plan referenced below.
 
 ## Project identity
 
@@ -38,9 +38,15 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 | Structured output | try `response_format json_schema` → fallback prompt-JSON + Pydantic validate + ONE retry |
 | PII | Presidio + `StanzaNlpEngine("vi")` + regex recognizers (email/url/ip/VN-phone/CCCD); `<TYPE>` placeholders; analyzer instantiated once at startup |
 | HITL trigger rule | `requires_human_review = severity=="critical" OR safety_issue OR pii_detected OR confidence<0.60` (compute now, graph later) |
-| Auth | FastAPI OAuth2 password flow; `pwdlib[argon2]`; JWT in httpOnly SameSite=Lax cookie; roles `pm` \| `operations` |
+| Auth | FastAPI OAuth2 password flow; `pwdlib[argon2]`; JWT in httpOnly SameSite=Lax cookie; shared authenticated access; user identity = `{id, email}` |
 | Tracing | Langfuse Cloud Hobby EU + permanent `llm_call_logs` Postgres table (vendor-independent evidence) |
 | Migrations | Alembic with `include_object` filter excluding the 4 langgraph checkpoint tables from day one |
+
+## Shared workspace contract
+
+- Every authenticated account can use every workspace and every application feature, including create, edit, delete and HITL decisions.
+- Product/import filters select the business data being analysed; account identity records login and reviewer attribution.
+- Treat `docs/README.md`, `docs/api-checklist.md` and current code as the implementation contract. Historical plans, screenshots and Git snapshots do not add requirements.
 
 ## Repository map
 

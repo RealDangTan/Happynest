@@ -1,28 +1,28 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import { MARKETING_NAV } from "@/lib/marketing-content";
+import Image from "next/image"
+import { MARKETING_NAV } from "@/lib/marketing-content"
 import {
   useEffect,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
-} from "react";
+} from "react"
 
 export function HeroVideo({ src }: { src: string }) {
-  const ref = useRef<HTMLVideoElement>(null);
+  const ref = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    const video = ref.current;
-    if (!video) return;
-    video.playbackRate = 0.5;
+    const video = ref.current
+    if (!video) return
+    video.playbackRate = 0.5
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      video.pause();
-      return;
+      video.pause()
+      return
     }
-    void video.play().catch(() => undefined);
-  }, []);
+    void video.play().catch(() => undefined)
+  }, [])
 
   return (
     <video
@@ -35,12 +35,12 @@ export function HeroVideo({ src }: { src: string }) {
       preload="metadata"
       aria-hidden
       onLoadedMetadata={(event) => {
-        event.currentTarget.playbackRate = 0.5;
+        event.currentTarget.playbackRate = 0.5
       }}
     >
       <source src={src} type="video/webm" />
     </video>
-  );
+  )
 }
 
 export function Reveal({
@@ -48,27 +48,27 @@ export function Reveal({
   className = "",
   delay = 0,
 }: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
+  children: ReactNode
+  className?: string
+  delay?: number
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current
+    if (!el) return
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          el.classList.add("is-in");
-          io.disconnect();
+          el.classList.add("is-in")
+          io.disconnect()
         }
       },
       { threshold: 0.2 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   return (
     <div
@@ -78,7 +78,7 @@ export function Reveal({
     >
       {children}
     </div>
-  );
+  )
 }
 
 export function CountUp({
@@ -86,79 +86,85 @@ export function CountUp({
   suffix = "",
   duration = 1400,
 }: {
-  to: number;
-  suffix?: string;
-  duration?: number;
+  to: number
+  suffix?: string
+  duration?: number
 }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [val, setVal] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null)
+  const [val, setVal] = useState(0)
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current
+    if (!el) return
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reduced-motion final value
-      setVal(to);
-      return;
+      setVal(to)
+      return
     }
-    let raf = 0;
+    let raf = 0
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        io.disconnect();
-        const start = performance.now();
+        if (!entry.isIntersecting) return
+        io.disconnect()
+        const start = performance.now()
         const tick = (t: number) => {
-          const p = Math.min(1, (t - start) / duration);
-          const eased = 1 - Math.pow(1 - p, 3);
-          setVal(Math.round(to * eased));
-          if (p < 1) raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
+          const p = Math.min(1, (t - start) / duration)
+          const eased = 1 - Math.pow(1 - p, 3)
+          setVal(Math.round(to * eased))
+          if (p < 1) raf = requestAnimationFrame(tick)
+        }
+        raf = requestAnimationFrame(tick)
       },
       { threshold: 0.5 }
-    );
-    io.observe(el);
+    )
+    io.observe(el)
     return () => {
-      io.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, [to, duration]);
+      io.disconnect()
+      cancelAnimationFrame(raf)
+    }
+  }, [to, duration])
 
   return (
     <span ref={ref}>
       {val.toLocaleString("en-US")}
       {suffix}
     </span>
-  );
+  )
 }
 
-export function ConfidenceRing({ value = 87, size = 56 }: { value?: number; size?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [on, setOn] = useState(false);
+export function ConfidenceRing({
+  value = 87,
+  size = 56,
+}: {
+  value?: number
+  size?: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [on, setOn] = useState(false)
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const el = ref.current
+    if (!el) return
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        io.disconnect();
-        if (reduce) setOn(true);
+        if (!entry.isIntersecting) return
+        io.disconnect()
+        if (reduce) setOn(true)
         else {
           // slight delay so the ring animates after the card reveal
-          setTimeout(() => setOn(true), 300);
+          setTimeout(() => setOn(true), 300)
         }
       },
       { threshold: 0.5 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
-  const stroke = 4;
-  const r = (size - stroke * 2) / 2;
-  const c = 2 * Math.PI * r;
+  const stroke = 4
+  const r = (size - stroke * 2) / 2
+  const c = 2 * Math.PI * r
 
   return (
     <div ref={ref} className="hn-ring" style={{ width: size, height: size }}>
@@ -190,10 +196,15 @@ export function ConfidenceRing({ value = 87, size = 56 }: { value?: number; size
       </svg>
       <span className="hn-ring-label">{value}%</span>
     </div>
-  );
+  )
 }
 
-const SIGNAL_DOTS: Array<{ "--x": string; "--y": string; "--d": string; "--dur": string }> = [
+const SIGNAL_DOTS: Array<{
+  "--x": string
+  "--y": string
+  "--d": string
+  "--dur": string
+}> = [
   { "--x": "4%", "--y": "88%", "--d": "0s", "--dur": "11s" },
   { "--x": "9%", "--y": "95%", "--d": "1.2s", "--dur": "9s" },
   { "--x": "14%", "--y": "90%", "--d": "2.4s", "--dur": "12s" },
@@ -210,7 +221,7 @@ const SIGNAL_DOTS: Array<{ "--x": string; "--y": string; "--d": string; "--dur":
   { "--x": "82%", "--y": "96%", "--d": "2.2s", "--dur": "9.8s" },
   { "--x": "88%", "--y": "89%", "--d": "4.6s", "--dur": "12.8s" },
   { "--x": "94%", "--y": "93%", "--d": "1.1s", "--dur": "10.2s" },
-];
+]
 
 export function SignalField() {
   return (
@@ -219,10 +230,16 @@ export function SignalField() {
         <i key={i} style={dot as CSSProperties} />
       ))}
     </div>
-  );
+  )
 }
 
-export function BirdSvg({ size = 24, className = "" }: { size?: number; className?: string }) {
+export function BirdSvg({
+  size = 24,
+  className = "",
+}: {
+  size?: number
+  className?: string
+}) {
   return (
     <svg
       width={size}
@@ -245,23 +262,27 @@ export function BirdSvg({ size = 24, className = "" }: { size?: number; classNam
       {/* wing */}
       <rect x="3" y="6" width="3" height="2" fill="var(--hn-stone)" />
     </svg>
-  );
+  )
 }
 
 export function LandingNav() {
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   return (
     <header className={`hn-nav ${scrolled ? "hn-nav-scrolled" : ""}`}>
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <a href="/landing" className="flex items-center gap-2" aria-label="Happynest home">
+        <a
+          href="/landing"
+          className="flex items-center gap-2"
+          aria-label="Happynest home"
+        >
           <Image
             src="/assets/Logo-white.png"
             alt=""
@@ -286,7 +307,7 @@ export function LandingNav() {
         </a>
       </nav>
     </header>
-  );
+  )
 }
 
 export function PublicFooter() {
@@ -294,8 +315,18 @@ export function PublicFooter() {
     <footer className="hn-footer">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 md:grid-cols-[1fr_auto]">
         <div>
-          <a href="/landing" className="inline-flex items-center gap-3" aria-label="Happynest home">
-            <Image src="/assets/Logo-white.png" alt="" width={28} height={28} className="size-7 object-contain" />
+          <a
+            href="/landing"
+            className="inline-flex items-center gap-3"
+            aria-label="Happynest home"
+          >
+            <Image
+              src="/assets/Logo-white.png"
+              alt=""
+              width={28}
+              height={28}
+              className="size-7 object-contain"
+            />
             <span className="hn-brand text-xl">happynest</span>
           </a>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--hn-stone)]">
@@ -303,8 +334,15 @@ export function PublicFooter() {
             with people at every decision gate.
           </p>
         </div>
-        <nav aria-label="Footer" className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm sm:grid-cols-3">
-          {[...MARKETING_NAV, { label: "Q&A", href: "/qna" }, { label: "Legal", href: "/legal" }].map((item) => (
+        <nav
+          aria-label="Footer"
+          className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm sm:grid-cols-3"
+        >
+          {[
+            ...MARKETING_NAV,
+            { label: "Q&A", href: "/qna" },
+            { label: "Legal", href: "/legal" },
+          ].map((item) => (
             <a key={item.href} href={item.href} className="hn-link">
               {item.label}
             </a>
@@ -313,8 +351,10 @@ export function PublicFooter() {
       </div>
       <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-3 border-t border-[var(--hn-olive)] px-4 pt-6 text-xs text-[var(--hn-stone)] sm:flex-row sm:items-center sm:justify-between">
         <p>© 2026 Happynest · Undergraduate thesis prototype</p>
-        <p className="hn-pixel text-[9px] tracking-widest">LISTEN · UNDERSTAND · ACT</p>
+        <p className="hn-pixel text-[9px] tracking-widest">
+          LISTEN · UNDERSTAND · ACT
+        </p>
       </div>
     </footer>
-  );
+  )
 }

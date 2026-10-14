@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Ban, CheckCircle2, Clock3, FileSpreadsheet, Play, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  Ban,
+  Clock3,
+  FileSpreadsheet,
+  Maximize2,
+  Play,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -21,25 +29,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  useCancelImport,
-  useDecideMapping,
-  useGetMapping,
-  useImport,
-  useImportPreview,
-  useProposeMapping,
-} from "@/hooks/use-imports";
+import { useCancelImport, useImport } from "@/hooks/use-imports";
 import { useAnalysisPreview, useCancelRun, useRunProgress, useTriggerRun } from "@/hooks/use-analysis";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { AnalysisScope, FeedbackListResponse, HumanMappingAction, ImportRecord, MappingDecision, MappingItem, RunProgress } from "@/lib/types";
+import type { AnalysisScope, FeedbackListResponse, ImportRecord, RunProgress } from "@/lib/types";
+import {
+  IMPORT_STEPS,
+  StepMapping,
+  StepPreview,
+  StepResult,
+  stepForImport,
+} from "@/components/importer/import-steps";
+import { Stepper } from "@/components/stepper";
 import { useActivity } from "./activity-provider";
 
 const ATTENTION = new Set(["profile_ready", "mapping_review", "failed"]);
@@ -62,6 +69,19 @@ function statusBadge(status: string) {
     <Badge variant={status === "failed" ? "destructive" : "secondary"}>
       {STATUS_LABEL[status] ?? status}
     </Badge>
+  );
+}
+
+/** Nút chuyển task sang trang đầy đủ — Sheet chỉ đủ chỗ cho việc xem nhanh,
+ * duyệt mapping bảng 4 cột cần cả màn /importer. */
+function OpenFullPageButton({ href }: { href: string }) {
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link href={href}>
+        <Maximize2 data-icon="inline-start" />
+        Toàn màn hình
+      </Link>
+    </Button>
   );
 }
 
@@ -134,73 +154,6 @@ function ActivityQueue() {
   );
 }
 
-function ProfilePreview({ importId }: { importId: string }) {
-  const preview = useImportPreview(importId);
-  if (preview.isPending) return <Spinner />;
-  if (!preview.data) return null;
-  return (
-    <section className="space-y-3 rounded-xl border bg-muted/20 p-4">
-      <div className="flex items-center justify-between"><h3 className="font-heading text-base">1. Preview cấu trúc</h3><Badge variant="outline">Chưa gọi AI</Badge></div>
-      <p className="text-sm text-muted-foreground">{preview.data.source_row_count} dòng · sample đã sanitize trước khi lưu.</p>
-      <Table>
-        <TableHeader><TableRow><TableHead>Cột</TableHead><TableHead>Kiểu</TableHead><TableHead>Sample an toàn</TableHead></TableRow></TableHeader>
-        <TableBody>{preview.data.column_profiles.map((column) => (
-          <TableRow key={column.name}><TableCell className="font-medium">{column.name}</TableCell><TableCell>{column.detected_type ?? "—"}</TableCell><TableCell className="max-w-xs truncate text-muted-foreground">{column.sample_values?.join(" · ") || "—"}</TableCell></TableRow>
-        ))}</TableBody>
-      </Table>
-    </section>
-  );
-}
-
-function MappingGate({ item }: { item: ImportRecord }) {
-  const propose = useProposeMapping();
-  const cancel = useCancelImport();
-  if (!["profile_ready", "mapping_generating", "failed"].includes(item.status)) return null;
-  if (item.status === "mapping_generating") return <Alert><Spinner data-icon="inline-start" /><AlertTitle>AI đang tạo mapping</AlertTitle><AlertDescription>Job đã được claim. Có thể đóng Sheet; tiến độ vẫn được giữ.</AlertDescription></Alert>;
-  return (
-    <section className="space-y-3 rounded-xl border p-4">
-      <h3 className="font-heading text-base">2. Tạo đề xuất mapping</h3>
-      {item.error ? <Alert variant="destructive"><AlertTitle>Lần trước thất bại</AlertTitle><AlertDescription>{item.error}</AlertDescription></Alert> : null}
-      <div className="rounded-lg bg-muted p-3 text-sm"><p>Receipt: 1 logical mapping job</p><p className="text-muted-foreground">Tối đa 3 provider attempts theo fallback structured output.</p></div>
-      <div className="flex gap-2">
-        <AlertDialog>
-          <AlertDialogTrigger asChild><Button><Play data-icon="inline-start" />Tạo mapping bằng AI</Button></AlertDialogTrigger>
-          <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Xác nhận paid mapping job?</AlertDialogTitle><AlertDialogDescription>AI chỉ nhận profile/sample đã sanitize, không nhận file CSV raw. Job được chống double-click và có thể retry nếu kẹt quá 5 phút.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Quay lại</AlertDialogCancel><AlertDialogAction onClick={() => propose.mutate(item.id)}>Xác nhận chạy</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-        </AlertDialog>
-        <Button variant="ghost" disabled={cancel.isPending} onClick={() => cancel.mutate(item.id)}><Ban data-icon="inline-start" />Hủy import</Button>
-      </div>
-    </section>
-  );
-}
-
-function MappingReview({ item }: { item: ImportRecord }) {
-  const mapping = useGetMapping(item.status === "mapping_review" ? item.id : null);
-  const decide = useDecideMapping();
-  const [actions, setActions] = useState<Record<string, { action: HumanMappingAction; targetKey?: string }>>({});
-  if (item.status !== "mapping_review") return null;
-  if (mapping.isPending) return <Spinner />;
-  const mappings = mapping.data?.mappings ?? [];
-  const defaultAction = (entry: MappingItem): HumanMappingAction => entry.decision === "AMBIGUOUS" ? "ignore" : "approve";
-  const submit = () => {
-    const decisions: MappingDecision[] = mappings.map((entry) => ({
-      source_field: entry.source_field,
-      action: actions[entry.source_field]?.action ?? defaultAction(entry),
-      ...(actions[entry.source_field]?.targetKey ? { target_key: actions[entry.source_field].targetKey } : {}),
-    }));
-    decide.mutate({ importId: item.id, decisions }, { onError: (error) => toast.error(error instanceof ApiError ? error.message : "Không import được") });
-  };
-  return (
-    <section className="space-y-3 rounded-xl border p-4">
-      <h3 className="font-heading text-base">3. Xác nhận mapping AI</h3>
-      <Table><TableHeader><TableRow><TableHead>Cột CSV</TableHead><TableHead>AI đề xuất</TableHead><TableHead>Quyết định</TableHead></TableRow></TableHeader><TableBody>{mappings.map((entry) => {
-        const current = actions[entry.source_field]?.action ?? defaultAction(entry);
-        return <TableRow key={entry.source_field}><TableCell className="font-medium">{entry.source_field}</TableCell><TableCell><span className="block">{entry.decision}{entry.target ? ` → ${entry.target}` : ""}</span><span className="text-xs text-muted-foreground">{entry.reason}</span></TableCell><TableCell><Select value={current} onValueChange={(value) => setActions((old) => ({ ...old, [entry.source_field]: { action: value as HumanMappingAction, targetKey: old[entry.source_field]?.targetKey } }))}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="approve">Duyệt đề xuất</SelectItem><SelectItem value="remap">Map field khác</SelectItem><SelectItem value="demote">Source metadata</SelectItem><SelectItem value="ignore">Bỏ qua</SelectItem></SelectContent></Select>{current === "remap" ? <Input className="mt-2" placeholder="target_key" value={actions[entry.source_field]?.targetKey ?? ""} onChange={(event) => setActions((old) => ({ ...old, [entry.source_field]: { action: "remap", targetKey: event.target.value } }))} /> : null}</TableCell></TableRow>;
-      })}</TableBody></Table>
-      <AlertDialog><AlertDialogTrigger asChild><Button disabled={decide.isPending}>Duyệt &amp; import</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Nạp dữ liệu theo mapping này?</AlertDialogTitle><AlertDialogDescription>Import chạy nền và chỉ ghi feedback đã sanitize. Analysis sẽ chưa tự chạy.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Kiểm tra lại</AlertDialogCancel><AlertDialogAction onClick={submit}>Xác nhận import</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    </section>
-  );
-}
-
 function AnalysisChooser({ item }: { item: ImportRecord }) {
   const activity = useActivity();
   const qc = useQueryClient();
@@ -226,7 +179,7 @@ function AnalysisChooser({ item }: { item: ImportRecord }) {
   };
   return (
     <section className="space-y-4 rounded-xl border p-4">
-      <div><h3 className="font-heading text-base">5. Chọn cách phân tích</h3><p className="text-sm text-muted-foreground">Không tự chạy sau import. Mỗi run tối đa 100 feedback.</p></div>
+      <div><h3 className="font-heading text-base">Chạy phân tích cho lô này</h3><p className="text-sm text-muted-foreground">Không tự chạy sau import. Mỗi run tối đa 100 feedback.</p></div>
       <ToggleGroup type="single" value={mode} onValueChange={(value) => { if (value) { setMode(value as "selected" | "batch"); preview.reset(); } }} variant="outline" className="justify-start">
         <ToggleGroupItem value="selected">Chọn từng mục</ToggleGroupItem><ToggleGroupItem value="batch">Chạy theo lô</ToggleGroupItem>
       </ToggleGroup>
@@ -241,8 +194,42 @@ function AnalysisChooser({ item }: { item: ImportRecord }) {
 function ImportDetail({ id }: { id: string }) {
   const { openQueue } = useActivity();
   const detail = useImport(id);
+  const cancel = useCancelImport();
   const item = detail.data;
-  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{detail.isPending ? <Spinner /> : null}{item ? <><div className="flex items-start justify-between gap-3"><div><h2 className="font-heading text-xl">{item.original_filename ?? "CSV import"}</h2><p className="text-sm text-muted-foreground">{item.id}</p></div>{statusBadge(item.status)}</div><ProfilePreview importId={id} /><MappingGate item={item} /><MappingReview item={item} />{item.status === "importing" ? <section className="space-y-2 rounded-xl border p-4"><h3 className="font-heading text-base">4. Import progress</h3><p className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Đang sanitize và ghi từng dòng…</p><p className="text-sm text-muted-foreground">Có thể đóng Sheet — tiến độ thật chưa có số % từ server.</p></section> : null}{item.status === "imported" ? <Alert><CheckCircle2 className="size-4" /><AlertTitle>Import hoàn tất</AlertTitle><AlertDescription>{item.report?.imported ?? item.row_count ?? 0} dòng đã nạp, {item.report?.failed ?? 0} lỗi. Analysis vẫn đang chờ xác nhận.</AlertDescription></Alert> : null}<AnalysisChooser item={item} /></> : <Alert variant="destructive"><AlertTitle>Không tải được import</AlertTitle><AlertDescription>{detail.error?.message}</AlertDescription></Alert>}</div>;
+  const step = item ? stepForImport(item) : null;
+  const cancellable = Boolean(item && ["profile_ready", "failed"].includes(item.status));
+  return (
+    <div className="mt-4 space-y-4">
+      <Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>
+      {detail.isPending ? <Spinner /> : null}
+      {item ? (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="font-heading text-xl">{item.original_filename ?? "CSV import"}</h2>
+              <p className="truncate text-sm text-muted-foreground">{item.id}</p>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {statusBadge(item.status)}
+              <OpenFullPageButton href={`/importer?import=${item.id}`} />
+              {cancellable ? (
+                <Button variant="ghost" size="sm" disabled={cancel.isPending} onClick={() => cancel.mutate(item.id)}>
+                  <Ban data-icon="inline-start" />Hủy import
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          <Stepper steps={IMPORT_STEPS} current={step ?? "Preview"} label="Import steps" />
+          {step === "Preview" ? <StepPreview importId={item.id} /> : null}
+          {step === "Mapping" ? <StepMapping importId={item.id} /> : null}
+          {step === "Result" ? <StepResult importId={item.id} /> : null}
+          <AnalysisChooser item={item} />
+        </>
+      ) : (
+        <Alert variant="destructive"><AlertTitle>Không tải được import</AlertTitle><AlertDescription>{detail.error?.message}</AlertDescription></Alert>
+      )}
+    </div>
+  );
 }
 
 function RunDetail({ id }: { id: string }) {
@@ -251,7 +238,7 @@ function RunDetail({ id }: { id: string }) {
   const cancel = useCancelRun();
   const data = run.data;
   const pct = data?.total_count ? Math.round((data.processed_count / data.total_count) * 100) : 0;
-  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{data ? <><div className="flex items-center justify-between"><h2 className="font-heading text-xl">Analysis run</h2>{statusBadge(data.status)}</div><section className="space-y-3 rounded-xl border p-4"><Progress value={pct} /><p className="text-sm">{data.processed_count}/{data.total_count} hoàn tất · {data.failed_count} lỗi</p><p className="text-xs text-muted-foreground">Mode {data.mode} · chunk {data.chunk_size}. Dừng có hiệu lực sau {data.mode === "batch" ? "chunk" : "item"} hiện tại.</p><div className="flex flex-wrap gap-2">{data.status === "running" ? <Button variant="outline" disabled={cancel.isPending || Boolean(data.cancel_requested_at)} onClick={() => cancel.mutate(id)}><Ban data-icon="inline-start" />{data.cancel_requested_at ? "Đang chờ dừng" : "Dừng run"}</Button> : null}<Button variant="outline" asChild><Link href={`/analysis?run=${id}`}>Xem kết quả chi tiết</Link></Button></div>{data.error ? <Alert variant="destructive"><TriangleAlert className="size-4" /><AlertTitle>Có lỗi</AlertTitle><AlertDescription>{data.error}</AlertDescription></Alert> : null}</section></> : <Spinner />}</div>;
+  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{data ? <><div className="flex flex-wrap items-start justify-between gap-3"><h2 className="font-heading text-xl">Analysis run</h2><div className="flex shrink-0 items-center gap-2">{statusBadge(data.status)}<OpenFullPageButton href={`/analysis?run=${id}`} /></div></div><section className="space-y-3 rounded-xl border p-4"><Progress value={pct} /><p className="text-sm">{data.processed_count}/{data.total_count} hoàn tất · {data.failed_count} lỗi</p><p className="text-xs text-muted-foreground">Mode {data.mode} · chunk {data.chunk_size}. Dừng có hiệu lực sau {data.mode === "batch" ? "chunk" : "item"} hiện tại.</p><div className="flex flex-wrap gap-2">{data.status === "running" ? <Button variant="outline" disabled={cancel.isPending || Boolean(data.cancel_requested_at)} onClick={() => cancel.mutate(id)}><Ban data-icon="inline-start" />{data.cancel_requested_at ? "Đang chờ dừng" : "Dừng run"}</Button> : null}<Button variant="outline" asChild><Link href={`/analysis?run=${id}`}>Xem kết quả chi tiết</Link></Button></div>{data.error ? <Alert variant="destructive"><TriangleAlert className="size-4" /><AlertTitle>Có lỗi</AlertTitle><AlertDescription>{data.error}</AlertDescription></Alert> : null}</section></> : <Spinner />}</div>;
 }
 
 export function ActivitySheet() {
@@ -260,8 +247,8 @@ export function ActivitySheet() {
   const detail = param?.startsWith("import:") ? <ImportDetail id={param.slice(7)} /> : param?.startsWith("run:") ? <RunDetail id={param.slice(4)} /> : <ActivityQueue />;
   return (
     <Sheet open={Boolean(param)} onOpenChange={(open) => { if (!open) activity.closeActivity(); }}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-3xl">
-        <SheetHeader><SheetTitle>Activity Center</SheetTitle><SheetDescription>Review, import và chạy AI có budget guard — không rời trang hiện tại.</SheetDescription></SheetHeader>
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-4xl">
+        <SheetHeader><SheetTitle>Activity Center</SheetTitle><SheetDescription>Duyệt mapping, import và chạy AI có budget guard — task lớn mở toàn màn hình để xử lý.</SheetDescription></SheetHeader>
         <div className="px-4 pb-6">{detail}</div>
       </SheetContent>
     </Sheet>

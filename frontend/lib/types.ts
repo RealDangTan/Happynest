@@ -223,6 +223,18 @@ export type MappingItem = {
 
 export type MappingProposal = { mappings: MappingItem[] };
 
+/** GET /api/products/{id}/schema — schema ACTIVE + core fields (mapper đổi
+ * target nhập tay cần biết key nào đã tồn tại: remap vs promote field mới). */
+export type ActiveSchemaResponse = {
+  product_id: string;
+  schema: {
+    version: number;
+    definition: { fields: CandidateField[] };
+    status: string;
+  } | null;
+  core_fields: CandidateField[];
+};
+
 /** Quyết định human per source_field — Gate #1 (VoC OS §12). */
 export type HumanMappingAction = "approve" | "remap" | "promote" | "demote" | "ignore";
 
