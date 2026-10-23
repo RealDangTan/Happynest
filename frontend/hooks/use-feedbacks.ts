@@ -7,27 +7,36 @@ import {
 } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type { Feedback, FeedbackListResponse } from "@/lib/types";
+import type { FeedbackServerSort } from "@/lib/table-sorts";
 
 export type FeedbackListParams = {
   page: number;
-  severity?: string;
-  sentiment?: string;
+  /** Số dòng/trang — backend cap 100 */
+  pageSize?: number;
+  /** Faceted multi-select: ['high','critical'] → severity=high,critical */
+  severity?: string[];
+  sentiment?: string[];
   topic?: string;
   source?: string;
+  /** Search text toàn cục (backend: feedback_text + source, ILIKE) */
+  q?: string;
+  sort?: FeedbackServerSort;
   importId?: string;
-  analysisState?: "pending" | "completed";
+  analysisState?: "pending" | "completed" | "uncategorized";
 };
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 function toQuery(p: FeedbackListParams): string {
   const q = new URLSearchParams();
-  q.set("limit", String(PAGE_SIZE));
-  q.set("offset", String((p.page - 1) * PAGE_SIZE));
-  if (p.severity) q.set("severity", p.severity);
-  if (p.sentiment) q.set("sentiment", p.sentiment);
+  q.set("limit", String(p.pageSize ?? DEFAULT_PAGE_SIZE));
+  q.set("offset", String((p.page - 1) * (p.pageSize ?? DEFAULT_PAGE_SIZE)));
+  if (p.severity?.length) q.set("severity", p.severity.join(","));
+  if (p.sentiment?.length) q.set("sentiment", p.sentiment.join(","));
   if (p.topic) q.set("topic", p.topic);
   if (p.source) q.set("source", p.source);
+  if (p.q) q.set("q", p.q);
+  if (p.sort) q.set("sort", p.sort);
   if (p.importId) q.set("import_id", p.importId);
   if (p.analysisState) q.set("analysis_state", p.analysisState);
   return q.toString();
@@ -115,4 +124,4 @@ export function useDeleteImport() {
   });
 }
 
-export { PAGE_SIZE as FEEDBACKS_PAGE_SIZE };
+export { DEFAULT_PAGE_SIZE as FEEDBACKS_PAGE_SIZE };

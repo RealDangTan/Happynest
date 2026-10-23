@@ -14,8 +14,6 @@ import type {
   RunProgress,
 } from "@/lib/types";
 
-export const RUN_RESULTS_PAGE_SIZE = 20;
-
 /** Progress một run — poll 4s khi còn running, dừng hẳn khi completed/failed. */
 export function useRunProgress(runId: string | null) {
   return useQuery({
@@ -29,17 +27,21 @@ export function useRunProgress(runId: string | null) {
   });
 }
 
-/** Kết quả của một run (phân trang offset). */
-export function useRunResults(runId: string | null, page: number) {
+/** Run scope cap ở 100 items (receipt) nên 1 lần fetch limit=100 là đủ toàn
+ * bộ kết quả — sort/filter/search client-side trung thực trên toàn run. */
+export const RUN_RESULTS_PAGE_SIZE = 100;
+
+/** Kết quả của một run — tải hết một lượt (≤100 items). */
+export function useRunResults(runId: string | null) {
   return useQuery({
-    queryKey: ["analysis", "results", runId, page],
+    queryKey: ["analysis", "results", runId],
     enabled: runId != null,
     placeholderData: keepPreviousData,
     staleTime: 15_000,
     queryFn: () => {
       const qs = new URLSearchParams({
         limit: String(RUN_RESULTS_PAGE_SIZE),
-        offset: String((page - 1) * RUN_RESULTS_PAGE_SIZE),
+        offset: "0",
       });
       return apiFetch<FeedbackListResponse>(
         `/api/analysis/runs/${runId}/results?${qs.toString()}`,

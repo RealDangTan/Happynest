@@ -1,24 +1,34 @@
 "use client"
-import { Suspense, useEffect, useState } from "react"
+import { SentimentIndicator } from "@/components/sentiment-indicator"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import {
-  useRunProgress,
-  useRunResults,
-  RUN_RESULTS_PAGE_SIZE,
-} from "@/hooks/use-analysis"
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useLegacyTable,
+  type LegacyColumnDef,
+} from "@tanstack/react-table/legacy"
+import { useRunProgress, useRunResults } from "@/hooks/use-analysis"
 import type { Feedback } from "@/lib/types"
-import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels"
+import { SEVERITY_LABEL } from "@/lib/labels"
+import { useAppLang } from "@/lib/i18n"
 import { formatDate } from "@/lib/format"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  multiSelectFilterFn,
+  severitySortFn,
+} from "@/lib/table-sorts"
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTablePagination,
+  DataTableToolbar,
+} from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,10 +59,119 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 function RunResults({ runId }: { runId: string }) {
-  const [page, setPage] = useState(1)
-  const results = useRunResults(runId, page)
-  const total = results.data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / RUN_RESULTS_PAGE_SIZE))
+  const lang = useAppLang()
+  // Tải toàn bộ kết quả run (scope cap 100) — sort/filter/search client-side
+  // trung thực trên cả run, không chỉ trang hiện tại.
+  const results = useRunResults(runId)
+  const rows = useMemo(() => results.data?.items ?? [], [results.data])
+
+  const columns = useMemo<LegacyColumnDef<Feedback>[]>(
+    () => [
+      {
+        id: "content",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { thClassName: "w-[45%]" },
+        header: "Nội dung",
+        cell: ({ row }) => (
+          <Link href={`/feedbacks/${row.original.id}`} className="block">
+            <span className="line-clamp-2">
+              {row.original.feedback_text ?? "(trống)"}
+            </span>
+          </Link>
+        ),
+      },
+      {
+        id: "source",
+        accessorFn: (f: Feedback) => f.source,
+        meta: { label: "Nguồn" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Nguồn" />
+        ),
+        cell: ({ row }) => row.original.source,
+      },
+      {
+        id: "severity",
+        accessorFn: (f: Feedback) => f.ai_analysis?.severity ?? "",
+        filterFn: multiSelectFilterFn,
+        sortingFn: severitySortFn,
+        sortDescFirst: true,
+        meta: { label: "Mức độ" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Mức độ" />
+        ),
+        cell: ({ row }) => {
+          const severity = row.original.ai_analysis?.severity
+          return severity ? (
+            <Badge
+              variant={
+                severity === "critical" || severity === "high"
+                  ? "destructive"
+                  : "secondary"
+              }
+            >
+              {SEVERITY_LABEL[lang][severity]}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">…đang xử lý</span>
+          )
+        },
+      },
+      {
+        id: "sentiment",
+        accessorFn: (f: Feedback) => f.ai_analysis?.sentiment ?? "",
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { label: "Cảm xúc" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Cảm xúc" />
+        ),
+        cell: ({ row }) => {
+          const sentiment = row.original.ai_analysis?.sentiment
+          return sentiment ? (
+            <SentimentIndicator value={sentiment} />
+          ) : (
+            <span className="text-muted-foreground">…đang xử lý</span>
+          )
+        },
+      },
+      {
+        id: "confidence",
+        accessorFn: (f: Feedback) => f.ai_analysis?.confidence ?? -1,
+        sortDescFirst: true,
+        meta: { label: "Confidence", thClassName: "text-right", tdClassName: "text-right" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Confidence" className="justify-end" />
+        ),
+        cell: ({ row }) => {
+          const confidence = row.original.ai_analysis?.confidence
+          return confidence != null ? (
+            <span className="tabular-nums">{`${Math.round(confidence * 100)}%`}</span>
+          ) : (
+            <span className="text-muted-foreground">…đang xử lý</span>
+          )
+        },
+      },
+    ],
+    [lang],
+  )
+
+  const table = useLegacyTable({
+    data: rows,
+    columns,
+    enableMultiSort: false,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    globalFilterFn: "includesString",
+    initialState: {
+      sorting: [{ id: "severity", desc: true }],
+      pagination: { pageIndex: 0, pageSize: 20 },
+    },
+  })
 
   if (results.isPending)
     return (
@@ -76,87 +195,23 @@ function RunResults({ runId }: { runId: string }) {
 
   return (
     <>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[45%]">Nội dung</TableHead>
-              <TableHead>Nguồn</TableHead>
-              <TableHead>Mức độ</TableHead>
-              <TableHead>Cảm xúc</TableHead>
-              <TableHead>Confidence</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {results.data.items.map((fb: Feedback) => {
-              const ai = fb.ai_analysis
-              return (
-                <TableRow key={fb.id} className="cursor-pointer">
-                  <TableCell className="max-w-md">
-                    <Link href={`/feedbacks/${fb.id}`} className="block">
-                      <span className="line-clamp-2">
-                        {fb.feedback_text ?? "(trống)"}
-                      </span>
-                    </Link>
-                  </TableCell>
-                  <TableCell>{fb.source}</TableCell>
-                  <TableCell>
-                    {ai?.severity ? (
-                      <Badge
-                        variant={
-                          ai.severity === "critical" || ai.severity === "high"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {SEVERITY_LABEL[ai.severity]}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">…đang xử lý</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {ai?.sentiment ? (
-                      SENTIMENT_LABEL[ai.sentiment]
-                    ) : (
-                      <span className="text-muted-foreground">…đang xử lý</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {ai?.confidence != null ? (
-                      `${Math.round(ai.confidence * 100)}%`
-                    ) : (
-                      <span className="text-muted-foreground">…đang xử lý</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+      <CardContent className="flex flex-col gap-3">
+        <DataTableToolbar
+          table={table}
+          filters={[
+            {
+              columnId: "severity",
+              title: "Mức độ",
+              options: Object.entries(SEVERITY_LABEL[lang]).map(
+                ([value, label]) => ({ value, label }),
+              ),
+            },
+          ]}
+        />
+        <DataTable table={table} />
       </CardContent>
-      <CardFooter className="justify-between border-t">
-        <span className="text-sm text-muted-foreground">
-          {total} item · trang {page}/{totalPages}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sau
-          </Button>
-        </div>
+      <CardFooter className="border-t">
+        <DataTablePagination table={table} />
       </CardFooter>
     </>
   )

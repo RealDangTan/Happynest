@@ -2,7 +2,12 @@
 import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Search } from "lucide-react"
+import {
+  getCoreRowModel,
+  getSortedRowModel,
+  useLegacyTable,
+  type LegacyColumnDef,
+} from "@tanstack/react-table/legacy"
 import {
   Empty,
   EmptyDescription,
@@ -20,11 +25,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -32,16 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTableToolbar,
+} from "@/components/data-table"
 import { AiBadge } from "@/components/ai/ai-badge"
 import { PageHeader } from "@/components/page-header"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { useInsights } from "@/hooks/use-insights"
 import { useActions } from "@/hooks/use-actions"
 import { ActionDecisionSupport } from "@/components/actions/action-decision-support"
@@ -49,13 +46,6 @@ import { useProduct } from "@/hooks/use-product"
 import { DEPARTMENTS, departmentLabel, toDepartment } from "@/lib/departments"
 import { effectiveScores } from "@/lib/matrix"
 import type { ActionItem } from "@/lib/types"
-
-function priorityLabel(action: ActionItem): string {
-  const score = action.priority_score
-  if (score >= 7) return "High"
-  if (score >= 4) return "Medium"
-  return "Low"
-}
 
 const STATUS_TONE: Record<
   string,
@@ -67,13 +57,106 @@ const STATUS_TONE: Record<
   rejected: "destructive",
 }
 
+function ActionsTable({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: ActionItem[]
+  selectedId: string | null
+  onSelect: (id: string) => void
+}) {
+  const columns = useMemo<LegacyColumnDef<ActionItem>[]>(
+    () => [
+      {
+        id: "recommendation",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { thClassName: "w-[58%]" },
+        header: "Action",
+        cell: ({ row }) => (
+          <>
+            <span className="flex items-start gap-2">
+              {selectedId === row.original.id ? (
+                <span aria-hidden className="mt-0.5">
+                  ›
+                </span>
+              ) : (
+                <span className="w-2" aria-hidden />
+              )}
+              <span className="min-w-0 text-sm break-words">
+                {row.original.recommendation}
+              </span>
+            </span>
+            <span className="mt-1 block pl-4 font-mono text-xs text-muted-foreground">
+              {departmentLabel(row.original.function)}
+            </span>
+          </>
+        ),
+      },
+      {
+        id: "priority",
+        accessorFn: (a: ActionItem) => a.priority_score,
+        sortDescFirst: true,
+        meta: { label: "Priority", thClassName: "w-24", tdClassName: "w-24" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Priority" />
+        ),
+        cell: ({ row }) => {
+          const score = row.original.priority_score
+          const label = score >= 7 ? "High" : score >= 4 ? "Medium" : "Low"
+          return <Badge variant="outline">{label}</Badge>
+        },
+      },
+      {
+        id: "status",
+        accessorFn: (a: ActionItem) => a.status,
+        meta: { label: "Status", thClassName: "w-28", tdClassName: "w-28" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Status" />
+        ),
+        cell: ({ row }) => (
+          <Badge variant={STATUS_TONE[row.original.status] ?? "secondary"}>
+            {row.original.status}
+          </Badge>
+        ),
+      },
+    ],
+    [selectedId],
+  )
+
+  const table = useLegacyTable({
+    data: items,
+    columns,
+    enableMultiSort: false,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    globalFilterFn: "includesString",
+    initialState: { sorting: [{ id: "priority", desc: true }] },
+  })
+
+  return (
+    <div className="flex min-w-0 flex-col gap-3">
+      <DataTableToolbar table={table} hideColumnToggle />
+      <Card className="py-0">
+        <CardContent className="p-0">
+          <DataTable
+            table={table}
+            onRowClick={(row) => onSelect(row.id)}
+            rowClassName={(row) => (row.id === selectedId ? "bg-accent" : undefined)}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
   const { product } = useProduct()
   const insights = useInsights()
   const [reportId, setReportId] = useState<string | null>(initialReportId)
   const [statusFilter, setStatusFilter] = useState("accepted")
   const [department, setDepartment] = useState("all")
-  const [search, setSearch] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const eligibleReports = useMemo(
@@ -101,14 +184,9 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
           a.status === "proposed" &&
           a.id === selectedId)
       if (!statusVisible) return false
-      if (
-        search &&
-        !a.recommendation.toLowerCase().includes(search.toLowerCase())
-      )
-        return false
       return true
     })
-  }, [allItems, department, statusFilter, search, selectedId])
+  }, [allItems, department, statusFilter, selectedId])
 
   const selected = allItems.find((a) => a.id === selectedId) ?? null
 
@@ -191,117 +269,60 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         </aside>
 
         {/* Actions table */}
-        <div className="flex min-w-0 flex-col gap-3">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search actions…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </InputGroup>
-          {actions.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Không tải được actions</AlertTitle>
-              <AlertDescription className="flex flex-col gap-3">
-                <span>{actions.error.message}</span>
-                <div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void actions.refetch()}
-                  >
-                    Thử lại
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          ) : actions.isPending ? (
-            <Spinner />
-          ) : filtered.length === 0 ? (
-            <Empty className="border">
-              <EmptyHeader>
-                <EmptyTitle>
-                  {emptyDepartment
-                    ? "No actions for this department"
-                    : "Nothing here"}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {emptyDepartment
-                    ? "Departments without relevant actions can still review proposed work."
-                    : "Adjust the filters or check another report."}
-                </EmptyDescription>
-              </EmptyHeader>
-              <div className="flex gap-2">
+        {actions.isError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Không tải được actions</AlertTitle>
+            <AlertDescription className="flex flex-col gap-3">
+              <span>{actions.error.message}</span>
+              <div>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setStatusFilter("proposed")}
+                  onClick={() => void actions.refetch()}
                 >
-                  Show proposed actions
-                </Button>
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={`/matrix?report=${effectiveReportId ?? ""}`}>
-                    Open Priority Matrix
-                  </Link>
+                  Thử lại
                 </Button>
               </div>
-            </Empty>
-          ) : (
-            <Card className="py-0">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Action</TableHead>
-                      <TableHead className="w-24">Priority</TableHead>
-                      <TableHead className="w-28">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((a) => (
-                      <TableRow
-                        key={a.id}
-                        className={`cursor-pointer ${
-                          selectedId === a.id ? "bg-accent" : ""
-                        }`}
-                        onClick={() => setSelectedId(a.id)}
-                      >
-                        <TableCell className="min-w-0">
-                          <span className="flex items-start gap-2">
-                            {selectedId === a.id ? (
-                              <span aria-hidden className="mt-0.5">
-                                ›
-                              </span>
-                            ) : (
-                              <span className="w-2" aria-hidden />
-                            )}
-                            <span className="min-w-0 text-sm break-words">
-                              {a.recommendation}
-                            </span>
-                          </span>
-                          <span className="mt-1 block pl-4 font-mono text-xs text-muted-foreground">
-                            {departmentLabel(a.function)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{priorityLabel(a)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_TONE[a.status] ?? "secondary"}>
-                            {a.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            </AlertDescription>
+          </Alert>
+        ) : actions.isPending ? (
+          <Spinner />
+        ) : filtered.length === 0 ? (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyTitle>
+                {emptyDepartment
+                  ? "No actions for this department"
+                  : "Nothing here"}
+              </EmptyTitle>
+              <EmptyDescription>
+                {emptyDepartment
+                  ? "Departments without relevant actions can still review proposed work."
+                  : "Adjust the filters or check another report."}
+              </EmptyDescription>
+            </EmptyHeader>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setStatusFilter("proposed")}
+              >
+                Show proposed actions
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <Link href={`/matrix?report=${effectiveReportId ?? ""}`}>
+                  Open Priority Matrix
+                </Link>
+              </Button>
+            </div>
+          </Empty>
+        ) : (
+          <ActionsTable
+            items={filtered}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        )}
 
         {/* WHAT panel */}
         <Card size="sm" className="self-start">

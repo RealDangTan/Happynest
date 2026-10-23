@@ -1,8 +1,19 @@
 "use client"
+import { SentimentIndicator } from "@/components/sentiment-indicator"
 import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
+import {
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useLegacyTable,
+  type LegacyColumnDef,
+} from "@tanstack/react-table/legacy"
 import { Send } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -19,21 +30,25 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTablePagination,
+  DataTableToolbar,
+} from "@/components/data-table"
 import { apiFetch } from "@/lib/api"
-import type { FeedbackListResponse, ImportRecord } from "@/lib/types"
-import { useCreateAgentRun, useAgentRun } from "@/hooks/use-agent"
-import { AiTrace } from "@/components/ai/ai-trace"
+import type { Feedback, FeedbackListResponse, ImportRecord } from "@/lib/types"
+import { useCreateAgentRun } from "@/hooks/use-agent"
+import { InvestigationCard } from "@/components/ai/investigation-card"
+import { useInvestigationSession } from "@/hooks/use-investigation-session"
 import { useProduct } from "@/hooks/use-product"
-import { scopeLine, shortDate, topTopics, trendByDate } from "@/lib/graph"
+import { useTaxonomy } from "@/hooks/use-taxonomy"
+import {
+  multiSelectFilterFn,
+  severitySortFn,
+} from "@/lib/table-sorts"
+import { scopeLine, shortDate, topTopics, topicLabeler, trendByDate } from "@/lib/graph"
 import { PageHeader } from "@/components/page-header"
 
 function useImportFeedbacks(importIds: string[]) {
@@ -52,6 +67,137 @@ function useImportFeedbacks(importIds: string[]) {
     enabled: importIds.length > 0,
     staleTime: 30_000,
   })
+}
+
+/** Tab Table — duyệt TOÀN BỘ items trong scope (trước đây cắt ngầm 50 dòng)
+ * với search/sort/facet/phân trang client-side. */
+function ScopeTable({
+  items,
+  topicLabel,
+}: {
+  items: Feedback[]
+  topicLabel: (topic: string) => string
+}) {
+  const columns = useMemo<LegacyColumnDef<Feedback>[]>(
+    () => [
+      {
+        id: "content",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { thClassName: "w-[42%]" },
+        header: "Feedback",
+        cell: ({ row }) => (
+          <span className="line-clamp-1 block max-w-md text-sm">
+            {row.original.feedback_text}
+          </span>
+        ),
+      },
+      {
+        id: "topics",
+        enableSorting: false,
+        meta: { label: "Topic" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Topic" />
+        ),
+        cell: ({ row }) => {
+          const first = row.original.ai_analysis?.topics?.[0]
+          return first ? (
+            <span className="block max-w-40 truncate text-sm" title={first}>
+              {topicLabel(first)}
+            </span>
+          ) : (
+            "—"
+          )
+        },
+      },
+      {
+        id: "sentiment",
+        accessorFn: (f: Feedback) => f.ai_analysis?.sentiment ?? "",
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { label: "Sentiment" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Sentiment" />
+        ),
+        cell: ({ row }) => (
+          <SentimentIndicator value={row.original.ai_analysis?.sentiment} />
+        ),
+      },
+      {
+        id: "severity",
+        accessorFn: (f: Feedback) => f.ai_analysis?.severity ?? "",
+        filterFn: multiSelectFilterFn,
+        sortingFn: severitySortFn,
+        sortDescFirst: true,
+        meta: { label: "Severity" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Severity" />
+        ),
+        cell: ({ row }) => {
+          const severity = row.original.ai_analysis?.severity
+          return severity ? (
+            <Badge variant={severity === "critical" || severity === "high" ? "destructive" : "secondary"}>
+              {severity}
+            </Badge>
+          ) : (
+            "—"
+          )
+        },
+      },
+      {
+        id: "occurred_at",
+        accessorFn: (f: Feedback) => f.occurred_at,
+        meta: { label: "Occurred" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Occurred" />
+        ),
+        cell: ({ row }) => (
+          <span className="font-mono text-xs whitespace-nowrap">
+            {shortDate(row.original.occurred_at)}
+          </span>
+        ),
+      },
+    ],
+    [topicLabel],
+  )
+
+  const table = useLegacyTable({
+    data: items,
+    columns,
+    enableMultiSort: false,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    globalFilterFn: "includesString",
+    initialState: {
+      sorting: [{ id: "occurred_at", desc: true }],
+      pagination: { pageIndex: 0, pageSize: 20 },
+    },
+  })
+
+  return (
+    <Card className="gap-3 py-4">
+      <CardContent className="flex flex-col gap-3 px-(--card-spacing)">
+        <DataTableToolbar
+          table={table}
+          filters={[
+            {
+              columnId: "sentiment",
+              title: "Sentiment",
+              options: ["positive", "neutral", "negative", "mixed"].map(
+                (value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }),
+              ),
+            },
+          ]}
+        />
+        <DataTable table={table} />
+        <DataTablePagination table={table} />
+      </CardContent>
+    </Card>
+  )
 }
 
 function DatasetsRail({
@@ -83,7 +229,7 @@ function DatasetsRail({
               aria-label={`Dataset ${item.original_filename}`}
             />
             <span className="min-w-0 flex-1 truncate">
-              {item.original_filename ?? item.id.slice(0, 8)}
+              {item.original_filename ?? "Lô dữ liệu"}
             </span>
           </label>
         ))}
@@ -112,9 +258,11 @@ function DatasetsRail({
 
 function WordCloud({
   words,
+  label,
   onSelect,
 }: {
   words: { topic: string; count: number }[]
+  label: (topic: string) => string
   onSelect: (topic: string) => void
 }) {
   const max = Math.max(...words.map((w) => w.count), 1)
@@ -126,12 +274,13 @@ function WordCloud({
           <button
             key={topic}
             onClick={() => onSelect(topic)}
+            title={label(topic) !== topic ? topic : undefined}
             style={{ fontSize: `${scale}rem` }}
             className={`font-heading transition-colors hover:text-signal ${
               count / max > 0.6 ? "text-foreground" : "text-muted-foreground"
             }`}
           >
-            {topic}
+            {label(topic)}
           </button>
         )
       })}
@@ -167,139 +316,22 @@ function Trends({ points }: { points: { date: string; count: number }[] }) {
   )
 }
 
-function ActivityTrace({
-  runId,
-  scopeSnapshot,
-  onOpenReport,
-  onRetry,
-}: {
-  runId: string | null
-  scopeSnapshot: string | null
-  onOpenReport: (runId: string) => void
-  onRetry: () => void
-}) {
-  const run = useAgentRun(runId)
-  const status = run.data?.status
-  const pending = run.data?.pending_approval ?? null
-  const isRunning = status === "running"
-
-  return (
-    <Card size="sm" className="self-start">
-      <CardHeader>
-        <CardTitle>Activity trace</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {!runId ? (
-          <p className="text-sm text-muted-foreground">
-            Ask a question about this data to start an investigation.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3 rounded-lg border bg-secondary/20 p-3">
-            <p className="font-mono text-xs text-signal">
-              Investigation {runId.slice(0, 8)}
-            </p>
-            {run.isError ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-destructive">
-                  Connection lost while checking the investigation.
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => void run.refetch()}
-                >
-                  Check again
-                </Button>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-1.5 text-sm">
-                <li className="flex items-center gap-2">
-                  <Badge variant="outline" className="h-4 w-4 p-0" />
-                  Question received
-                </li>
-                {scopeSnapshot ? (
-                  <li className="font-mono text-xs text-muted-foreground">
-                    {scopeSnapshot}
-                  </li>
-                ) : null}
-                {isRunning ? (
-                  <li className="flex items-center gap-2">
-                    <Spinner className="size-3" /> Investigating…
-                  </li>
-                ) : null}
-                {status === "pending_approval" || status === "completed" ? (
-                  <>
-                    <li className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="h-4 w-4 rounded-full p-0"
-                      />
-                      Evidence gathered
-                      {pending?.evidence?.length ? (
-                        <span className="font-mono text-xs text-signal">
-                          {pending.evidence.length}
-                        </span>
-                      ) : null}
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="h-4 w-4 rounded-full p-0"
-                      />
-                      Draft ready
-                    </li>
-                  </>
-                ) : null}
-                {status === "failed" ? (
-                  <li className="text-destructive">
-                    Failed: {run.data?.error ?? "unknown"}
-                  </li>
-                ) : null}
-              </ul>
-            )}
-            {isRunning && run.data ? (
-              <AiTrace runId={runId!} active startedAt={run.data.started_at} />
-            ) : null}
-            <p className="text-xs text-muted-foreground">
-              Scope fixed at investigation start. Chart filters cannot change
-              it.
-            </p>
-            {status === "failed" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={onRetry}
-              >
-                Retry with the same question
-              </Button>
-            ) : null}
-            {status === "pending_approval" || status === "completed" ? (
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => onOpenReport(runId!)}
-              >
-                Open report
-              </Button>
-            ) : null}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
 function DataGraph({
   initialImportId,
   initialTopic,
+  initialRunId,
 }: {
   initialImportId: string | null
   initialTopic: string
+  initialRunId: string | null
 }) {
   const { product, productId } = useProduct()
   const router = useRouter()
+  const taxonomyQuery = useTaxonomy(productId)
+  const topicLabel = useMemo(
+    () => topicLabeler(taxonomyQuery.data?.items ?? []),
+    [taxonomyQuery.data]
+  )
   const importsQuery = useQuery({
     queryKey: ["imports", "data-graph", productId],
     queryFn: () =>
@@ -315,16 +347,15 @@ function DataGraph({
   const [checked, setChecked] = useState<Set<string> | null>(
     initialImportId ? new Set([initialImportId]) : null
   )
-  const [scope, setScope] = useState<string[] | null>(
-    initialImportId ? [initialImportId] : null
-  )
-  const effectiveChecked = checked ?? new Set(imports.map((i) => i.id))
+  const [scope, setScope] = useInvestigationSession<string[] | null>("scope", productId, initialImportId ? [initialImportId] : null)
+  const effectiveChecked = checked ?? new Set(scope ?? imports.map((i) => i.id))
   const effectiveScope = scope ?? imports.map((i) => i.id)
-  const [tab, setTab] = useState("cloud")
-  const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic)
-  const [question, setQuestion] = useState("")
-  const [runId, setRunId] = useState<string | null>(null)
-  const [scopeSnapshot, setScopeSnapshot] = useState<string | null>(null)
+  const [tab, setTab] = useInvestigationSession("view", productId, "cloud")
+  const [selectedTopic, setSelectedTopic] = useInvestigationSession<string>("topic", productId, initialTopic)
+  const [question, setQuestion] = useInvestigationSession("question", productId, "")
+  const [savedRunId, setRunId] = useInvestigationSession<string | null>("run", productId, null)
+  const [runQuestion, setRunQuestion] = useInvestigationSession("run-question", productId, "")
+  const runId = initialRunId ?? savedRunId
 
   const feedbacks = useImportFeedbacks(effectiveScope)
   const items = useMemo(
@@ -344,22 +375,15 @@ function DataGraph({
 
   const askAI = async () => {
     if (!productId || question.trim().length < 3) return
-    setScopeSnapshot(
-      scopeLine(
-        effectiveScope.length,
-        dates[0] ?? "",
-        dates.at(-1) ?? "",
-        items.length,
-        pendingExcluded
-      )
-    )
     try {
       const { run_id } = await createRun.mutateAsync({
         product_id: productId,
         question: question.trim(),
       })
       setRunId(run_id)
-      toast.success("Investigation started — trace appears on the right.")
+      setRunQuestion(question.trim())
+      router.replace(`/data-graph?run=${run_id}`, { scroll: false })
+      toast.success("Đã bắt đầu điều tra. Kết quả và duyệt hiển thị ngay bên dưới.")
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Could not start investigation"
@@ -385,7 +409,7 @@ function DataGraph({
         }
       />
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[200px_minmax(0,1fr)_260px]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
         <DatasetsRail
           imports={imports}
           checked={effectiveChecked}
@@ -405,6 +429,39 @@ function DataGraph({
         />
 
         <div className="flex min-w-0 flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Hỏi và duyệt kết luận</CardTitle>
+              <CardDescription>
+                Đặt câu hỏi về sản phẩm đang chọn. Theo dõi bằng chứng và duyệt kết luận ngay tại đây.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                <InputGroup className="flex-1">
+                  <InputGroupInput
+                    placeholder="Ví dụ: Vấn đề nào đang ảnh hưởng người dùng nhiều nhất?"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void askAI()}
+                  />
+                </InputGroup>
+                <Button
+                  onClick={() => void askAI()}
+                  disabled={question.trim().length < 3 || createRun.isPending}
+                >
+                  {createRun.isPending ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <Send data-icon="inline-start" />
+                  )}
+                  Bắt đầu điều tra
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          {runId ? <InvestigationCard key={runId} runId={runId} question={savedRunId === runId ? runQuestion : null} onRetry={() => void askAI()} /> : null}
+
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
               <TabsTrigger value="cloud">Word cloud</TabsTrigger>
@@ -421,7 +478,11 @@ function DataGraph({
                     </div>
                   ) : words.length ? (
                     <>
-                      <WordCloud words={words} onSelect={setSelectedTopic} />
+                      <WordCloud
+                        words={words}
+                        label={topicLabel}
+                        onSelect={setSelectedTopic}
+                      />
                       <p className="pb-4 text-center text-xs text-muted-foreground">
                         Word size = frequency in this scope.
                       </p>
@@ -446,14 +507,14 @@ function DataGraph({
               <Card>
                 <CardContent className="p-0">
                   <ul className="flex flex-col gap-3 p-6">
-                    {words.map(({ topic, count }) => (
-                      <li key={topic} className="flex items-center gap-3">
-                        <button
-                          className="w-32 text-left text-sm font-medium hover:text-signal"
-                          onClick={() => setSelectedTopic(topic)}
-                        >
-                          {topic}
-                        </button>
+                      {words.map(({ topic, count }) => (
+                        <li key={topic} className="flex items-center gap-3">
+                          <button
+                            className="w-32 text-left text-sm font-medium hover:text-signal"
+                            onClick={() => setSelectedTopic(topic)}
+                          >
+                            {topicLabel(topic)}
+                          </button>
                         <div className="h-3 flex-1 rounded bg-secondary">
                           <div
                             className="h-3 rounded bg-chart-1"
@@ -477,40 +538,24 @@ function DataGraph({
               </Card>
             </TabsContent>
             <TabsContent value="table">
-              <Card className="py-0">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Feedback</TableHead>
-                        <TableHead className="w-32">Topic</TableHead>
-                        <TableHead className="w-24">Sentiment</TableHead>
-                        <TableHead className="w-24">Occurred</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.slice(0, 50).map((f) => (
-                        <TableRow key={f.id}>
-                          <TableCell className="max-w-md break-words">
-                            <span className="line-clamp-1 text-sm">
-                              {f.feedback_text}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-sm break-words">
-                            {f.ai_analysis?.topics?.[0] ?? "—"}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {f.ai_analysis?.sentiment ?? "—"}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {shortDate(f.occurred_at)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              {feedbacks.isPending ? (
+                <Card>
+                  <CardContent className="flex justify-center p-8">
+                    <Spinner />
+                  </CardContent>
+                </Card>
+              ) : items.length ? (
+                <ScopeTable items={items} topicLabel={topicLabel} />
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <p className="p-8 text-center text-sm text-muted-foreground">
+                      No analyzed feedback in this scope yet — analyze pending
+                      items in the Vault.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
 
@@ -518,7 +563,9 @@ function DataGraph({
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
-                  Selected: <span className="text-signal">{selectedTopic}</span>
+                  Selected:{" "}
+                  <span className="text-signal">{topicLabel(selectedTopic)}</span>
+
                 </CardTitle>
                 <CardAction>
                   <Button
@@ -541,9 +588,6 @@ function DataGraph({
                       key={f.id}
                       className="rounded-lg border bg-secondary/30 p-2 text-sm"
                     >
-                      <span className="font-mono text-xs text-signal">
-                        F-{f.id.slice(0, 8)}
-                      </span>{" "}
                       {f.feedback_text}
                     </li>
                   ))}
@@ -552,46 +596,9 @@ function DataGraph({
             </Card>
           ) : null}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Ask about this data</CardTitle>
-              <CardDescription>
-                Investigation giữ nguyên scope lúc bắt đầu và báo mức dùng trước
-                khi hành động. Evidence truy về feedback cụ thể.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <InputGroup className="flex-1">
-                  <InputGroupInput
-                    placeholder="e.g. Why did accuracy complaints rise?"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && void askAI()}
-                  />
-                </InputGroup>
-                <Button
-                  onClick={() => void askAI()}
-                  disabled={question.trim().length < 3 || createRun.isPending}
-                >
-                  {createRun.isPending ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <Send data-icon="inline-start" />
-                  )}
-                  Ask AI
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
 
-        <ActivityTrace
-          runId={runId}
-          scopeSnapshot={scopeSnapshot}
-          onOpenReport={(id) => router.push(`/reports?run=${id}`)}
-          onRetry={() => void askAI()}
-        />
       </div>
     </div>
   )
@@ -607,8 +614,11 @@ export default function DataGraphPage() {
 
 function DataGraphWithParams() {
   const params = useSearchParams()
+  const { productId } = useProduct()
   return (
     <DataGraph
+      key={productId}
+      initialRunId={params.get("run")}
       initialImportId={params.get("import")}
       initialTopic={params.get("topic") ?? ""}
     />

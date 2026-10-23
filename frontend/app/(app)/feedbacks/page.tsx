@@ -1,20 +1,43 @@
 "use client"
-import { Suspense, useEffect, useState } from "react"
+import { SentimentIndicator } from "@/components/sentiment-indicator"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Settings2 } from "lucide-react"
-import { useFeedbacks, FEEDBACKS_PAGE_SIZE } from "@/hooks/use-feedbacks"
+import type {
+  ColumnFiltersState,
+  ColumnVisibilityState,
+} from "@tanstack/react-table"
+import {
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  useLegacyTable,
+  type LegacyColumnDef,
+} from "@tanstack/react-table/legacy"
+import { useFeedbacks } from "@/hooks/use-feedbacks"
+import { useProduct } from "@/hooks/use-product"
+import { useTaxonomy } from "@/hooks/use-taxonomy"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { useStoredState } from "@/hooks/use-stored-state"
 import type { Feedback } from "@/lib/types"
 import { formatDate } from "@/lib/format"
-import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels"
+import { topicLabeler } from "@/lib/graph"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  multiSelectFilterFn,
+  serverSortToSorting,
+  sortingToServerSort,
+} from "@/lib/table-sorts"
+import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels"
+import { useAppLang } from "@/lib/i18n"
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTablePagination,
+  DataTableToolbar,
+} from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -22,21 +45,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
@@ -44,149 +56,284 @@ import {
 import { DataEntryDialog } from "./data-entry-dialog"
 import { PageHeader } from "@/components/page-header"
 
-// Cột bật/tắt được. Cột "Nội dung" cố định luôn hiển thị.
-type ColumnKey =
-  | "source"
-  | "occurred"
-  | "severity"
-  | "sentiment"
-  | "topics"
-  | "confidence"
-  | "pii"
-
-const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
-  { key: "source", label: "Nguồn" },
-  { key: "occurred", label: "Thời điểm" },
-  { key: "severity", label: "Mức độ" },
-  { key: "sentiment", label: "Cảm xúc" },
-  { key: "topics", label: "Chủ đề" },
-  { key: "confidence", label: "Confidence" },
-  { key: "pii", label: "PII" },
-]
-const DEFAULT_COLUMNS: ColumnKey[] = [
-  "source",
-  "occurred",
-  "severity",
-  "topics",
-]
-const STORAGE_KEY = "feedbacks.columns"
-
-function readStoredColumns(): ColumnKey[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return DEFAULT_COLUMNS
-    const parsed = JSON.parse(raw) as string[]
-    const valid = parsed.filter((k) =>
-      ALL_COLUMNS.some((c) => c.key === k)
-    ) as ColumnKey[]
-    return valid.length > 0 ? valid : DEFAULT_COLUMNS
-  } catch {
-    return DEFAULT_COLUMNS
-  }
+/** Cột bật/tắt được; "content" luôn hiển thị (enableHiding: false). */
+const DEFAULT_VISIBILITY: ColumnVisibilityState = {
+  source: true,
+  occurred_at: true,
+  severity: true,
+  sentiment: false,
+  topics: true,
+  confidence: false,
+  pii: false,
 }
-
-function ColumnVisibilityMenu({
-  visible,
-  onToggle,
-}: {
-  visible: ColumnKey[]
-  onToggle: (key: ColumnKey) => void
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Settings2 data-icon="inline-start" />
-          Hiện thị cột
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Cột hiển thị</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {ALL_COLUMNS.map(({ key, label }) => (
-          <DropdownMenuCheckboxItem
-            key={key}
-            checked={visible.includes(key)}
-            onCheckedChange={() => onToggle(key)}
-            onSelect={(e) => e.preventDefault()}
-          >
-            {label}
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function FeedbackCell({ fb }: { fb: Feedback }) {
-  return (
-    <TableCell className="max-w-md break-words">
-      <Link href={`/feedbacks/${fb.id}`} className="block">
-        <span className="line-clamp-2">
-          {fb.feedback_text ?? "(chưa phân tích)"}
-        </span>
-      </Link>
-    </TableCell>
-  )
-}
+const STORAGE_KEY = "feedbacks.columns.v2"
 
 function FeedbacksTable() {
   const router = useRouter()
   const sp = useSearchParams()
+  const lang = useAppLang()
   const page = Math.max(1, Number(sp.get("page") ?? "1") || 1)
-  const filters = {
-    page,
-    severity: sp.get("severity") ?? undefined,
-    sentiment: sp.get("sentiment") ?? undefined,
-    topic: sp.get("topic") ?? undefined,
-    source: sp.get("source") ?? undefined,
-  }
-  const { data, isPending, isError, error } = useFeedbacks(filters)
+  const pageSize = Math.min(100, Math.max(10, Number(sp.get("limit") ?? "20") || 20))
+  const q = sp.get("q") ?? ""
+  const topic = sp.get("topic") ?? ""
 
-  // localStorage chỉ đọc sau mount — tránh lệch hydration SSR.
-  const [visibleColumns, setVisibleColumns] =
-    useState<ColumnKey[]>(DEFAULT_COLUMNS)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage chỉ đọc sau mount, tránh lệch hydration SSR
-    setVisibleColumns(readStoredColumns())
-  }, [])
+  // ── URL-param state ────────────────────────────────────────────────
+  const sorting = useMemo(() => serverSortToSorting(sp.get("sort") ?? undefined), [sp])
 
-  function toggleColumn(key: ColumnKey) {
-    setVisibleColumns((prev) => {
-      const next = prev.includes(key)
-        ? prev.filter((k) => k !== key)
-        : [...prev, key]
-      if (next.length === 0) return prev // không cho ẩn hết mọi cột phụ
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const out: ColumnFiltersState = []
+    const sev = sp.get("severity")
+    const sen = sp.get("sentiment")
+    if (sev) out.push({ id: "severity", value: sev.split(",") })
+    if (sen) out.push({ id: "sentiment", value: sen.split(",") })
+    return out
+  }, [sp])
+
+  const pagination = { pageIndex: page - 1, pageSize }
+
+  const [columnVisibility, setColumnVisibility] = useStoredState<ColumnVisibilityState>(
+    STORAGE_KEY,
+    DEFAULT_VISIBILITY,
+    (raw) => {
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+        const parsed = JSON.parse(raw) as ColumnVisibilityState
+        return parsed && typeof parsed === "object" ? parsed : null
       } catch {
-        // storage bị chặn (private mode…) → vẫn đổi tạm trong phiên
+        return null
       }
-      return next
-    })
+    },
+  )
+
+  function navigate(next: URLSearchParams) {
+    router.replace(`/feedbacks?${next.toString()}`)
   }
 
-  const has = (key: ColumnKey) => visibleColumns.includes(key)
-
+  /** Set/DEL một param; đổi filter (khác page) → về trang 1. */
   function setParam(key: string, value: string | null) {
     const next = new URLSearchParams(sp.toString())
     if (value) next.set(key, value)
     else next.delete(key)
-    if (key !== "page") next.delete("page") // đổi lọc → về trang 1
-    router.replace(`/feedbacks?${next.toString()}`)
+    if (key !== "page") next.delete("page")
+    navigate(next)
   }
 
-  const total = data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / FEEDBACKS_PAGE_SIZE))
+  // Search debounce 300ms — không query server từng keystroke.
+  const [searchInput, setSearchInput] = useState(q)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ input khi URL param đổi từ ngoài (reset filters)
+    setSearchInput(q)
+  }, [q])
+  const debouncedSearch = useDebouncedValue(searchInput, 300)
+  useEffect(() => {
+    if (debouncedSearch !== q) setParam("q", debouncedSearch.trim() || null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chủ đích: chỉ chạy khi giá trị debounce đổi
+  }, [debouncedSearch])
 
-  if (isPending)
-    return (
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
-        ))}
-      </div>
-    )
+  // ── Data ───────────────────────────────────────────────────────────
+  const { data, isFetching, isError, error } = useFeedbacks({
+    page,
+    pageSize,
+    q: q || undefined,
+    sort: sortingToServerSort(sorting),
+    severity: (columnFilters.find((f) => f.id === "severity")?.value as string[]) ?? undefined,
+    sentiment: (columnFilters.find((f) => f.id === "sentiment")?.value as string[]) ?? undefined,
+    topic: topic || undefined,
+  })
+
+  const { productId } = useProduct()
+  const taxonomy = useTaxonomy(productId)
+  const labelTopic = useMemo(
+    () => topicLabeler(taxonomy.data?.items ?? []),
+    [taxonomy.data],
+  )
+  const topicOptions = useMemo(() => {
+    const seen = new Set<string>()
+    return (taxonomy.data?.items ?? [])
+      .filter((n) => {
+        const value = n.slug ?? n.name
+        if (!value || seen.has(value)) return false
+        seen.add(value)
+        return true
+      })
+      .sort((a, b) => (a.name_vi ?? a.name).localeCompare(b.name_vi ?? b.name, "vi"))
+  }, [taxonomy.data])
+
+  // ── Columns ────────────────────────────────────────────────────────
+  const columns = useMemo<LegacyColumnDef<Feedback>[]>(
+    () => [
+      {
+        id: "content",
+        enableHiding: false,
+        enableSorting: false,
+        meta: { label: "Nội dung", thClassName: "w-[42%]" },
+        header: "Nội dung",
+        cell: ({ row }) => (
+          <Link href={`/feedbacks/${row.original.id}`} className="block max-w-md">
+            <span className="line-clamp-2 break-words">
+              {row.original.feedback_text ?? "(chưa phân tích)"}
+            </span>
+          </Link>
+        ),
+      },
+      {
+        id: "source",
+        accessorFn: (f: Feedback) => f.source,
+        meta: { label: "Nguồn" },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Nguồn" />,
+        cell: ({ row }) => row.original.source,
+      },
+      {
+        id: "occurred_at",
+        accessorFn: (f: Feedback) => f.occurred_at,
+        meta: { label: "Thời điểm" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Thời điểm" />
+        ),
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap">{formatDate(row.original.occurred_at)}</span>
+        ),
+      },
+      {
+        id: "severity",
+        accessorFn: (f: Feedback) => f.ai_analysis?.severity ?? "",
+        filterFn: multiSelectFilterFn,
+        sortDescFirst: true,
+        meta: { label: "Mức độ" },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Mức độ" />,
+        cell: ({ row }) => {
+          const severity = row.original.ai_analysis?.severity
+          return severity ? (
+            <Badge
+              variant={severity === "critical" || severity === "high" ? "destructive" : "secondary"}
+            >
+              {SEVERITY_LABEL[lang][severity]}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
+        },
+      },
+      {
+        id: "sentiment",
+        accessorFn: (f: Feedback) => f.ai_analysis?.sentiment ?? "",
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { label: "Cảm xúc" },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Cảm xúc" />,
+        cell: ({ row }) => {
+          const sentiment = row.original.ai_analysis?.sentiment
+          return sentiment ? (
+            <SentimentIndicator value={sentiment} />
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
+        },
+      },
+      {
+        id: "topics",
+        enableSorting: false,
+        meta: { label: "Chủ đề", tdClassName: "max-w-48" },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Chủ đề" />,
+        cell: ({ row }) => {
+          const topics = row.original.ai_analysis?.topics
+          return topics?.length ? (
+            <div className="flex flex-wrap gap-1">
+              {topics.slice(0, 3).map((t) => (
+                <Badge key={t} variant="outline" title={t}>
+                  {labelTopic(t)}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
+        },
+      },
+      {
+        id: "confidence",
+        accessorFn: (f: Feedback) => f.ai_analysis?.confidence ?? -1,
+        sortDescFirst: true,
+        meta: { label: "Confidence", thClassName: "text-right", tdClassName: "text-right" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Confidence" className="justify-end" />
+        ),
+        cell: ({ row }) => {
+          const confidence = row.original.ai_analysis?.confidence
+          return confidence != null ? (
+            <span className="tabular-nums">{`${Math.round(confidence * 100)}%`}</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
+        },
+      },
+      {
+        id: "pii",
+        enableSorting: false,
+        meta: { label: "PII" },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="PII" />,
+        cell: ({ row }) =>
+          row.original.pii_detected ? (
+            <Badge variant="outline">PII</Badge>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+    ],
+    [lang, labelTopic],
+  )
+
+  const total = data?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+
+  const table = useLegacyTable({
+    data: data?.items ?? [],
+    columns,
+    manualPagination: true,
+    pageCount,
+    manualSorting: true,
+    manualFiltering: true,
+    enableMultiSort: false,
+    getCoreRowModel: getCoreRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    state: { sorting, columnFilters, columnVisibility, pagination },
+    onSortingChange: (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater
+      setParam("sort", next.length ? sortingToServerSort(next) : null)
+    },
+    onColumnFiltersChange: (updater) => {
+      const next = typeof updater === "function" ? updater(columnFilters) : updater
+      const params = new URLSearchParams(sp.toString())
+      const sev = next.find((f) => f.id === "severity")?.value as string[] | undefined
+      const sen = next.find((f) => f.id === "sentiment")?.value as string[] | undefined
+      if (sev?.length) params.set("severity", sev.join(","))
+      else params.delete("severity")
+      if (sen?.length) params.set("sentiment", sen.join(","))
+      else params.delete("sentiment")
+      params.delete("page")
+      navigate(params)
+    },
+    onColumnVisibilityChange: (updater) => {
+      setColumnVisibility(
+        typeof updater === "function" ? updater(columnVisibility) : updater,
+      )
+    },
+    onPaginationChange: (updater) => {
+      const next = typeof updater === "function" ? updater(pagination) : updater
+      const params = new URLSearchParams(sp.toString())
+      if (next.pageSize !== pageSize) {
+        params.set("limit", String(next.pageSize))
+        params.delete("page")
+      } else if (next.pageIndex !== page - 1) {
+        params.set("page", String(next.pageIndex + 1))
+      }
+      navigate(params)
+    },
+  })
+
+  const hasActiveFilters =
+    columnFilters.length > 0 || q.trim() !== "" || topic !== ""
+
   if (isError)
     return (
       <Empty>
@@ -199,191 +346,93 @@ function FeedbacksTable() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Bộ lọc + tuỳ biến cột */}
-      <div className="flex flex-wrap items-center gap-2">
+      <DataTableToolbar
+        table={table}
+        search={{ value: searchInput, onChange: setSearchInput }}
+        filters={[
+          {
+            columnId: "severity",
+            title: "Mức độ",
+            options: Object.entries(SEVERITY_LABEL[lang]).map(([value, label]) => ({
+              value,
+              label,
+            })),
+          },
+          {
+            columnId: "sentiment",
+            title: "Cảm xúc",
+            options: Object.entries(SENTIMENT_LABEL[lang]).map(([value, label]) => ({
+              value,
+              label,
+            })),
+          },
+        ]}
+      >
         <Select
-          value={sp.get("severity") ?? "all"}
-          onValueChange={(v) => setParam("severity", v === "all" ? null : v)}
+          value={topic || "all"}
+          onValueChange={(v) => setParam("topic", v === "all" ? null : v)}
         >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Mức độ" />
+          <SelectTrigger size="sm" className="w-40">
+            <SelectValue placeholder="Chủ đề" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Mọi mức độ</SelectItem>
-            {Object.entries(SEVERITY_LABEL).map(([v, l]) => (
-              <SelectItem key={v} value={v}>
-                {l}
+            <SelectItem value="all">Mọi chủ đề</SelectItem>
+            {topicOptions.map((n) => (
+              <SelectItem key={n.id} value={n.slug ?? n.name}>
+                {n.name_vi ?? n.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select
-          value={sp.get("sentiment") ?? "all"}
-          onValueChange={(v) => setParam("sentiment", v === "all" ? null : v)}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Cảm xúc" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Mọi cảm xúc</SelectItem>
-            {Object.entries(SENTIMENT_LABEL).map(([v, l]) => (
-              <SelectItem key={v} value={v}>
-                {l}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder="Lọc theo chủ đề (topic)…"
-          className="w-48"
-          defaultValue={sp.get("topic") ?? ""}
-          onBlur={(e) => setParam("topic", e.target.value.trim() || null)}
-        />
-        <Input
-          placeholder="Lọc theo nguồn…"
-          className="w-44"
-          defaultValue={sp.get("source") ?? ""}
-          onBlur={(e) => setParam("source", e.target.value.trim() || null)}
-        />
-        <div className="ml-auto">
-          <ColumnVisibilityMenu
-            visible={visibleColumns}
-            onToggle={toggleColumn}
-          />
-        </div>
-      </div>
+      </DataTableToolbar>
 
-      {data.items.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
-            <EmptyDescription>
-              Nhập dữ liệu bằng nút bên trên (thủ công hoặc import CSV qua
-              LISTEN) hoặc bỏ bộ lọc.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <Card>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[45%]">Nội dung</TableHead>
-                  {has("source") && <TableHead>Nguồn</TableHead>}
-                  {has("occurred") && <TableHead>Thời điểm</TableHead>}
-                  {has("severity") && <TableHead>Mức độ</TableHead>}
-                  {has("sentiment") && <TableHead>Cảm xúc</TableHead>}
-                  {has("topics") && <TableHead>Chủ đề</TableHead>}
-                  {has("confidence") && <TableHead>Confidence</TableHead>}
-                  {has("pii") && <TableHead>PII</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.items.map((fb: Feedback) => {
-                  const ai = fb.ai_analysis
-                  return (
-                    <TableRow key={fb.id} className="cursor-pointer">
-                      <FeedbackCell fb={fb} />
-                      {has("source") && <TableCell>{fb.source}</TableCell>}
-                      {has("occurred") && (
-                        <TableCell className="whitespace-nowrap">
-                          {formatDate(fb.occurred_at)}
-                        </TableCell>
-                      )}
-                      {has("severity") && (
-                        <TableCell>
-                          {ai?.severity ? (
-                            <Badge
-                              variant={
-                                ai.severity === "critical" ||
-                                ai.severity === "high"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                            >
-                              {SEVERITY_LABEL[ai.severity]}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {has("sentiment") && (
-                        <TableCell>
-                          {ai?.sentiment ? (
-                            <Badge variant="secondary">
-                              {SENTIMENT_LABEL[ai.sentiment]}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {has("topics") && (
-                        <TableCell className="max-w-48">
-                          {ai?.topics?.length ? (
-                            <div className="flex flex-wrap gap-1">
-                              {ai.topics.slice(0, 3).map((t) => (
-                                <Badge key={t} variant="outline">
-                                  {t}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {has("confidence") && (
-                        <TableCell className="whitespace-nowrap">
-                          {ai?.confidence != null ? (
-                            `${Math.round(ai.confidence * 100)}%`
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                      {has("pii") && (
-                        <TableCell>
-                          {fb.pii_detected ? (
-                            <Badge variant="outline">PII</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-          <CardFooter className="flex-wrap justify-between gap-2 border-t">
-            <span className="text-sm text-muted-foreground">
-              {total} phản hồi · trang {page}/{totalPages}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setParam("page", String(page - 1))}
-              >
-                Trước
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setParam("page", String(page + 1))}
-              >
-                Sau
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      )}
+      <Card className="gap-0 py-0">
+        <CardContent className="p-0">
+          <DataTable
+            table={table}
+            isLoading={isFetching && !data}
+            emptyContent={
+              total === 0 && !hasActiveFilters ? (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
+                    <EmptyDescription>
+                      Nhập dữ liệu bằng nút bên trên (thủ công hoặc import CSV qua
+                      LISTEN).
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyTitle>Không có phản hồi nào khớp</EmptyTitle>
+                    <EmptyDescription>
+                      Thử bỏ bớt từ khoá tìm kiếm hoặc bộ lọc.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  {hasActiveFilters ? (
+                    <EmptyContent>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(new URLSearchParams())}
+                      >
+                        Xoá mọi bộ lọc
+                      </Button>
+                    </EmptyContent>
+                  ) : null}
+                </Empty>
+              )
+            }
+          />
+        </CardContent>
+        <CardContent className="border-t py-3">
+          <DataTablePagination
+            table={table}
+            pageSizeOptions={[10, 20, 50, 100]}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -393,7 +442,7 @@ export default function FeedbacksPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Phản hồi"
-        description="Mọi phản hồi đã nhập — lọc, duyệt, và mở chi tiết từng mục."
+        description="Mọi phản hồi đã nhập — tìm, lọc, sắp xếp và mở chi tiết từng mục."
         actions={<DataEntryDialog />}
       />
       <Suspense fallback={<Skeleton className="h-64 w-full" />}>

@@ -1,17 +1,34 @@
 "use client"
-import { Suspense, useMemo, useState } from "react"
+import { SentimentIndicator } from "@/components/sentiment-indicator"
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import type {
+  ColumnFiltersState,
+  RowSelectionState,
+  SortingState,
+} from "@tanstack/react-table"
+import {
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  useLegacyTable,
+  type LegacyColumnDef,
+} from "@tanstack/react-table/legacy"
 import {
   Ban,
-  ChevronLeft,
-  ChevronRight,
   FileSpreadsheet,
   Pencil,
   Play,
-  Search,
   Trash2,
+  Unlock,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -47,16 +64,12 @@ import {
 } from "@/components/ui/dialog"
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -75,13 +88,11 @@ import {
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  DataTable,
+  DataTableColumnHeader,
+  DataTablePagination,
+  DataTableToolbar,
+} from "@/components/data-table"
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
 import type {
@@ -91,26 +102,32 @@ import type {
   RunProgress,
 } from "@/lib/types"
 import {
-  FEEDBACKS_PAGE_SIZE,
   useBulkDeleteFeedbacks,
   useDeleteFeedback,
   useDeleteImport,
   useFeedbacks,
   useUpdateFeedback,
 } from "@/hooks/use-feedbacks"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { useStoredState } from "@/hooks/use-stored-state"
 import {
   useAnalysisPreview,
   useCancelRun,
   useRunProgress,
   useTriggerRun,
 } from "@/hooks/use-analysis"
+import { useReEnrichUncategorized, useTaxonomy } from "@/hooks/use-taxonomy"
 import {
   useFeedbackDetail,
   useSimilarFeedbacks,
 } from "@/hooks/use-feedback-detail"
 import { PageHeader } from "@/components/page-header"
 import { useProduct } from "@/hooks/use-product"
-import { shortDate } from "@/lib/graph"
+import { shortDate, topicLabeler } from "@/lib/graph"
+import {
+  multiSelectFilterFn,
+  sortingToServerSort,
+} from "@/lib/table-sorts"
 
 type Scope =
   | { mode: "selected"; import_id: string; feedback_ids: string[] }
@@ -350,11 +367,13 @@ function FeedbackEditDialog({
 
 function FeedbackDetailDrawer({
   feedbackId,
+  labelTopic,
   onClose,
   onEdit,
   onDelete,
 }: {
   feedbackId: string | null
+  labelTopic: (topic: string) => string
   onClose: () => void
   onEdit: (item: Feedback) => void
   onDelete: (id: string) => void
@@ -408,9 +427,10 @@ function FeedbackDetailDrawer({
                       ? (analysis?.topics ?? []).map((t) => (
                           <code
                             key={t}
+                            title={t}
                             className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
                           >
-                            {t}
+                            {labelTopic(t)}
                           </code>
                         ))
                       : analysis?.uncategorized
@@ -442,7 +462,7 @@ function FeedbackDetailDrawer({
                 ) : null}
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Sentiment</span>
-                  <span>{analysis?.sentiment ?? "—"}</span>
+                  <SentimentIndicator value={analysis?.sentiment} />
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Analysis</span>
@@ -471,25 +491,25 @@ function FeedbackDetailDrawer({
               >
                 Explore this topic
               </Button>
-                              <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEdit(item)}
-                  >
-                    <Pencil data-icon="inline-start" />
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => onDelete(item.id)}
-                  >
-                    <Trash2 data-icon="inline-start" />
-                    Delete
-                  </Button>
-                </>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(item)}
+                >
+                  <Pencil data-icon="inline-start" />
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => onDelete(item.id)}
+                >
+                  <Trash2 data-icon="inline-start" />
+                  Delete
+                </Button>
+              </>
             </div>
 
             <section className="flex flex-col gap-2">
@@ -531,7 +551,13 @@ function FeedbackDetailDrawer({
   )
 }
 
-function RunningAnalysisCard({ runId }: { runId: string }) {
+function RunningAnalysisCard({
+  runId,
+  onDismiss,
+}: {
+  runId: string
+  onDismiss: () => void
+}) {
   const run = useRunProgress(runId)
   const cancel = useCancelRun()
   const qc = useQueryClient()
@@ -539,6 +565,21 @@ function RunningAnalysisCard({ runId }: { runId: string }) {
   const pct = data?.total_count
     ? Math.round((data.processed_count / data.total_count) * 100)
     : 0
+  // Run xong tự tải lại danh sách feedback — không bắt user bấm "Refresh
+  // results"; theo dõi status TRƯỚC đó để chỉ fire đúng lúc chuyển pha.
+  const prevStatus = useRef<string | null>(null)
+  useEffect(() => {
+    if (!data) return
+    if (prevStatus.current === "running" && data.status !== "running") {
+      void qc.invalidateQueries({ queryKey: ["feedbacks"] })
+      if (data.status === "completed") {
+        toast.success("Phân tích hoàn tất — danh sách đã cập nhật.")
+      } else if (data.status === "failed") {
+        toast.error("Run phân tích lỗi — xem tóm tắt trong thẻ tiến trình.")
+      }
+    }
+    prevStatus.current = data.status
+  }, [data, qc])
 
   if (!data) return null
   return (
@@ -585,14 +626,8 @@ function RunningAnalysisCard({ runId }: { runId: string }) {
             {data.cancel_requested_at ? "Stopping…" : "Stop analysis"}
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              void qc.invalidateQueries({ queryKey: ["feedbacks"] })
-            }
-          >
-            Refresh results
+          <Button size="sm" variant="ghost" onClick={onDismiss}>
+            Đóng thẻ tiến trình
           </Button>
         )}
       </CardFooter>
@@ -609,15 +644,43 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
   const setActiveImportId = (id: string | null) => {
     router.replace(id ? `/vault?import=${id}` : "/vault", { scroll: false })
   }
+  // Table state: phân trang/sort/search chạy server-side (manual mode) —
+  // search TRÊN TOÀN BỘ tập dữ liệu, không phải từng trang như trước đây.
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useStoredState<number>(
+    "vault.pageSize",
+    20,
+    (raw) => {
+      const n = Number(JSON.parse(raw))
+      return [10, 20, 50, 100].includes(n) ? n : null
+    },
+  )
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "occurred_at", desc: true },
+  ])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [qInput, setQInput] = useState("")
+  const debouncedQ = useDebouncedValue(qInput, 300)
   const [topic, setTopic] = useState<string>("")
-  const [sentiment, setSentiment] = useState<string>("")
   const [analysisState, setAnalysisState] = useState<string>("")
-  const [search, setSearch] = useState("")
-  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [detailId, setDetailId] = useState<string | null>(null)
   const [receiptScope, setReceiptScope] = useState<Scope | null>(null)
   const [startedRunId, setStartedRunId] = useState<string | null>(null)
+
+  // Selection qua TanStack (rowSelection) nhưng đọc thành Set cho logic cũ.
+  const selected = useMemo(
+    () =>
+      new Set(
+        Object.entries(rowSelection)
+          .filter(([, v]) => v)
+          .map(([k]) => k),
+      ),
+    [rowSelection],
+  )
+  function clearSelection() {
+    setRowSelection({})
+  }
 
   const deleteFeedback = useDeleteFeedback()
   const bulkDelete = useBulkDeleteFeedbacks()
@@ -638,21 +701,43 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
   })
   const imports = importsQuery.data?.items ?? []
 
+  // Taxonomy của product: nhãn hiển thị tiếng Việt cho slug trong
+  // ai_analysis.topics + danh sách chọn của filter Topic (thay bộ hardcode).
+  const taxonomy = useTaxonomy(productId)
+  const labelTopic = useMemo(
+    () => topicLabeler(taxonomy.data?.items ?? []),
+    [taxonomy.data]
+  )
+  const topicOptions = useMemo(() => {
+    const seen = new Set<string>()
+    return (taxonomy.data?.items ?? [])
+      .filter((n) => {
+        const value = n.slug ?? n.name
+        if (!value || seen.has(value)) return false
+        seen.add(value)
+        return true
+      })
+      .sort((a, b) => (a.name_vi ?? a.name).localeCompare(b.name_vi ?? b.name, "vi"))
+  }, [taxonomy.data])
+
   const filters = {
     page,
+    pageSize,
     importId: activeImportId ?? undefined,
     analysisState: (analysisState || undefined) as
-      "pending" | "completed" | undefined,
-    sentiment: sentiment || undefined,
+      | "pending"
+      | "completed"
+      | "uncategorized"
+      | undefined,
+    sentiment:
+      (columnFilters.find((f) => f.id === "sentiment")?.value as string[]) ??
+      undefined,
     topic: topic || undefined,
+    q: debouncedQ.trim() || undefined,
+    sort: sortingToServerSort(sorting),
   }
   const feedbacks = useFeedbacks(filters)
   const rows = useMemo(() => feedbacks.data?.items ?? [], [feedbacks.data])
-  const filteredRows = useMemo(() => {
-    if (!search.trim()) return rows
-    const q = search.toLowerCase()
-    return rows.filter((r) => (r.feedback_text ?? "").toLowerCase().includes(q))
-  }, [rows, search])
 
   const pendingCount = useQuery({
     queryKey: ["feedbacks", "pending-count", activeImportId],
@@ -665,17 +750,53 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
     staleTime: 15_000,
   })
 
+  // Đếm rows ĐÃ analyzed nhưng mang nhãn UNCATEGORIZED theo taxonomy cũ —
+  // hết pending mà vẫn còn UNCATEGORIZED = taxonomy vừa đổi, cần mở khoá
+  // re-enrich (vòng taxonomy evolution, plan 32).
+  const uncategorizedCount = useQuery({
+    queryKey: ["feedbacks", "uncategorized-count", productId],
+    queryFn: () =>
+      apiFetch<FeedbackListResponse>(
+        `/api/feedbacks?limit=1&analysis_state=uncategorized&product_id=${productId}`
+      ),
+    enabled: productId != null,
+    staleTime: 15_000,
+  })
+  const reEnrich = useReEnrichUncategorized()
+  const unlockUncategorized = () => {
+    if (!productId) return
+    reEnrich.mutate(
+      { product_id: productId },
+      {
+        onSuccess: (res) => {
+          toast.success(
+            res.released > 0
+              ? `Đã mở khoá ${res.released} phản hồi — bấm Analyze pending items để chạy lại theo nhãn mới.`
+              : "Không có phản hồi nào cần mở khoá."
+          )
+          void qc.invalidateQueries({ queryKey: ["feedbacks"] })
+        },
+        onError: (err) =>
+          toast.error(
+            err instanceof Error ? err.message : "Không mở khoá được phản hồi."
+          ),
+      }
+    )
+  }
+
   const preview = useAnalysisPreview()
   const trigger = useTriggerRun()
 
   // A running scoped analysis for this import (e.g. reopened from Current tasks).
+  // Poll 30s: chỉ để phát hiện run đang chạy khi mở lại trang — mỗi request tốn
+  // ~1s RTT tới DB xa, poll 6s gây tải nền liên tục không cần thiết.
   const runningRun = useQuery({
     queryKey: ["analysis", "runs", "vault-active", activeImportId],
     queryFn: () =>
       apiFetch<{ items: RunProgress[] }>(
         `/api/analysis/runs?limit=10&status=running`
       ),
-    refetchInterval: 6000,
+    refetchInterval: 30_000,
   })
   const activeRunId =
     startedRunId ??
@@ -748,11 +869,204 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
     }
   }
 
-  const total = filteredRows.length
-  const totalPages = Math.max(
-    1,
-    Math.ceil((feedbacks.data?.total ?? 0) / FEEDBACKS_PAGE_SIZE)
+  const hasActiveFilters =
+    columnFilters.length > 0 || debouncedQ.trim() !== "" || topic !== "" || analysisState !== ""
+  function clearAllFilters() {
+    setQInput("")
+    setColumnFilters([])
+    setTopic("")
+    setAnalysisState("")
+    setSorting([{ id: "occurred_at", desc: true }])
+    setPage(1)
+  }
+
+  const pagination = { pageIndex: page - 1, pageSize }
+  const total = feedbacks.data?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+
+  // ── Table instance (manual mode: server sort/search/filter/pagination) ──
+  const columns = useMemo<LegacyColumnDef<Feedback>[]>(
+    () => [
+      {
+        id: "select",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { thClassName: "w-10", tdClassName: "w-10" },
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected()
+                ? true
+                : table.getIsSomePageRowsSelected()
+                  ? "indeterminate"
+                  : false
+            }
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Select all rows on this page"
+          />
+        ),
+        cell: ({ row }) => (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Select feedback"
+            />
+          </div>
+        ),
+      },
+      {
+        id: "content",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { label: "Feedback", thClassName: "w-[38%]" },
+        header: "Feedback",
+        cell: ({ row }) => (
+          <>
+            <span className="line-clamp-2 block max-w-md text-sm">
+              {row.original.feedback_text ?? "—"}
+            </span>
+            {row.original.pii_detected ? (
+              <Badge variant="outline" className="ml-2">
+                PII masked
+              </Badge>
+            ) : null}
+          </>
+        ),
+      },
+      {
+        id: "source",
+        accessorFn: (f: Feedback) => f.source,
+        meta: { label: "Source" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Source" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.source}
+          </span>
+        ),
+      },
+      {
+        id: "occurred_at",
+        accessorFn: (f: Feedback) => f.occurred_at,
+        meta: { label: "Occurred" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Occurred" />
+        ),
+        cell: ({ row }) => (
+          <span className="font-mono text-xs whitespace-nowrap">
+            {shortDate(row.original.occurred_at)}
+          </span>
+        ),
+      },
+      {
+        id: "severity",
+        accessorFn: (f: Feedback) => f.ai_analysis?.severity ?? "",
+        filterFn: multiSelectFilterFn,
+        sortDescFirst: true,
+        meta: { label: "Severity" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Severity" />
+        ),
+        cell: ({ row }) => {
+          const severity = row.original.ai_analysis?.severity
+          if (!severity) return <span className="text-muted-foreground">—</span>
+          return (
+            <Badge
+              variant={
+                severity === "critical" || severity === "high"
+                  ? "destructive"
+                  : "secondary"
+              }
+            >
+              {severity}
+            </Badge>
+          )
+        },
+      },
+      {
+        id: "topics",
+        enableSorting: false,
+        meta: { label: "Topic" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Topic" />
+        ),
+        cell: ({ row }) => {
+          if (row.original.ai_analysis?.uncategorized)
+            return <Badge variant="outline">UNCATEGORIZED</Badge>
+          const first = row.original.ai_analysis?.topics?.[0]
+          return first ? (
+            <span title={first} className="block max-w-48 truncate text-sm">
+              {labelTopic(first)}
+            </span>
+          ) : (
+            "—"
+          )
+        },
+      },
+      {
+        id: "state",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { label: "State" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="State" />
+        ),
+        cell: ({ row }) => {
+          const ready = Boolean(row.original.ai_analysis)
+          return (
+            <Badge variant={ready ? "secondary" : "outline"}>
+              {ready ? "Ready" : "Pending"}
+            </Badge>
+          )
+        },
+      },
+    ],
+    [labelTopic],
   )
+
+  const table = useLegacyTable({
+    data: rows,
+    columns,
+    getRowId: (f) => f.id,
+    manualPagination: true,
+    pageCount,
+    manualSorting: true,
+    manualFiltering: true,
+    enableMultiSort: false,
+    getCoreRowModel: getCoreRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    state: { sorting, columnFilters, rowSelection, pagination },
+    onSortingChange: (updater) => {
+      setSorting((old) =>
+        typeof updater === "function" ? updater(old) : updater,
+      )
+      setPage(1)
+    },
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters((old) =>
+        typeof updater === "function" ? updater(old) : updater,
+      )
+      setPage(1)
+    },
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: (updater) => {
+      const next = typeof updater === "function" ? updater(pagination) : updater
+      if (next.pageSize !== pageSize) {
+        setPageSize(next.pageSize)
+        setPage(1)
+      } else if (next.pageIndex !== page - 1) {
+        setPage(next.pageIndex + 1)
+      }
+    },
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -783,7 +1097,7 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
             active={!activeImportId}
             onSelect={() => {
               setActiveImportId(null)
-              setSelected(new Set())
+              clearSelection()
               setPage(1)
             }}
           />
@@ -794,7 +1108,7 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
               active={activeImportId === item.id}
               onSelect={() => {
                 setActiveImportId(item.id)
-                setSelected(new Set())
+                clearSelection()
                 setPage(1)
               }}
               onDelete={() => setConfirmImport(item)}
@@ -808,17 +1122,28 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <InputGroup className="min-w-52 flex-1 sm:max-w-xs">
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder="Search feedback…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </InputGroup>
+          <DataTableToolbar
+            table={table}
+            search={{
+              value: qInput,
+              onChange: (v) => {
+                setQInput(v)
+                setPage(1)
+              },
+            }}
+            filters={[
+              {
+                columnId: "sentiment",
+                title: "Sentiment",
+                options: [
+                  { value: "negative", label: "Negative" },
+                  { value: "neutral", label: "Neutral" },
+                  { value: "positive", label: "Positive" },
+                  { value: "mixed", label: "Mixed" },
+                ],
+              },
+            ]}
+          >
             <Select
               value={topic}
               onValueChange={(v) => {
@@ -826,33 +1151,16 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger size="sm" className="w-40">
                 <SelectValue placeholder="Topic" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Topic: any</SelectItem>
-                <SelectItem value="Performance">Performance</SelectItem>
-                <SelectItem value="Accuracy">Accuracy</SelectItem>
-                <SelectItem value="Reliability">Reliability</SelectItem>
-                <SelectItem value="Speed">Speed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={sentiment}
-              onValueChange={(v) => {
-                setSentiment(v === "all" ? "" : v)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sentiment" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Sentiment: any</SelectItem>
-                <SelectItem value="negative">Negative</SelectItem>
-                <SelectItem value="neutral">Neutral</SelectItem>
-                <SelectItem value="positive">Positive</SelectItem>
-                <SelectItem value="mixed">Mixed</SelectItem>
+                {topicOptions.map((n) => (
+                  <SelectItem key={n.id} value={n.slug ?? n.name}>
+                    {n.name_vi ?? n.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select
@@ -862,213 +1170,152 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger size="sm" className="w-40">
                 <SelectValue placeholder="Analysis state" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Analysis: any</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="completed">Ready</SelectItem>
+                <SelectItem value="uncategorized">UNCATEGORIZED</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </DataTableToolbar>
 
-          {activeRunId ? <RunningAnalysisCard runId={activeRunId} /> : null}
+          {activeRunId ? (
+            <RunningAnalysisCard
+              runId={activeRunId}
+              onDismiss={() => setStartedRunId(null)}
+            />
+          ) : null}
+
+          {/* Taxonomy vừa đổi nhưng nhãn cũ còn treo: gợi ý mở khoá ngay tại
+              vault thay vì bắt user quay lại trang Taxonomy (2026-10-23). */}
+          {(pendingCount.data?.total ?? 0) === 0 &&
+          (uncategorizedCount.data?.total ?? 0) > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border bg-secondary/40 px-4 py-3 text-sm">
+              <p className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                <Unlock className="size-4 shrink-0" aria-hidden />
+                <span>
+                  <strong className="font-medium text-foreground">
+                    {uncategorizedCount.data?.total} phản hồi
+                  </strong>{" "}
+                  đã phân loại nhưng đang mang nhãn UNCATEGORIZED theo bộ nhãn
+                  cũ. Mở khoá để chạy lại theo taxonomy hiện tại.
+                </span>
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={reEnrich.isPending}
+                onClick={unlockUncategorized}
+              >
+                {reEnrich.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <Unlock data-icon="inline-start" />
+                )}
+                Mở khoá để phân tích lại
+              </Button>
+            </div>
+          ) : null}
 
           <Card className="py-0">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">
-                      <span className="sr-only">Select</span>
-                    </TableHead>
-                    <TableHead>Feedback</TableHead>
-                    <TableHead className="w-28">Source</TableHead>
-                    <TableHead className="w-32">Topic</TableHead>
-                    <TableHead className="w-24">State</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {feedbacks.isPending ? (
-                    <TableRow>
-                      <TableCell colSpan={5}>
-                        <Spinner />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredRows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5}>
-                        <Empty>
-                          <EmptyHeader>
-                            <EmptyTitle>
-                              Nothing matches these filters
-                            </EmptyTitle>
-                            <EmptyDescription>
-                              Clear filters to return to the complete result
-                              set.
-                            </EmptyDescription>
-                          </EmptyHeader>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSearch("")
-                              setTopic("")
-                              setSentiment("")
-                              setAnalysisState("")
-                              setPage(1)
-                            }}
-                          >
-                            Clear filters
-                          </Button>
-                        </Empty>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredRows.map((row) => {
-                      const ready = Boolean(row.ai_analysis)
-                      return (
-                        <TableRow
-                          key={row.id}
-                          className="cursor-pointer"
-                          onClick={() => setDetailId(row.id)}
-                        >
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selected.has(row.id)}
-                              onCheckedChange={(checked) => {
-                                setSelected((old) => {
-                                  const next = new Set(old)
-                                  if (checked) next.add(row.id)
-                                  else next.delete(row.id)
-                                  return next
-                                })
-                              }}
-                              aria-label="Select feedback"
-                            />
-                          </TableCell>
-                          <TableCell className="max-w-md break-words">
-                            <span className="line-clamp-2 text-sm">
-                              {row.feedback_text ?? "—"}
-                            </span>
-                            {row.pii_detected ? (
-                              <Badge variant="outline" className="ml-2">
-                                PII masked
-                              </Badge>
-                            ) : null}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {row.source}
-                          </TableCell>
-                          <TableCell className="text-sm break-words">
-                            {row.ai_analysis?.uncategorized ? (
-                              <Badge variant="outline">UNCATEGORIZED</Badge>
-                            ) : (
-                              (row.ai_analysis?.topics?.[0] ?? "—")
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={ready ? "secondary" : "outline"}>
-                              {ready ? "Ready" : "Pending"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter className="flex-col items-stretch gap-3 border-t">
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-                <div className="text-sm text-muted-foreground">
-                  {selected.size > 0 ? (
-                    <>
-                      {selected.size} selected · {selectedPending.length}{" "}
-                      pending, {selectedReady} ready
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="ml-2"
-                        onClick={() => setSelected(new Set())}
-                      >
-                        <X data-icon="inline-start" />
-                        Clear selection
-                      </Button>
-                                              <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => setConfirmBulk(true)}
-                        >
-                          <Trash2 data-icon="inline-start" />
-                          Delete selected
-                        </Button>
-                    </>
-                  ) : (
-                    <>
-                      {pendingCount.data?.total ?? 0} pending in this scope ·
-                      batch caps at 100
-                    </>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    onClick={() => void openReceipt()}
-                    disabled={
-                      preview.isPending ||
-                      (selectedPending.length === 0 && !activeImportId)
-                    }
-                  >
-                    {preview.isPending ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : null}
-                    Analyze pending items
-                  </Button>
-                  {selected.size > 0 && selectedPending.length > 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      {selectedReady} ready selected will be excluded from
-                      analysis.
-                    </p>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b px-(--card-spacing) py-(--card-spacing)">
+              <div className="text-sm text-muted-foreground">
+                {selected.size > 0 ? (
+                  <>
+                    {selected.size} selected · {selectedPending.length} pending,{" "}
+                    {selectedReady} ready
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-2"
+                      onClick={clearSelection}
+                    >
+                      <X data-icon="inline-start" />
+                      Clear selection
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setConfirmBulk(true)}
+                    >
+                      <Trash2 data-icon="inline-start" />
+                      Delete selected
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {pendingCount.data?.total ?? 0} pending in this scope ·
+                    batch caps at 100
+                  </>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={() => void openReceipt()}
+                  disabled={
+                    preview.isPending ||
+                    (selectedPending.length === 0 &&
+                      !activeImportId &&
+                      (pendingCount.data?.total ?? 0) === 0)
+                  }
+                >
+                  {preview.isPending ? (
+                    <Spinner data-icon="inline-start" />
                   ) : null}
-                  <Button
-                    variant="outline"
-                    disabled={selectedReady === 0 && !activeImportId}
-                    onClick={exploreSelected}
-                  >
-                    Explore selected
-                  </Button>
-                </div>
+                  Analyze pending items
+                </Button>
+                {selected.size > 0 && selectedPending.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedReady} ready selected will be excluded from
+                    analysis.
+                  </p>
+                ) : null}
+                <Button
+                  variant="outline"
+                  disabled={selectedReady === 0 && !activeImportId}
+                  onClick={exploreSelected}
+                >
+                  Explore selected
+                </Button>
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>
-                  Showing {total} of {feedbacks.data?.total ?? 0}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="size-4" />
-                  </Button>
-                  <span className="font-mono">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
-              </div>
+            </div>
+            <CardContent className="p-0">
+              <DataTable
+                table={table}
+                isLoading={feedbacks.isFetching && !feedbacks.data}
+                maxHeightClass="max-h-[65vh]"
+                onRowClick={(row) => setDetailId(row.id)}
+                emptyContent={
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyTitle>
+                        {hasActiveFilters
+                          ? "Nothing matches these filters"
+                          : "No feedback in this workspace yet"}
+                      </EmptyTitle>
+                      <EmptyDescription>
+                        {hasActiveFilters
+                          ? "Clear filters to return to the complete result set."
+                          : "Import a CSV from the LISTEN stage to get started."}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    {hasActiveFilters ? (
+                      <EmptyContent>
+                        <Button size="sm" variant="outline" onClick={clearAllFilters}>
+                          Clear filters
+                        </Button>
+                      </EmptyContent>
+                    ) : null}
+                  </Empty>
+                }
+              />
+            </CardContent>
+            <CardFooter className="flex-col items-stretch border-t">
+              <DataTablePagination table={table} />
             </CardFooter>
           </Card>
         </div>
@@ -1193,7 +1440,7 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                     toast.success("Đã xoá feedback.")
                     setConfirmDeleteId(null)
                     setDetailId(null)
-                    setSelected(new Set())
+                    clearSelection()
                   },
                   onError: (err) =>
                     toast.error(
@@ -1231,7 +1478,7 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                   onSuccess: ({ deleted }) => {
                     toast.success(`Đã xoá ${deleted} feedback.`)
                     setConfirmBulk(false)
-                    setSelected(new Set())
+                    clearSelection()
                   },
                   onError: (err) =>
                     toast.error(
@@ -1295,6 +1542,7 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
 
       <FeedbackDetailDrawer
         feedbackId={detailId}
+        labelTopic={labelTopic}
         onClose={() => setDetailId(null)}
         onEdit={(item) => setEditing(item)}
         onDelete={(id) => setConfirmDeleteId(id)}
