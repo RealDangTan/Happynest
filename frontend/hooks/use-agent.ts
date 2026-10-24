@@ -29,8 +29,8 @@ export function useAgentRun(runId: string | null) {
     queryFn: () =>
       apiFetch<AgentRunStatusResponse>(`/api/agent/runs/${runId}`),
     refetchInterval: (query) =>
-      ["running", "pending_approval"].includes(query.state.data?.status ?? "")
-        ? 4000
+      ["running", "pending_approval", "decision_processing"].includes(query.state.data?.status ?? "")
+        ? (query.state.data?.status === "decision_processing" ? 1500 : 3000)
         : false,
     staleTime: 0,
   });
@@ -40,7 +40,7 @@ export function useAgentRun(runId: string | null) {
 export function useAgentTrace(runId: string | null, active: boolean) {
   return useQuery({
     queryKey: ["agent", "run", runId, "trace"],
-    enabled: runId != null && active,
+    enabled: runId != null,
     queryFn: () =>
       apiFetch<AgentTraceResponse>(`/api/agent/runs/${runId}/trace`),
     refetchInterval: active ? 2000 : false,
@@ -67,7 +67,7 @@ export function useAgentDecision() {
         run_id: string;
         final_status: string | null;
         insights_created: string[];
-      }>(`/api/agent/runs/${runId}/decision`, {
+      }>(`/api/agent/runs/${runId}/decision?background=true`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,7 +76,10 @@ export function useAgentDecision() {
           reason: reason ?? null,
         }),
       }),
-    onSuccess: () => {
+    onSuccess: (_result, variables) => {
+      qc.setQueryData<AgentRunStatusResponse>(["agent", "run", variables.runId], old => old ? {
+        ...old, status: "decision_processing", error: null,
+      } : old);
       void qc.invalidateQueries({ queryKey: ["agent"] });
       void qc.invalidateQueries({ queryKey: ["insights"] });
       void qc.invalidateQueries({ queryKey: ["analysis", "runs"] });

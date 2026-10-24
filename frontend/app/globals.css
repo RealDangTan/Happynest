@@ -35,6 +35,16 @@
   --lichen: #91a873;
   --pollen: #dbac3b;
   --signal: #3f738b;
+  --sentiment-positive: #2f6b46;
+  --sentiment-mixed: #8a651b;
+  --department-engineering: #2563eb;
+  --department-support: #0f766e;
+  --department-design: #9333ea;
+  --department-marketing: #c2410c;
+  --department-legal: #475569;
+  --department-finance: #a16207;
+  --department-operations: #4d7c0f;
+  --department-sales: #be185d;
   --radius: 0.5rem;
   --sidebar: #14251d;
   --sidebar-foreground: #eef1e4;
@@ -47,6 +57,16 @@
 }
 
 .dark {
+  --sentiment-positive: #9fc6a8;
+  --sentiment-mixed: #f0ca75;
+  --department-engineering: #60a5fa;
+  --department-support: #2dd4bf;
+  --department-design: #c084fc;
+  --department-marketing: #fb923c;
+  --department-legal: #94a3b8;
+  --department-finance: #facc15;
+  --department-operations: #a3e635;
+  --department-sales: #f472b6;
   --background: oklch(0.153 0.006 107.1);
   --foreground: oklch(0.988 0.003 106.5);
   --card: oklch(0.228 0.013 107.4);
@@ -88,6 +108,8 @@
    to sidebar-accent green; signal + destructive get dark-tuned tints for
    contrast. Scoped: only the subtree under .chat-night is affected. */
 .chat-night {
+  --sentiment-positive: #9fc6a8;
+  --sentiment-mixed: #f0ca75;
   --background: #14251d;
   --foreground: #eef1e4;
   --card: #22352b;
@@ -110,6 +132,16 @@
 }
 
 @theme inline {
+  --color-sentiment-positive: var(--sentiment-positive);
+  --color-sentiment-mixed: var(--sentiment-mixed);
+  --color-department-engineering: var(--department-engineering);
+  --color-department-support: var(--department-support);
+  --color-department-design: var(--department-design);
+  --color-department-marketing: var(--department-marketing);
+  --color-department-legal: var(--department-legal);
+  --color-department-finance: var(--department-finance);
+  --color-department-operations: var(--department-operations);
+  --color-department-sales: var(--department-sales);
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);

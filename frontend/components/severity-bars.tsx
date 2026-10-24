@@ -1,4 +1,6 @@
+"use client"
 import { SEVERITY_LABEL } from "@/lib/labels"
+import { useAppLang, useT } from "@/lib/i18n"
 import type { Severity } from "@/lib/types"
 
 const ORDER: Severity[] = ["low", "medium", "high", "critical"]
@@ -19,14 +21,16 @@ export function SeverityBars({
 }: {
   bySeverity: Partial<Record<Severity, number>>
 }) {
+  const lang = useAppLang()
+  const t = useT()
   const values = ORDER.map((s) => bySeverity[s] ?? 0)
   const max = Math.max(...values, 0)
 
   return (
     <div
       role="img"
-      aria-label={`Phân bố mức độ: ${ORDER.map(
-        (s, i) => `${SEVERITY_LABEL[s]} ${values[i]}`
+      aria-label={`${t.charts.severityDistribution}: ${ORDER.map(
+        (s, i) => `${SEVERITY_LABEL[lang][s]} ${values[i]}`
       ).join(", ")}`}
       className="flex items-end justify-around gap-4"
     >
@@ -46,7 +50,7 @@ export function SeverityBars({
             />
           </div>
           <span className="text-xs text-muted-foreground">
-            {SEVERITY_LABEL[s]}
+            {SEVERITY_LABEL[lang][s]}
           </span>
         </div>
       ))}

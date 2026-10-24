@@ -2,16 +2,10 @@
 import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useQueryClient } from "@tanstack/react-query"
 import {
-  ArrowLeft,
-  CircleCheck,
   FileText,
   Pencil,
-  Search,
-  Sparkles,
   Trash2,
-  X,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -62,9 +56,8 @@ import {
   useDeleteInsight,
   useUpdateInsight,
 } from "@/hooks/use-insights"
-import { useAgentDecision, useAgentRun } from "@/hooks/use-agent"
-import { useGenerateActions } from "@/hooks/use-actions"
 import { useProduct } from "@/hooks/use-product"
+import { readableEvidence } from "@/lib/investigation"
 import type { InsightItem } from "@/lib/types"
 
 const STATUS_TONE: Record<
@@ -81,14 +74,6 @@ const STATUS_TONE: Record<
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_TONE[status] ?? { label: status, tone: "secondary" as const }
   return <Badge variant={s.tone}>{s.label}</Badge>
-}
-
-function EvidenceChip({ id }: { id: string }) {
-  return (
-    <span className="rounded bg-signal/10 px-1.5 py-0.5 font-mono text-xs text-signal">
-      E-{id.slice(0, 4)}
-    </span>
-  )
 }
 
 // ------------------------------------------------------------------ Report body
@@ -123,7 +108,7 @@ function ReportBody({
         </CardAction>
         {runId ? (
           <CardDescription className="flex items-center gap-2 font-mono text-xs">
-            Investigation {runId.slice(0, 8)}
+            Tổng hợp từ phản hồi
             <AiBadge />
           </CardDescription>
         ) : null}
@@ -192,18 +177,18 @@ function ReportBody({
           </h3>
           {evidence.length ? (
             <ul className="flex flex-col gap-2">
-              {evidence.map((e) => (
+              {evidence.map((e, index) => (
                 <li
                   key={e.evidence_id}
                   className="rounded-lg border bg-secondary/30 p-3 text-sm"
                 >
                   <div className="flex items-center gap-2">
-                    <EvidenceChip id={e.evidence_id} />
+                    <Badge variant="outline">Bằng chứng {index + 1}</Badge>
                     <span className="font-mono text-xs text-muted-foreground">
-                      {e.source_tool}
+                      Nguồn dữ liệu đã kiểm tra
                     </span>
                   </div>
-                  <p className="mt-1 break-words">{e.statement}</p>
+                  <p className="mt-1 break-words">{readableEvidence(e.statement)}</p>
                 </li>
               ))}
             </ul>
@@ -217,168 +202,6 @@ function ReportBody({
     </Card>
   )
 }
-
-// ------------------------------------------------------------------ G2 bar
-
-function GateTwoBar({
-  runId,
-  onDecided,
-}: {
-  runId: string
-  onDecided: (insightIds: string[]) => void
-}) {
-  const decision = useAgentDecision()
-  const [editOpen, setEditOpen] = useState(false)
-  const [editedTitle, setEditedTitle] = useState("")
-  const [editedFinding, setEditedFinding] = useState("")
-  const [rejectOpen, setRejectOpen] = useState(false)
-  const [rejectReason, setRejectReason] = useState("")
-
-  const send = (
-    action: "approve" | "edit" | "investigate_more" | "reject",
-    payload?: {
-      editedInsight?: { title?: string; finding?: string }
-      reason?: string
-    }
-  ) => {
-    decision.mutate(
-      { runId, action, ...payload },
-      {
-        onSuccess: (res) => {
-          if (action === "approve") toast.success("Finding approved.")
-          if (action === "edit") toast.success("Edit saved and approved.")
-          if (action === "reject")
-            toast.success("Finding rejected — retained in history.")
-          if (action === "investigate_more")
-            toast.success("Back to investigation.")
-          onDecided(res.insights_created ?? [])
-        },
-        onError: (err) =>
-          toast.error(err instanceof Error ? err.message : "Decision failed"),
-      }
-    )
-  }
-
-  return (
-    <Card className="ring-2 ring-pollen/60">
-      <CardHeader>
-        <CardTitle>G2 — Review the finding</CardTitle>
-        <CardDescription>
-          Your decision is recorded with time, reviewer, and revision.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          disabled={decision.isPending}
-          onClick={() => setRejectOpen(true)}
-        >
-          <X data-icon="inline-start" />
-          Reject
-        </Button>
-        <Button
-          variant="outline"
-          disabled={decision.isPending}
-          onClick={() => send("investigate_more")}
-        >
-          <Search data-icon="inline-start" />
-          Investigate more
-        </Button>
-        <Button
-          variant="outline"
-          disabled={decision.isPending}
-          onClick={() => setEditOpen(true)}
-        >
-          <Pencil data-icon="inline-start" />
-          Edit finding
-        </Button>
-        <Button disabled={decision.isPending} onClick={() => send("approve")}>
-          <CircleCheck data-icon="inline-start" />
-          Approve finding
-        </Button>
-      </CardContent>
-
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit finding</DialogTitle>
-            <DialogDescription>
-              Evidence stays as recorded — your edit is applied on top of it.
-            </DialogDescription>
-          </DialogHeader>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="g2-edit-title">Title</FieldLabel>
-              <Input
-                id="g2-edit-title"
-                placeholder="Title"
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="g2-edit-finding">Finding</FieldLabel>
-              <Textarea
-                id="g2-edit-finding"
-                placeholder="Finding"
-                rows={4}
-                value={editedFinding}
-                onChange={(e) => setEditedFinding(e.target.value)}
-              />
-            </Field>
-          </FieldGroup>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Keep as is
-            </Button>
-            <Button
-              onClick={() => {
-                send("edit", {
-                  editedInsight: {
-                    ...(editedTitle ? { title: editedTitle } : {}),
-                    ...(editedFinding ? { finding: editedFinding } : {}),
-                  },
-                })
-                setEditOpen(false)
-              }}
-            >
-              Save edit and approve
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reject this finding?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Rejected reports remain visible in history.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <Textarea
-            placeholder="Reason (optional)"
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-          />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep reviewing</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                send("reject", { reason: rejectReason || undefined })
-                setRejectOpen(false)
-              }}
-            >
-              Reject
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
-  )
-}
-
-// ------------------------------------------------------------------ Screen
 
 function ReportEditDialog({
   report,
@@ -471,7 +294,6 @@ function Reports({
   initialReportId: string | null
 }) {
   const { product, productId } = useProduct()
-  const qc = useQueryClient()
   const insights = useInsights()
   const [selectedId, setSelectedId] = useState<string | null>(initialReportId)
   const [statusFilter, setStatusFilter] = useState("all")
@@ -493,37 +315,26 @@ function Reports({
     [items, selectedId]
   )
 
-  // A run opened from the Data Graph — still investigating or waiting on G2.
-  const runQuery = useAgentRun(initialRunId)
-  const runData = runQuery.data ?? null
-  const pendingDraft = runData?.pending_approval ?? null
-
-  const generate = useGenerateActions()
   const deleteInsight = useDeleteInsight()
   const [editingReport, setEditingReport] = useState<InsightItem | null>(null)
   const [confirmDeleteReport, setConfirmDeleteReport] = useState(false)
   // HAX G14 — the LLM can fail silently server-side; surface it here instead.
-  const [genError, setGenError] = useState<string | null>(null)
 
-  const afterDecision = (insightIds: string[]) => {
-    void qc.invalidateQueries({ queryKey: ["insights"] })
-    void qc.invalidateQueries({ queryKey: ["agent"] })
-    if (insightIds[0]) setSelectedId(insightIds[0])
-  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title={product?.name ?? "Reports"}
-        description="Investigation draft và insight đã duyệt — mỗi kết luận gắn với bằng chứng truy ngược được."
+        description="Kết quả điều tra và bằng chứng. Duyệt kết luận ngay trong cuộc điều tra hoặc Chat."
       />
 
+      {initialRunId ? <Alert><AlertTitle>Cuộc điều tra được duyệt tại chỗ</AlertTitle><AlertDescription>Tiếp tục trong màn điều tra để giữ nguyên câu hỏi và bằng chứng.</AlertDescription><Button size="sm" variant="outline" asChild><Link href={`/data-graph?run=${initialRunId}`}>Mở cuộc điều tra</Link></Button></Alert> : null}
       <div className="grid min-w-0 gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
         {/* Reports list */}
         <Card size="sm" className="self-start">
           <CardHeader>
             <CardTitle>Reports</CardTitle>
-            <CardDescription>{items.length} trong sản phẩm này</CardDescription>
+            <CardDescription>{insights.isPending ? "Đang tải báo cáo…" : `${items.length} trong sản phẩm này`}</CardDescription>
           </CardHeader>
           <CardContent className="gap-3">
             <Input
@@ -545,20 +356,6 @@ function Reports({
               </SelectContent>
             </Select>
             <div className="flex flex-col gap-1">
-              {initialRunId && pendingDraft ? (
-                <button
-                  className="w-full rounded-lg border-2 border-pollen/60 bg-card p-3 text-left"
-                  onClick={() => setSelectedId(null)}
-                >
-                  <span className="font-mono text-xs text-signal">
-                    I-{initialRunId.slice(0, 8)}
-                  </span>
-                  <span className="block truncate text-sm font-medium">
-                    {pendingDraft.insight.title}
-                  </span>
-                  <Badge className="mt-1">Needs review</Badge>
-                </button>
-              ) : null}
               {items.map((i) => (
                 <button
                   key={i.id}
@@ -577,7 +374,7 @@ function Reports({
                   </span>
                 </button>
               ))}
-              {items.length === 0 && !pendingDraft ? (
+              {items.length === 0 && !insights.isPending && !insights.isError ? (
                 <p className="px-2 text-sm text-muted-foreground">
                   No reports yet — ask a question in the Data Graph.
                 </p>
@@ -588,32 +385,7 @@ function Reports({
 
         {/* Report body */}
         <div className="flex min-w-0 flex-col gap-4">
-          {initialRunId && pendingDraft && !selected ? (
-            <>
-              <ReportBody
-                title={pendingDraft.insight.title}
-                status="pending"
-                finding={pendingDraft.insight.finding}
-                findingConfidence={pendingDraft.insight.finding_confidence}
-                hypothesis={{
-                  statement: pendingDraft.insight.hypothesis_statement ?? null,
-                  confidence:
-                    pendingDraft.insight.hypothesis_confidence ?? null,
-                }}
-                impact={pendingDraft.insight.impact ?? []}
-                limitations={pendingDraft.insight.limitations ?? []}
-                evidence={pendingDraft.evidence ?? []}
-                runId={initialRunId}
-              />
-              <GateTwoBar runId={initialRunId} onDecided={afterDecision} />
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/data-graph">
-                  <ArrowLeft data-icon="inline-start" />
-                  Back to investigation
-                </Link>
-              </Button>
-            </>
-          ) : selected ? (
+          {selected ? (
             <>
               <ReportBody
                 title={selected.title}
@@ -626,15 +398,14 @@ function Reports({
                 evidence={selected.evidence ?? []}
                 runId={selected.run_id}
               />
-              {(selected.status === "pending" ||
-                selected.status === "investigating") &&
-              selected.run_id ? (
-                <GateTwoBar runId={selected.run_id} onDecided={afterDecision} />
+              {(selected.status === "pending" || selected.status === "investigating") && selected.run_id ? (
+                <Button variant="outline" asChild><Link href={`/data-graph?run=${selected.run_id}`}>Tiếp tục và duyệt trong cuộc điều tra</Link></Button>
               ) : null}
                               <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={selected.status === "pending" || selected.status === "investigating"}
                     onClick={() => setEditingReport(selected)}
                   >
                     <Pencil data-icon="inline-start" />
@@ -650,74 +421,7 @@ function Reports({
                     Delete report
                   </Button>
                 </div>
-              {selected.status === "approved" ||
-              selected.status === "edited" ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Act on this report</CardTitle>
-                    <CardDescription>
-                      Generate proposed actions, review them in the Priority
-                      Matrix, then accept explicitly (G3).
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        disabled={generate.isPending}
-                        onClick={() =>
-                          generate.mutate(selected.id, {
-                            onSuccess: (res) => {
-                              if (res.generation_error) {
-                                // HAX G14 — the LLM failed; show why, offer retry via the same button.
-                                setGenError(res.generation_error)
-                                return
-                              }
-                              setGenError(null)
-                              if (res.actions_created === 0) {
-                                toast.warning(
-                                  "No actions could be generated for this report — every function fell below the relevance threshold."
-                                )
-                                return
-                              }
-                              toast.success(
-                                `${res.actions_created} action(s) proposed${
-                                  res.functions_skipped.length
-                                    ? ` · skipped: ${res.functions_skipped.join(", ")}`
-                                    : ""
-                                }`
-                              )
-                            },
-                            onError: (err) =>
-                              toast.error(
-                                err instanceof Error
-                                  ? err.message
-                                  : "Generation failed"
-                              ),
-                          })
-                        }
-                      >
-                        <Sparkles data-icon="inline-start" />
-                        Generate actions
-                      </Button>
-                      <Button asChild>
-                        <Link href={`/matrix?report=${selected.id}`}>
-                          Open Priority Matrix
-                        </Link>
-                      </Button>
-                    </div>
-                    {genError ? (
-                      <Alert variant="destructive">
-                        <FileText className="size-4" />
-                        <AlertTitle>AI could not generate actions</AlertTitle>
-                        <AlertDescription>
-                          {genError} — press “Generate actions” to try again.
-                        </AlertDescription>
-                      </Alert>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              ) : null}
+              {selected.run_id ? <Button variant="outline" asChild><Link href={`/data-graph?run=${selected.run_id}`}>Xem cuộc điều tra và hành động</Link></Button> : null}
               {selected.status === "rejected" ? (
                 <Alert>
                   <FileText className="size-4" />
@@ -729,33 +433,10 @@ function Reports({
                 </Alert>
               ) : null}
             </>
-          ) : runQuery.isError && initialRunId ? (
-            <Alert variant="destructive">
-              <FileText className="size-4" />
-              <AlertTitle>Could not load the investigation</AlertTitle>
-              <AlertDescription>
-                The connection dropped while reading this run. Nothing was lost
-                — the investigation keeps running on the server.
-              </AlertDescription>
-              <div className="mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void runQuery.refetch()}
-                >
-                  Check again
-                </Button>
-              </div>
-            </Alert>
-          ) : runQuery.isPending && initialRunId ? (
-            <Card>
-              <CardContent className="items-center p-8 text-center">
-                <Spinner />
-                <p className="text-sm text-muted-foreground">
-                  Investigation is running — the draft appears here when ready.
-                </p>
-              </CardContent>
-            </Card>
+          ) : insights.isPending ? (
+            <Card><CardContent className="flex items-center gap-2 p-6"><Spinner />Đang tải báo cáo đã lưu…</CardContent></Card>
+          ) : insights.isError ? (
+            <Alert variant="destructive"><AlertTitle>Chưa tải được báo cáo</AlertTitle><AlertDescription>Dữ liệu vẫn được giữ trên máy chủ.</AlertDescription><Button variant="outline" size="sm" onClick={() => void insights.refetch()}>Tải lại</Button></Alert>
           ) : (
             <Card>
               <CardContent className="items-center p-8 text-center text-sm text-muted-foreground">

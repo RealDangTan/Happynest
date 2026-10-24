@@ -2,10 +2,14 @@
 
 import {
   ArrowRight,
+  Copy,
   ListTree,
   Loader2,
+  Pencil,
+  Plus,
   RefreshCcw,
   Sparkles,
+  Trash2,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -56,25 +60,44 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useProduct } from "@/hooks/use-product"
 import {
   useApplyProposal,
   useApplyRecommendations,
+  useCreateTaxonomyNode,
+  useDeleteTaxonomyNode,
   useGenerateProposal,
   useRecommendTopics,
   useReEnrichUncategorized,
   useTaxonomy,
+  useUpdateTaxonomyNode,
 } from "@/hooks/use-taxonomy"
 import {
-  displaySlug,
   groupProposalTree,
   groupTaxonomyTree,
   selectedProposalPayload,
 } from "@/lib/taxonomy"
-import type { ProposedTopic, TopicRecommendation } from "@/lib/types"
+import type { ProposedTopic, TaxonomyNode, TopicRecommendation } from "@/lib/types"
 import { ApiError } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
-/** Đổi tên một node trong proposal — cập nhật cả parent của con trỏ tới tên cũ. */
+/** Đổi tên canonical (EN) một node trong proposal — cập nhật cả parent của con
+ * trỏ tới tên cũ (parent khớp theo NAME tiếng Anh). */
 function renameTopic(
   topics: ProposedTopic[],
   oldName: string,
@@ -113,6 +136,97 @@ export default function TaxonomyPage() {
   const [recommendations, setRecommendations] = useState<
     TopicRecommendation[] | null
   >(null)
+
+  // ----------------------------------------------------- manual CRUD state
+  const createNode = useCreateTaxonomyNode(productId)
+  const updateNode = useUpdateTaxonomyNode(productId)
+  const deleteNode = useDeleteTaxonomyNode(productId)
+  const [addOpen, setAddOpen] = useState(false)
+  const [addForm, setAddForm] = useState({
+    name: "",
+    name_vi: "",
+    parent_slug: "__root__",
+    description: "",
+  })
+  const [editTarget, setEditTarget] = useState<TaxonomyNode | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: "",
+    name_vi: "",
+    description: "",
+  })
+  const [deleteTarget, setDeleteTarget] = useState<TaxonomyNode | null>(null)
+
+  function onAddNode() {
+    if (!productId) return
+    createNode.mutate(
+      {
+        name: addForm.name,
+        name_vi: addForm.name_vi.trim() ? addForm.name_vi.trim() : null,
+        parent_slug: addForm.parent_slug === "__root__" ? null : addForm.parent_slug,
+        description: addForm.description.trim() ? addForm.description.trim() : null,
+      },
+      {
+        onSuccess: (node) => {
+          setAddOpen(false)
+          setAddForm({ name: "", name_vi: "", parent_slug: "__root__", description: "" })
+          toast.success(`Đã thêm “${node.name_vi ?? node.name}” vào bộ nhãn.`)
+        },
+        onError: (err) =>
+          toast.error(
+            err instanceof ApiError ? err.message : "Không thêm được chủ đề."
+          ),
+      }
+    )
+  }
+
+  function onOpenEdit(node: TaxonomyNode) {
+    setEditTarget(node)
+    setEditForm({
+      name: node.name,
+      name_vi: node.name_vi ?? "",
+      description: node.description ?? "",
+    })
+  }
+
+  function onSaveEdit() {
+    if (!editTarget) return
+    updateNode.mutate(
+      {
+        slug: editTarget.slug ?? "",
+        name: editForm.name,
+        name_vi: editForm.name_vi.trim() ? editForm.name_vi.trim() : editForm.name,
+        description: editForm.description.trim() ? editForm.description.trim() : null,
+      },
+      {
+        onSuccess: (node) => {
+          setEditTarget(null)
+          toast.success(
+            `Đã lưu “${node.name_vi ?? node.name}” — dữ liệu đã phân loại không bị ảnh hưởng.`
+          )
+        },
+        onError: (err) =>
+          toast.error(
+            err instanceof ApiError ? err.message : "Không lưu được chủ đề."
+          ),
+      }
+    )
+  }
+
+  function onDeleteNode() {
+    if (!deleteTarget?.slug) return
+    deleteNode.mutate(deleteTarget.slug, {
+      onSuccess: () => {
+        toast.success(
+          `Đã xóa “${deleteTarget.name}” khỏi bộ nhãn. Feedback đã phân loại giữ nguyên nhãn cũ.`
+        )
+        setDeleteTarget(null)
+      },
+      onError: (err) =>
+        toast.error(
+          err instanceof ApiError ? err.message : "Không xóa được chủ đề."
+        ),
+    })
+  }
 
   const items = taxonomy.data?.items ?? []
   const activeItems = items.filter((n) => n.status === "active")
@@ -239,7 +353,7 @@ export default function TaxonomyPage() {
         onSuccess: (res) =>
           toast.success(
             res.released > 0
-              ? `Đã mở khoá ${res.released} feedback — sang Feedback Vault bấm Run analysis để enrich lại.`
+              ? `Đã mở khoá ${res.released} feedback — sang Feedback Vault bấm "Analyze pending items" để chạy lại.`
               : "Không có feedback chưa phân loại nào cần mở khoá."
           ),
         onError: (err) =>
@@ -286,8 +400,10 @@ export default function TaxonomyPage() {
                   <span className="font-medium text-foreground">
                     {product?.name}
                   </span>{" "}
-                  và gọi GPT để đề xuất cây chủ đề — tốn một lần gọi AI nhỏ. Đề
-                  xuất chỉ là bản nháp, chưa đổi gì tới taxonomy hiện có.
+                  và gọi GPT để đề xuất cây chủ đề — tốn một lần gọi AI nhỏ. Mẫu
+                  được lấy phân tầng theo thời gian và gộp trùng lặp nên không
+                  lệch về giai đoạn gần đây. Đề xuất chỉ là bản nháp, chưa đổi gì
+                  tới taxonomy hiện có.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -339,6 +455,13 @@ export default function TaxonomyPage() {
                             renameTopic(prev ?? [], root.name, name)
                           )
                         }
+                        onRenameVi={(name_vi) =>
+                          setProposal((prev) =>
+                            (prev ?? []).map((t) =>
+                              t === root ? { ...t, name_vi } : t
+                            )
+                          )
+                        }
                       />
                       {children.length > 0 ? (
                         <div className="ml-6 flex flex-col gap-2 border-l pl-4">
@@ -357,6 +480,13 @@ export default function TaxonomyPage() {
                               onRename={(name) =>
                                 setProposal((prev) =>
                                   renameTopic(prev ?? [], child.name, name)
+                                )
+                              }
+                              onRenameVi={(name_vi) =>
+                                setProposal((prev) =>
+                                  (prev ?? []).map((t) =>
+                                    t === child ? { ...t, name_vi } : t
+                                  )
                                 )
                               }
                             />
@@ -404,6 +534,18 @@ export default function TaxonomyPage() {
                 tên hiển thị không làm vỡ dữ liệu cũ.
               </CardDescription>
               <CardAction className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!productId || busy}
+                  onClick={() => {
+                    setAddForm({ name: "", name_vi: "", parent_slug: "__root__", description: "" })
+                    setAddOpen(true)
+                  }}
+                >
+                  <Plus data-icon="inline-start" />
+                  Thêm chủ đề
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -467,7 +609,12 @@ export default function TaxonomyPage() {
                 <div className="flex flex-col gap-2">
                   {tree.map(({ node, children }) => (
                     <div key={node.id} className="flex flex-col gap-1.5">
-                      <TaxonomyRow node={node} depth={0} />
+                      <TaxonomyRow
+                        node={node}
+                        depth={0}
+                        onEdit={onOpenEdit}
+                        onDelete={setDeleteTarget}
+                      />
                       {children.length > 0 ? (
                         <div className="ml-6 flex flex-col gap-1.5 border-l pl-4">
                           {children.map((child) => (
@@ -475,6 +622,8 @@ export default function TaxonomyPage() {
                               key={child.id}
                               node={child}
                               depth={1}
+                              onEdit={onOpenEdit}
+                              onDelete={setDeleteTarget}
                             />
                           ))}
                         </div>
@@ -520,7 +669,14 @@ export default function TaxonomyPage() {
                     />
                     <span className="flex min-w-0 flex-col gap-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{rec.name}</span>
+                        <span className="font-medium">
+                          {rec.name_vi ?? rec.name}
+                        </span>
+                        {rec.name !== (rec.name_vi ?? rec.name) ? (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {rec.name}
+                          </span>
+                        ) : null}
                         <Badge variant="outline">
                           {rec.evidence_count} phản hồi
                         </Badge>
@@ -621,7 +777,8 @@ export default function TaxonomyPage() {
             <CardHeader>
               <CardTitle>Sinh đề xuất từ bối cảnh</CardTitle>
               <CardDescription>
-                Bối cảnh giúp GPT đặt tên chủ đề đúng ngôn ngữ ngành của bạn.
+                Tùy chọn — giúp GPT đặt tên chủ đề đúng ngành; bỏ trống thì AI
+                tự suy luận từ phản hồi.
               </CardDescription>
             </CardHeader>
             <CardFooter>
@@ -643,8 +800,9 @@ export default function TaxonomyPage() {
           <DialogHeader>
             <DialogTitle>Bối cảnh cho GPT</DialogTitle>
             <DialogDescription>
-              Không bắt buộc — nhưng mô tả càng rõ, tên chủ đề càng sát ngành.
-              AI chỉ đọc phản hồi đã ẩn danh.
+              Không bắt buộc — bỏ trống thì AI tự suy luận loại sản phẩm từ
+              chính phản hồi. Mô tả càng rõ, tên chủ đề càng sát ngành. AI chỉ
+              đọc phản hồi đã ẩn danh.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
@@ -702,7 +860,8 @@ export default function TaxonomyPage() {
                 }
               />
               <FieldDescription>
-                Nhiều mẫu hơn → đề xuất phủ hơn, hơi tốn token hơn.
+                Mẫu phân tầng đều theo thời gian — nhiều mẫu hơn giúp phủ rộng
+                hơn, hơi tốn token hơn.
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -747,6 +906,244 @@ export default function TaxonomyPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ------------------------------------------------- add node dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-h-[min(85dvh,640px)] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thêm chủ đề mới</DialogTitle>
+            <DialogDescription>
+              Chủ đề vào ngay bộ nhãn đóng cho engine phân loại. Slug tự sinh từ
+              tên (bỏ dấu) và không đổi về sau.
+            </DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="node-name">Tên tiếng Anh (canonical)</FieldLabel>
+              <Input
+                id="node-name"
+                placeholder="VD: Note Sync"
+                value={addForm.name}
+                onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+              />
+              <FieldDescription>
+                Danh từ/cụm danh từ tiếng Anh chỉ mảng hoặc tính năng — nhãn chuẩn
+                cho engine phân loại, không chứa đánh giá hay mức độ (cái đó thuộc
+                sentiment/severity).
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="node-name-vi">Tên hiển thị tiếng Việt</FieldLabel>
+              <Input
+                id="node-name-vi"
+                placeholder="VD: Đồng bộ ghi chú"
+                value={addForm.name_vi}
+                onChange={(e) =>
+                  setAddForm((f) => ({ ...f, name_vi: e.target.value }))
+                }
+              />
+              <FieldDescription>
+                Nhãn hiện trên UI cho người dùng. Bỏ trống → dùng tên tiếng Anh.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="node-parent">Chủ đề cha</FieldLabel>
+              <Select
+                value={addForm.parent_slug}
+                onValueChange={(value) => setAddForm((f) => ({ ...f, parent_slug: value }))}
+              >
+                <SelectTrigger id="node-parent" className="w-full">
+                  <SelectValue placeholder="Chọn cấp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="__root__">Gốc (không có cha)</SelectItem>
+                    {activeItems
+                      .filter((n) => n.slug)
+                      .map((n) => (
+                        <SelectItem key={n.id} value={n.slug as string}>
+                          {n.name_vi ?? n.name}
+                        </SelectItem>
+                      ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="node-description">Mô tả (tùy chọn)</FieldLabel>
+              <Textarea
+                id="node-description"
+                rows={2}
+                placeholder="Tiêu chí cái gì thuộc / không thuộc chủ đề này."
+                value={addForm.description}
+                onChange={(e) =>
+                  setAddForm((f) => ({ ...f, description: e.target.value }))
+                }
+              />
+              <FieldDescription>
+                Giúp AI đặt tên chủ đề đúng ngữ cảnh khi sinh đề xuất.
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setAddOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              onClick={onAddNode}
+              disabled={!productId || createNode.isPending || !addForm.name.trim()}
+            >
+              {createNode.isPending ? (
+                <Loader2 data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <Plus data-icon="inline-start" />
+              )}
+              Thêm chủ đề
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------ edit node dialog */}
+      <Dialog
+        open={editTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null)
+        }}
+      >
+        <DialogContent className="max-h-[min(85dvh,640px)] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sửa chủ đề</DialogTitle>
+            <DialogDescription>
+              Chỉ đổi tên hiển thị / mô tả — mã định danh nội bộ của chủ đề giữ
+              nguyên nên dữ liệu đã phân loại không vỡ.
+            </DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Tag lưu trong DB</FieldLabel>
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs text-muted-foreground">
+                  {editTarget?.slug ?? "—"}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Copy tag"
+                  disabled={!editTarget?.slug}
+                  onClick={() => {
+                    if (!editTarget?.slug) return
+                    void navigator.clipboard
+                      .writeText(editTarget.slug)
+                      .then(() => toast.success(`Đã copy tag “${editTarget.slug}”.`))
+                      .catch(() => toast.error("Không copy được — trình duyệt chặn clipboard."))
+                  }}
+                >
+                  <Copy />
+                </Button>
+              </div>
+              <FieldDescription>
+                Giá trị nằm trong <code className="font-mono">ai_analysis.topics</code> của
+                feedback — cố định, không đổi được khi rename.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="edit-node-name">Tên tiếng Anh (canonical)</FieldLabel>
+              <Input
+                id="edit-node-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+              />
+              <FieldDescription>
+                Nhãn chuẩn cho engine phân loại — đổi tên không đổi slug nên dữ
+                liệu cũ không vỡ.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="edit-node-name-vi">
+                Tên hiển thị tiếng Việt
+              </FieldLabel>
+              <Input
+                id="edit-node-name-vi"
+                value={editForm.name_vi}
+                placeholder={editForm.name}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name_vi: e.target.value }))
+                }
+              />
+              <FieldDescription>
+                Nhãn hiện trên UI. Bỏ trống → dùng tên tiếng Anh.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="edit-node-description">Mô tả</FieldLabel>
+              <Textarea
+                id="edit-node-description"
+                rows={2}
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, description: e.target.value }))
+                }
+              />
+              <FieldDescription>Để trống là xóa mô tả.</FieldDescription>
+            </Field>
+          </FieldGroup>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setEditTarget(null)}>
+              Đóng
+            </Button>
+            <Button
+              onClick={onSaveEdit}
+              disabled={updateNode.isPending || !editForm.name.trim()}
+            >
+              {updateNode.isPending ? (
+                <Loader2 data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <Pencil data-icon="inline-start" />
+              )}
+              Lưu thay đổi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* --------------------------------------------- delete confirm dialog */}
+      <AlertDialog
+        open={deleteTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Xóa “{deleteTarget?.name_vi ?? deleteTarget?.name}”?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Chủ đề bị gỡ khỏi bộ nhãn đóng — các run phân tích tương lai không
+              còn dùng nó. Feedback ĐÃ phân loại giữ nguyên nhãn cũ nên dữ liệu
+              không mất. Chủ đề còn chủ đề con thì phải xóa con trước.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Giữ lại</AlertDialogCancel>
+            <AlertDialogAction
+              className="text-destructive"
+              onClick={(event) => {
+                event.preventDefault()
+                onDeleteNode()
+              }}
+            >
+              {deleteNode.isPending ? (
+                <Loader2 data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <Trash2 data-icon="inline-start" />
+              )}
+              Xóa chủ đề
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -756,11 +1153,13 @@ function ProposalRow({
   depth,
   onToggle,
   onRename,
+  onRenameVi,
 }: {
   topic: ProposedTopic
   depth: number
   onToggle: (selected: boolean) => void
   onRename: (name: string) => void
+  onRenameVi: (name_vi: string) => void
 }) {
   const selected = topic.selected !== false
   return (
@@ -772,14 +1171,23 @@ function ProposalRow({
       <Checkbox
         checked={selected}
         onCheckedChange={(checked) => onToggle(checked === true)}
-        aria-label={`Chọn chủ đề ${topic.name}`}
+        aria-label={`Chọn chủ đề ${topic.name_vi ?? topic.name}`}
       />
-      <Input
-        className="h-7 flex-1 border-transparent bg-transparent px-2 text-sm font-medium shadow-none hover:border-input focus-visible:bg-background"
-        value={topic.name}
-        onChange={(e) => onRename(e.target.value)}
-        aria-label={`Tên chủ đề (cấp ${depth + 1})`}
-      />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <Input
+          className="h-7 border-transparent bg-transparent px-2 text-sm font-medium shadow-none hover:border-input focus-visible:bg-background"
+          value={topic.name_vi ?? ""}
+          placeholder={topic.name}
+          onChange={(e) => onRenameVi(e.target.value)}
+          aria-label={`Tên hiển thị tiếng Việt (cấp ${depth + 1})`}
+        />
+        <Input
+          className="h-5 border-transparent bg-transparent px-2 font-mono text-xs text-muted-foreground shadow-none hover:border-input focus-visible:bg-background"
+          value={topic.name}
+          onChange={(e) => onRename(e.target.value)}
+          aria-label={`Tên tiếng Anh canonical (cấp ${depth + 1})`}
+        />
+      </div>
       {topic.description ? (
         <span className="hidden max-w-48 truncate text-xs text-muted-foreground md:block">
           {topic.description}
@@ -792,23 +1200,66 @@ function ProposalRow({
 function TaxonomyRow({
   node,
   depth,
+  onEdit,
+  onDelete,
 }: {
-  node: { name: string; slug: string | null; kind: string }
+  node: TaxonomyNode
   depth: number
+  onEdit: (node: TaxonomyNode) => void
+  onDelete: (node: TaxonomyNode) => void
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-accent/40 ${
+      className={cn(
+        "group/row flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-accent/40",
         depth > 0 ? "text-sm" : "font-medium"
-      }`}
+      )}
     >
-      <span>{node.name}</span>
-      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-        {displaySlug(node.slug)}
-      </code>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-default underline decoration-dotted decoration-border underline-offset-4">
+              {node.name_vi ?? node.name}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Lưu trong DB:{" "}
+            <span className="font-mono">{node.slug ?? "—"}</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      {node.name !== (node.name_vi ?? node.name) ? (
+        <span className="hidden font-mono text-xs text-muted-foreground lg:block">
+          {node.name}
+        </span>
+      ) : null}
+      {node.description ? (
+        <span className="hidden max-w-64 truncate text-xs text-muted-foreground lg:block">
+          {node.description}
+        </span>
+      ) : null}
       {node.kind === "emerging" ? (
         <Badge variant="secondary">emerging</Badge>
       ) : null}
+      <span className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Sửa chủ đề ${node.name_vi ?? node.name}`}
+          onClick={() => onEdit(node)}
+        >
+          <Pencil />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Xóa chủ đề ${node.name_vi ?? node.name}`}
+          className="text-destructive hover:text-destructive"
+          onClick={() => onDelete(node)}
+        >
+          <Trash2 />
+        </Button>
+      </span>
     </div>
   )
 }

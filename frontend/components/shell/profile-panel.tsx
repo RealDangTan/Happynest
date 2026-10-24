@@ -22,16 +22,17 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LangToggle } from "@/components/lang-toggle";
 import { useMe } from "@/hooks/use-me";
-import { useAppLanguage } from "@/hooks/use-language";
 import { useProduct } from "@/hooks/use-product";
 import { apiFetch } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 export function ProfilePanel() {
   const me = useMe();
   const { product } = useProduct();
   const { resolvedTheme, setTheme } = useTheme();
-  const { lang, applyLang } = useAppLanguage();
+  const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
   const initials = (me.data?.email ?? "?").slice(0, 2).toUpperCase();
@@ -70,7 +71,7 @@ export function ProfilePanel() {
         <Separator />
         <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm">
           <Boxes className="size-4 shrink-0 text-muted-foreground" />
-          <span className="text-muted-foreground">Workspace</span>
+          <span className="text-muted-foreground">{t.profile.workspace}</span>
           <span className="ml-auto min-w-0 truncate font-medium">
             {product?.name ?? "—"}
           </span>
@@ -78,43 +79,26 @@ export function ProfilePanel() {
         <Button variant="ghost" size="sm" asChild className="justify-start">
           <Link href="/settings/workspace">
             <SlidersHorizontal data-icon="inline-start" />
-            Workspace settings
+            {t.profile.workspaceSettings}
           </Link>
         </Button>
         <Button variant="ghost" size="sm" asChild className="justify-start">
           <Link href="/profile">
             <UserRound data-icon="inline-start" />
-            Profile
+            {t.profile.profile}
           </Link>
         </Button>
         <Button variant="ghost" size="sm" asChild className="justify-start">
           <Link href="/settings">
             <Settings data-icon="inline-start" />
-            Settings
+            {t.profile.settings}
           </Link>
         </Button>
         <Separator />
         <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
           <Languages className="size-4 shrink-0 text-muted-foreground" />
-          <span className="text-muted-foreground">Language</span>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            spacing={0}
-            className="ml-auto"
-            value={lang}
-            onValueChange={(v) => {
-              if (v === "vi" || v === "en") applyLang(v);
-            }}
-          >
-            <ToggleGroupItem value="vi" className="h-7 px-2.5 text-xs">
-              VI
-            </ToggleGroupItem>
-            <ToggleGroupItem value="en" className="h-7 px-2.5 text-xs">
-              EN
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <span className="text-muted-foreground">{t.profile.language}</span>
+          <LangToggle className="ml-auto" />
         </div>
         <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
           {resolvedTheme === "dark" ? (
@@ -122,7 +106,7 @@ export function ProfilePanel() {
           ) : (
             <Sun className="size-4 shrink-0 text-muted-foreground" />
           )}
-          <span className="text-muted-foreground">Theme</span>
+          <span className="text-muted-foreground">{t.profile.theme}</span>
           <ToggleGroup
             type="single"
             variant="outline"
@@ -136,14 +120,14 @@ export function ProfilePanel() {
           >
             <ToggleGroupItem
               value="light"
-              aria-label="Light theme"
+              aria-label={t.profile.light}
               className="h-7 px-2"
             >
               <Sun className="size-3.5" />
             </ToggleGroupItem>
             <ToggleGroupItem
               value="dark"
-              aria-label="Dark theme"
+              aria-label={t.profile.dark}
               className="h-7 px-2"
             >
               <Moon className="size-3.5" />
@@ -159,7 +143,7 @@ export function ProfilePanel() {
           onClick={() => logout.mutate()}
         >
           <LogOut data-icon="inline-start" />
-          Sign out
+          {t.profile.signOut}
         </Button>
       </PopoverContent>
     </Popover>

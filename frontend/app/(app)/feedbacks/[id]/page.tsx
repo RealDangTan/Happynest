@@ -1,4 +1,5 @@
 "use client"
+import { SentimentIndicator } from "@/components/sentiment-indicator"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import {
@@ -7,7 +8,8 @@ import {
 } from "@/hooks/use-feedback-detail"
 import { ApiError } from "@/lib/api"
 import { formatDate } from "@/lib/format"
-import { SEVERITY_LABEL, SENTIMENT_LABEL } from "@/lib/labels"
+import { SEVERITY_LABEL } from "@/lib/labels"
+import { useAppLang } from "@/lib/i18n"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,13 +28,22 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { useProduct } from "@/hooks/use-product"
+import { useTaxonomy } from "@/hooks/use-taxonomy"
 import { usePageTitle } from "@/hooks/use-page-title"
+import { topicLabeler } from "@/lib/graph"
 
 export default function FeedbackDetailPage() {
   usePageTitle("Chi tiết phản hồi")
+  const lang = useAppLang()
   const { id } = useParams<{ id: string }>()
   const fb = useFeedbackDetail(id)
   const similar = useSimilarFeedbacks(id)
+
+  // Chip chủ đề hiển thị nhãn tiếng Việt (name_vi) thay vì slug thô.
+  const { productId } = useProduct()
+  const taxonomy = useTaxonomy(productId)
+  const labelTopic = topicLabeler(taxonomy.data?.items ?? [])
 
   if (fb.isPending)
     return (
@@ -76,11 +87,11 @@ export default function FeedbackDetailPage() {
                     : "secondary"
                 }
               >
-                {SEVERITY_LABEL[ai.severity]}
+                {SEVERITY_LABEL[lang][ai.severity]}
               </Badge>
             ) : null}
             {ai?.sentiment ? (
-              <Badge variant="secondary">{SENTIMENT_LABEL[ai.sentiment]}</Badge>
+              <SentimentIndicator value={ai.sentiment} />
             ) : null}
             {ai?.uncategorized ? (
               <Badge variant="outline">UNCATEGORIZED</Badge>
@@ -112,8 +123,8 @@ export default function FeedbackDetailPage() {
             <dd className="flex flex-wrap gap-1">
               {(ai?.topics ?? []).length > 0
                 ? ai!.topics!.map((t) => (
-                    <Badge key={t} variant="secondary">
-                      {t}
+                    <Badge key={t} variant="secondary" title={t}>
+                      {labelTopic(t)}
                     </Badge>
                   ))
                 : "—"}

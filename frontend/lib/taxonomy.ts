@@ -49,7 +49,12 @@ export function groupTaxonomyTree(items: TaxonomyNode[]): {
  * parent cũng được chọn (parent bị bỏ → node thăng cấp root, không orphan). */
 export function selectedProposalPayload(
   topics: ProposedTopic[],
-): { name: string; parent: string | null; description: string | null }[] {
+): {
+  name: string;
+  name_vi: string | null;
+  parent: string | null;
+  description: string | null;
+}[] {
   const selected = new Set(
     topics.filter((t) => t.selected !== false).map((t) => t.name),
   );
@@ -57,6 +62,7 @@ export function selectedProposalPayload(
     .filter((t) => t.selected !== false)
     .map((t) => ({
       name: t.name.trim(),
+      name_vi: t.name_vi?.trim() || t.name.trim(),
       parent: t.parent && selected.has(t.parent) ? t.parent : null,
       description: t.description ?? null,
     }));

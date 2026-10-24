@@ -44,6 +44,7 @@ import { ActivityNavButton } from "@/components/activity/activity-nav-button";
 import { WhatsNew } from "./whats-new";
 import { CommandPalette } from "./command-palette";
 import { findStage } from "@/lib/navigation";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** Breadcrumb: Happynest ▸ product ▸ stage ▸ screen (product doubles as switcher). */
@@ -52,6 +53,7 @@ function Breadcrumb() {
   const { chatOpen } = useChat();
   const router = useRouter();
   const pathname = usePathname();
+  const t = useT();
   const stage = findStage(pathname);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -71,12 +73,12 @@ function Breadcrumb() {
       { id: product.id, body: { name: renameName.trim() } },
       {
         onSuccess: () => {
-          toast.success("Product updated.");
+          toast.success(t.navbar.toastUpdated);
           setRenameOpen(false);
         },
         onError: (err) =>
           toast.error(
-            err instanceof Error ? err.message : "Could not rename product",
+            err instanceof Error ? err.message : t.navbar.toastRenameFailed,
           ),
       },
     );
@@ -87,9 +89,7 @@ function Breadcrumb() {
     deleteProduct.mutate(product.id, {
       onSuccess: ({ deleted_counts }) => {
         const total = Object.values(deleted_counts).reduce((a, b) => a + b, 0);
-        toast.success(
-          `Đã xoá product và ${total} bản ghi liên quan khỏi database.`,
-        );
+        toast.success(t.navbar.toastDeleted(total));
         setDeleteOpen(false);
         setDeleteConfirmText("");
         const next = products.find((p) => p.id !== product.id);
@@ -98,7 +98,7 @@ function Breadcrumb() {
       },
       onError: (err) =>
         toast.error(
-          err instanceof Error ? err.message : "Không xoá được product.",
+          err instanceof Error ? err.message : t.navbar.toastDeleteFailed,
         ),
     });
   };
@@ -121,7 +121,7 @@ function Breadcrumb() {
       setDescription("");
       router.push("/importer");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not create product");
+      toast.error(err instanceof Error ? err.message : t.navbar.toastCreateFailed);
     }
   };
 
@@ -132,11 +132,11 @@ function Breadcrumb() {
           className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Switch product"
         >
-          <span className="max-w-40 truncate">{product?.name ?? "Choose a product"}</span>
+          <span className="max-w-40 truncate">{product?.name ?? t.navbar.chooseProduct}</span>
           <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuLabel>Choose a product</DropdownMenuLabel>
+          <DropdownMenuLabel>{t.navbar.chooseProduct}</DropdownMenuLabel>
           {products.map((p) => (
             <DropdownMenuItem key={p.id} onSelect={() => handleSelect(p.id)}>
               <Check
@@ -149,7 +149,7 @@ function Breadcrumb() {
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setOpen(true)}>
             <Plus data-icon="inline-start" />
-            Create product
+            {t.navbar.createProduct}
           </DropdownMenuItem>
           {product ? (
             <>
@@ -160,7 +160,7 @@ function Breadcrumb() {
                 }}
               >
                 <Pencil data-icon="inline-start" />
-                Rename product
+                {t.navbar.renameProduct}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
@@ -170,7 +170,7 @@ function Breadcrumb() {
                 }}
               >
                 <Trash2 data-icon="inline-start" />
-                Delete product…
+                {t.navbar.deleteProduct}
               </DropdownMenuItem>
             </>
           ) : null}
@@ -182,20 +182,20 @@ function Breadcrumb() {
           <span className="text-muted-foreground/60" aria-hidden>
             /
           </span>
-          <span className="rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
-            {stage.group}
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
+            {t.nav.groups[stage.group]}
           </span>
           <span className="text-muted-foreground/60" aria-hidden>
             /
           </span>
-          <span className="truncate text-muted-foreground">{stage.label}</span>
+          <span className="truncate text-muted-foreground">{t.nav.items[stage.key]}</span>
         </>
       ) : chatOpen ? (
         <>
           <span className="text-muted-foreground/60" aria-hidden>
             /
           </span>
-          <span className="rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
             CHAT
           </span>
         </>
@@ -204,37 +204,37 @@ function Breadcrumb() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create product</DialogTitle>
-            <DialogDescription>
-              A new product starts empty — the Importer is the first screen.
-            </DialogDescription>
+            <DialogTitle>{t.navbar.createTitle}</DialogTitle>
+            <DialogDescription>{t.navbar.createDescription}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="crumb-product-name">Name</FieldLabel>
+              <FieldLabel htmlFor="crumb-product-name">{t.navbar.nameLabel}</FieldLabel>
               <Input
                 id="crumb-product-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Demo AI"
+                placeholder={t.navbar.namePlaceholder}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="crumb-product-description">Description</FieldLabel>
+              <FieldLabel htmlFor="crumb-product-description">
+                {t.navbar.descriptionLabel}
+              </FieldLabel>
               <Input
                 id="crumb-product-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="What this product does (optional)"
+                placeholder={t.navbar.descriptionPlaceholder}
               />
             </Field>
           </FieldGroup>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t.navbar.cancel}
             </Button>
             <Button onClick={() => void handleCreate()} disabled={name.trim().length < 2}>
-              Create product
+              {t.navbar.createProduct}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -244,14 +244,14 @@ function Breadcrumb() {
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename product</DialogTitle>
-            <DialogDescription>
-              Tên mới áp dụng cho toàn bộ workspace này.
-            </DialogDescription>
+            <DialogTitle>{t.navbar.renameTitle}</DialogTitle>
+            <DialogDescription>{t.navbar.renameDescription}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="rename-product-name">Product name</FieldLabel>
+              <FieldLabel htmlFor="rename-product-name">
+                {t.navbar.productNameLabel}
+              </FieldLabel>
               <Input
                 id="rename-product-name"
                 value={renameName}
@@ -261,13 +261,13 @@ function Breadcrumb() {
           </FieldGroup>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameOpen(false)}>
-              Cancel
+              {t.navbar.cancel}
             </Button>
             <Button
               onClick={handleRename}
               disabled={renameName.trim().length < 2 || updateProduct.isPending}
             >
-              Save changes
+              {t.navbar.saveChanges}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -277,17 +277,13 @@ function Breadcrumb() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete “{product?.name}”?</DialogTitle>
-            <DialogDescription>
-              Toàn bộ feedback, import, insight và schema của product này sẽ bị xoá
-              vĩnh viễn khỏi database (không thể hoàn tác). Gõ đúng tên product để
-              xác nhận.
-            </DialogDescription>
+            <DialogTitle>{t.navbar.deleteTitle(product?.name ?? "")}</DialogTitle>
+            <DialogDescription>{t.navbar.deleteDescription}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="delete-product-confirm">
-                Gõ “{product?.name}” để xác nhận
+                {t.navbar.deleteConfirmLabel(product?.name ?? "")}
               </FieldLabel>
               <Input
                 id="delete-product-confirm"
@@ -299,7 +295,7 @@ function Breadcrumb() {
           </FieldGroup>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancel
+              {t.navbar.cancel}
             </Button>
             <Button
               variant="destructive"
@@ -311,7 +307,7 @@ function Breadcrumb() {
               }
             >
               <Trash2 data-icon="inline-start" />
-              Delete permanently
+              {t.navbar.deletePermanently}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -325,6 +321,7 @@ export function TopNavbar() {
   const { chatOpen } = useChat();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { productId } = useProduct();
+  const t = useT();
 
   // Ctrl/Cmd + K opens the global palette; "/" also works when not typing.
   useEffect(() => {
@@ -349,7 +346,7 @@ export function TopNavbar() {
         <button
           className="rounded-md p-1.5 hover:bg-accent outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Open navigation"
+          aria-label={t.navbar.openNavigation}
         >
           <Menu className="size-5" />
         </button>
@@ -357,8 +354,8 @@ export function TopNavbar() {
           <button
             className="hidden rounded-md p-1.5 hover:bg-accent outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
             onClick={() => setCollapsed(false)}
-            aria-label="Expand panel"
-            title="Expand panel"
+            aria-label={t.panel.expand}
+            title={t.panel.expand}
           >
             <PanelLeftOpen className="size-4" />
           </button>
@@ -374,10 +371,10 @@ export function TopNavbar() {
               "flex h-8 items-center gap-2 rounded-md border bg-background/60 px-2.5 text-sm text-muted-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
               "w-9 justify-center lg:w-44 lg:justify-start",
             )}
-            aria-label="Search (Ctrl K)"
+            aria-label={t.navbar.searchAria}
           >
             <Search className="size-4 shrink-0" />
-            <span className="hidden lg:inline">Search…</span>
+            <span className="hidden lg:inline">{t.navbar.search}</span>
             <kbd className="ml-auto hidden rounded border bg-secondary px-1.5 py-0.5 font-mono text-[10px] xl:inline">
               Ctrl K
             </kbd>

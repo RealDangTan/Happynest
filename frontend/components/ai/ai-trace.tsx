@@ -62,8 +62,8 @@ export function AiTrace({
           <Loader2 className="size-3 animate-spin" /> Waiting for the first step…
         </p>
       ) : (
-        <ul className="mt-1.5 space-y-1">
-          {items.map((row, i) => (
+        <ul className="mt-1.5 flex max-h-64 flex-col gap-1 overflow-y-auto">
+          {items.slice(-8).map((row, i) => (
             <li key={i} className="font-mono text-[10.5px] leading-relaxed">
               <span className="inline-flex items-center gap-1">
                 {row.status === "error" ? (

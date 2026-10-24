@@ -19,15 +19,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 import { ApiError } from "@/lib/api"
 import { mapAuthError } from "@/lib/auth-errors"
+import {
+  GOOGLE_LOGIN_URL,
+  googleErrorAlert,
+  useGoogleErrorParam,
+} from "@/lib/google-auth"
 import { GoogleIcon } from "@/components/google-icon"
 import { AuthVideoBackground } from "@/components/auth-video-background"
+import { LangToggle } from "@/components/lang-toggle"
 import { usePageTitle } from "@/hooks/use-page-title"
+import { useAppLang, useT } from "@/lib/i18n"
 
 export default function LoginPage() {
-  usePageTitle("Đăng nhập")
+  const t = useT()
+  const lang = useAppLang()
+  usePageTitle(t.auth.signIn)
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const googleError = useGoogleErrorParam()
 
   const login = useMutation({
     mutationFn: async () => {
@@ -49,11 +59,18 @@ export default function LoginPage() {
     },
   })
 
-  const loginAlert = login.error ? mapAuthError(login.error) : null
+  // Lỗi từ flow Google (?google_error=) hoặc lỗi login email — chung 1 alert.
+  const loginAlert =
+    login.error
+      ? mapAuthError(login.error, lang)
+      : googleErrorAlert(googleError, lang)
 
   return (
     <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
       <AuthVideoBackground />
+      <div className="fixed right-4 top-4 z-10">
+        <LangToggle className="rounded-lg border bg-background/70 p-1 backdrop-blur" />
+      </div>
       <Card className="dark w-full max-w-sm bg-black/90 backdrop-blur-md">
         <CardHeader className="justify-items-center gap-1 text-center">
           <div className="flex items-center gap-2.5">
@@ -61,23 +78,24 @@ export default function LoginPage() {
             <img src="/assets/Logo-white.png" alt="" className="size-6" />
             <CardTitle>Happynest</CardTitle>
           </div>
-          <CardDescription>Đăng nhập để tiếp tục</CardDescription>
+          <CardDescription>{t.auth.loginTitle}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button
             variant="ghost"
             type="button"
             className="w-full"
-            disabled
-            title="Sắp có"
+            onClick={() => {
+              window.location.href = GOOGLE_LOGIN_URL
+            }}
           >
             <GoogleIcon data-icon="inline-start" />
-            Đăng nhập với Google
+            {t.auth.google}
           </Button>
           <div className="my-4 flex items-center gap-3">
             <Separator className="flex-1" />
             <span className="text-xs text-muted-foreground">
-              hoặc dùng email
+              {t.auth.orEmail}
             </span>
             <Separator className="flex-1" />
           </div>
@@ -90,7 +108,7 @@ export default function LoginPage() {
           >
             <FieldGroup>
               <Field data-invalid={loginAlert ? true : undefined}>
-                <FieldLabel htmlFor="username">Email</FieldLabel>
+                <FieldLabel htmlFor="username">{t.auth.email}</FieldLabel>
                 <Input
                   id="username"
                   type="email"
@@ -102,7 +120,7 @@ export default function LoginPage() {
                 />
               </Field>
               <Field data-invalid={loginAlert ? true : undefined}>
-                <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+                <FieldLabel htmlFor="password">{t.auth.password}</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -127,16 +145,16 @@ export default function LoginPage() {
             ) : null}
             <Button type="submit" disabled={login.isPending}>
               {login.isPending ? <Spinner data-icon="inline-start" /> : null}
-              Đăng nhập
+              {t.auth.signIn}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Chưa có tài khoản?{" "}
+            {t.auth.noAccount}{" "}
             <Link
               href="/register"
               className="text-foreground underline underline-offset-4"
             >
-              Đăng ký
+              {t.auth.signUp}
             </Link>
           </p>
         </CardContent>

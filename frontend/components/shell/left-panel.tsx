@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES } from "@/lib/navigation";
+import { useT } from "@/lib/i18n";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePanel } from "./panel-provider";
 import { useChat } from "./chat-provider";
@@ -39,7 +40,7 @@ function NavItem({
       )}
     >
       <Icon className="size-4 shrink-0" />
-      {!collapsed ? <span className="truncate">{label}</span> : null}
+      {!collapsed ? <span className="min-w-0 truncate">{label}</span> : null}
     </Link>
   );
 }
@@ -62,16 +63,17 @@ function SegmentButton({
       onClick={onClick}
       title={label}
       className={cn(
-        "flex items-center justify-center gap-1.5 rounded-md py-1 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        "flex min-w-0 items-center justify-center gap-1.5 rounded-md py-1 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         collapsed && "px-0",
-        !collapsed && "px-3",
+        // px-2 (không px-3) để nhãn VI dài ("Trang chủ") vừa một dòng ở w-64
+        !collapsed && "px-2",
         active
           ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
           : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
       )}
     >
-      <Icon className="size-4" />
-      {!collapsed ? label : null}
+      <Icon className="size-4 shrink-0" />
+      {!collapsed ? <span className="min-w-0 truncate">{label}</span> : null}
     </button>
   );
 }
@@ -80,6 +82,7 @@ export function LeftPanel() {
   const { collapsed, toggle, setCollapsed, mobileOpen, setMobileOpen } = usePanel();
   const { chatOpen, openChat, closeChat } = useChat();
   const pathname = usePathname();
+  const t = useT();
   // Fully separate tabs: Chat replaces the dock content, Home brings it back.
   const tab: "home" | "chat" = chatOpen ? "chat" : "home";
 
@@ -128,8 +131,8 @@ export function LeftPanel() {
             <button
               onClick={toggle}
               className="ml-auto rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              aria-label="Collapse panel"
-              title="Collapse panel"
+              aria-label={t.panel.collapse}
+              title={t.panel.collapse}
             >
               <PanelLeftClose className="size-4" />
             </button>
@@ -139,8 +142,8 @@ export function LeftPanel() {
           <button
             onClick={toggle}
             className="mx-auto mb-2 rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-            aria-label="Expand panel"
-            title="Expand panel"
+            aria-label={t.panel.expand}
+            title={t.panel.expand}
           >
             <PanelLeftOpen className="size-4" />
           </button>
@@ -159,12 +162,12 @@ export function LeftPanel() {
               collapsed && tab === "home" ? "grid-cols-1" : "grid-cols-2",
             )}
             role="tablist"
-            aria-label="Panel sections"
+            aria-label={t.panel.sections}
           >
             <SegmentButton
               active={tab === "home"}
               collapsed={collapsed && tab === "home"}
-              label="Home"
+              label={t.panel.home}
               icon={() => (
                 <svg viewBox="0 0 24 24" fill="none" className="size-4">
                   <path
@@ -181,7 +184,7 @@ export function LeftPanel() {
             <SegmentButton
               active={tab === "chat"}
               collapsed={false}
-              label="Chat"
+              label={t.panel.chat}
               icon={({ className }) => (
                 <svg viewBox="0 0 24 24" fill="none" className={className ?? "size-4"}>
                   <path
@@ -218,7 +221,7 @@ export function LeftPanel() {
                   <div key={stage.group}>
                     {!collapsed ? (
                       <p className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-                        {stage.group}
+                        {t.nav.groups[stage.group]}
                       </p>
                     ) : null}
                     <div className="space-y-1">
@@ -226,7 +229,7 @@ export function LeftPanel() {
                         <NavItem
                           key={item.href}
                           href={item.href}
-                          label={item.label}
+                          label={t.nav.items[item.key]}
                           icon={item.icon}
                           active={pathname === item.href}
                           collapsed={collapsed}
@@ -249,16 +252,16 @@ export function LeftPanel() {
             <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-end")}>
               <Link
                 href="/settings"
-                title="Settings"
-                aria-label="Settings"
+                title={t.profile.settings}
+                aria-label={t.profile.settings}
                 className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
                 <Settings className="size-4" />
               </Link>
               <Link
                 href="/help"
-                title="Help & contact"
-                aria-label="Help & contact"
+                title={t.panel.helpContact}
+                aria-label={t.panel.helpContact}
                 className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
                 <LifeBuoy className="size-4" />

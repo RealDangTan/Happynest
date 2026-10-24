@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useChat } from "./chat-provider";
 import { apiFetch } from "@/lib/api";
 import { STAGES, UTILITY_SCREENS } from "@/lib/navigation";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { FeedbackListResponse, InsightsListResponse } from "@/lib/types";
 
@@ -36,6 +37,7 @@ export function CommandPalette({
 }) {
   const router = useRouter();
   const { openChat } = useChat();
+  const t = useT();
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState(0);
   const [reports, setReports] = useState<InsightsListResponse | null>(null);
@@ -51,7 +53,7 @@ export function CommandPalette({
   // keystrokes — short queries simply don't render report/feedback groups.
   useEffect(() => {
     if (!open || query.trim().length < 2) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const q = query.trim().toLowerCase();
       apiFetch<InsightsListResponse>(
         `/api/insights${productId ? `?product_id=${productId}` : ""}`,
@@ -76,7 +78,7 @@ export function CommandPalette({
         )
         .catch(() => setFeedbacks(null));
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query, open, productId]);
 
   const items = useMemo<PaletteItem[]>(() => {
@@ -85,15 +87,15 @@ export function CommandPalette({
 
     list.push({
       key: "cmd-import",
-      group: "Actions",
-      label: "Import a CSV file",
+      group: t.palette.groupActions,
+      label: t.palette.importCsv,
       icon: Upload,
       run: () => go("/importer"),
     });
     list.push({
       key: "cmd-chat",
-      group: "Actions",
-      label: "Start an investigation",
+      group: t.palette.groupActions,
+      label: t.palette.startInvestigation,
       icon: MessageSquarePlus,
       run: () => {
         onOpenChange(false);
@@ -103,12 +105,13 @@ export function CommandPalette({
 
     for (const stage of STAGES) {
       for (const item of stage.items) {
-        if (q && !item.label.toLowerCase().includes(q)) continue;
+        const label = t.nav.items[item.key];
+        if (q && !label.toLowerCase().includes(q)) continue;
         list.push({
           key: `screen-${item.href}`,
-          group: "Screens",
-          label: item.label,
-          hint: stage.group,
+          group: t.palette.groupScreens,
+          label,
+          hint: t.nav.groups[stage.group],
           icon: item.icon,
           run: () => go(item.href),
         });
@@ -117,16 +120,17 @@ export function CommandPalette({
 
     // Màn ngoại lai — tìm được từ palette như mọi màn hình khác.
     for (const item of UTILITY_SCREENS) {
+      const { label, description } = t.nav.utility[item.key];
       if (
         q &&
-        !item.label.toLowerCase().includes(q) &&
-        !item.description.toLowerCase().includes(q)
+        !label.toLowerCase().includes(q) &&
+        !description.toLowerCase().includes(q)
       )
         continue;
       list.push({
         key: `util-${item.href}`,
-        group: "App",
-        label: item.label,
+        group: t.palette.groupApp,
+        label,
         icon: item.icon,
         run: () => go(item.href),
       });
@@ -135,7 +139,7 @@ export function CommandPalette({
     for (const r of query.trim().length >= 2 ? reports?.items.slice(0, 5) ?? [] : []) {
       list.push({
         key: `report-${r.id}`,
-        group: "Reports",
+        group: t.palette.groupReports,
         label: r.title,
         hint: r.status,
         icon: FileText,
@@ -146,7 +150,7 @@ export function CommandPalette({
     for (const f of query.trim().length >= 2 ? feedbacks?.items.slice(0, 5) ?? [] : []) {
       list.push({
         key: `fb-${f.id}`,
-        group: "Feedback",
+        group: t.palette.groupFeedback,
         label: f.feedback_text?.slice(0, 90) ?? f.id,
         hint: f.import_id ? `import ${f.import_id.slice(0, 8)}` : undefined,
         icon: Inbox,
@@ -156,7 +160,7 @@ export function CommandPalette({
 
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, reports, feedbacks, productId]);
+  }, [t, query, reports, feedbacks, productId]);
 
   // Derived so the selection stays valid while the item list shrinks/grows.
   const active = Math.min(index, Math.max(items.length - 1, 0));
@@ -204,7 +208,7 @@ export function CommandPalette({
                 items[active].run();
               }
             }}
-            placeholder="Search feedback, reports, screens…"
+            placeholder={t.palette.placeholder}
             className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             aria-label="Search"
           />
@@ -215,7 +219,7 @@ export function CommandPalette({
         <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
           {items.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-              Nothing matches “{query}”.
+              {t.palette.empty(query)}
             </p>
           ) : (
             grouped.map(({ group, items: groupItems }) => (
@@ -239,7 +243,7 @@ export function CommandPalette({
                     <item.icon className="size-4 shrink-0 text-muted-foreground" />
                     <span className="min-w-0 flex-1 truncate">{item.label}</span>
                     {item.hint ? (
-                      <span className="shrink-0 font-mono text-[10px] uppercase text-signal">
+                      <span className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase text-signal">
                         {item.hint}
                       </span>
                     ) : null}

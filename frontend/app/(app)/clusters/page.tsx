@@ -12,6 +12,7 @@ import {
 import type { ClusterItem } from "@/lib/types"
 import { formatRelative } from "@/lib/format"
 import { priorityLabel } from "@/lib/labels"
+import { useAppLang } from "@/lib/i18n"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,6 +120,7 @@ function GrowthCell({ c }: { c: ClusterItem }) {
 }
 
 function ClusterCard({ c }: { c: ClusterItem }) {
+  const lang = useAppLang()
   return (
     <Card className="flex flex-col">
       <CardHeader>
@@ -154,7 +156,7 @@ function ClusterCard({ c }: { c: ClusterItem }) {
                     c.suggested_priority >= 0.66 ? "destructive" : "secondary"
                   }
                 >
-                  {priorityLabel(c.suggested_priority)}
+                  {priorityLabel(c.suggested_priority, lang)}
                 </Badge>
               </dd>
             </>

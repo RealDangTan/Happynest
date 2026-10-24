@@ -1,17 +1,23 @@
 import type { NextConfig } from "next"
 
+// Origin của FastAPI cho rewrite /api/*. Local dev mặc định 127.0.0.1:8000;
+// khi deploy (Vercel) đặt env `API_PROXY_ORIGIN` = URL backend public
+// (tunnel/VPS) — vẫn giữ same-origin qua proxy nên cookie httpOnly không cần
+// CORS (delivery-design-spec §2).
+const API_PROXY_ORIGIN = process.env.API_PROXY_ORIGIN ?? "http://127.0.0.1:8000"
+
 const nextConfig: NextConfig = {
   // Cho phép next dev nhận request/ws từ tunnel public (ngrok/trycloudflare có
   // domain ngẫu nhiên → wildcard). Không có dòng này, dev server chặn websocket
   // HMR cross-origin → React không hydrate qua link public (FE-14 addendum).
-  allowedDevOrigins: ["*.trycloudflare.com"],
+  allowedDevOrigins: ["localhost", "127.0.0.1", "*.trycloudflare.com"],
   // Proxy /api/* về FastAPI giữ same-origin → cookie httpOnly SameSite=Lax
   // hoạt động không cần CORS, backend không đổi (delivery-design-spec §2).
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${API_PROXY_ORIGIN}/api/:path*`,
       },
     ]
   },

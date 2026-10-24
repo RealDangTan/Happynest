@@ -58,10 +58,13 @@ import { AiBadge } from "@/components/ai/ai-badge"
 import { ActionDecisionSupport } from "@/components/actions/action-decision-support"
 import { PageHeader } from "@/components/page-header"
 import { Textarea } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useInsights } from "@/hooks/use-insights"
 import { useActions, useAddAction, useUpdateAction } from "@/hooks/use-actions"
 import { useProduct } from "@/hooks/use-product"
 import { departmentLabel } from "@/lib/departments"
+import { useAppLang } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 import { effectiveScores, QUADRANT_LABEL, quadrantOf } from "@/lib/matrix"
 import type { ActionItem, BusinessFunction, Quadrant } from "@/lib/types"
 
@@ -75,6 +78,17 @@ const BUSINESS_FUNCTIONS: { value: BusinessFunction; label: string }[] = [
   { value: "OPERATION", label: "Operations" },
   { value: "SALES", label: "Sales" },
 ]
+
+const DEPARTMENT_COLOR: Record<BusinessFunction, string> = {
+  ENGINEERING: "text-department-engineering",
+  SUPPORT: "text-department-support",
+  DESIGN: "text-department-design",
+  MARKETING: "text-department-marketing",
+  LEGAL: "text-department-legal",
+  FINANCE: "text-department-finance",
+  OPERATION: "text-department-operations",
+  SALES: "text-department-sales",
+}
 
 type Draft = {
   impact: number
@@ -162,11 +176,8 @@ function ActionDrawer({
     <Sheet open onOpenChange={(open) => !open && requestClose()}>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <span className="font-mono text-signal">
-              A-{action.id.slice(0, 8)}
-            </span>
-            <span className="truncate">{action.recommendation}</span>
+          <SheetTitle className="break-words">
+            {action.recommendation}
           </SheetTitle>
           <SheetDescription>
             {departmentLabel(action.function)} · {action.status}
@@ -362,27 +373,46 @@ function MatrixPoint({
   action: ActionItem
   onOpen: () => void
 }) {
+  const lang = useAppLang()
   const eff = effectiveScores(action)
-  // Kẹp trong canvas: chip có -translate-x-1/2 nên mép 0%/100% sẽ tràn ra ngoài.
+  const scoreLabel = lang === "vi"
+    ? `Tác động ${eff.impact}/10 · Nỗ lực ${eff.effort}/10`
+    : `Impact ${eff.impact}/10 · Effort ${eff.effort}/10`
+  const statusLabel = {
+    proposed: lang === "vi" ? "Đề xuất" : "Proposed",
+    edited: lang === "vi" ? "Đã chỉnh sửa" : "Edited",
+    accepted: lang === "vi" ? "Đã chấp nhận" : "Accepted",
+    rejected: lang === "vi" ? "Đã từ chối" : "Rejected",
+  }[action.status]
   const left = Math.min(94, Math.max(6, (eff.effort / 10) * 100))
   const bottom = Math.min(94, Math.max(6, (eff.impact / 10) * 100))
   return (
-    <button
-      draggable
-      onDragStart={(e) => e.dataTransfer.setData("text/action-id", action.id)}
-      onClick={onOpen}
-      title={`${action.recommendation} — effort ${eff.effort}, impact ${eff.impact}`}
-      className={`absolute flex -translate-x-1/2 translate-y-1/2 cursor-grab items-center gap-1 rounded-full border bg-card px-2 py-0.5 font-mono text-xs shadow-sm transition-colors hover:border-signal hover:text-signal ${
-        action.status === "accepted"
-          ? "border-lichen text-lichen"
-          : action.status === "rejected"
-            ? "border-destructive/40 text-destructive/70"
-            : "border-border"
-      }`}
-      style={{ left: `${left}%`, bottom: `${bottom}%` }}
-    >
-      o {action.id.slice(0, 4)}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          draggable
+          onDragStart={(e) => e.dataTransfer.setData("text/action-id", action.id)}
+          onClick={onOpen}
+          aria-label={`${action.recommendation} — ${departmentLabel(action.function)} — ${scoreLabel} — ${statusLabel}`}
+          className={cn(
+            "absolute flex size-6 -translate-x-1/2 translate-y-1/2 cursor-grab items-center justify-center rounded-full hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:cursor-grabbing",
+            DEPARTMENT_COLOR[action.function]
+          )}
+          style={{ left: `${left}%`, bottom: `${bottom}%` }}
+        >
+          <span aria-hidden="true" className={cn(
+            "size-3 rounded-full border-2 border-current",
+            action.status !== "rejected" && "bg-current"
+          )} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-80 flex-col items-start gap-1" sideOffset={8}>
+        <p className="break-words font-medium">{action.recommendation}</p>
+        <p>{departmentLabel(action.function)} · {statusLabel}</p>
+        <p>{scoreLabel}</p>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -506,6 +536,7 @@ function AddActionDialog({
 // ------------------------------------------------------------------ Screen
 
 function Matrix({ initialReportId }: { initialReportId: string | null }) {
+  const lang = useAppLang()
   const { product } = useProduct()
   const insights = useInsights()
   const [reportId, setReportId] = useState<string | null>(initialReportId)
@@ -657,8 +688,9 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
           <CardHeader>
             <CardTitle>Ma trận ưu tiên</CardTitle>
             <CardDescription>
-              Bấm một điểm để mở chi tiết, hoặc kéo thả vào vùng khác để xem
-              trước thay đổi — điểm chỉ di chuyển khi Save/Accept.
+              {lang === "vi"
+                ? "Mỗi chấm là một hành động; màu thể hiện phòng ban. Rê chuột để xem nội dung, bấm để mở chi tiết hoặc kéo thả để điều chỉnh ưu tiên."
+                : "Each dot is an action; its color shows the department. Hover to read, click for details, or drag to adjust priority."}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -726,6 +758,17 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
               <span>Low effort</span>
               <span>High effort</span>
             </div>
+            <ul
+              aria-label={lang === "vi" ? "Chú giải phòng ban" : "Department legend"}
+              className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+            >
+              {BUSINESS_FUNCTIONS.filter((f) => items.some((a) => a.function === f.value)).map((f) => (
+                <li key={f.value} className="flex items-center gap-1.5">
+                  <span aria-hidden="true" className={cn("size-2.5 shrink-0 rounded-full bg-current", DEPARTMENT_COLOR[f.value])} />
+                  {f.label}
+                </li>
+              ))}
+            </ul>
           </CardContent>
           <CardFooter className="flex-wrap justify-between gap-2">
             <span className="text-xs text-muted-foreground">

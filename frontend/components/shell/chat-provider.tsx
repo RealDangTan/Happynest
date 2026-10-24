@@ -16,7 +16,7 @@ type ChatContextValue = {
   chatOpen: boolean;
   /** Run opened from history (null = fresh chat). */
   activeRunId: string | null;
-  /** Bumped on every openChat so the panel can reset its thread. */
+  /** Bumped on openChat to select history without resetting the current thread. */
   openSeq: number;
   openChat: (runId?: string | null) => void;
   closeChat: () => void;

@@ -13,6 +13,7 @@ const node = (overrides: Partial<TaxonomyNode>): TaxonomyNode => ({
   product_id: "p",
   parent_id: null,
   name: "N",
+  name_vi: null,
   slug: "n",
   description: null,
   kind: "canonical",
@@ -74,19 +75,28 @@ describe("selectedProposalPayload", () => {
   it("chỉ giữ node được chọn; parent bị bỏ → thăng cấp root", () => {
     const topics: ProposedTopic[] = [
       { name: "Payment", parent: null, selected: false },
-      { name: "Payment failure", parent: "Payment" },
-      { name: "Search", parent: null },
+      {
+        name: "Payment Failure",
+        name_vi: "Lỗi thanh toán",
+        parent: "Payment",
+      },
+      { name: "Search", name_vi: "Tìm kiếm", parent: null },
       { name: "Bỏ", parent: "Search", selected: false },
     ];
     expect(selectedProposalPayload(topics)).toEqual([
-      { name: "Payment failure", parent: null, description: null },
-      { name: "Search", parent: null, description: null },
+      {
+        name: "Payment Failure",
+        name_vi: "Lỗi thanh toán",
+        parent: null,
+        description: null,
+      },
+      { name: "Search", name_vi: "Tìm kiếm", parent: null, description: null },
     ]);
   });
 
-  it("mặc định selected khi thiếu field", () => {
+  it("mặc định selected khi thiếu field; name_vi fallback = name", () => {
     expect(selectedProposalPayload([{ name: "A", parent: null }])).toEqual([
-      { name: "A", parent: null, description: null },
+      { name: "A", name_vi: "A", parent: null, description: null },
     ]);
   });
 });

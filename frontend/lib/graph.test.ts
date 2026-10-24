@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { topTopics, trendByDate, analysisStats, scopeLine } from "./graph";
-import type { Feedback } from "./types";
+import { topTopics, topicLabeler, trendByDate, analysisStats, scopeLine } from "./graph";
+import type { Feedback, TaxonomyNode } from "./types";
 
 function fb(over: Partial<Feedback>): Feedback {
   return {
@@ -73,5 +73,65 @@ describe("scopeLine", () => {
     expect(scopeLine(2, "2026-09-01", "2026-09-14", 120, 15)).toBe(
       "2 imports / Sep 1 – Sep 14 / 120 analyzed / 15 pending excluded",
     );
+  });
+});
+
+describe("topicLabeler", () => {
+  const taxonomy = [
+    {
+      id: "t-1",
+      product_id: "p-1",
+      parent_id: null,
+      name: "AI Quality",
+      name_vi: "Chất lượng AI",
+      slug: "ai_quality",
+      description: null,
+      kind: "canonical",
+      status: "active",
+      evidence_count: 3,
+      first_seen: null,
+      last_seen: null,
+      created_at: "2026-09-01T00:00:00Z",
+    },
+    {
+      id: "t-2",
+      product_id: "p-1",
+      parent_id: null,
+      name: "Payment Failure",
+      name_vi: "Lỗi thanh toán",
+      slug: "payment.payment_failure",
+      description: null,
+      kind: "canonical",
+      status: "active",
+      evidence_count: 1,
+      first_seen: null,
+      last_seen: null,
+      created_at: "2026-09-01T00:00:00Z",
+    },
+  ] as TaxonomyNode[];
+
+  it("maps slug to the Vietnamese display name", () => {
+    const label = topicLabeler(taxonomy);
+    expect(label("ai_quality")).toBe("Chất lượng AI");
+    expect(label("payment.payment_failure")).toBe("Lỗi thanh toán");
+  });
+
+  it("passes through unknown or legacy topics unchanged", () => {
+    const label = topicLabeler(taxonomy);
+    expect(label("Search")).toBe("Search");
+    expect(label("removed.slug")).toBe("removed.slug");
+  });
+
+  it("prefers active canonical node when slugs collide", () => {
+    const pending = { ...taxonomy[0], id: "t-3", name: "Old", name_vi: "Cũ", status: "pending_review" as const };
+    const label = topicLabeler([pending, ...taxonomy]);
+    expect(label("ai_quality")).toBe("Chất lượng AI");
+  });
+
+  it("falls back to canonical English name when name_vi is null", () => {
+    const label = topicLabeler([
+      { ...taxonomy[0], name: "AI Quality", name_vi: null },
+    ]);
+    expect(label("ai_quality")).toBe("AI Quality");
   });
 });

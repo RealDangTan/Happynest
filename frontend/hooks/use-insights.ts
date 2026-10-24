@@ -7,7 +7,7 @@ export function useInsights() {
   return useQuery({
     queryKey: ["insights"],
     queryFn: () => apiFetch<InsightsListResponse>("/api/insights"),
-    staleTime: 30_000,
+    staleTime: 0,
   });
 }
 

@@ -83,7 +83,10 @@ export type TaxonomyNode = {
   id: string;
   product_id: string;
   parent_id: string | null;
+  /** Canonical tiếng Anh — nhãn codebook cho classifier (2026-10-23). */
   name: string;
+  /** Nhãn hiển thị tiếng Việt — UI hiển thị `name_vi ?? name`. */
+  name_vi: string | null;
   /** id ổn định cho topic label — bất biến khi rename */
   slug: string | null;
   description: string | null;
@@ -97,9 +100,11 @@ export type TaxonomyNode = {
 
 export type TaxonomyListResponse = { items: TaxonomyNode[]; total: number };
 
-/** Một node trong proposal PHẲNG của GPT — parent là NAME của topic khác. */
+/** Một node trong proposal PHẲNG của GPT — parent là NAME (EN) của topic khác. */
 export type ProposedTopic = {
   name: string;
+  /** Nhãn hiển thị tiếng Việt khớp nghĩa `name`. */
+  name_vi?: string | null;
   parent: string | null;
   description?: string | null;
   /** FE-only: trạng thái chọn khi review (mặc định true) */
@@ -130,6 +135,8 @@ export type TaxonomyApplyResponse = {
 
 export type TopicRecommendation = {
   name: string;
+  /** Nhãn hiển thị tiếng Việt khớp nghĩa `name`. */
+  name_vi?: string | null;
   parent: string | null;
   evidence_count: number;
   examples: string[];
@@ -324,6 +331,7 @@ export type ActivitySummary = {
 
 export type AgentRunStatus =
   | "running"
+  | "decision_processing"
   | "pending_approval"
   | "completed"
   | "failed"
@@ -341,6 +349,7 @@ export type InsightDraft = {
 };
 
 export type PendingApproval = {
+  question?: string | null;
   insight_id: string | null;
   insight: InsightDraft;
   evidence: { evidence_id: string; statement: string }[];

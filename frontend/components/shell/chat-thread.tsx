@@ -1,10 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect } from "react";
 import {
   ArrowUp,
-  CircleCheck,
-  FileText,
   History,
   Loader2,
   Paperclip,
@@ -12,16 +9,14 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  TriangleAlert,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuGroup,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -41,14 +36,14 @@ import {
   MessageScrollerItem,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
-import { AiTrace } from "@/components/ai/ai-trace";
-import { useAgentRun, useCreateAgentRun } from "@/hooks/use-agent";
+import { InvestigationCard as RunCard } from "@/components/ai/investigation-card";
+import { useInvestigationSession } from "@/hooks/use-investigation-session";
+import { useCreateAgentRun } from "@/hooks/use-agent";
 import { useRuns } from "@/hooks/use-analysis";
 import { useProduct } from "@/hooks/use-product";
 import { useChat } from "@/components/shell/chat-provider";
 import { ApiError } from "@/lib/api";
 import { shortDate } from "@/lib/graph";
-import type { AgentRunStatusResponse } from "@/lib/types";
 
 /** Signature motif: a woven nest holding the investigation until it hatches. */
 function NestMark() {
@@ -85,131 +80,6 @@ function NestMark() {
   );
 }
 
-function RunCard({
-  runId,
-  question,
-  onRetry,
-}: {
-  runId: string;
-  question?: string | null;
-  onRetry?: (question: string) => void;
-}) {
-  const run = useAgentRun(runId);
-  const data: AgentRunStatusResponse | undefined = run.data;
-  const pending = data?.pending_approval ?? null;
-  const isRunning = data?.status === "running";
-  const canRetry = onRetry != null && question != null;
-
-  const retryButton = canRetry ? (
-    <Button
-      size="sm"
-      variant="outline"
-      className="h-7 text-xs"
-      onClick={() => onRetry!(question!)}
-    >
-      <RefreshCw data-icon="inline-start" />
-      Retry investigation
-    </Button>
-  ) : null;
-
-  return (
-    <Card className="w-full gap-2 py-3">
-      <CardHeader className="flex-row items-center justify-between gap-2">
-        <span className="font-mono text-[11px] text-signal">
-          Investigation {runId.slice(0, 8)}
-        </span>
-        {data ? (
-          <Badge
-            variant={
-              data.status === "failed"
-                ? "destructive"
-                : data.status === "running"
-                  ? "secondary"
-                  : "outline"
-            }
-          >
-            {data.status === "pending_approval" ? "needs review" : data.status}
-          </Badge>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {run.isError ? (
-          <div className="space-y-2">
-            <p className="flex items-start gap-1.5 text-xs text-destructive">
-              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> Connection lost while
-              checking the investigation.
-            </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => void run.refetch()}
-            >
-              <RefreshCw data-icon="inline-start" />
-              Check again
-            </Button>
-          </div>
-        ) : !data ? (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" /> Connecting to the investigation…
-          </p>
-        ) : data.status === "running" ? (
-          <div className="space-y-2">
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" /> Investigating — gathering
-              evidence. You can leave this panel.
-            </p>
-            {data.progress ? (
-              <p className="font-mono text-[11px] text-muted-foreground">
-                step {data.progress.iteration}/{data.progress.max_iterations}
-                {data.progress.last_tool ? ` · ${data.progress.last_tool}` : " · planning"}
-                {" · "}
-                {data.progress.llm_calls_used}/{data.progress.llm_budget} LLM calls
-              </p>
-            ) : null}
-            <AiTrace runId={runId} active={isRunning} startedAt={data.started_at} />
-          </div>
-        ) : data.status === "failed" ? (
-          <div className="space-y-2">
-            <p className="flex items-start gap-1.5 text-xs text-destructive">
-              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {data.error ?? "The investigation failed."}
-            </p>
-            {retryButton}
-          </div>
-        ) : pending ? (
-          <div className="space-y-2">
-            <h3 className="font-heading text-base leading-snug">{pending.insight.title}</h3>
-            <p className="text-xs leading-relaxed">{pending.insight.finding}</p>
-            {pending.evidence.length ? (
-              <p className="font-mono text-[11px] text-muted-foreground">
-                {pending.evidence.length} evidence item(s) recorded
-              </p>
-            ) : null}
-            <p className="text-[11px] text-muted-foreground">
-              The finding waits for your explicit review (G2) in Reports.
-            </p>
-            <Button size="sm" className="h-7 text-xs" asChild>
-              <Link href={`/reports?run=${runId}`}>
-                <FileText data-icon="inline-start" />
-                Review in Reports
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
-            <CircleCheck className="size-3.5 shrink-0 text-lichen" /> Completed — the report is
-            in{" "}
-            <Link href="/reports" className="text-signal underline">
-              Reports
-            </Link>
-            .
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 type Entry = {
   runId: string;
   question: string | null;
@@ -232,17 +102,15 @@ export function ChatThread() {
   const { product, productId } = useProduct();
   const createRun = useCreateAgentRun();
   const runs = useRuns();
-  const [draft, setDraft] = useState("");
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [historyRunId, setHistoryRunId] = useState<string | null>(null);
+  const [draft, setDraft] = useInvestigationSession("chat-draft", productId, "");
+  const [entries, setEntries] = useInvestigationSession<Entry[]>("chat-entries", productId, []);
+  const [historyRunId, setHistoryRunId] = useInvestigationSession<string | null>("chat-history", productId, null);
 
-  // Every openChat resets the thread: a run id seeds it as history, null starts fresh.
+  // Opening Chat resumes the current thread. Only an explicit history selection
+  // changes the selected run; "New chat" is the only reset action.
   useEffect(() => {
-    if (!chatOpen) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- thread reset on open
-    setEntries([]);
-    setHistoryRunId(activeRunId);
-  }, [openSeq, chatOpen]); // eslint-disable-line react-hooks/exhaustive-deps -- openSeq is the trigger
+    if (chatOpen && activeRunId) setHistoryRunId(activeRunId);
+  }, [openSeq, chatOpen, activeRunId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async () => {
     const question = draft.trim();
@@ -309,7 +177,7 @@ export function ChatThread() {
     .filter((r) => r.prompt_version === "understand-v1")
     .slice(0, 8);
 
-  const showHistory = historyRunId != null && entries.length === 0;
+  const showHistory = historyRunId != null && !entries.some(entry => entry.runId === historyRunId);
 
   return (
     <div className="chat-night flex min-h-0 flex-1 flex-col bg-background text-foreground">
@@ -337,19 +205,18 @@ export function ChatThread() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Recent investigations</DropdownMenuLabel>
-            {recentRuns.map((run) => (
+            <DropdownMenuGroup>{recentRuns.map((run) => (
               <DropdownMenuItem
                 key={run.id}
                 onSelect={() => {
-                  setEntries([]);
                   setHistoryRunId(run.id);
                 }}
               >
-                <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                  {run.id.slice(0, 8)} · {shortDate(run.started_at)}
+                <span className="min-w-0 flex-1 truncate text-xs">
+                  Điều tra · {shortDate(run.started_at)} · {new Date(run.started_at).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}
                 </span>
               </DropdownMenuItem>
-            ))}
+            ))}</DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
         <button
@@ -463,7 +330,7 @@ export function ChatThread() {
                         <RunCard
                           runId={entry.runId}
                           question={entry.question}
-                          onRetry={(q) => startRetry(entry.runId, q)}
+                          onRetry={() => startRetry(entry.runId, entry.question)}
                         />
                       </Message>
                     )}

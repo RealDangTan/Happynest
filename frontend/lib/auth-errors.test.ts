@@ -4,52 +4,63 @@ import { mapAuthError } from "./auth-errors";
 
 describe("mapAuthError", () => {
   it("401 → destructive, hướng dẫn thử lại", () => {
-    const alert = mapAuthError(new ApiError(401, "Unauthorized"));
+    const alert = mapAuthError(new ApiError(401, "Unauthorized"), "vi");
     expect(alert.variant).toBe("destructive");
     expect(alert.title).toMatch(/sai/i);
     expect(alert.description).not.toBe("Unauthorized");
   });
 
   it("409 → warning, gợi ý đăng nhập", () => {
-    const alert = mapAuthError(new ApiError(409, "Conflict"));
+    const alert = mapAuthError(new ApiError(409, "Conflict"), "vi");
     expect(alert.variant).toBe("warning");
     expect(alert.description).toMatch(/đăng nhập/i);
   });
 
   it("422 → warning, giữ detail từ server", () => {
-    const alert = mapAuthError(new ApiError(422, "k < 1; k > 50"));
+    const alert = mapAuthError(new ApiError(422, "k < 1; k > 50"), "vi");
     expect(alert.variant).toBe("warning");
     expect(alert.description).toContain("k < 1");
   });
 
   it("429 → warning, khuyên đợi", () => {
-    const alert = mapAuthError(new ApiError(429, "Too Many Requests"));
+    const alert = mapAuthError(new ApiError(429, "Too Many Requests"), "vi");
     expect(alert.variant).toBe("warning");
     expect(alert.title).toMatch(/nhiều lần/i);
   });
 
   it("5xx → destructive, đổ lỗi server không đổ lỗi người dùng", () => {
-    const alert = mapAuthError(new ApiError(502, "Bad Gateway"));
+    const alert = mapAuthError(new ApiError(502, "Bad Gateway"), "vi");
     expect(alert.variant).toBe("destructive");
     expect(alert.description).toMatch(/máy chủ|thử lại/i);
   });
 
   it("fetch fail (TypeError) → destructive lỗi mạng", () => {
-    const alert = mapAuthError(new TypeError("Failed to fetch"));
+    const alert = mapAuthError(new TypeError("Failed to fetch"), "vi");
     expect(alert.variant).toBe("destructive");
     expect(alert.description).toMatch(/mạng/i);
   });
 
   it("AbortError timeout → warning hết thời gian chờ", () => {
     const abort = new DOMException("The operation was aborted.", "AbortError");
-    const alert = mapAuthError(abort);
+    const alert = mapAuthError(abort, "vi");
     expect(alert.variant).toBe("warning");
     expect(alert.title).toMatch(/thời gian/i);
   });
 
   it("lỗi lạ → destructive, không lộ message raw", () => {
-    const alert = mapAuthError(new Error("ECONNRESET something odd"));
+    const alert = mapAuthError(new Error("ECONNRESET something odd"), "vi");
     expect(alert.variant).toBe("destructive");
     expect(alert.description).not.toContain("ECONNRESET");
+  });
+
+  it("en: cùng mapping, chữ tiếng Anh (401/429/timeout)", () => {
+    expect(mapAuthError(new ApiError(401, "Unauthorized"), "en").title).toMatch(
+      /wrong/i,
+    );
+    expect(mapAuthError(new ApiError(429, "Too Many Requests"), "en").title).toMatch(
+      /too many/i,
+    );
+    const abort = new DOMException("The operation was aborted.", "AbortError");
+    expect(mapAuthError(abort, "en").title).toMatch(/timed out/i);
   });
 });

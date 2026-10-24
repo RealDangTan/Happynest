@@ -24,17 +24,31 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 import { ApiError } from "@/lib/api"
 import { mapAuthError, type AuthAlert } from "@/lib/auth-errors"
+import {
+  GOOGLE_LOGIN_URL,
+  googleErrorAlert,
+  useGoogleErrorParam,
+} from "@/lib/google-auth"
 import { GoogleIcon } from "@/components/google-icon"
 import { AuthVideoBackground } from "@/components/auth-video-background"
+import { LangToggle } from "@/components/lang-toggle"
 import { usePageTitle } from "@/hooks/use-page-title"
+import { useAppLang, useT } from "@/lib/i18n"
+
+// Lỗi validate client-side lưu discriminant (không lưu chuỗi) để đổi ngôn ngữ
+// vẫn dịch đúng alert đang hiển thị.
+type FormError = "password_too_short" | "password_mismatch"
 
 export default function RegisterPage() {
-  usePageTitle("Đăng ký")
+  const t = useT()
+  const lang = useAppLang()
+  usePageTitle(t.auth.signUp)
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<FormError | null>(null)
+  const googleError = useGoogleErrorParam()
 
   const register = useMutation({
     mutationFn: async () => {
@@ -72,11 +86,11 @@ export default function RegisterPage() {
     e.preventDefault()
     setFormError(null)
     if (password.length < 8) {
-      setFormError("Mật khẩu cần ít nhất 8 ký tự.")
+      setFormError("password_too_short")
       return
     }
     if (password !== confirmPassword) {
-      setFormError("Mật khẩu xác nhận chưa khớp.")
+      setFormError("password_mismatch")
       return
     }
     register.mutate()
@@ -85,16 +99,22 @@ export default function RegisterPage() {
   const registerAlert: AuthAlert | null = formError
     ? {
         variant: "warning",
-        title: "Thông tin chưa hợp lệ",
-        description: formError,
+        title: t.auth.invalidDetails,
+        description:
+          formError === "password_too_short"
+            ? t.auth.passwordTooShort
+            : t.auth.passwordMismatch,
       }
     : register.error
-      ? mapAuthError(register.error)
-      : null
+      ? mapAuthError(register.error, lang)
+      : googleErrorAlert(googleError, lang)
 
   return (
     <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
       <AuthVideoBackground />
+      <div className="fixed right-4 top-4 z-10">
+        <LangToggle className="rounded-lg border bg-background/70 p-1 backdrop-blur" />
+      </div>
       <Card className="dark w-full max-w-sm bg-black/90 backdrop-blur-md">
         <CardHeader className="justify-items-center gap-1 text-center">
           <div className="flex items-center gap-2.5">
@@ -102,30 +122,33 @@ export default function RegisterPage() {
             <img src="/assets/Logo-white.png" alt="" className="size-6" />
             <CardTitle>Happynest</CardTitle>
           </div>
-          <CardDescription>Tạo tài khoản mới</CardDescription>
+          <CardDescription>{t.auth.registerTitle}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Google OAuth cũng là đăng ký: account chưa có → tạo mới,
+              email đã tồn tại → backend tự link/reuse. */}
           <Button
             variant="ghost"
             type="button"
             className="w-full"
-            disabled
-            title="Sắp có"
+            onClick={() => {
+              window.location.href = GOOGLE_LOGIN_URL
+            }}
           >
             <GoogleIcon data-icon="inline-start" />
-            Đăng nhập với Google
+            {t.auth.google}
           </Button>
           <div className="my-4 flex items-center gap-3">
             <Separator className="flex-1" />
             <span className="text-xs text-muted-foreground">
-              hoặc dùng email
+              {t.auth.orEmail}
             </span>
             <Separator className="flex-1" />
           </div>
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
               <Field data-invalid={registerAlert ? true : undefined}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{t.auth.email}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -137,7 +160,7 @@ export default function RegisterPage() {
                 />
               </Field>
               <Field data-invalid={registerAlert ? true : undefined}>
-                <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+                <FieldLabel htmlFor="password">{t.auth.password}</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -147,11 +170,11 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <FieldDescription>Tối thiểu 8 ký tự.</FieldDescription>
+                <FieldDescription>{t.auth.passwordHint}</FieldDescription>
               </Field>
               <Field data-invalid={registerAlert ? true : undefined}>
                 <FieldLabel htmlFor="confirm-password">
-                  Xác nhận mật khẩu
+                  {t.auth.confirmPassword}
                 </FieldLabel>
                 <Input
                   id="confirm-password"
@@ -177,16 +200,16 @@ export default function RegisterPage() {
             ) : null}
             <Button type="submit" disabled={register.isPending}>
               {register.isPending ? <Spinner data-icon="inline-start" /> : null}
-              Đăng ký
+              {t.auth.signUp}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Đã có tài khoản?{" "}
+            {t.auth.haveAccount}{" "}
             <Link
               href="/login"
               className="text-foreground underline underline-offset-4"
             >
-              Đăng nhập
+              {t.auth.signIn}
             </Link>
           </p>
         </CardContent>

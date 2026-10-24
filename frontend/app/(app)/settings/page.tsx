@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LangToggle } from "@/components/lang-toggle";
 import { PageHeader } from "@/components/page-header";
-import { useAppLanguage } from "@/hooks/use-language";
+import { useT } from "@/lib/i18n";
 import { UTILITY_SCREENS } from "@/lib/navigation";
 
 /** Hàng tuỳ chọn: icon + nhãn bên trái, control đẩy sang phải — cùng nhịp
@@ -35,23 +36,20 @@ function PrefRow({
   return (
     <div className="flex items-center gap-3 text-sm">
       <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="text-muted-foreground">{label}</span>
-      <div className="ml-auto">{children}</div>
+      <span className="min-w-0 truncate text-muted-foreground">{label}</span>
+      <div className="ml-auto shrink-0">{children}</div>
     </div>
   );
 }
 
 export default function SettingsPage() {
   const { resolvedTheme, setTheme } = useTheme();
-  const { lang, applyLang } = useAppLanguage();
+  const t = useT();
   const shortcuts = UTILITY_SCREENS.filter((s) => s.href !== "/settings");
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Settings"
-        description="Tuỳ chỉnh ứng dụng theo tài khoản — lưu trên trình duyệt này, áp dụng cho mọi workspace."
-      />
+      <PageHeader title={t.settings.title} description={t.settings.description} />
 
       {/* Lối vào nhanh các màn ngoại lai còn lại */}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -65,9 +63,9 @@ export default function SettingsPage() {
               <CardContent className="flex items-center gap-3">
                 <s.icon className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{s.label}</p>
+                  <p className="text-sm font-medium">{t.nav.utility[s.key].label}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {s.description}
+                    {t.nav.utility[s.key].description}
                   </p>
                 </div>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
@@ -79,11 +77,11 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Giao diện</CardTitle>
-          <CardDescription>Chủ đề màu áp dụng ngay lập tức.</CardDescription>
+          <CardTitle>{t.settings.appearanceTitle}</CardTitle>
+          <CardDescription>{t.settings.appearanceDescription}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <PrefRow icon={resolvedTheme === "dark" ? Moon : Sun} label="Chủ đề">
+          <PrefRow icon={resolvedTheme === "dark" ? Moon : Sun} label={t.settings.theme}>
             <ToggleGroup
               type="single"
               variant="outline"
@@ -94,48 +92,39 @@ export default function SettingsPage() {
                 if (v === "light" || v === "dark") setTheme(v);
               }}
             >
-              <ToggleGroupItem value="light" aria-label="Sáng" className="h-7 px-2.5 text-xs">
-                Sáng
+              <ToggleGroupItem
+                value="light"
+                aria-label={t.settings.light}
+                className="h-7 px-2.5 text-xs"
+              >
+                {t.settings.light}
               </ToggleGroupItem>
-              <ToggleGroupItem value="dark" aria-label="Tối" className="h-7 px-2.5 text-xs">
-                Tối
+              <ToggleGroupItem
+                value="dark"
+                aria-label={t.settings.dark}
+                className="h-7 px-2.5 text-xs"
+              >
+                {t.settings.dark}
               </ToggleGroupItem>
             </ToggleGroup>
           </PrefRow>
-          <PrefRow icon={Languages} label="Ngôn ngữ">
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              spacing={0}
-              value={lang}
-              onValueChange={applyLang}
-            >
-              <ToggleGroupItem value="vi" className="h-7 px-2.5 text-xs">
-                VI
-              </ToggleGroupItem>
-              <ToggleGroupItem value="en" className="h-7 px-2.5 text-xs">
-                EN
-              </ToggleGroupItem>
-            </ToggleGroup>
+          <PrefRow icon={Languages} label={t.settings.language}>
+            <LangToggle />
           </PrefRow>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Dữ liệu & riêng tư</CardTitle>
-          <CardDescription>
-            Ranh giới PII là bất biến của pipeline — không có công tắc để tắt.
-          </CardDescription>
+          <CardTitle>{t.settings.privacyTitle}</CardTitle>
+          <CardDescription>{t.settings.privacyDescription}</CardDescription>
         </CardHeader>
         <CardContent className="flex items-start gap-3 text-sm">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-lichen" />
           <p className="max-w-prose text-muted-foreground">
-            Mọi feedback đi qua bộ PII sanitizer (email, số điện thoại, CCCD…
-            thay bằng placeholder <code className="font-mono text-xs">&lt;TYPE&gt;</code>)
-            trước khi vào prompt, log hay trace của agent. Nội dung thô chỉ nằm
-            trong database, không bao giờ rời ranh giới sanitize.{" "}
+            {t.settings.privacyBodyBefore}
+            <code className="font-mono text-xs">&lt;TYPE&gt;</code>
+            {t.settings.privacyBodyAfter}{" "}
             <Badge variant="secondary" className="ml-1">
               Presidio + Stanza VI
             </Badge>

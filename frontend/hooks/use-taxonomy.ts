@@ -8,6 +8,7 @@ import type {
   TaxonomyGenerateRequest,
   TaxonomyGenerateResponse,
   TaxonomyListResponse,
+  TaxonomyNode,
   TaxonomyProposal,
   TopicRecommendResponse,
   TopicRecommendation,
@@ -76,6 +77,72 @@ export function useApplyRecommendations(productId: string | null) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_id: productId, topics }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["taxonomy", productId] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+/** Human CRUD (owner 2026-10-23): tự tay thêm node vào Active Taxonomy —
+ * slug tự sinh phía BE, bump taxonomy_version. `name` = tiếng Anh canonical,
+ * `name_vi` = nhãn hiển thị tiếng Việt (bỏ trống → BE fallback `name`). */
+export function useCreateTaxonomyNode(productId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      name: string;
+      name_vi?: string | null;
+      parent_slug?: string | null;
+      description?: string | null;
+    }) =>
+      apiFetch<TaxonomyNode>("/api/taxonomies/nodes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId, ...body }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["taxonomy", productId] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+/** Human CRUD: đổi tên (EN canonical) / name_vi (hiển thị) / mô tả — slug
+ * bất biến (plan 31). `name_vi` undefined = giữ nguyên nhãn hiển thị. */
+export function useUpdateTaxonomyNode(productId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      slug,
+      name,
+      name_vi,
+      description,
+    }: {
+      slug: string;
+      name?: string;
+      name_vi?: string;
+      description?: string | null;
+    }) =>
+      apiFetch<TaxonomyNode>(`/api/taxonomies/nodes/${encodeURIComponent(slug)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId, name, name_vi, description }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["taxonomy", productId] });
+    },
+  });
+}
+
+/** Human CRUD: xóa node lá (còn con → 409 từ BE). Dữ liệu cũ giữ nguyên slug. */
+export function useDeleteTaxonomyNode(productId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slug: string) =>
+      apiFetch<void>(`/api/taxonomies/nodes/${encodeURIComponent(slug)}?product_id=${productId}`, {
+        method: "DELETE",
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["taxonomy", productId] });

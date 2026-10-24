@@ -33,6 +33,7 @@ import { PageHeader } from "@/components/page-header"
 import type { EmergingClusterItem } from "@/lib/types"
 import { formatDate } from "@/lib/format"
 import { SENTIMENT_LABEL } from "@/lib/labels"
+import { useAppLang, useT } from "@/lib/i18n"
 import type { Sentiment } from "@/lib/types"
 
 const DAY_OPTIONS: SummaryDays[] = [7, 30, 90]
@@ -44,14 +45,16 @@ function SentimentBars({
 }: {
   bySentiment: Record<string, number>
 }) {
+  const lang = useAppLang()
+  const t = useT()
   const entries = Object.entries(bySentiment)
   const max = Math.max(...entries.map(([, v]) => v), 0)
 
   return (
     <div
       role="img"
-      aria-label={`Phân bố cảm xúc: ${entries
-        .map(([k, v]) => `${SENTIMENT_LABEL[k as Sentiment] ?? k} ${v}`)
+      aria-label={`${t.charts.sentimentDistribution}: ${entries
+        .map(([k, v]) => `${SENTIMENT_LABEL[lang][k as Sentiment] ?? k} ${v}`)
         .join(", ")}`}
       className="flex items-end justify-around gap-4"
     >
@@ -70,7 +73,7 @@ function SentimentBars({
             />
           </div>
           <span className="text-xs text-muted-foreground">
-            {SENTIMENT_LABEL[key as Sentiment] ?? key}
+            {SENTIMENT_LABEL[lang][key as Sentiment] ?? key}
           </span>
         </div>
       ))}
