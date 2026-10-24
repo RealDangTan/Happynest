@@ -18,6 +18,9 @@ dependencies = [
     # --- Auth ---
     "pwdlib[argon2]",
     "pyjwt",
+    # Google OAuth token exchange — đã có gián tiếp qua openai SDK, khai báo
+    # tường minh khi dùng trực tiếp (decisions.md 2026-10-23).
+    "httpx",
     # --- PII ---
     "presidio-analyzer",
     "presidio-anonymizer",

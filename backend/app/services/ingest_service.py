@@ -34,12 +34,20 @@ from app.services.presidio_service import sanitize
 _REQUIRED_COLUMNS = ("source", "content")
 
 
-def get_default_product(session: Session) -> Product:
-    """First shared product for legacy ingestion without an explicit product."""
-    stmt = select(Product).order_by(Product.created_at)
+def get_default_product(session: Session, owner_id: UUID) -> Product:
+    """Oldest product OWNED BY `owner_id` cho đường ingestion legacy không
+    truyền product. Isolation 2026-10-22: mỗi account chỉ ingest vào
+    product của chính mình."""
+    stmt = (
+        select(Product)
+        .where(Product.owner_id == owner_id)
+        .order_by(Product.created_at)
+    )
     product = session.scalars(stmt.limit(1)).first()
     if product is None:
-        raise LookupError("Chưa có product nào — tạo POST /api/products trước.")
+        raise LookupError(
+            "Tài khoản chưa có product nào — tạo POST /api/products trước."
+        )
     return product
 
 

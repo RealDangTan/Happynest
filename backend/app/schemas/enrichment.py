@@ -1,16 +1,16 @@
 """Enrichment schemas — output của JEV-role engine (plan 32; spec Listen
-2026-10-07 §3–§6).
+2026-10-07 §3–§6; singular per-item từ owner 2026-10-22).
 
 Closed-set tuyệt đối: topics CHỈ từ Active Taxonomy (slug), emotions/intent
 theo enum khóa ở `app/models/enums.py`. `ai_issue`/`safety_issue` giữ lại trong
 CÙNG call (chi phí ~0) vì HITL rule (severity/safety) và câu chuyện luận văn
 (AI product) vẫn cần.
 
-`strict_enrichment_schema()` = JSON schema PHẲNG cho Mode A (strict) — khuôn
-`strict_classification_schema` + drift guard chết lúc import khi lệch.
+`strict_enrichment_schema()` = JSON schema PHẲNG cho Mode A (strict) của đường
+engine `llm` — khuôn `strict_classification_schema` + drift guard chết lúc
+import khi lệch. Đường engine `jev` không dùng schema này (System One trả
+typed answers, xem `services/jev_client.py`).
 """
-
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -20,8 +20,6 @@ __all__ = [
     "TopicScore",
     "EmotionScore",
     "EnrichmentOut",
-    "BatchEnrichmentItem",
-    "BatchEnrichmentOut",
     "strict_enrichment_schema",
 ]
 
@@ -51,15 +49,6 @@ class EnrichmentOut(BaseModel):
     ai_issue: AiIssue | None = None
     confidence: float = Field(ge=0.0, le=1.0)
     rationale: str = Field(max_length=500)
-
-
-class BatchEnrichmentItem(BaseModel):
-    feedback_id: UUID
-    result: EnrichmentOut
-
-
-class BatchEnrichmentOut(BaseModel):
-    items: list[BatchEnrichmentItem] = Field(min_length=1, max_length=10)
 
 
 def _enum_values(py_enum: type) -> list[str]:
@@ -118,29 +107,6 @@ def strict_enrichment_schema() -> dict:
             "confidence",
             "rationale",
         ],
-        "additionalProperties": False,
-    }
-
-
-def strict_batch_enrichment_schema() -> dict:
-    """Schema phẳng cho BatchEnrichmentOut (không $ref — strict mode từ chối)."""
-    return {
-        "type": "object",
-        "properties": {
-            "items": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "feedback_id": {"type": "string"},
-                        "result": strict_enrichment_schema(),
-                    },
-                    "required": ["feedback_id", "result"],
-                    "additionalProperties": False,
-                },
-            }
-        },
-        "required": ["items"],
         "additionalProperties": False,
     }
 

@@ -38,4 +38,6 @@ class UnderstandState(TypedDict, total=False):
     #: {action, edited_*?, reason?} từ Command(resume=…) — Gate #2
     decision: dict[str, Any] | None
     final_status: str
+    review_round_start: int
+    review_feedback: str | None
     insights_created: Annotated[list[str], _add_list]

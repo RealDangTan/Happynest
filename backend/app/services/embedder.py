@@ -15,6 +15,7 @@ Không ANN index: dataset ≤1500 rows → exact scan là đủ (xem route /simi
 
 import logging
 import time
+from threading import Lock
 from collections.abc import Sequence
 
 from openai import OpenAI
@@ -24,12 +25,14 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.enums import LlmCallType
-from app.services.tracing import write_llm_call_log
+from app.services.tracing import record_call_log
 
 logger = logging.getLogger(__name__)
 
 #: Giới hạn số input mỗi call API (khóa theo contract §7).
 EMBED_BATCH_MAX_INPUTS = 2048
+_provider_client: OpenAI | None = None
+_client_lock = Lock()
 
 
 class EmbeddingDimError(ValueError):
@@ -39,10 +42,22 @@ class EmbeddingDimError(ValueError):
 def _client() -> OpenAI:
     """OpenAI-compatible client cho embeddings: EMBEDDING_* ưu tiên, fallback LLM_*
     (decisions.md 2026-08-24 — alias env người dùng)."""
-    settings = get_settings()
-    base_url = settings.EMBEDDING_BASE_URL or settings.LLM_BASE_URL
-    api_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
-    return OpenAI(base_url=base_url, api_key=api_key)
+    global _provider_client
+    with _client_lock:
+        if _provider_client is None:
+            settings = get_settings()
+            base_url = settings.EMBEDDING_BASE_URL or settings.LLM_BASE_URL
+            api_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
+            _provider_client = OpenAI(base_url=base_url, api_key=api_key)
+        return _provider_client
+
+
+def close_client() -> None:
+    global _provider_client
+    with _client_lock:
+        if _provider_client is not None:
+            _provider_client.close()
+            _provider_client = None
 
 
 _session_factory = SessionLocal  # unit test monkeypatch điểm này
@@ -63,18 +78,16 @@ def _log_call(
                          prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
                          error=bool(error))
     try:
-        with _session_factory() as session:
-            write_llm_call_log(
-                session,
-                call_type=LlmCallType.embed,
-                prompt_version=get_settings().PROMPT_VERSION,
-                model=get_settings().EMBEDDING_MODEL,
-                latency_ms=latency_ms,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                error=error[:500] if error else None,
-            )
-            session.commit()
+        record_call_log(
+            _session_factory,
+            call_type=LlmCallType.embed,
+            prompt_version=get_settings().PROMPT_VERSION,
+            model=get_settings().EMBEDDING_MODEL,
+            latency_ms=latency_ms,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            error=error[:500] if error else None,
+        )
     except Exception:  # noqa: BLE001 - logging best-effort
         logger.warning("embedder: ghi llm_call_logs thất bại", exc_info=True)
 

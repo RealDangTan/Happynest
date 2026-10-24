@@ -125,6 +125,7 @@ class Settings(BaseSettings):
     IMPORT_STORAGE_DIR: str = "storage/imports"
     ANALYSIS_MAX_ITEMS_PER_RUN: int = 100
     ANALYSIS_BATCH_SIZE: int = 10
+    ANALYSIS_WORKERS: int = Field(default=3, ge=1, le=4)
 
     # --- Closed-loop impact (Phase 20): cửa sổ đo trước/sau mốc ticket draft ---
     IMPACT_WINDOW_DAYS: int = 7
@@ -135,6 +136,14 @@ class Settings(BaseSettings):
     LANGFUSE_BASE_URL: str = "https://cloud.langfuse.com"
     LANGFUSE_TRACING_ENABLED: bool = True
     PROMPT_VERSION: str = "v1"
+
+    # --- Google OAuth (đăng nhập bằng Google; decisions.md 2026-10-23) ---
+    # Rỗng CLIENT_ID/SECRET = tính năng TẮT (GET /api/auth/google/login → 503).
+    # GOOGLE_REDIRECT_URI phải khớp 1:1 với "Authorized redirect URI" của OAuth
+    # client trên Google Cloud Console (vd http://localhost:8000/api/auth/google/callback).
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:

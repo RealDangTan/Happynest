@@ -8,20 +8,19 @@ at scale.** Engine enrich là task ĐÓNG:
 - emotions rỗng → ["neutral"] (fallback chốt ở review S7);
 - GPT KHÔNG nằm trong per-record runtime.
 
-Engine hiện là LLM (backend `chat_structured`, model qua `MODEL_ENRICH` —
-plan 30). Backend `jev` (TypeSafe) wire ở Phase 34B SAU KHI Spike S7 PASS —
-dispatch theo `ENRICH_ENGINE`, KHÔNG silent-fallback giữa 2 engine.
+Engine dispatch theo `ENRICH_ENGINE` (KHÔNG silent-fallback giữa 2 engine):
+- `llm`  → `chat_structured`, model qua `MODEL_ENRICH` (plan 30);
+- `jev`  → `jev_client.systemone_enrich` — System One native PER-ITEM
+  (owner 2026-10-22: bỏ batch chat; mỗi feedback một request, S7 đo
+  p95 ~1.06s/request).
 
-⚠️ PII boundary: `enrich_feedback`/`enrich_feedback_batch` chỉ nhận text ĐÃ
-SANITIZE — raw content không bao giờ đi qua hàm này vào prompt/log/trace.
+⚠️ PII boundary: `enrich_feedback` chỉ nhận text ĐÃ SANITIZE — raw content
+không bao giờ đi qua hàm này vào prompt/log/trace.
 """
-
-import json
-from uuid import UUID
 
 from app.core.config import get_settings
 from app.models.enums import LlmCallType
-from app.schemas.enrichment import BatchEnrichmentOut, EnrichmentOut
+from app.schemas.enrichment import EnrichmentOut
 from app.services.llm_client import chat_structured
 
 PROMPT_VERSION = "v3"
@@ -52,8 +51,16 @@ mảng rỗng khi không rõ.
 Chỉ trả về JSON object, không text thừa."""
 
 
-def _taxonomy_block(taxonomy_labels: list[tuple[str, str]]) -> str:
-    lines = "\n".join(f"- {slug} — {name}" for slug, name in taxonomy_labels)
+def _taxonomy_block(
+    taxonomy_labels: list[tuple[str, str, str | None]],
+) -> str:
+    """Mỗi dòng `- slug — Name (vi: …)`: slug là id duy nhất được phép trả;
+    `name` tiếng Anh canonical là nhãn codebook; gloss tiếng Việt (`name_vi`,
+    khi có và khác name) giúp khớp feedback code-switching Việt–Anh."""
+    lines = "\n".join(
+        f"- {slug} — {name} (vi: {name_vi})" if name_vi and name_vi != name else f"- {slug} — {name}"
+        for slug, name, name_vi in taxonomy_labels
+    )
     return (
         "Active taxonomy (id = slug — CHỈ được dùng các id này cho topics):\n"
         f"{lines}\n\n"
@@ -101,18 +108,41 @@ def finalize_enrichment(result: EnrichmentOut, *, taxonomy_version: int) -> dict
     }
 
 
+def active_prompt_version() -> str:
+    """prompt_version của engine ĐANG CHẠY — snapshot vào analysis_runs."""
+    if get_settings().ENRICH_ENGINE == "jev":
+        from app.services.jev_client import JEV_PROMPT_VERSION
+
+        return JEV_PROMPT_VERSION
+    return PROMPT_VERSION
+
+
 def enrich_feedback(
     sanitized_text: str,
-    taxonomy_labels: list[tuple[str, str]],
+    taxonomy_labels: list[tuple[str, str, str | None]],
     *,
     taxonomy_version: int = 1,
     feedback_id=None,
     analysis_run_id=None,
+    session_factory=None,
 ) -> dict:
     """Enrich MỘT feedback ĐÃ SANITIZE → JSONB `ai_analysis` (shape v3).
 
-    `taxonomy_labels`: [(slug, name)] từ `taxonomy_service.get_taxonomy_labels`.
+    `taxonomy_labels`: [(slug, name, name_vi)] từ
+    `taxonomy_service.get_taxonomy_labels`. Dispatch theo `ENRICH_ENGINE` —
+    đường jev không fallback về llm.
     """
+    if get_settings().ENRICH_ENGINE == "jev":
+        from app.services.jev_client import systemone_enrich
+
+        return systemone_enrich(
+            sanitized_text,
+            taxonomy_labels,
+            taxonomy_version=taxonomy_version,
+            feedback_id=feedback_id,
+            analysis_run_id=analysis_run_id,
+            session_factory=session_factory,
+        )
     result = chat_structured(
         _SYSTEM_PROMPT,
         f"{_taxonomy_block(taxonomy_labels)}Feedback cần phân loại:\n{sanitized_text}",
@@ -123,39 +153,3 @@ def enrich_feedback(
         analysis_run_id=analysis_run_id,
     )
     return finalize_enrichment(result, taxonomy_version=taxonomy_version)
-
-
-def enrich_feedback_batch(
-    items: list[tuple[UUID, str]],
-    *,
-    taxonomy_labels: list[tuple[str, str]],
-    taxonomy_version: int = 1,
-    analysis_run_id=None,
-) -> dict[UUID, dict]:
-    """Enrich một chunk (≤10) trong MỘT logical request; verify ID coverage."""
-    if not items:
-        return {}
-    payload = [{"feedback_id": str(fid), "feedback_text": text} for fid, text in items]
-    response = chat_structured(
-        _SYSTEM_PROMPT
-        + "\nTrả về items; mỗi feedback_id xuất hiện đúng một lần và giữ nguyên.",
-        f"{_taxonomy_block(taxonomy_labels)}Feedback batch:\n"
-        f"{json.dumps(payload, ensure_ascii=False)}",
-        BatchEnrichmentOut,
-        call_type=LlmCallType.enrich,
-        prompt_version=PROMPT_VERSION,
-        analysis_run_id=analysis_run_id,
-    )
-    requested = [fid for fid, _ in items]
-    returned = [item.feedback_id for item in response.items]
-    if len(returned) != len(set(returned)) or set(returned) != set(requested):
-        from app.services.llm_client import LLMStructureError
-
-        raise LLMStructureError(
-            "Batch enrichment response IDs are missing, duplicate, or unknown."
-        )
-    by_id = {item.feedback_id: item.result for item in response.items}
-    return {
-        fid: finalize_enrichment(by_id[fid], taxonomy_version=taxonomy_version)
-        for fid in requested
-    }

@@ -1,4 +1,9 @@
-"""Real PostgreSQL regression: newly registered accounts share workspaces."""
+"""Real PostgreSQL regression: per-account workspace isolation (2026-10-22).
+
+Account A tạo product → account B (đăng ký riêng) KHÔNG thấy ở list, không
+đọc/sửa/xoá được (404), nhưng có thể tạo product CÙNG TÊN cho chính mình
+(name unique per-owner). Thay thế test_shared_access.py của contract cũ.
+"""
 
 import uuid
 from contextlib import closing
@@ -15,37 +20,50 @@ from app.models.user import User
 pytestmark = pytest.mark.integration
 
 
-def test_new_accounts_can_share_and_manage_workspace():
+def test_new_accounts_are_isolated_per_account():
     suffix = uuid.uuid4().hex
-    emails = [f"shared-{suffix}-{i}@example.test" for i in range(2)]
-    product_name = f"shared-product-{suffix}"
+    emails = [f"isolated-{suffix}-{i}@example.test" for i in range(2)]
+    product_name = f"isolated-product-{suffix}"
     product_id = None
     try:
         # closing() closes HTTP clients without starting the application lifespan.
         with closing(TestClient(app)) as first, closing(TestClient(app)) as second:
             for client, email in zip((first, second), emails, strict=True):
                 registered = client.post("/api/auth/register", json={
-                    "email": email, "password": "shared-test-pass-123"})
+                    "email": email, "password": "isolated-test-pass-123"})
                 assert registered.status_code == 201, registered.text
                 assert set(registered.json()) == {"id", "email"}
                 assert client.post("/api/auth/token", data={
-                    "username": email, "password": "shared-test-pass-123"}
+                    "username": email, "password": "isolated-test-pass-123"}
                 ).status_code == 200
+
+            # Account mới đăng ký bắt đầu với workspace TRỐNG.
+            assert second.get("/api/products").json()["items"] == []
+
             created = first.post("/api/products", json={"name": product_name})
             assert created.status_code == 201, created.text
             product_id = created.json()["id"]
-            listed = second.get("/api/products")
-            assert any(p["id"] == product_id for p in listed.json()["items"])
-            assert second.get(f"/api/products/{product_id}/schema").status_code == 200
-            updated = second.patch(f"/api/products/{product_id}", json={
-                "description": "Updated by another account"})
-            assert updated.status_code == 200, updated.text
-            assert first.get(f"/api/products/{product_id}").json()[
-                "description"] == "Updated by another account"
-            # Names are unique in the shared workspace, irrespective of account.
-            duplicate = second.post("/api/products", json={"name": product_name})
-            assert duplicate.status_code == 409
-            assert second.delete(f"/api/products/{product_id}").status_code == 200
+
+            # B không thấy product của A: list trống với B và 404 trực tiếp.
+            assert second.get("/api/products").json()["items"] == []
+            assert second.get(f"/api/products/{product_id}").status_code == 404
+            assert second.get(f"/api/products/{product_id}/schema").status_code == 404
+            assert second.patch(f"/api/products/{product_id}", json={
+                "description": "Updated by another account"
+            }).status_code == 404
+            assert second.delete(f"/api/products/{product_id}").status_code == 404
+
+            # Name unique PER-OWNER: B tạo được product cùng tên, A vẫn thấy
+            # product của A nguyên vẹn.
+            twin = second.post("/api/products", json={"name": product_name})
+            assert twin.status_code == 201, twin.text
+            assert twin.json()["id"] != product_id
+            listed = first.get("/api/products").json()
+            assert [p["id"] for p in listed["items"]] == [product_id]
+
+            # A xoá product của chính mình thành công; B không xoá được của A.
+            assert second.delete(f"/api/products/{twin.json()['id']}").status_code == 200
+            assert first.delete(f"/api/products/{product_id}").status_code == 200
             assert first.get(f"/api/products/{product_id}").status_code == 404
     finally:
         with SessionLocal() as db:

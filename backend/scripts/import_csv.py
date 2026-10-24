@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.db.session import SessionLocal  # noqa: E402
+from app.models.user import User  # noqa: E402
 from app.services.ingest_service import (  # noqa: E402
     get_default_product,
     import_csv_rows,
@@ -23,6 +24,11 @@ from app.services.ingest_service import (  # noqa: E402
 def main() -> int:
     parser = argparse.ArgumentParser(description="Import feedback từ file CSV.")
     parser.add_argument("csv_path", type=Path, help="Đường dẫn file CSV (UTF-8, có BOM hay không đều được).")
+    parser.add_argument(
+        "--email",
+        default="pm@thesis.local",
+        help="Account sở hữu product đích (isolation 2026-10-22; default pm@thesis.local).",
+    )
     args = parser.parse_args()
 
     if not args.csv_path.is_file():
@@ -30,7 +36,11 @@ def main() -> int:
         return 2
 
     with args.csv_path.open("rb") as f, SessionLocal() as session:
-        product = get_default_product(session)
+        user = session.query(User).filter(User.email == args.email).first()
+        if user is None:
+            print(f"❌ Không có user {args.email} — seed trước bằng scripts/seed_users.py")
+            return 2
+        product = get_default_product(session, user.id)
         report = import_csv_rows(session, iter_csv_dicts(f), product_id=product.id)
 
     print(f"✅ Imported: {report.imported}")

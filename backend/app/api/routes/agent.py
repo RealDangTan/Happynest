@@ -11,12 +11,14 @@ GET  /api/insights                : insights (shape mới, evidence mở rộng)
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
     get_current_user,
     get_db,
+    owned_product_ids,
     product_or_404,
 )
 from app.core.config import get_settings
@@ -53,19 +55,25 @@ router = APIRouter(
 def create_agent_run(
     body: AgentRunCreateIn,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AgentRunCreatedOut:
     """Trigger investigation — graph chạy nền, dừng ở Gate #2 interrupt."""
-    product_or_404(db, body.product_id)
+    product_or_404(db, body.product_id, current_user)
     run = understand_runner.start_understand_run(
         db, body.product_id, body.question, body.trigger_type
     )
     return AgentRunCreatedOut(run_id=run.id)
 
 
-def _load_run(db: Session, run_id: uuid.UUID) -> AnalysisRun:
-    """Load an existing run, including legacy runs without product_id."""
+def _load_run(db: Session, run_id: uuid.UUID, user: User) -> AnalysisRun:
+    """Load a run owned by `user` (qua run.product_id); run legacy không có
+    product_id hoặc của người khác → 404."""
     run = db.get(AnalysisRun, run_id)
-    if run is None:
+    if (
+        run is None
+        or run.product_id is None
+        or run.product_id not in owned_product_ids(db, user)
+    ):
         raise HTTPException(status_code=404, detail="Run không tồn tại.")
     return run
 
@@ -108,13 +116,28 @@ def _run_progress(db: Session, run: AnalysisRun) -> RunProgressOut | None:
 def get_agent_run(
     run_id: uuid.UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AgentRunStatusOut:
-    run = _load_run(db, run_id)
-    payload = understand_runner.get_run_snapshot(run_id)
+    run = _load_run(db, run_id, current_user)
+    from understand_agent.review_tasks import review_state
+    review = review_state(run_id)
+    payload = understand_runner.get_run_snapshot(run_id) if run.status == RunStatus.running else None
+    # Status hiệu lực cho FE: graph dừng ở Gate #2 interrupt nhưng KHÔNG ai cập
+    # nhật run row lúc đó (apply_decision chỉ chạy SAU khi human quyết) — nếu
+    # báo nguyên `running` thì chat/activity trace kéo "Investigating…" vô tận
+    # và thẻ duyệt findings không bao giờ hiện. Interrupt đậu → pending_approval.
+    status = run.status.value if hasattr(run.status, "value") else str(run.status)
+    if status == RunStatus.running.value and payload:
+        status = "pending_approval"
+    if review["processing"]:
+        status = "decision_processing"
+        if review.get("action") == "investigate_more":
+            status = "running"
+            payload = None
     return AgentRunStatusOut(
         run_id=run.id,
-        status=run.status.value if hasattr(run.status, "value") else str(run.status),
-        error=run.error,
+        status=status,
+        error=review.get("error") or run.error,
         pipeline_version=run.pipeline_version,
         started_at=run.started_at,
         completed_at=run.completed_at,
@@ -127,13 +150,14 @@ def get_agent_run(
 def get_agent_run_trace(
     run_id: uuid.UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AgentTraceOut:
     """Trace metadata-only các LLM call của run (HAX G4/G16) — FE live trace.
 
     PII boundary: KHÔNG trả prompt/response — chỉ call_type, OK/ERROR,
     latency, tokens, model (đúng ràng buộc plan 29).
     """
-    _load_run(db, run_id)
+    _load_run(db, run_id, current_user)
     rows = db.scalars(
         select(LlmCallLog)
         .where(LlmCallLog.analysis_run_id == run_id)
@@ -165,6 +189,7 @@ def get_agent_run_trace(
 def decide_agent_run(
     run_id: uuid.UUID,
     body: AgentDecisionIn,
+    background: bool = Query(default=False),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
@@ -173,16 +198,25 @@ def decide_agent_run(
     404 run/thread chưa start · 409 thread completed · 503 checkpoint down.
     investigate_more → graph quay lại planner (insight status=investigating).
     """
-    run = _load_run(db, run_id)
+    run = _load_run(db, run_id, user)
+    payload = {"action": body.action, "edited_insight": body.edited_insight,
+               "reason": body.reason, "reviewer_id": str(user.id)}
+    if background:
+        if run.status != RunStatus.running:
+            raise HTTPException(status_code=409, detail="Phiên đã hoàn tất, không còn chờ duyệt.")
+        from understand_agent.review_tasks import queue_review, start_worker
+        try:
+            queue_review(run.id, payload, start_worker)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return JSONResponse(status_code=202, content={
+            "run_id": str(run.id), "final_status": "processing", "insights_created": [],
+        })
     try:
+        understand_runner.invalidate_snapshot(run.id)
         final = understand_runner.resume_with_decision(
             run.id,
-            {
-                "action": body.action,
-                "edited_insight": body.edited_insight,
-                "reason": body.reason,
-                "reviewer_id": str(user.id),
-            },
+            payload,
         )
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
@@ -208,13 +242,19 @@ def list_insights(
         default=None, pattern="^(pending|approved|edited|rejected|investigating)$"
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> InsightsListOut:
-    """Insights shape mới; evidence_ids mở rộng thành statements (PII-safe).
-    Có thể lọc theo product; dữ liệu dùng chung cho các tài khoản."""
+    """Insights shape mới; evidence mở rộng thành statements (PII-safe).
+    Có thể lọc theo product; MẶC ĐỊNH chỉ insight thuộc product của chính
+    tài khoản (isolation 2026-10-22)."""
     conditions = []
     if product_id is not None:
-        product_or_404(db, product_id)
+        product_or_404(db, product_id, current_user)
         conditions.append(Insight.product_id == product_id)
+    else:
+        conditions.append(
+            Insight.product_id.in_(owned_product_ids(db, current_user))
+        )
     if status_filter is not None:
         conditions.append(Insight.status == status_filter)
     total = db.scalar(select(func.count()).select_from(Insight).where(*conditions))
@@ -271,7 +311,7 @@ def update_insight(
     insight = db.get(Insight, insight_id)
     if insight is None:
         raise HTTPException(status_code=404, detail="Insight không tồn tại.")
-    product_or_404(db, insight.product_id)
+    product_or_404(db, insight.product_id, user)
 
     original = {"title": insight.title, "finding": insight.finding}
     edited: dict[str, str] = {}
@@ -309,12 +349,13 @@ def update_insight(
 def delete_insight(
     insight_id: uuid.UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """Hard delete insight sai/hallucinate — actions, insight_reviews,
     impact_checks cascade sẵn ở DB (ondelete=CASCADE)."""
     insight = db.get(Insight, insight_id)
     if insight is None:
         raise HTTPException(status_code=404, detail="Insight không tồn tại.")
-    product_or_404(db, insight.product_id)
+    product_or_404(db, insight.product_id, current_user)
     db.delete(insight)
     db.commit()

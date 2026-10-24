@@ -10,6 +10,10 @@ POST /api/taxonomies/apply               : HUMAN apply proposal → Active Taxon
                                            — AI KHÔNG BAO GIỜ gọi endpoint này.
 POST /api/taxonomies/recommend           : GPT đề xuất topic từ pool uncategorized
 POST /api/taxonomies/recommend/apply     : HUMAN nhận topic đề xuất → Taxonomy v2
+POST /api/taxonomies/nodes               : HUMAN tạo node thủ công (owner 2026-10-23)
+PATCH /api/taxonomies/nodes/{slug}       : HUMAN đổi tên (EN canonical) / name_vi (hiển thị) / mô tả
+                                           (slug bất biến)
+DELETE /api/taxonomies/nodes/{slug}      : HUMAN xóa node lá (còn con → 409)
 """
 
 import uuid
@@ -23,6 +27,7 @@ from app.api.deps import (
     get_db,
     product_or_404,
 )
+from app.models.enums import DecisionSubject
 from app.models.taxonomy import Taxonomy
 from app.models.user import User
 from app.schemas.taxonomy import (
@@ -32,6 +37,8 @@ from app.schemas.taxonomy import (
     TaxonomyGenerateIn,
     TaxonomyGenerateOut,
     TaxonomyListOut,
+    TaxonomyNodeCreateIn,
+    TaxonomyNodeUpdateIn,
     TaxonomyOut,
     TaxonomyProposalOut,
     TaxonomyReviewActionIn,
@@ -40,6 +47,11 @@ from app.schemas.taxonomy import (
     TopicRecommendIn,
 )
 from app.services import taxonomy_service
+from app.services.decision_log import log_decision
+from app.services.taxonomy_service import (
+    TaxonomyConflictError,
+    TaxonomyValidationError,
+)
 
 router = APIRouter(
     prefix="/api/taxonomies",
@@ -55,9 +67,10 @@ def list_taxonomies(
         default=None, pattern="^(active|pending_review|merged|rejected)$"
     ),
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TaxonomyListOut:
     """Tree taxonomy của product; mặc định trả mọi status (FE tự dựng tree)."""
-    product_or_404(session, product_id)
+    product_or_404(session, product_id, current_user)
     conditions = [Taxonomy.product_id == product_id]
     if status_filter is not None:
         conditions.append(Taxonomy.status == status_filter)
@@ -77,9 +90,10 @@ def list_taxonomies(
 def review_queue(
     product_id: uuid.UUID = Query(...),
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TaxonomyListOut:
     """Hàng chờ emerging theme chờ human review (§21 — accumulate evidence)."""
-    product_or_404(session, product_id)
+    product_or_404(session, product_id, current_user)
     rows = session.scalars(
         select(Taxonomy)
         .where(
@@ -105,7 +119,7 @@ def review_theme(
     theme = session.get(Taxonomy, taxonomy_id)
     if theme is None:
         raise HTTPException(status_code=404, detail="Taxonomy node không tồn tại.")
-    product_or_404(session, theme.product_id)
+    product_or_404(session, theme.product_id, user)
     if theme.kind != "emerging" or theme.status != "pending_review":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -162,17 +176,25 @@ def review_theme(
 def generate_taxonomy(
     body: TaxonomyGenerateIn,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TaxonomyGenerateOut:
-    """GPT sinh proposal taxonomy từ sample (đã sanitize) + context. Proposal STATELESS; chỉ `apply` đụng DB."""
-    product = product_or_404(session, body.product_id)
+    """GPT sinh proposal taxonomy từ sample PHÂN TẦNG theo thời gian (đã
+    sanitize, gộp trùng lặp) + context. Proposal STATELESS; chỉ `apply` đụng
+    DB. Product chưa có feedback → 422 (không đốt LLM call)."""
+    product = product_or_404(session, body.product_id, current_user)
     context = {
         "product_type": body.product_type,
         "use_case": body.use_case,
         "persona": body.persona,
     }
-    proposal, sample_count = taxonomy_service.generate_proposal(
-        session, product, sample_size=body.sample_size, context=context
-    )
+    try:
+        proposal, sample_count = taxonomy_service.generate_proposal(
+            session, product, sample_size=body.sample_size, context=context
+        )
+    except TaxonomyValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
     return TaxonomyGenerateOut(
         product_id=product.id, sample_count=sample_count, proposal=proposal
     )
@@ -186,7 +208,7 @@ def apply_taxonomy(
 ) -> TaxonomyApplyOut:
     """HUMAN gate: apply proposal (có thể đã sửa generate/recommend) → tạo
     node canonical/active + bump taxonomy_version + decision memory."""
-    product = product_or_404(session, body.product_id)
+    product = product_or_404(session, body.product_id, user)
     try:
         result = taxonomy_service.apply_proposal(session, product, body.proposal)
     except ValueError as exc:
@@ -217,10 +239,11 @@ def apply_taxonomy(
 def recommend_topics(
     body: TopicRecommendIn,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TopicRecommendGenerateOut:
     """Plan 34 — GPT đọc pool uncategorized/low-confidence → đề xuất topic mới
     (STATELESS). Pool rỗng → recommendations rỗng, không gọi LLM."""
-    product = product_or_404(session, body.product_id)
+    product = product_or_404(session, body.product_id, current_user)
     result, pool_count = taxonomy_service.recommend_topics(
         session, product, pool_limit=body.pool_limit
     )
@@ -237,10 +260,10 @@ def apply_recommended_topics(
 ) -> TaxonomyApplyOut:
     """HUMAN gate: nhận topic đề xuất → tạo canonical/active (tái dùng
     apply_proposal: idempotent + bump version + decision memory)."""
-    product = product_or_404(session, body.product_id)
+    product = product_or_404(session, body.product_id, user)
     proposal = TaxonomyProposalOut(
         topics=[
-            ProposedTopic(name=t.name, parent=t.parent, description=None)
+            ProposedTopic(name=t.name, name_vi=t.name_vi, parent=t.parent, description=None)
             for t in body.topics
         ]
     )
@@ -266,4 +289,121 @@ def apply_recommended_topics(
         created=[TaxonomyOut.model_validate(n) for n in result["created"]],
         skipped=result["skipped"],
         taxonomy_version=result["taxonomy_version"],
+    )
+
+
+@router.post("/nodes", status_code=201)
+def create_taxonomy_node(
+    body: TaxonomyNodeCreateIn,
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> TaxonomyOut:
+    """HUMAN CRUD (owner 2026-10-23): tự tay thêm chủ đề vào Active Taxonomy —
+    slug tự sinh theo plan 31, bump taxonomy_version (tập nhãn đóng đổi)."""
+    product = product_or_404(session, body.product_id, user)
+    try:
+        node = taxonomy_service.create_manual_node(
+            session,
+            product,
+            name=body.name,
+            parent_slug=body.parent_slug,
+            description=body.description,
+            name_vi=body.name_vi,
+        )
+    except TaxonomyValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    except TaxonomyConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    log_decision(
+        session,
+        product_id=product.id,
+        subject_type=DecisionSubject.taxonomy,
+        subject_id=node.id,
+        agent_value=None,
+        human_value={
+            "action": "manual_create",
+            "name": node.name,
+            "slug": node.slug,
+            "parent_slug": body.parent_slug,
+        },
+        reviewer_id=user.id,
+    )
+    return TaxonomyOut.model_validate(node)
+
+
+@router.patch("/nodes/{taxonomy_slug}")
+def update_taxonomy_node(
+    taxonomy_slug: str,
+    body: TaxonomyNodeUpdateIn,
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> TaxonomyOut:
+    """HUMAN CRUD: đổi tên canonical (EN) / tên hiển thị (name_vi) / mô tả.
+    Slug BẤT BIẾN (plan 31) — không bump version vì tập nhãn không đổi.
+    description=None là XÓA mô tả; name_vi=None là GIỮ nguyên hiển thị."""
+    product = product_or_404(session, body.product_id, user)
+    if body.name is None and body.description is None and body.name_vi is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cần ít nhất một trong các trường name / name_vi / description.",
+        )
+    try:
+        node = taxonomy_service.update_manual_node(
+            session,
+            product,
+            slug=taxonomy_slug,
+            name=body.name,
+            description=body.description,
+            name_vi=body.name_vi,
+        )
+    except TaxonomyValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    except TaxonomyConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    if node is None:
+        raise HTTPException(status_code=404, detail="Chủ đề không tồn tại.")
+
+    log_decision(
+        session,
+        product_id=product.id,
+        subject_type=DecisionSubject.taxonomy,
+        subject_id=node.id,
+        agent_value={"name": node.name, "slug": node.slug},
+        human_value={"action": "manual_update", "name": body.name, "description": body.description},
+        reviewer_id=user.id,
+    )
+    return TaxonomyOut.model_validate(node)
+
+
+@router.delete("/nodes/{taxonomy_slug}", status_code=204)
+def delete_taxonomy_node(
+    taxonomy_slug: str,
+    product_id: uuid.UUID = Query(...),
+    session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> None:
+    """HUMAN CRUD: xóa node lá khỏi Active Taxonomy. Node còn con → 409.
+    Dữ liệu đã enrich giữ nguyên slug (FE hiển thị fallback) — chỉ tập nhãn
+    ĐÓNG tương lai thu hẹp; bump taxonomy_version."""
+    product = product_or_404(session, product_id, user)
+    try:
+        node = taxonomy_service.delete_manual_node(session, product, slug=taxonomy_slug)
+    except TaxonomyConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    if node is None:
+        raise HTTPException(status_code=404, detail="Chủ đề không tồn tại.")
+
+    log_decision(
+        session,
+        product_id=product.id,
+        subject_type=DecisionSubject.taxonomy,
+        subject_id=node.id,
+        agent_value={"name": node.name, "slug": node.slug},
+        human_value={"action": "manual_delete"},
+        reviewer_id=user.id,
     )

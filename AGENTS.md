@@ -42,10 +42,12 @@ Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
 | Tracing | Langfuse Cloud Hobby EU + permanent `llm_call_logs` Postgres table (vendor-independent evidence) |
 | Migrations | Alembic with `include_object` filter excluding the 4 langgraph checkpoint tables from day one |
 
-## Shared workspace contract
+## Per-account workspace isolation contract (2026-10-22 — đảo shared-workspace của 2026-10-14)
 
-- Every authenticated account can use every workspace and every application feature, including create, edit, delete and HITL decisions.
-- Product/import filters select the business data being analysed; account identity records login and reviewer attribution.
+- Mỗi product thuộc sở hữu MỘT account (`products.owner_id`, migration 0020). Account mới đăng ký có workspace TRỐNG — không bao giờ thấy dữ liệu của account khác.
+- Mọi endpoint theo product chỉ đụng product của chính tài khoản; product của người khác → 404 (không tiết lộ sự tồn tại). List toàn cục (feedbacks, imports, insights, analysis runs, clusters, reports/summary) mặc định scope theo các product của tài khoản.
+- Account identity records login and reviewer attribution; mọi create/edit/delete/HITL decision chỉ tác động workspace của mình.
+- Residual đã ghi nhận (xem [decisions.md](docs/decisions.md) 2026-10-22): `POST /api/clusters/run` và `GET /api/reports/kpis` vẫn toàn cục (batch job / KPI hệ thống).
 - Treat `docs/README.md`, `docs/api-checklist.md` and current code as the implementation contract. Historical plans, screenshots and Git snapshots do not add requirements.
 
 ## Repository map

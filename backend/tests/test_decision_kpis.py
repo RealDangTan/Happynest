@@ -28,7 +28,7 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.fixture()
-def kpi_env():
+def kpi_env(owner_user_id):
     """Product dedicated + insight approved + 1 action accepted + feedback đủ
     tuổi để đo impact (before window ≥1 row, after window ≥1 row)."""
     with SessionLocal() as db:
@@ -36,8 +36,16 @@ def kpi_env():
             select(Product).where(Product.name == "kpi-test-product")
         ).first()
         if product is None:
-            product = Product(name="kpi-test-product", description="kpi suite")
+            product = Product(
+                name="kpi-test-product",
+                description="kpi suite",
+                owner_id=owner_user_id,
+            )
             db.add(product)
+            db.commit()
+            db.refresh(product)
+        elif product.owner_id != owner_user_id:
+            product.owner_id = owner_user_id
             db.commit()
             db.refresh(product)
         # dọn rác lần trước

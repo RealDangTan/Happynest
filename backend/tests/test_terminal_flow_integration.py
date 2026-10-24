@@ -67,11 +67,12 @@ def test_csv_three_gates_real_persistence_and_scoped_impact(tmp_path, monkeypatc
         "analysis_version": "enrich-v3",
     }
 
-    def enrich_batch(items, **kwargs):
-        return {fid: dict(enrichment) for fid, _ in items}
-
-    monkeypatch.setattr(analysis_runner, "enrich_feedback_batch", enrich_batch)
-    monkeypatch.setattr(analysis_runner, "embed_texts", lambda texts: [[1.] + [0.] * 1535 for _ in texts])
+    monkeypatch.setattr(
+        analysis_runner,
+        "enrich_feedback",
+        lambda text, labels, **kwargs: dict(enrichment),
+    )
+    monkeypatch.setattr(analysis_runner, "embed_one", lambda text: [1.] + [0.] * 1535)
     calls = {"planner": 0}
     def agent_llm(system, user, schema, **kwargs):
         assert "test@example.com" not in user
@@ -87,7 +88,10 @@ def test_csv_three_gates_real_persistence_and_scoped_impact(tmp_path, monkeypatc
             return InsightDraft(title="Synthetic latency", finding="Two reports mention latency", finding_confidence=.9, affected_context={}, impact=["slow workflow"], limitations=["Synthetic sample"], evidence_ids=evidence_ids)
         raise AssertionError(schema)
     monkeypatch.setattr(nodes, "chat_structured", agent_llm)
-    monkeypatch.setattr(act_agent, "chat_structured", lambda *a, **k: act_agent.ActProposalOut.model_validate({"functions": [{"function": "ENGINEERING", "relevance": .9, "recommendation": "Investigate latency", "rationale": "Synthetic evidence", "impact": 8, "effort": 3, "urgency": 8, "confidence": .9}]}))
+    from tests.act_fixtures import support_draft
+    # ea6535c: ACT proposal phải mang decision_support đủ điều kiện grounding,
+    # nếu không generate_actions trả ACTGroundingError → 0 action.
+    monkeypatch.setattr(act_agent, "chat_structured", lambda *a, **k: act_agent.ActProposalOut.model_validate({"functions": [{"function": "ENGINEERING", "relevance": .9, "recommendation": "Investigate latency", "rationale": "Synthetic evidence", "impact": 8, "effort": 3, "urgency": 8, "confidence": .9, "decision_support": support_draft()}]}))
 
     suffix = uuid.uuid4().hex
     email = f"terminal-{suffix}@example.test"
@@ -96,12 +100,13 @@ def test_csv_three_gates_real_persistence_and_scoped_impact(tmp_path, monkeypatc
     csv.write_text("message,date\nỨng dụng rất chậm,2026-09-01T00:00:00Z\nThe app is slow,2026-09-02T00:00:00Z\nInvalid date,test@example.com\n", encoding="utf-8")
     with SessionLocal() as db:
         user = User(email=email, password_hash=hash_password("synthetic-test-password"))
-        other_product = Product(name=f"terminal-other-{suffix}")
         db.add(user)
-        db.add(other_product)
         db.commit()
         db.refresh(user)
         uid = user.id
+        other_product = Product(name=f"terminal-other-{suffix}", owner_id=uid)
+        db.add(other_product)
+        db.commit()
         db.refresh(other_product)
         other_pid = other_product.id
     client = TerminalClient("http://testserver")
@@ -168,6 +173,8 @@ def test_csv_three_gates_real_persistence_and_scoped_impact(tmp_path, monkeypatc
                     storage = Path(import_service.get_settings().IMPORT_STORAGE_DIR).resolve()
                     if path.resolve().is_relative_to(storage):
                         path.unlink(missing_ok=True)
+            # Isolation 2026-10-22: products.owner_id → user — xoá product
+            # (kể cả terminal-other) TRƯỚC khi xoá user.
+            db.query(Product).filter(Product.owner_id == uid).delete(synchronize_session=False)
             db.query(User).filter(User.id == uid).delete(synchronize_session=False)
-            db.query(Product).filter(Product.id == other_pid).delete(synchronize_session=False)
             db.commit()

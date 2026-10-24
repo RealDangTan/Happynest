@@ -4,7 +4,7 @@
 >
 > List này là **bản đồ nối FE ↔ BE** cho toàn bộ surface backend expose (`backend/app/main.py` + `backend/app/api/routes/*`).
 
-Snapshot: 2026-10-22 (per-account isolation; migration 0020) · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`
+Snapshot: 2026-10-24 (per-account isolation, Google OAuth, taxonomy CRUD, analysis workers và review nền; migrations 0020–0023) · Nguồn chân lý BE: `backend/app/main.py`, `backend/app/api/routes/*` · FE: `frontend/app/**`
 
 > ⚠️ **RE-PLAN 2026-08-28:** series 21–27 ([tóm tắt lịch sử](plan_report.md)) viết lại surface BE theo kiến trúc VoC OS. Endpoint drop: `/api/sources`, `/api/reviews`, `/api/corrections`, `/api/insights`, `/api/reports/kpis`, `/api/agent/*` cũ, `/api/feedbacks/import-csv` (phase 22 thay bằng `/api/imports` + Gate #1). Surface mới đã triển khai; hợp đồng hiện tại nằm trong bảng dưới.
 

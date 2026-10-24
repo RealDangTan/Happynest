@@ -69,10 +69,28 @@ def get_current_user(
 
 
 
-def product_or_404(session: Session, product_id: uuid.UUID) -> Product:
-    """Load an existing shared product; missing rows return 404."""
-    product = session.get(Product, product_id)
+def product_or_404(session: Session, product_id: uuid.UUID, user: User) -> Product:
+    """Load `user`'s product; missing or foreign rows return 404 (per-account
+    isolation — decisions.md 2026-10-22). 404 thay vì 403 để không tiết lộ
+    sự tồn tại của product người khác."""
+    product = (
+        session.query(Product)
+        .filter(Product.id == product_id, Product.owner_id == user.id)
+        .first()
+    )
     if product is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Product không tồn tại.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product không tồn tại hoặc không thuộc tài khoản của bạn.",
+        )
     return product
+
+
+def owned_product_ids(session: Session, user: User) -> list[uuid.UUID]:
+    """ID mọi product của `user` — dùng scope các endpoint list toàn cục
+    (feedbacks, imports, insights, analysis runs, reports)."""
+    from sqlalchemy import select
+
+    return list(
+        session.scalars(select(Product.id).where(Product.owner_id == user.id)).all()
+    )

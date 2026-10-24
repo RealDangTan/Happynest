@@ -64,8 +64,9 @@ def test_run_progress_schema_has_llm_budget() -> None:
 
 
 @pytest.fixture()
-def _trace_run():
-    """1 AnalysisRun (running) + 2 LlmCallLog (ok/error) — dọn dẹp sau test."""
+def _trace_run(test_product):
+    """1 AnalysisRun (running, product_id khớp owner test-primary — isolation
+    2026-10-22: run không product hoặc của người khác → 404) + 2 LlmCallLog."""
     from app.models.llm_call_log import LlmCallLog
 
     with SessionLocal() as db:
@@ -74,6 +75,7 @@ def _trace_run():
             llm_model="test-model",
             prompt_version="hax-test",
             embedding_model="test-embed",
+            product_id=test_product.id,
             status=RunStatus.running,
         )
         db.add(run)

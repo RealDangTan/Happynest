@@ -44,13 +44,21 @@ def _login(client: TestClient, account: str = "primary") -> dict[str, str]:
 
 
 @pytest.fixture()
-def crud_product():
+def crud_product(owner_user_id):
     """Product riêng của suite; teardown dọn mọi bảng con trước khi xoá product."""
     with SessionLocal() as db:
         product = db.query(Product).filter(Product.name == _PRODUCT_NAME).first()
         if product is None:
-            product = Product(name=_PRODUCT_NAME, description="CRUD test suite")
+            product = Product(
+                name=_PRODUCT_NAME,
+                description="CRUD test suite",
+                owner_id=owner_user_id,
+            )
             db.add(product)
+            db.commit()
+            db.refresh(product)
+        elif product.owner_id != owner_user_id:
+            product.owner_id = owner_user_id
             db.commit()
             db.refresh(product)
         pid = product.id
@@ -158,13 +166,26 @@ def test_patch_feedback_merges_labels_and_metadata(client, crud_product) -> None
     assert body["ai_analysis"]["topics"] == ["t2"]
 
 
-def test_second_account_can_patch_feedback(client, crud_product) -> None:
-    ops = _login(client, "secondary")
+def test_other_account_cannot_patch_feedback(client, crud_product) -> None:
+    """Isolation 2026-10-22: account khác không sửa được feedback của mình —
+    404 như thể row không tồn tại; owner vẫn sửa bình thường. LƯU Ý: account
+    "other" cần TestClient RIÊNG — cùng client thì cookie của login sau đè
+    Bearer header (OAuth2PasswordBearerWithCookie ưu tiên cookie)."""
+    from app.main import app as fastapi_app
+
+    other_client = TestClient(fastapi_app)
+    other = _login(other_client, "secondary")
+    owner = _login(client, "primary")
     fb_id = _seed_feedback(crud_product)
-    resp = client.patch(
-        f"/api/feedbacks/{fb_id}", headers=ops, json={"source": "email"}
+    resp = other_client.patch(
+        f"/api/feedbacks/{fb_id}", headers=other, json={"source": "email"}
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 404, resp.text
+    ok = client.patch(
+        f"/api/feedbacks/{fb_id}", headers=owner, json={"source": "email"}
+    )
+    assert ok.status_code == 200, ok.text
+    other_client.close()
 
 
 def test_delete_feedback_single(client, crud_product) -> None:
@@ -393,7 +414,16 @@ def test_delete_product_cascades_everything(client, crud_product) -> None:
         )
 
 
-def test_second_account_can_delete_product(client, crud_product) -> None:
-    ops = _login(client, "secondary")
-    resp = client.delete(f"/api/products/{crud_product}", headers=ops)
-    assert resp.status_code == 200, resp.text
+def test_other_account_cannot_delete_product(client, crud_product) -> None:
+    """Isolation 2026-10-22: account khác không xoá được workspace của mình;
+    owner xoá được. TestClient riêng cho "other" — xem lưu ý cookie ở trên."""
+    from app.main import app as fastapi_app
+
+    other_client = TestClient(fastapi_app)
+    other = _login(other_client, "secondary")
+    owner = _login(client, "primary")
+    resp = other_client.delete(f"/api/products/{crud_product}", headers=other)
+    assert resp.status_code == 404, resp.text
+    assert client.get(f"/api/products/{crud_product}", headers=owner).status_code == 200
+    assert client.delete(f"/api/products/{crud_product}", headers=owner).status_code == 200
+    other_client.close()

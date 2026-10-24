@@ -30,15 +30,15 @@ SOURCE = "test-similarity"  # marker để nhận diện + dọn sạch
 
 
 @pytest.fixture()
-def ops_headers(client):
-    """Bearer header cho /similar — router feedback bị guard pm|operations từ
-    Phase 05 (decisions.md cùng ngày); suite này chạy trước guard nên từng
-    gọi endpoint trần. Sửa lại 2026-08-25 khi Phase 09 chạy lại full suite."""
+def owner_headers(client):
+    """Bearer header của account PRIMARY — isomer 2026-10-22: /similar và mọi
+    endpoint theo product chỉ phục vụ owner của product chứa feedback
+    (test_product thuộc test-primary, xem conftest.owner_user_id)."""
     resp = client.post(
         "/api/auth/token",
         data={
-            "username": SEED_EMAILS["secondary"],
-            "password": TEST_PASSWORDS["secondary"],
+            "username": SEED_EMAILS["primary"],
+            "password": TEST_PASSWORDS["primary"],
         },
     )
     assert resp.status_code == 200, resp.text
@@ -102,8 +102,8 @@ def sim_ids(test_product):
             db.commit()
 
 
-def test_similarity_rank_order(client, sim_ids, ops_headers):
-    resp = client.get(f"/api/feedbacks/{sim_ids['A']}/similar?k=10", headers=ops_headers)
+def test_similarity_rank_order(client, sim_ids, owner_headers):
+    resp = client.get(f"/api/feedbacks/{sim_ids['A']}/similar?k=10", headers=owner_headers)
     assert resp.status_code == 200, resp.text
     items = resp.json()
 
@@ -133,7 +133,7 @@ def test_similarity_rank_order(client, sim_ids, ops_headers):
     assert item_b["snippet"] == "sanitized B"[:200]
 
 
-def test_similar_missing_embedding_409(client, test_product, ops_headers):
+def test_similar_missing_embedding_409(client, test_product, owner_headers):
     now = datetime.now(timezone.utc)
     with SessionLocal() as db:
         fb = Feedback(
@@ -147,7 +147,7 @@ def test_similar_missing_embedding_409(client, test_product, ops_headers):
         db.commit()
         fid = fb.id
     try:
-        resp = client.get(f"/api/feedbacks/{fid}/similar", headers=ops_headers)
+        resp = client.get(f"/api/feedbacks/{fid}/similar", headers=owner_headers)
         assert resp.status_code == 409
         assert "embedding" in resp.json()["detail"].lower()
     finally:
@@ -158,12 +158,12 @@ def test_similar_missing_embedding_409(client, test_product, ops_headers):
             db.commit()
 
 
-def test_similar_unknown_id_404(client, ops_headers):
-    resp = client.get(f"/api/feedbacks/{uuid.uuid4()}/similar", headers=ops_headers)
+def test_similar_unknown_id_404(client, owner_headers):
+    resp = client.get(f"/api/feedbacks/{uuid.uuid4()}/similar", headers=owner_headers)
     assert resp.status_code == 404
 
 
 @pytest.mark.parametrize("bad_k", ["0", "51"])
-def test_similar_k_out_of_range_422(client, sim_ids, ops_headers, bad_k):
-    resp = client.get(f"/api/feedbacks/{sim_ids['A']}/similar?k={bad_k}", headers=ops_headers)
+def test_similar_k_out_of_range_422(client, sim_ids, owner_headers, bad_k):
+    resp = client.get(f"/api/feedbacks/{sim_ids['A']}/similar?k={bad_k}", headers=owner_headers)
     assert resp.status_code == 422

@@ -181,7 +181,9 @@ def test_emerging_shape_sub_c1_with_samples(db_session, test_product) -> None:
     db_session.add_all(members)
     db_session.flush()
 
-    out = build_summary(db_session, days=30, now=NOW)
+    # Isolation 2026-10-22: API luôn truyền product_ids — emerging chỉ lấy cụm
+    # có member thuộc product của mình, không dính cluster toàn cục khác.
+    out = build_summary(db_session, days=30, now=NOW, product_ids=[test_product.id])
     assert len(out["emerging"]) == 1
     item = out["emerging"][0]
     assert set(item) == {

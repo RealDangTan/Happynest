@@ -91,7 +91,9 @@ class TestPostSingle:
             assert row.import_id is None  # POST đơn lẻ không qua import lô
 
     def test_preserves_explicit_event_time(self, client, clean_feedbacks):
-        headers = _login_headers(client, "secondary")
+        # Isolation 2026-10-22: POST đơn lẻ gắn product mặc định CỦA CHÍNH
+        # tài khoản — dùng primary (owns test_product) thay secondary.
+        headers = _login_headers(client, "primary")
         event_time = "2025-01-15T10:00:00+00:00"
         response = client.post(
             "/api/feedbacks",
@@ -223,12 +225,21 @@ class TestAuthentication:
         )
         assert response.status_code == 401
 
-        # Tài khoản đăng nhập được phép ingestion
-        ops_headers = _login_headers(client, "secondary")
+        # Tài khoản đăng nhập được phép ingestion (primary owns test_product)
+        auth_headers = _login_headers(client, "primary")
         response = client.post(
             "/api/feedbacks",
-            json={"source": "s", "content": "ops được phép"},
-            headers=ops_headers,
+            json={"source": "s", "content": "primary được phép"},
+            headers=auth_headers,
         )
         assert response.status_code == 201
         clean_feedbacks.append(uuid.UUID(response.json()["id"]))
+
+        # Isolation: account chưa có product nào → 409 (không ingest được).
+        no_product = _login_headers(client, "secondary")
+        response = client.post(
+            "/api/feedbacks",
+            json={"source": "s", "content": "secondary chưa có product"},
+            headers=no_product,
+        )
+        assert response.status_code == 409

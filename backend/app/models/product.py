@@ -3,12 +3,16 @@ KHÔNG bảng workspaces — product = workspace, `products → feedback` trực
 
 Mọi bảng phân tích (feedback, imports, taxonomies, clusters, insights,
 actions, decision_logs) sẽ trỏ product_id. Product switcher ở profile (FE sau).
+
+Quyết định 2026-10-22 (khôi phục 0018, đảo 0019): product thuộc sở hữu
+MỘT account (`owner_id`) — account mới đăng ký thấy workspace trống, không
+thấy product của account khác. Name unique per-owner (app layer).
 """
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -18,6 +22,11 @@ class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", name="fk_products_owner_id_users"),
+        nullable=False,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Plan 31: bump mỗi lần human apply taxonomy (generate/recommend) — snapshot

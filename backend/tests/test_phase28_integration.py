@@ -77,11 +77,10 @@ def test_upload_profiles_without_calling_mapper_and_cancel_deletes_raw(
         db.commit()
 
 
-def test_batch_23_feedback_uses_three_classify_and_embedding_calls(
-    test_product, monkeypatch
-):
-    classify_calls: list[int] = []
-    embedding_calls: list[int] = []
+def test_singular_23_feedback_uses_one_call_per_item(test_product, monkeypatch):
+    """v4 singular (owner 2026-10-22): 23 item = 23 enrich call + 23 embed call."""
+    classify_calls: list[str] = []
+    embedding_calls: list[str] = []
     with SessionLocal() as db:
         import_row = Import(
             product_id=test_product.id,
@@ -138,24 +137,24 @@ def test_batch_23_feedback_uses_three_classify_and_embedding_calls(
         "analysis_version": "enrich-v3",
     }
 
-    def fake_enrich(items, **kwargs):
-        classify_calls.append(len(items))
-        return {item_id: dict(enrichment) for item_id, _ in items}
+    def fake_enrich(text, labels, *, feedback_id=None, analysis_run_id=None, **kwargs):
+        classify_calls.append(text)
+        return dict(enrichment)
 
-    def fake_embed(texts):
-        embedding_calls.append(len(texts))
-        return [[0.0] * 1536 for _ in texts]
+    def fake_embed(text):
+        embedding_calls.append(text)
+        return [0.0] * 1536
 
-    monkeypatch.setattr(analysis_runner, "enrich_feedback_batch", fake_enrich)
-    monkeypatch.setattr(analysis_runner, "embed_texts", fake_embed)
+    monkeypatch.setattr(analysis_runner, "enrich_feedback", fake_enrich)
+    monkeypatch.setattr(analysis_runner, "embed_one", fake_embed)
     monkeypatch.setattr(
         analysis_runner.taxonomy_service, "get_taxonomy_labels", lambda *a: []
     )
 
     analysis_runner.run_analysis(run_id)
 
-    assert classify_calls == [10, 10, 3]
-    assert embedding_calls == [10, 10, 3]
+    assert len(classify_calls) == 23
+    assert len(embedding_calls) == 23
     with SessionLocal() as db:
         finished = db.get(AnalysisRun, run_id)
         assert finished.status == RunStatus.completed

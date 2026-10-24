@@ -1,18 +1,18 @@
-"""Unit tests plan 32 — enricher v3 (finalize/UNCATEGORIZED/batch coverage).
+"""Unit tests plan 32 — enricher v3 (finalize/UNCATEGORIZED/dispatch engine).
 
-KHÔNG network, KHÔNG DB — chat_structured bị mock ở tầng enricher; threshold
-lấy từ settings (monkeypatch env + cache_clear khi cần).
+KHÔNG network, KHÔNG DB — đường llm mock ở tầng enricher (chat_structured),
+đường jev mock ở tầng jev_client (systemone_enrich); threshold lấy từ settings
+(monkeypatch env + cache_clear khi cần). Engine mặc định 'llm' qua autouse
+fixture conftest (cô lập khỏi .env thật).
 """
 
 import json
-import uuid
 
 import pytest
 
 from app.core.config import get_settings
 from app.models.enums import LlmCallType
 from app.schemas.enrichment import (
-    BatchEnrichmentOut,
     EmotionScore,
     EnrichmentOut,
     TopicScore,
@@ -21,7 +21,7 @@ from app.schemas.enrichment import (
 from app.services import enricher
 from app.services.llm_client import LLMStructureError
 
-TAXONOMY = [("payment.payment_failure", "Payment failure"), ("support.response", "Support response")]
+TAXONOMY = [("payment.payment_failure", "Payment failure", "Lỗi thanh toán"), ("support.response", "Support response", None)]
 
 
 def _raw(**overrides) -> EnrichmentOut:
@@ -109,46 +109,77 @@ def test_enrich_feedback_prompt_uses_taxonomy_and_call_type(monkeypatch) -> None
     out = enricher.enrich_feedback(
         "text da sanitize", TAXONOMY, taxonomy_version=3, feedback_id="fb-1"
     )
-    assert "payment.payment_failure — Payment failure" in captured["user"]
+    assert "payment.payment_failure — Payment failure (vi: Lỗi thanh toán)" in captured["user"]
+    assert "support.response — Support response" in captured["user"]  # name_vi=None → không gloss
     assert "text da sanitize" in captured["user"]
     assert captured["kwargs"]["call_type"] is LlmCallType.enrich
     assert captured["kwargs"]["prompt_version"] == enricher.PROMPT_VERSION
     assert out["topics"] == ["payment.payment_failure"]
 
 
-def test_enrich_batch_coverage_mismatch_raises(monkeypatch) -> None:
-    fid = uuid.uuid4()
+def test_enrich_feedback_dispatches_to_jev_engine(monkeypatch) -> None:
+    """ENRICH_ENGINE=jev → systemone_enrich nhận đúng tham số, KHÔNG đụng chat."""
+    monkeypatch.setenv("ENRICH_ENGINE", "jev")
+    get_settings.cache_clear()
+    captured: dict = {}
+    sentinel = {"topics": [], "uncategorized": True}
 
-    def _fake_chat(system, user, schema, **kwargs):
-        assert schema is BatchEnrichmentOut
-        # Trả THIẾU một id so với request
-        return BatchEnrichmentOut(items=[{"feedback_id": fid, "result": _raw()}])
+    def _fake_systemone(text, labels, **kwargs):
+        captured.update(text=text, labels=labels, kwargs=kwargs)
+        return sentinel
 
-    monkeypatch.setattr(enricher, "chat_structured", _fake_chat)
-    with pytest.raises(LLMStructureError, match="IDs"):
-        enricher.enrich_feedback_batch(
-            [(fid, "a"), (uuid.uuid4(), "b")], taxonomy_labels=TAXONOMY
+    monkeypatch.setattr("app.services.jev_client.systemone_enrich", _fake_systemone)
+
+    def _forbidden(*args, **kwargs):
+        raise AssertionError("engine jev phải đi System One, không fallback chat")
+
+    monkeypatch.setattr(enricher, "chat_structured", _forbidden)
+    try:
+        out = enricher.enrich_feedback(
+            "text da sanitize",
+            TAXONOMY,
+            taxonomy_version=3,
+            feedback_id="fb-1",
+            analysis_run_id="run-1",
         )
+    finally:
+        get_settings.cache_clear()
+    assert out is sentinel
+    assert captured["text"] == "text da sanitize"
+    assert captured["labels"] == TAXONOMY
+    assert captured["kwargs"]["taxonomy_version"] == 3
+    assert captured["kwargs"]["feedback_id"] == "fb-1"
+    assert captured["kwargs"]["analysis_run_id"] == "run-1"
 
 
-def test_enrich_batch_finalizes_each_item(monkeypatch) -> None:
-    fid1, fid2 = uuid.uuid4(), uuid.uuid4()
+def test_enrich_feedback_jev_error_does_not_fallback_to_chat(monkeypatch) -> None:
+    """LLMStructureError từ System One propagate nguyên vẹn — KHÔNG silent-fallback."""
+    monkeypatch.setenv("ENRICH_ENGINE", "jev")
+    get_settings.cache_clear()
 
-    def _fake_chat(system, user, schema, **kwargs):
-        payload = json.loads(user.split("Feedback batch:\n")[1])
-        assert [p["feedback_id"] for p in payload] == [str(fid1), str(fid2)]
-        return BatchEnrichmentOut(items=[
-            {"feedback_id": fid1, "result": _raw()},
-            {"feedback_id": fid2, "result": _raw(topics=[])},
-        ])
+    def _boom(*args, **kwargs):
+        raise LLMStructureError("systemone HTTP 500.")
 
-    monkeypatch.setattr(enricher, "chat_structured", _fake_chat)
-    out = enricher.enrich_feedback_batch(
-        [(fid1, "a"), (fid2, "b")], taxonomy_labels=TAXONOMY, taxonomy_version=4
-    )
-    assert out[fid1]["topics"] == ["payment.payment_failure"]
-    assert out[fid2]["uncategorized"] is True
-    assert out[fid2]["taxonomy_version"] == 4
+    monkeypatch.setattr("app.services.jev_client.systemone_enrich", _boom)
+
+    def _forbidden(*args, **kwargs):
+        raise AssertionError("không được fallback về chat")
+
+    monkeypatch.setattr(enricher, "chat_structured", _forbidden)
+    try:
+        with pytest.raises(LLMStructureError, match="systemone"):
+            enricher.enrich_feedback("text da sanitize", TAXONOMY)
+    finally:
+        get_settings.cache_clear()
+
+
+def test_active_prompt_version_follows_engine(monkeypatch) -> None:
+    monkeypatch.setenv("ENRICH_ENGINE", "jev")
+    get_settings.cache_clear()
+    assert enricher.active_prompt_version() == "jev-v1"
+    monkeypatch.setenv("ENRICH_ENGINE", "llm")
+    get_settings.cache_clear()
+    assert enricher.active_prompt_version() == enricher.PROMPT_VERSION
 
 
 # ----------------------------------------------------------------- strict A

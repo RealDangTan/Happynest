@@ -31,7 +31,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.core.observability import attach_observability
 from app.db.session import engine
-from app.services import graph_runtime, llm_client, presidio_service, tracing
+from app.services import embedder, graph_runtime, jev_client, llm_client, presidio_service, tracing
 
 logger = get_logger(__name__)
 
@@ -67,6 +67,8 @@ async def lifespan(app: FastAPI):
     yield
     # Phase 07: flush batch trace Langfuse trước khi process thoát.
     tracing.flush()
+    jev_client.close_client()
+    embedder.close_client()
 
 
 _DEFAULT_SECRET_VALUES = {"", "changeme-openssl-rand-hex-32"}
@@ -134,6 +136,12 @@ def create_app() -> FastAPI:
             # Plan 30: map use_case → model đã resolve (owner tự kiểm chứng routing).
             "models": settings.model_routing_map,
             "enrich_engine": settings.ENRICH_ENGINE,
+            # Model enrich HIỆNHỰC theo engine (jev → JEV_MODEL System One).
+            "enrich_model_active": (
+                settings.JEV_MODEL
+                if settings.ENRICH_ENGINE == "jev"
+                else settings.llm_model_for("enrich")
+            ),
             "embedding_model": settings.EMBEDDING_MODEL or None,
             "pii_mode": presidio_service.mode()["mode"],
         }

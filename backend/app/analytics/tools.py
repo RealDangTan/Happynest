@@ -309,26 +309,33 @@ def inspect_cluster(db: Session, product_id: uuid.UUID, inp: InspectClusterInput
         db.scalar(
             select(func.count())
             .select_from(Feedback)
-            .where(Feedback.cluster_id == cluster.id)
+            .where(Feedback.cluster_id == cluster.id, Feedback.product_id == product_id)
         )
         or 0
     )
+    if not member_count:
+        raise LookupError("Không có nhóm phản hồi này trong sản phẩm đang điều tra.")
+    mixed_products = bool(db.scalar(select(
+        select(Feedback.id).where(
+            Feedback.cluster_id == cluster.id, Feedback.product_id != product_id,
+        ).exists()
+    )))
     sev_col = Feedback.ai_analysis["severity"].astext  # một object (xem profile_field)
     sev_rows = db.execute(
         select(sev_col.label("sev"), func.count().label("n"))
-        .where(Feedback.cluster_id == cluster.id)
+        .where(Feedback.cluster_id == cluster.id, Feedback.product_id == product_id)
         .group_by(sev_col)
     ).all()
     return {
         "cluster_id": str(cluster.id),
-        "name": cluster.name,
-        "summary": cluster.summary,
-        "feedback_count": cluster.feedback_count,
+        "name": "Nhóm phản hồi trong sản phẩm" if mixed_products else cluster.name,
+        "summary": "Chỉ đếm phản hồi thuộc sản phẩm đang điều tra; xu hướng toàn cụm không áp dụng." if mixed_products else cluster.summary,
+        "feedback_count": member_count,
         "live_member_count": member_count,
-        "growth_ratio": cluster.growth_ratio,
-        "is_emerging": cluster.is_emerging,
-        "is_spike": cluster.is_spike,
-        "suggested_priority": cluster.suggested_priority,
+        "growth_ratio": None if mixed_products else cluster.growth_ratio,
+        "is_emerging": None if mixed_products else cluster.is_emerging,
+        "is_spike": None if mixed_products else cluster.is_spike,
+        "suggested_priority": None if mixed_products else cluster.suggested_priority,
         "severity_dist": {r.sev: int(r.n) for r in sev_rows if r.sev},
     }
 

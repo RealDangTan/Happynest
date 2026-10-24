@@ -105,6 +105,9 @@ class TaxonomyOut(BaseModel):
     product_id: UUID
     parent_id: UUID | None
     name: str
+    # Nhãn hiển thị tiếng Việt (2026-10-23) — FE hiển thị `name_vi ?? name`;
+    # `name` là canonical tiếng Anh cho classifier.
+    name_vi: str | None = None
     slug: str | None = None  # plan 31: topic id ổn định (bất biến khi rename)
     description: str | None
     kind: str
@@ -140,6 +143,8 @@ class ProposedTopic(BaseModel):
     Hierarchy 2–3 level do prompt ép; validate ở service khi apply."""
 
     name: str = Field(min_length=1, max_length=100)
+    # Nhãn hiển thị tiếng Việt khớp nghĩa `name` (EN canonical) — 2026-10-23.
+    name_vi: str | None = Field(default=None, max_length=100)
     parent: str | None = Field(default=None, max_length=100)
     description: str | None = Field(default=None, max_length=300)
 
@@ -156,10 +161,11 @@ def strict_taxonomy_proposal_schema() -> dict:
         "type": "object",
         "properties": {
             "name": {"type": "string"},
+            "name_vi": {"anyOf": [{"type": "string"}, {"type": "null"}]},
             "parent": {"anyOf": [{"type": "string"}, {"type": "null"}]},
             "description": {"anyOf": [{"type": "string"}, {"type": "null"}]},
         },
-        "required": ["name", "parent", "description"],
+        "required": ["name", "name_vi", "parent", "description"],
         "additionalProperties": False,
     }
     return {
@@ -208,6 +214,8 @@ class TaxonomyApplyOut(BaseModel):
 
 class TopicRecommendation(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    # Nhãn hiển thị tiếng Việt khớp nghĩa `name` (EN canonical) — 2026-10-23.
+    name_vi: str | None = Field(default=None, max_length=100)
     parent: str | None = Field(default=None, max_length=100)
     evidence_count: int = Field(ge=1)
     examples: list[str] = Field(default_factory=list, max_length=3)
@@ -244,11 +252,12 @@ def strict_topic_recommendation_schema() -> dict:
         "type": "object",
         "properties": {
             "name": {"type": "string"},
+            "name_vi": {"anyOf": [{"type": "string"}, {"type": "null"}]},
             "parent": {"anyOf": [{"type": "string"}, {"type": "null"}]},
             "evidence_count": {"type": "integer"},
             "examples": {"type": "array", "items": {"type": "string"}},
         },
-        "required": ["name", "parent", "evidence_count", "examples"],
+        "required": ["name", "name_vi", "parent", "evidence_count", "examples"],
         "additionalProperties": False,
     }
     return {
@@ -281,3 +290,25 @@ if _proposal_schema_keys != _proposal_model_keys:  # pragma: no cover — drift 
         f"taxonomy proposal drift: schema={sorted(_proposal_schema_keys)} "
         f"vs model={sorted(_proposal_model_keys)}"
     )
+
+
+class TaxonomyNodeCreateIn(BaseModel):
+    """POST /api/taxonomies/nodes — human tạo node thủ công trên Active Taxonomy."""
+
+    product_id: UUID
+    name: str = Field(min_length=1, max_length=100)  # tiếng Anh canonical
+    # Nhãn hiển thị tiếng Việt; bỏ trống → fallback `name`.
+    name_vi: str | None = Field(default=None, max_length=100)
+    parent_slug: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
+
+
+class TaxonomyNodeUpdateIn(BaseModel):
+    """PATCH /api/taxonomies/nodes/{slug} — đổi tên / mô tả (slug bất biến).
+
+    `name_vi=None` = GIỮ nguyên nhãn hiển thị (khác `description=None` = xóa)."""
+
+    product_id: UUID
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    name_vi: str | None = Field(default=None, max_length=100)
+    description: str | None = Field(default=None, max_length=2000)

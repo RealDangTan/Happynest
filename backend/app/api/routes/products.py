@@ -22,6 +22,7 @@ from app.models.enums import ImportStatus
 from app.models.product import Product
 from app.models.product_schema import ProductSchema
 from app.models.taxonomy import Taxonomy
+from app.models.user import User
 from app.schemas.import_ import FieldCoverageOut, ProductSchemaListOut, ProductSchemaOut
 from app.schemas.product import ProductIn, ProductListOut, ProductOut, ProductUpdate
 from app.services.coverage import field_coverage
@@ -39,15 +40,17 @@ _BUSY_STATUSES = {ImportStatus.mapping_generating, ImportStatus.importing}
 @router.get("")
 def list_products(
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ProductListOut:
-    """List all shared products."""
+    """Chỉ product của tài khoản hiện tại (isolation 2026-10-22)."""
+    owner = current_user.id
     total = session.scalar(
-        select(func.count()).select_from(Product)
+        select(func.count()).select_from(Product).where(Product.owner_id == owner)
     )
     rows = (
         session.scalars(
             select(Product)
-
+            .where(Product.owner_id == owner)
             .order_by(Product.created_at)
         )
         .all()
@@ -62,19 +65,21 @@ def list_products(
 def create_product(
     item: ProductIn,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ProductOut:
     exists = session.scalars(
         select(Product).where(
-            Product.name == item.name
+            Product.name == item.name,
+            Product.owner_id == current_user.id,
         )
     ).first()
     if exists is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Product '{item.name}' đã tồn tại.",
+            detail=f"Bạn đã có product '{item.name}' rồi.",
         )
     product = Product(
-        name=item.name, description=item.description
+        owner_id=current_user.id, name=item.name, description=item.description
     )
     session.add(product)
     session.commit()
@@ -86,10 +91,11 @@ def create_product(
 def get_active_schema(
     product_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Schema ACTIVE hiện hành (definition + version) — null `schema` khi chưa
     bootstrap (product mới, chưa import CSV nào qua Gate #1)."""
-    product_or_404(session, product_id)
+    product_or_404(session, product_id, current_user)
     active = schema_registry.get_active_schema(session, product_id)
     return {
         "product_id": product_id,
@@ -102,9 +108,10 @@ def get_active_schema(
 def list_schema_versions(
     product_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ProductSchemaListOut:
     """Toàn bộ version schema của product (mới nhất trước) + version active."""
-    product_or_404(session, product_id)
+    product_or_404(session, product_id, current_user)
     versions = schema_registry.list_versions(session, product_id)
     active = next((v for v in versions if v.status == "active"), None)
     return ProductSchemaListOut(
@@ -117,9 +124,10 @@ def list_schema_versions(
 def get_schema_coverage(
     product_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> FieldCoverageOut:
     """Coverage per product field từ `data` JSONB (VoC OS §19)."""
-    product_or_404(session, product_id)
+    product_or_404(session, product_id, current_user)
     from sqlalchemy import text
 
     total = int(
@@ -138,8 +146,9 @@ def get_schema_coverage(
 def get_product(
     product_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ProductOut:
-    return ProductOut.model_validate(product_or_404(session, product_id))
+    return ProductOut.model_validate(product_or_404(session, product_id, current_user))
 
 
 @router.patch("/{product_id}")
@@ -147,18 +156,20 @@ def update_product(
     product_id: uuid.UUID,
     item: ProductUpdate,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ProductOut:
-    product = product_or_404(session, product_id)
+    product = product_or_404(session, product_id, current_user)
     if item.name is not None and item.name != product.name:
         exists = session.scalars(
             select(Product).where(
-                Product.name == item.name
+                Product.name == item.name,
+                Product.owner_id == current_user.id,
             )
         ).first()
         if exists is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Product '{item.name}' đã tồn tại.",
+                detail=f"Bạn đã có product '{item.name}' rồi.",
             )
         product.name = item.name
     if item.description is not None:
@@ -172,13 +183,14 @@ def update_product(
 def delete_product(
     product_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Hard delete product + TOÀN BỘ dữ liệu con trong 1 transaction (VoC OS:
     product = workspace — xoá workspace là dọn sạch theo cụm). Thứ tự tuân thủ
     FK không-cascade: feedback → evidence → llm_call_logs → insights (con
     cascade DB) → taxonomies → product_schemas → decision_logs → analysis_runs
     → imports → product. 409 khi còn import đang xử lý nền."""
-    product = product_or_404(session, product_id)
+    product = product_or_404(session, product_id, current_user)
 
     busy = session.scalar(
         select(func.count())

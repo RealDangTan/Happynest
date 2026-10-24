@@ -61,7 +61,9 @@ def test_seed_default_taxonomy_creates_five_roots(tax_env) -> None:
             )
         ).all()
         names = {t.name for t in canonical}
-        assert names == set(taxonomy_service.DEFAULT_ROOTS)
+        assert names == {en for en, _ in taxonomy_service.DEFAULT_ROOTS}
+        vi_names = {t.name_vi for t in canonical}
+        assert vi_names == {vi for _, vi in taxonomy_service.DEFAULT_ROOTS}
 
 
 def test_accumulate_emerging_creates_and_increments(tax_env) -> None:
@@ -69,6 +71,7 @@ def test_accumulate_emerging_creates_and_increments(tax_env) -> None:
         taxonomy_service.seed_default_taxonomy(db, tax_env.id)
 
         # lần 1: topic lạ → tạo emerging pending_review evidence=1
+        # ("Search" thuộc DEFAULT_ROOTS — canonical EN từ 2026-10-23)
         new1 = taxonomy_service.accumulate_emerging(
             db, tax_env.id, ["Fake Citation", "Search"]
         )

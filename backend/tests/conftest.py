@@ -90,6 +90,18 @@ def integration_needs_real_db(request):
     yield
 
 
+@pytest.fixture(autouse=True)
+def enrich_engine_llm_default(monkeypatch):
+    """Cô lập tests khỏi `.env` thật (2026-10-22: .env có thể đang
+    ENRICH_ENGINE=jev): mặc định ép engine 'llm' — đường chat mock được ở tầng
+    enricher. Test nào muốn đường jev thì tự monkeypatch.setenv('ENRICH_ENGINE',
+    'jev') + cache_clear; quy tắc chung: test KHÔNG BAO GIỜ gọi provider thật."""
+    monkeypatch.setenv("ENRICH_ENGINE", "llm")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 def _upsert(db, email: str, password_hash: str) -> User:
     user = db.query(User).filter(User.email == email).first()
     if user is None:
@@ -124,7 +136,14 @@ TEST_PRODUCT_NAME = "voc-test-product"
 
 
 @pytest.fixture(scope="session")
-def test_product():
+def owner_user_id(seeded_users):
+    """Owner cho mọi product fixture — isolation 2026-10-22: product fixture
+    thuộc tài khoản primary, account khác không nhìn thấy."""
+    return seeded_users["primary"].id
+
+
+@pytest.fixture(scope="session")
+def test_product(owner_user_id):
     """Product dùng chung cho mọi test seed feedback (plan 21: product_id NOT
     NULL). Idempotent — test suite rerun không nhân bản; KHÔNG xoá khi teardown
     (row 1 row vô hại, tránh race giữa các suite song song)."""
@@ -136,8 +155,13 @@ def test_product():
             product = Product(
                 name=TEST_PRODUCT_NAME,
                 description="Product fixture cho test suite (plan 21).",
+                owner_id=owner_user_id,
             )
             db.add(product)
+            db.commit()
+            db.refresh(product)
+        elif product.owner_id != owner_user_id:
+            product.owner_id = owner_user_id
             db.commit()
             db.refresh(product)
         return product

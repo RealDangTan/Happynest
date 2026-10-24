@@ -18,6 +18,7 @@ from sqlalchemy import func, select
 from app.db.session import SessionLocal
 from app.models.cluster import Cluster
 from app.models.feedback import Feedback
+from app.models.user import User
 from app.services.embedder import store_embedding
 from tests.conftest import SEED_EMAILS, TEST_PASSWORDS
 
@@ -77,6 +78,24 @@ def demo_rows(test_product):
         db.commit()
 
 
+def _visible_cluster_count() -> int:
+    """Số cụm CÓ member thuộc product của test-primary — GET /api/clusters từ
+    isolation 2026-10-22 ẩn cụm không còn member trong workspace của mình."""
+    from app.models.product import Product
+
+    with SessionLocal() as db:
+        owner = db.scalars(
+            select(User).where(User.email == SEED_EMAILS["primary"])
+        ).one()
+        owned = select(Product.id).where(Product.owner_id == owner.id)
+        return db.scalar(
+            select(func.count(func.distinct(Feedback.cluster_id))).where(
+                Feedback.cluster_id.is_not(None),
+                Feedback.product_id.in_(owned),
+            )
+        )
+
+
 def _embedded_count() -> int:
     with SessionLocal() as db:
         return db.scalar(
@@ -103,8 +122,7 @@ def test_clusters_run_then_list_idempotent(client: TestClient, demo_rows) -> Non
         body1["assigned_count"] + body1["unassigned_count"] == embedded_total
     ), body1
 
-    with SessionLocal() as db:
-        n_clusters_1 = db.scalar(select(func.count()).select_from(Cluster))
+    n_clusters_1 = _visible_cluster_count()
 
     # ---- GET /api/clusters shape C1 field-by-field + sort mặc định ----
     rg = client.get("/api/clusters", headers=auth)
@@ -135,9 +153,9 @@ def test_clusters_run_then_list_idempotent(client: TestClient, demo_rows) -> Non
     assert body2["clusters_upserted"] == body1["clusters_upserted"], (
         "số cụm giữa 2 run phải ổn định (cùng data, cùng thuật toán)"
     )
-    with SessionLocal() as db:
-        n_clusters_2 = db.scalar(select(func.count()).select_from(Cluster))
-    assert n_clusters_2 == n_clusters_1, "rerun không được nhân bản row cluster"
+    assert _visible_cluster_count() == n_clusters_1, (
+        "rerun không được nhân bản row cluster"
+    )
     # membership không mồ côi: mọi feedback.cluster_id trỏ cluster tồn tại
     with SessionLocal() as db:
         orphan = db.scalar(

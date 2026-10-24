@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import (
     get_current_user,
     get_db,
+    owned_product_ids,
     product_or_404,
 )
 from app.models.analysis_run import AnalysisRun
@@ -64,17 +65,18 @@ _BUSY_STATUSES = {ImportStatus.mapping_generating, ImportStatus.importing}
 def _get_import_or_404(
     session: Session,
     import_id: uuid.UUID,
+    user: User,
     *,
     with_for_update: bool = False,
 ) -> Import:
-    """Load an existing import; missing rows return 404."""
+    """Load an import owned by `user`; missing or foreign rows return 404."""
     stmt = select(Import).where(Import.id == import_id)
     if with_for_update:
         stmt = stmt.with_for_update()
     import_row = session.scalar(stmt)
     if import_row is None:
         raise HTTPException(status_code=404, detail="Import không tồn tại.")
-    product_or_404(session, import_row.product_id)
+    product_or_404(session, import_row.product_id, user)
     return import_row
 
 
@@ -83,6 +85,7 @@ def create_import(
     file: UploadFile = File(...),
     product_id: uuid.UUID | None = Form(default=None),
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportOut:
     """Upload CSV → sanitized deterministic profile. This is a free action."""
     if not (file.filename or "").lower().endswith(".csv"):
@@ -94,11 +97,11 @@ def create_import(
         from app.services.ingest_service import get_default_product
 
         try:
-            product_id = get_default_product(session).id
+            product_id = get_default_product(session, current_user.id).id
         except LookupError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     else:
-        product_or_404(session, product_id)
+        product_or_404(session, product_id, current_user)
 
     raw = file.file.read()
     try:
@@ -128,11 +131,16 @@ def list_imports(
     product_id: uuid.UUID | None = Query(default=None),
     statuses: list[ImportStatus] | None = Query(default=None, alias="status"),
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportListOut:
     conditions = []
     if product_id is not None:
-        product_or_404(session, product_id)
+        product_or_404(session, product_id, current_user)
         conditions.append(Import.product_id == product_id)
+    else:
+        conditions.append(
+            Import.product_id.in_(owned_product_ids(session, current_user))
+        )
     if statuses:
         conditions.append(Import.status.in_(statuses))
     attention_order = case(
@@ -169,8 +177,9 @@ def list_imports(
 def get_import_preview(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportPreviewOut:
-    import_row = _get_import_or_404(session, import_id)
+    import_row = _get_import_or_404(session, import_id, current_user)
     return ImportPreviewOut(
         id=import_row.id,
         original_filename=import_row.original_filename,
@@ -183,8 +192,9 @@ def get_import_preview(
 def get_import(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportOut:
-    import_row = _get_import_or_404(session, import_id)
+    import_row = _get_import_or_404(session, import_id, current_user)
     return ImportOut.model_validate(import_row)
 
 
@@ -192,9 +202,10 @@ def get_import(
 def get_import_mapping(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> MappingProposalOut:
     """Proposal mapping của import (Gate #1 input)."""
-    import_row = _get_import_or_404(session, import_id)
+    import_row = _get_import_or_404(session, import_id, current_user)
     try:
         return get_proposal(import_row)
     except ImportStateError as exc:
@@ -206,10 +217,11 @@ def propose_import_mapping(
     import_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Explicit paid gate. A row lock prevents duplicate provider jobs."""
     import_row = _get_import_or_404(
-        session, import_id, with_for_update=True
+        session, import_id, current_user, with_for_update=True
     )
     try:
         import_service.begin_mapping_proposal(session, import_row)
@@ -226,9 +238,10 @@ def propose_import_mapping(
 def cancel_import(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportOut:
     import_row = _get_import_or_404(
-        session, import_id, with_for_update=True
+        session, import_id, current_user, with_for_update=True
     )
     try:
         import_service.cancel_import_file(import_row)
@@ -254,7 +267,7 @@ def decide_import_mapping(
     BackgroundTasks; FE poll `GET /api/imports/{id}` tới status imported/failed
     rồi đọc `report`. 409 khi import không ở mapping_review; 422 decision sai.
     """
-    import_row = _get_import_or_404(session, import_id)
+    import_row = _get_import_or_404(session, import_id, user)
     try:
         final_map, meta_fields = begin_mapping_decision(session, import_row, body.decisions)
     except ImportStateError as exc:
@@ -293,11 +306,12 @@ def decide_import_mapping(
 def delete_import(
     import_id: uuid.UUID,
     session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """Hard delete cả lô import: feedback + analysis_runs (+ evidence,
     llm_call_logs, insights tham chiếu run) — db nhẹ thật sau import nhầm.
     409 khi import đang có job nền chạy."""
-    import_row = _get_import_or_404(session, import_id)
+    import_row = _get_import_or_404(session, import_id, current_user)
     if import_row.status in _BUSY_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

@@ -100,6 +100,45 @@ def test_pool_only_uncategorized_or_low_confidence(rec_env) -> None:
     assert refs == ["pool-low", "pool-uncat"]
 
 
+def test_recommend_sanitizes_llm_output(rec_env, monkeypatch) -> None:
+    """v3 guard chương trình: LLM đề xuất topic trùng taxonomy hiện có /
+    trùng đề xuất khác / parent == name / parent lạ → bị lọc ở tầng service
+    trước khi tới hàng chờ duyệt (model nhỏ vẫn vi phạm prompt)."""
+    _seed_feedback(rec_env.id, "san-1", {"topics": [], "uncategorized": True})
+    _seed_feedback(rec_env.id, "san-2", {"topics": [], "uncategorized": True})
+    with SessionLocal() as db:
+        db.add(Taxonomy(product_id=rec_env.id, name="Sync note-taking chậm",
+                        slug="sync_note_taking_cham", kind="canonical", status="active"))
+        db.commit()
+
+    def _fake_chat(system, user, schema, **kwargs):
+        assert schema is TopicRecommendationOut
+        return TopicRecommendationOut(recommendations=[
+            # trùng hiện có (khác hoa/thường) → drop
+            TopicRecommendation(name="sync Note-Taking chậm", parent=None,
+                                evidence_count=2),
+            # parent == name → giữ topic, bỏ neo parent
+            TopicRecommendation(name="Quá nhiều quảng cáo",
+                                parent="Quá nhiều quảng cáo", evidence_count=2),
+            # parent lạ → bỏ neo parent
+            TopicRecommendation(name="Đồng bộ ghi chú", parent="Ghost",
+                                evidence_count=2),
+            # trùng đề xuất khác → drop
+            TopicRecommendation(name="Đồng bộ ghi chú", parent=None,
+                                evidence_count=1),
+        ])
+
+    monkeypatch.setattr(taxonomy_service, "chat_structured", _fake_chat)
+    with SessionLocal() as db:
+        product = db.get(Product, rec_env.id)
+        result, pool_count = taxonomy_service.recommend_topics(db, product)
+
+    assert pool_count == 2
+    recs = result.recommendations
+    assert [r.name for r in recs] == ["Quá nhiều quảng cáo", "Đồng bộ ghi chú"]
+    assert all(r.parent is None for r in recs)
+
+
 def test_recommend_stateless_and_apply_creates_nodes(rec_env, monkeypatch) -> None:
     with SessionLocal() as db:
         product = db.get(Product, rec_env.id)
@@ -192,16 +231,18 @@ def test_recommend_routes_and_re_enrich(client, rec_env, monkeypatch) -> None:
     assert again.json()["released"] == 0
 
 
-def test_second_account_can_recommend(client, rec_env, monkeypatch) -> None:
+def test_other_account_cannot_recommend(client, rec_env, monkeypatch) -> None:
+    """Isolation 2026-10-22: account khác không recommend được trên product
+    của mình (404 như thể product không tồn tại)."""
     monkeypatch.setattr(taxonomy_service, "chat_structured",
                         lambda *args, **kwargs: TopicRecommendationOut(recommendations=[]))
-    ops = _login(client, "secondary")
+    other = _login(client, "secondary")
     resp = client.post(
         "/api/taxonomies/recommend",
         json={"product_id": str(rec_env.id)},
-        headers=ops,
+        headers=other,
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 404, resp.text
 
 
 def test_reset_uncategorized_service_direct(rec_env) -> None:

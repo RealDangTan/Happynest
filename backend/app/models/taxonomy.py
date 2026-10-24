@@ -24,7 +24,11 @@ class Taxonomy(Base):
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("taxonomies.id"), nullable=True
     )
+    # Canonical tiếng Anh (2026-10-23 — đảo quyết định 2026-10-22): nhãn codebook
+    # nhất quán cho classify, không phụ thuộc ngôn ngữ feedback.
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # Tên hiển thị tiếng Việt cho UI (FE hiển thị `name_vi ?? name`).
+    name_vi: Mapped[str | None] = mapped_column(String(100), nullable=True)
     # Plan 31: id ổn định cho topic label ("payment.payment_failure") — BẤT BIẾN
     # khi rename `name`. Unique (product_id, slug) WHERE NOT NULL (migration 0016).
     slug: Mapped[str | None] = mapped_column(String(200), nullable=True)

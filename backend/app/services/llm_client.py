@@ -166,20 +166,18 @@ def _record_attempt(  # noqa: PLR0913 — metadata call đủ đầy quan trọn
     except Exception as exc:  # noqa: BLE001
         logger.warning("trace layer failed: %s", type(exc).__name__)
     try:
-        with session_factory() as session:
-            tracing.write_llm_call_log(
-                session,
-                analysis_run_id=analysis_run_id,
-                feedback_id=feedback_id,
-                call_type=call_type,
-                prompt_version=prompt_version,
-                model=model,
-                latency_ms=latency_ms,
-                prompt_tokens=usage["prompt"] if usage else None,
-                completion_tokens=usage["completion"] if usage else None,
-                error=error_short,
-            )
-            session.commit()  # hợp đồng writer: caller tự commit
+        tracing.record_call_log(
+            session_factory,
+            analysis_run_id=analysis_run_id,
+            feedback_id=feedback_id,
+            call_type=call_type,
+            prompt_version=prompt_version,
+            model=model,
+            latency_ms=latency_ms,
+            prompt_tokens=usage["prompt"] if usage else None,
+            completion_tokens=usage["completion"] if usage else None,
+            error=error_short,
+        )
     except Exception as exc:  # noqa: BLE001 — DB log fail không được chết call chính
         logger.error("llm_call_logs write failed: %s: %s", type(exc).__name__, exc)
 
@@ -340,12 +338,7 @@ def _schema_for(schema: type[BaseModel]) -> dict:
     """JSON schema phẳng cho Mode A. Taxonomy có bản tay tối ưu strict-mode;
     schema khác dùng model_json_schema chung (đủ chuẩn OpenAI strict)."""
     if schema not in _SCHEMA_CACHE:
-        from app.schemas.enrichment import (
-            BatchEnrichmentOut,
-            EnrichmentOut,
-            strict_batch_enrichment_schema,
-            strict_enrichment_schema,
-        )
+        from app.schemas.enrichment import EnrichmentOut, strict_enrichment_schema
         from app.schemas.taxonomy import (
             Classification,
             TaxonomyProposalOut,
@@ -363,8 +356,6 @@ def _schema_for(schema: type[BaseModel]) -> dict:
             _SCHEMA_CACHE[schema] = strict_topic_recommendation_schema()
         elif schema is EnrichmentOut:
             _SCHEMA_CACHE[schema] = strict_enrichment_schema()
-        elif schema is BatchEnrichmentOut:
-            _SCHEMA_CACHE[schema] = strict_batch_enrichment_schema()
         else:
             _SCHEMA_CACHE[schema] = schema.model_json_schema()
     return _SCHEMA_CACHE[schema]

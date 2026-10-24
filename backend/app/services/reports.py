@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.models.cluster import Cluster
 from app.models.enums import Sentiment, Severity
+from app.models.feedback import Feedback
 from app.services.clustering import sample_feedback_ids_by_cluster
 
 _TOP_CATEGORIES_LIMIT = 10
@@ -68,8 +69,8 @@ def build_summary(db: Session, days: int, now: datetime, product_ids=None) -> di
     Số round-trip được siết tối đa (pooler Supabase có RTT đáng kể):
     totals + 2 bộ key severity/sentiment trong MỘT select FILTER; query
     samples chỉ chạy khi emerging khác rỗng.
-    `product_ids` (optional business filter): chỉ aggregate feedback thuộc các product
-    này; None = toàn bộ dữ liệu dùng chung.
+    `product_ids` (business filter): chỉ aggregate feedback thuộc các product
+    này; None = không lọc (legacy/toàn hệ thống).
     """
     cut = now - timedelta(days=days)
     params: dict = {"cut": cut}

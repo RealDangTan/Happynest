@@ -9,6 +9,7 @@ mỗi thao tác mở saver riêng. Background daemon thread qua BackgroundTasks.
 import logging
 import threading
 import uuid
+from time import monotonic
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -60,13 +61,14 @@ def start_understand_run(
                 product_id,
                 {"question": question, "trigger_type": trigger_type},
             )
-        except Exception:  # noqa: BLE001 — background thread không được nổ process
+        except Exception as exc:  # noqa: BLE001 — background thread không được nổ process
             logger.exception("understand run %s crashed", run.id)
             with SessionLocal() as s:
                 r = s.get(AnalysisRun, run.id)
                 if r is not None and r.status == RunStatus.running:
                     r.status = RunStatus.failed
-                    r.error = "understand graph crashed (see log)"
+                    # FE hiện thẳng message này (Activity trace) — nêu rõ loại lỗi
+                    r.error = f"understand graph crashed: {type(exc).__name__}: {exc}"[:500]
                     r.completed_at = datetime.now(timezone.utc)
                     s.commit()
 
@@ -114,7 +116,18 @@ def mark_stale_running_failed(max_age_minutes: int = 30) -> int:
 
 
 def _thread_config(run_id: uuid.UUID) -> dict:
-    return {"configurable": {"thread_id": f"understand-{run_id}"}}
+    """Config LangGraph cho cả start lẫn resume.
+
+    recursion_limit PHẢI tính từ MAX_ITERATIONS: mỗi vòng tool-loop tốn 3
+    super-step (planner→dispatch→evaluator), cộng load_context + synthesizer +
+    persist_insight. Mặc định 25 của LangGraph CHẠM NGƯỠNG đúng ở vòng kế cuối
+    → GraphRecursionError ngay lúc planner buộc synthesize → run failed mà
+    không có insight (loop "vô tận" rồi chả ra gì)."""
+    steps = 3 * get_settings().UNDERSTAND_MAX_ITERATIONS + 10
+    return {
+        "recursion_limit": max(steps, 25),
+        "configurable": {"thread_id": f"understand-{run_id}"},
+    }
 
 
 @observe_pipeline("understand")
@@ -208,10 +221,11 @@ def resume_with_decision(run_id: uuid.UUID, payload: dict) -> dict:
     return run_on_selector_loop(_flow)
 
 
-def get_run_snapshot(run_id: uuid.UUID) -> dict | None:
+def _load_run_snapshot(run_id: uuid.UUID) -> dict | None:
     """Interrupt payload (Gate #2) nếu graph đang đậu chờ human; None nếu không."""
     if not ensure_checkpointer_ready():
         return None
+
 
     async def _flow():
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -244,3 +258,26 @@ def get_run_snapshot(run_id: uuid.UUID) -> dict | None:
     except Exception:  # noqa: BLE001 — GET status không được nổ
         logger.exception("get_run_snapshot fail")
         return None
+
+
+_SNAPSHOTS: dict[uuid.UUID, tuple[float, dict | None]] = {}
+_SNAPSHOT_LOCK = threading.Lock()
+
+
+def invalidate_snapshot(run_id: uuid.UUID) -> None:
+    with _SNAPSHOT_LOCK:
+        _SNAPSHOTS.pop(run_id, None)
+
+
+def get_run_snapshot(run_id: uuid.UUID) -> dict | None:
+    """Short-lived read cache; checkpoint remains authoritative across restarts."""
+    with _SNAPSHOT_LOCK:
+        cached = _SNAPSHOTS.get(run_id)
+        if cached and cached[0] > monotonic():
+            return cached[1]
+    payload = _load_run_snapshot(run_id)
+    with _SNAPSHOT_LOCK:
+        if len(_SNAPSHOTS) >= 256:
+            _SNAPSHOTS.pop(next(iter(_SNAPSHOTS)))
+        _SNAPSHOTS[run_id] = (monotonic() + 3, payload)
+    return payload

@@ -1,9 +1,10 @@
-"""Integration plan 32 — runner v3 idempotent/resumable với enricher mock.
+"""Integration plan 32 + v4 singular — runner idempotent/resumable với enricher mock.
 
 Thay thế suite `test_classifier_idempotency` cũ (classifier bị strip):
-- run batch hoàn tất, `ai_analysis` khớp preset enrich v3 trên từng item;
-- chunk fail (LLMStructureError) → unclaim + failed_count; gọi lại `run_analysis`
-  RESUME cùng run, không xử lý lại item đã xong.
+- run singular (v4 — owner 2026-10-22: bỏ batch chat) hoàn tất, `ai_analysis`
+  khớp preset enrich v3 trên từng item, MỖI item đúng 1 enrich call;
+- item fail (LLMStructureError) → unclaim + failed_count; gọi lại
+  `run_analysis` RESUME cùng run, không xử lý lại item đã xong.
 Self-seeding: import + feedback riêng (`source="test-enrich"`), dọn trong teardown.
 """
 
@@ -85,7 +86,7 @@ def _seed_rows(product_id, import_id, run_id, n):
             yield fb.id
 
 
-def test_batch_enrich_completes_and_shape_matches(test_product, enrich_env, monkeypatch) -> None:
+def test_singular_run_completes_one_call_per_item(test_product, enrich_env, monkeypatch) -> None:
     with SessionLocal() as db:
         imp = Import(
             product_id=test_product.id,
@@ -103,7 +104,7 @@ def test_batch_enrich_completes_and_shape_matches(test_product, enrich_env, monk
             embedding_model="mock-embed",
             import_id=imp.id,
             mode="batch",
-            chunk_size=3,
+            chunk_size=1,
             total_count=7,
         )
         db.add(run)
@@ -112,24 +113,28 @@ def test_batch_enrich_completes_and_shape_matches(test_product, enrich_env, monk
         enrich_env["import_id"], enrich_env["run_id"] = imp.id, run.id
         ids = list(_seed_rows(test_product.id, imp.id, run.id, 7))
     monkeypatch.setattr(
-        taxonomy_service, "get_taxonomy_labels", lambda *a, **k: [("nhãn-test", "Nhãn test")]
+        taxonomy_service, "get_taxonomy_labels", lambda *a, **k: [("nhãn-test", "Nhãn test", "Nhãn test")]
     )
 
-    calls: list[int] = []
+    calls: list[uuid.UUID] = []
+    embeds: list[str] = []
 
-    def fake_enrich(items, **kwargs):
-        calls.append(len(items))
+    def fake_enrich(text, labels, *, feedback_id=None, analysis_run_id=None, **kwargs):
+        calls.append(feedback_id)
         assert kwargs.get("taxonomy_version") is not None
-        return {fid: dict(_ENRICHMENT) for fid, _ in items}
+        return dict(_ENRICHMENT)
 
-    monkeypatch.setattr(analysis_runner, "enrich_feedback_batch", fake_enrich)
+    monkeypatch.setattr(analysis_runner, "enrich_feedback", fake_enrich)
     monkeypatch.setattr(
-        analysis_runner, "embed_texts", lambda texts: [[0.0] * 1536 for _ in texts]
+        analysis_runner, "embed_one", lambda text: embeds.append(text) or [0.0] * 1536
     )
 
     analysis_runner.run_analysis(enrich_env["run_id"])
 
-    assert calls == [3, 3, 1]  # chunk_size=3, 7 items — batch đúng Gregory pattern
+    # v4 singular: 7 item = 7 enrich call + 7 embed call, đúng thứ tự, đủ feedback_id
+    assert len(calls) == 7
+    assert set(calls) == set(ids)
+    assert len(embeds) == 7
     with SessionLocal() as db:
         finished = db.get(AnalysisRun, enrich_env["run_id"])
         assert finished.status == RunStatus.completed
@@ -143,7 +148,7 @@ def test_batch_enrich_completes_and_shape_matches(test_product, enrich_env, monk
             assert row.embedding is not None or row.has_embedding is False
 
 
-def test_chunk_fail_unclaims_then_resume_completes(test_product, enrich_env, monkeypatch) -> None:
+def test_item_fail_unclaims_then_resume_completes(test_product, enrich_env, monkeypatch) -> None:
     with SessionLocal() as db:
         imp = Import(
             product_id=test_product.id,
@@ -161,7 +166,7 @@ def test_chunk_fail_unclaims_then_resume_completes(test_product, enrich_env, mon
             embedding_model="mock-embed",
             import_id=imp.id,
             mode="batch",
-            chunk_size=2,
+            chunk_size=1,
             total_count=4,
         )
         db.add(run)
@@ -171,35 +176,28 @@ def test_chunk_fail_unclaims_then_resume_completes(test_product, enrich_env, mon
         list(_seed_rows(test_product.id, imp.id, run.id, 4))
     monkeypatch.setattr(taxonomy_service, "get_taxonomy_labels", lambda *a, **k: [])
     monkeypatch.setattr(
-        analysis_runner, "embed_texts", lambda texts: [[0.0] * 1536 for _ in texts]
+        analysis_runner, "embed_one", lambda text: [0.0] * 1536
     )
 
     from app.services.llm_client import LLMStructureError
 
     state = {"calls": 0}
 
-    def flaky_enrich(items, **kwargs):
+    def flaky_enrich(text, labels, *, feedback_id=None, **kwargs):
         state["calls"] += 1
-        if state["calls"] == 1:
+        if state["calls"] <= 2:
             raise LLMStructureError("mock provider junk")
-        return {fid: dict(_ENRICHMENT) for fid, _ in items}
+        return dict(_ENRICHMENT)
 
-    monkeypatch.setattr(analysis_runner, "enrich_feedback_batch", flaky_enrich)
-    # mode="selected" đi đường item đơn — phải mock NHAU ĐẦY ĐỦ (quy tắc:
-    # test tự động KHÔNG BAO GIỜ gọi LLM thật).
-    monkeypatch.setattr(
-        analysis_runner,
-        "enrich_feedback",
-        lambda text, labels, **kwargs: dict(_ENRICHMENT),
-    )
+    monkeypatch.setattr(analysis_runner, "enrich_feedback", flaky_enrich)
 
-    # Lượt 1: chunk đầu fail → unclaim + failed_count durable, run completed
+    # Lượt 1: 2 item đầu fail → unclaim + failed_count durable, run completed
     # với phần còn lại (2/4 fail < 50% → không dừng sớm).
     analysis_runner.run_analysis(enrich_env["run_id"])
     with SessionLocal() as db:
         run = db.get(AnalysisRun, enrich_env["run_id"])
         assert run.status == RunStatus.completed
-        assert run.failed_count == 2  # plan 32 fix: KHÔNG còn bị refresh discard
+        assert run.failed_count == 2
         assert run.processed_count == 2
         done = db.scalars(
             select(Feedback).where(
@@ -239,6 +237,11 @@ def test_chunk_fail_unclaims_then_resume_completes(test_product, enrich_env, mon
             row.analysis_run_id = run2_id
         db.commit()
 
+    monkeypatch.setattr(
+        analysis_runner,
+        "enrich_feedback",
+        lambda text, labels, **kwargs: dict(_ENRICHMENT),
+    )
     analysis_runner.run_analysis(run2_id)
     with SessionLocal() as db:
         run2 = db.get(AnalysisRun, run2_id)

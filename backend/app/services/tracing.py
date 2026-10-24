@@ -19,6 +19,9 @@ thành no-op, app vẫn chạy bình thường (tiêu chí nghiệm thu phase 07
 """
 
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
+from threading import Lock
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -31,6 +34,36 @@ from app.models.llm_call_log import LlmCallLog
 logger = get_logger(__name__)
 
 _langfuse: Any | None = None  # client singleton (Any để import-time không đụng SDK)
+_langfuse_lock = Lock()
+_call_capture: ContextVar[tuple[list[dict], Any, Any] | None] = ContextVar("call_capture", default=None)
+
+
+@contextmanager
+def capture_call_logs(*, analysis_run_id=None, feedback_id=None):
+    """Worker-local metadata only; caller persists it with the item's result.
+
+    ContextVars isolate concurrent workers and nested scopes. No prompt/response
+    is buffered, and callers outside this context retain immediate log commits.
+    """
+    rows: list[dict] = []
+    token = _call_capture.set((rows, analysis_run_id, feedback_id))
+    try:
+        yield rows
+    finally:
+        _call_capture.reset(token)
+
+
+def record_call_log(session_factory, **metadata) -> None:
+    capture = _call_capture.get()
+    if capture is not None:
+        rows, run_id, feedback_id = capture
+        metadata["analysis_run_id"] = metadata.get("analysis_run_id") or run_id
+        metadata["feedback_id"] = metadata.get("feedback_id") or feedback_id
+        rows.append(metadata)
+        return
+    with session_factory() as session:
+        write_llm_call_log(session, **metadata)
+        session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -45,14 +78,15 @@ def get_langfuse() -> Any | None:
         return None
     if not settings.LANGFUSE_PUBLIC_KEY or not settings.LANGFUSE_SECRET_KEY:
         return None
-    if _langfuse is None:
-        from langfuse import Langfuse  # import muộn — không tốn gì khi kill-switch
+    with _langfuse_lock:
+        if _langfuse is None:
+            from langfuse import Langfuse  # import muộn — không tốn gì khi kill-switch
 
-        _langfuse = Langfuse(
-            public_key=settings.LANGFUSE_PUBLIC_KEY,
-            secret_key=settings.LANGFUSE_SECRET_KEY,
-            host=settings.LANGFUSE_BASE_URL,
-        )
+            _langfuse = Langfuse(
+                public_key=settings.LANGFUSE_PUBLIC_KEY,
+                secret_key=settings.LANGFUSE_SECRET_KEY,
+                host=settings.LANGFUSE_BASE_URL,
+            )
     return _langfuse
 
 

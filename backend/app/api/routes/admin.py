@@ -5,7 +5,9 @@ Lịch sử: file gốc chứa clusters + insights + reports (Phase 14–16). Re
 cùng bảng cũ — insights mới đến ở plan 25 (UNDERSTAND), KPIs ở plan 27.
 Giữ lại: POST /clusters/run + GET /clusters (C1/C5) + GET /reports/summary (C4).
 
-Tất cả endpoint yêu cầu đăng nhập; không phân quyền theo tài khoản.
+Tất cả endpoint yêu cầu đăng nhập và mặc định scope theo product của chính
+tài khoản (isolation — decisions.md 2026-10-22). Ngoại lệ ghi nhận rõ:
+POST /clusters/run và GET /reports/kpis vẫn toàn cục (batch job / KPI hệ thống).
 """
 
 import time
@@ -19,9 +21,11 @@ from sqlalchemy.orm import Session
 from app.api.deps import (
     get_current_user,
     get_db,
+    owned_product_ids,
     product_or_404,
 )
 from app.models.cluster import Cluster
+from app.models.user import User
 from app.core.config import get_settings
 from app.services.impact_service import run_impact_checks
 from pydantic import BaseModel
@@ -69,9 +73,10 @@ class ImpactRunOut(BaseModel):
 def run_product_impact(
     body: ImpactRunIn,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImpactRunOut:
     """Measure eligible actions for exactly one product; no LLM calls."""
-    product_or_404(db, body.product_id)
+    product_or_404(db, body.product_id, current_user)
     return ImpactRunOut(
         product_id=body.product_id,
         window_days=get_settings().IMPACT_WINDOW_DAYS,
@@ -109,9 +114,14 @@ def list_clusters(
         pattern="^(feedback_count|growth_ratio|recent)$",
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ClustersListOut:
     """Danh sách cụm theo C1; chưa từng chạy clustering → items rỗng (200).
-    Dữ liệu dùng chung cho mọi tài khoản đăng nhập."""
+    Chỉ cụm CÓ member thuộc product của chính tài khoản (isolation)."""
+    pids = owned_product_ids(db, current_user)
+    if not pids:
+        return ClustersListOut(items=[])
+
     clusters = (
         db.execute(
             select(Cluster)
@@ -123,8 +133,10 @@ def list_clusters(
     if not clusters:
         return ClustersListOut(items=[])
 
-    # sample_feedback_ids: helper dùng chung với emerging của reports (C4)
-    samples = sample_feedback_ids_by_cluster(db)
+    # sample_feedback_ids: helper dùng chung với emerging của reports (C4) —
+    # giới hạn member trong product của tài khoản; cụm không có member nào
+    # thuộc product của mình → ẩn.
+    samples = sample_feedback_ids_by_cluster(db, product_ids=pids)
 
     return ClustersListOut(
         items=[
@@ -132,6 +144,7 @@ def list_clusters(
                 update={"sample_feedback_ids": samples.get(c.id, [])}
             )
             for c in clusters
+            if samples.get(c.id)
         ]
     )
 
@@ -140,18 +153,20 @@ def list_clusters(
 def reports_summary(
     days: SummaryWindow = SummaryWindow.W30,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ReportSummaryOut:
     """Báo cáo tổng hợp PM thuần SQL (C4) trên cửa sổ event-time `days` ngày.
 
     Giá trị `days` khác 7/30/90 → FastAPI tự 422; thiếu dữ liệu vẫn 200
     (key 0 / mảng rỗng) — không bao giờ lỗi vì "chưa có cụm".
-    Dữ liệu dùng chung cho mọi tài khoản đăng nhập.
+    Chỉ aggregate feedback thuộc product của chính tài khoản (isolation).
     """
     return ReportSummaryOut.model_validate(
         build_summary(
             db,
             days=int(days),
             now=datetime.now(timezone.utc),
+            product_ids=owned_product_ids(db, current_user),
         )
     )
 

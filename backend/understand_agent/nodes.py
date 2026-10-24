@@ -7,12 +7,16 @@ Safety boundaries (giữ từ graph cũ + §68):
   state; không evidence → limited insight.
 - Budget: đếm llm_call_logs (plan/evaluate/synthesize) TRƯỚC MỖI call LLM —
   hết ngân sách → buộc synthesize.
+- Stop deterministic (planner, KHÔNG tốn plan call): hết iteration/budget,
+  evaluator đủ bằng chứng 2 lần liên tiếp, hoặc planner chọn lại đúng
+  tool+params bước vừa chạy → synthesize ngay.
 - finding vs hypothesis tách confidence (§41); edit text qua Gate #2 được
   RE-SANITIZE trước persist.
 """
 
 import json
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -28,6 +32,7 @@ from app.db.session import SessionLocal
 from app.models.analysis_run import AnalysisRun
 from app.models.cluster import Cluster
 from app.models.evidence import Evidence
+from app.models.feedback import Feedback
 from app.models.enums import LlmCallType, RunStatus
 from app.services.llm_client import LLMStructureError, chat_structured
 from app.services.presidio_service import sanitize
@@ -35,10 +40,13 @@ from understand_agent.state import UnderstandState
 
 logger = logging.getLogger(__name__)
 
-_STATEMENT_MAX = 300
-_PROMPT_STATEMENT_MAX = 200
+_STATEMENT_MAX = 12000
+_PROMPT_STATEMENT_MAX = 6000
 _MAX_CLUSTERS_CONTEXT = 5
 _TOOL_NAMES = sorted(analytics.TOOLS.keys())
+#: Evaluator xác nhận "đủ bằng chứng" đủ N lần liên tiếp → dừng điều tra, không
+#: hỏi planner LLM nữa (chặn vòng plan→evaluate kéo dài dù evidence đã đủ).
+_SUFFICIENT_ROUNDS_TO_STOP = 2
 
 
 def _tool_catalog() -> list[dict[str, Any]]:
@@ -48,7 +56,8 @@ def _tool_catalog() -> list[dict[str, Any]]:
         spec = analytics.TOOLS[name]
         props = spec.input_model.model_json_schema().get("properties", {})
         params = {k: str(v.get("type", "any")) for k, v in props.items()}
-        catalog.append({"tool": name, "description": spec.description, "params": params})
+        catalog.append({"tool": name, "description": spec.description, "params": params,
+                        "input_schema": spec.input_model.model_json_schema()})
     return catalog
 
 
@@ -58,6 +67,80 @@ _TOOL_CATALOG = _tool_catalog()
 def _compact_evaluations(evaluations: list[dict[str, Any]], last_n: int) -> list[dict[str, Any]]:
     keep = ("sufficient_evidence", "contradictions", "new_questions", "data_quality_warning")
     return [{k: ev.get(k) for k in keep} for ev in evaluations[-last_n:]]
+
+
+def _consecutive_sufficient(evaluations: list[dict[str, Any]]) -> int:
+    """Số lần 'sufficient_evidence=True' liên tiếp tính từ cuối."""
+    count = 0
+    for ev in reversed(evaluations):
+        if ev.get("sufficient_evidence") is True:
+            count += 1
+        else:
+            break
+    return count
+
+
+def _action_sig(action: dict[str, Any] | None) -> str:
+    """Chữ ký canonical (tool + params) — dùng để phát hiện bước lặp lại đúng
+    bước vừa chạy (cùng tool + cùng params → kết quả sẽ giống hệt, không có
+    evidence mới)."""
+    if not isinstance(action, dict):
+        return ""
+    params = action.get("params") or {}
+    spec = analytics.TOOLS.get(action.get("tool"))
+    if spec is not None:
+        try:
+            params = spec.input_model.model_validate(params).model_dump(mode="json")
+        except ValueError:
+            pass
+    return json.dumps(
+        {"tool": action.get("tool"), "params": params},
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+
+
+def _opener_action(state: UnderstandState) -> dict[str, Any]:
+    """Bước mở màn deterministic khi CHƯA có evidence nào.
+
+    Model yếu có xu hướng chọn synthesize ngay ở iteration 0 → investigation
+    'không điều tra' và insight rỗng. Chính sách §69 aggregate-first: mở bằng
+    aggregate theo chiều dữ liệu đầu tiên của schema; nếu schema chưa có field
+    nào thì get_schema (0 params, luôn chạy được)."""
+    fields = (state.get("product_context") or {}).get("schema_fields") or []
+    first_key = next(
+        (f.get("key") for f in fields if isinstance(f, dict) and f.get("key")), None
+    )
+    if first_key:
+        return {
+            "action": "tool",
+            "tool": "aggregate_feedback",
+            "params": {"group_by": first_key},
+            "objective": (
+                f"Chưa có evidence — aggregate toàn bộ feedback theo '{first_key}' "
+                "(bắt buộc ở bước đầu tiên)."
+            ),
+        }
+    return {
+        "action": "tool",
+        "tool": "get_schema",
+        "params": {},
+        "objective": "Chưa có evidence — xem schema và coverage trước (bắt buộc ở bước đầu tiên).",
+    }
+
+
+def _usable_evidence(item: dict) -> bool:
+    if item.get("ok") is False:
+        return False
+    payload = item.get("payload")
+    if payload is None:  # older checkpoints and statement-only evidence
+        return bool(item.get("statement"))
+    if not payload:
+        return False
+    for key in ("samples", "matches", "rows", "dimensions", "segments", "results"):
+        if key in payload and not payload[key]:
+            return False
+    return True
 
 
 def _llm_budget_used(db: Session, run_id: uuid.UUID) -> int:
@@ -108,6 +191,13 @@ def load_context(state: UnderstandState) -> dict[str, Any]:
                 }
                 for c in db.scalars(
                     select(Cluster)
+                    .where(
+                        Cluster.id.in_(select(Feedback.cluster_id).where(Feedback.product_id == product_id)),
+                        ~select(Feedback.id).where(
+                            Feedback.cluster_id == Cluster.id,
+                            Feedback.product_id != product_id,
+                        ).exists(),
+                    )
                     .order_by(Cluster.suggested_priority.desc().nullslast())
                     .limit(_MAX_CLUSTERS_CONTEXT)
                 ).all()
@@ -129,23 +219,60 @@ class PlannerOut(BaseModel):
 
 
 def planner(state: UnderstandState) -> dict[str, Any]:
-    """LLM chọn bước điều tra kế (§28). Hết iteration/budget → synthesize."""
+    """LLM chọn bước điều tra kế (§28). Stop conditions kiểm tra TRƯỚC khi tốn
+    plan call — thoả điều kiện nào thì buộc synthesize NGAY không gọi LLM:
+
+    - iteration >= UNDERSTAND_MAX_ITERATIONS;
+    - LLM budget đã dùng hết (llm_call_logs plan+evaluate+synthesize);
+    - evaluator xác nhận đủ bằng chứng `_SUFFICIENT_ROUNDS_TO_STOP` lần liên tiếp
+      (chặn vòng plan→evaluate kéo dài vô nghĩa dù evidence đã đủ);
+    """
     settings = get_settings()
     max_iter = settings.UNDERSTAND_MAX_ITERATIONS
     iteration = state.get("iteration", 0)
 
-    force = ""
+    # Iteration cap must work even if the DB is temporarily unavailable.
+    if iteration >= max_iter:
+        return {"next_action": {"action": "synthesize", "params": {},
+                                "objective": f"Buộc tổng hợp: đã đạt MAX_ITERATIONS={max_iter}."}}
     with SessionLocal() as db:
         used = _llm_budget_used(db, uuid.UUID(state["run_id"]))
     budget = state.get("llm_budget", settings.UNDERSTAND_LLM_BUDGET_PER_RUN)
+    evaluations = state.get("evaluations", [])[state.get("review_round_start", 0):]
+    latest = evaluations[-1] if evaluations else {}
+
+    force_reason = ""
     if iteration >= max_iter:
-        force = f"Đã đạt MAX_ITERATIONS={max_iter} — buộc synthesize."
-    elif used >= budget:
-        force = f"Đã hết LLM budget ({used}/{budget}) — buộc synthesize."
+        force_reason = f"đã đạt MAX_ITERATIONS={max_iter}"
+    elif used >= budget - 1:
+        force_reason = f"đã hết LLM budget ({used}/{budget})"
+    elif (state.get("evidence") and latest.get("sufficient_evidence") is True
+          and not latest.get("contradictions") and not latest.get("new_questions")):
+        force_reason = "đã đủ bằng chứng để trả lời câu hỏi"
+    elif _consecutive_sufficient(evaluations) >= _SUFFICIENT_ROUNDS_TO_STOP:
+        force_reason = (
+            "evaluator xác nhận đủ bằng chứng "
+            f"{_SUFFICIENT_ROUNDS_TO_STOP} lần liên tiếp"
+        )
+    if force_reason:
+        return {
+            "next_action": {
+                "action": "synthesize",
+                "params": {},
+                "objective": f"Buộc tổng hợp: {force_reason}.",
+            }
+        }
+
+    sample_action = {"action": "tool", "tool": "representative_feedback", "params": {},
+                     "objective": "Tra cứu trước chưa có dữ liệu; đọc mẫu phản hồi thật của sản phẩm trước khi kết luận."}
+    if (state.get("evidence") and not any(_usable_evidence(e) for e in state["evidence"])
+            and not any(h.get("sig") == _action_sig(sample_action) for h in state.get("tool_history", []))):
+        return {"next_action": sample_action}
 
     user_payload = json.dumps(
         {
             "question": state["question"],
+            "review_feedback": state.get("review_feedback"),
             "trigger_type": state.get("trigger_type", "user_question"),
             "product_context": state["product_context"],
             "evidence_so_far": [
@@ -156,11 +283,11 @@ def planner(state: UnderstandState) -> dict[str, Any]:
                 }
                 for e in state.get("evidence", [])[-5:]
             ],
-            "evaluations": _compact_evaluations(state.get("evaluations", []), 2),
+            "evaluations": _compact_evaluations(evaluations, 2),
             "tool_history": state.get("tool_history", [])[-5:],
             "iteration": iteration,
+            "iteration_limit": max_iter,
             "available_tools": _TOOL_CATALOG,
-            "force": force,
         },
         ensure_ascii=False,
     )
@@ -170,7 +297,10 @@ def planner(state: UnderstandState) -> dict[str, Any]:
         "context đã có, chọn BƯỚC TIẾP: gọi 1 tool phân tích (action='tool', chỉ "
         "định nghĩa params cho tool đó — params PHẢI khớp đúng signature trong "
         "available_tools) hoặc tổng hợp insight khi bằng chứng đã đủ "
-        "(action='synthesize'). Aggregate first, drill down sau (§69). Chỉ trả JSON."
+        "(action='synthesize'). Aggregate first, drill down sau (§69). Nếu "
+        "evidence_so_far đang RỖNG thì action PHẢI là 'tool' — chưa điều tra mà "
+        "chưa tổng hợp là sai. KHÔNG chọn lại đúng tool+params đã chạy ngay trước "
+        "đó — kết quả sẽ giống hệt. Chỉ trả JSON."
     )
     try:
         out = chat_structured(
@@ -185,8 +315,43 @@ def planner(state: UnderstandState) -> dict[str, Any]:
     except LLMStructureError:
         # LLM fail → synthesize luôn nếu có evidence, không thì kết thúc sạch
         next_action = {"action": "synthesize", "params": {}, "objective": "fallback"}
-    if force:
-        next_action["action"] = "synthesize"
+
+    if not state.get("evidence") and next_action.get("action") != "tool":
+        # Chưa chạy tool nào mà đã đòi synthesize (LLM yếu hay thế) → ép mở màn
+        # bằng aggregate-first; synthesize chỉ hợp lệ khi đã có evidence.
+        return {"next_action": _opener_action(state)}
+
+    if next_action.get("action") == "tool" and next_action.get("tool") not in _TOOL_NAMES:
+        # Model chọn action='tool' nhưng thiếu/tên sai (quan sát thật 2026-10-23:
+        # tool=None → dispatch insert evidence source_tool NULL → crash). Tự phục
+        # hồi: chưa có evidence → opener; đã có → synthesize phần đã có.
+        if not state.get("evidence"):
+            return {"next_action": _opener_action(state)}
+        return {
+            "next_action": {
+                "action": "synthesize",
+                "params": {},
+                "objective": (
+                    f"Planner chọn tool không hợp lệ "
+                    f"({next_action.get('tool')!r}) — tổng hợp từ evidence hiện có."
+                ),
+            }
+        }
+
+    if (
+        next_action.get("action") == "tool"
+        and any(_action_sig(next_action) == step.get("sig")
+                for step in state.get("tool_history", []))
+    ):
+        # Planner chọn lại đúng bước vừa chạy — sẽ không có thông tin mới;
+        # tổng hợp luôn thay vì quét thêm vòng plan→evaluate.
+        return {
+            "next_action": {
+                "action": "synthesize",
+                "params": {},
+                "objective": "Bước kế trùng đúng bước vừa chạy — tổng hợp từ evidence hiện có.",
+            }
+        }
     return {"next_action": next_action}
 
 
@@ -214,16 +379,19 @@ def dispatch(state: UnderstandState) -> dict[str, Any]:
             result = {}
             observation = {"error": f"{type(exc).__name__}: {exc}"[:300]}
 
+    # source_tool là NOT NULL — tool thiếu tên/sai (planner lỗi) vẫn phải ghi
+    # được evidence để graph không crash; observation đã mang lỗi cho planner.
+    safe_tool = tool_name if tool_name in analytics.TOOLS else (tool_name or "unknown")
     statement = json.dumps(result, ensure_ascii=False)[:_STATEMENT_MAX] or "no data"
     with SessionLocal() as db:
         evidence = Evidence(
             run_id=run_id,
             product_id=product_id,
             type="tool_result",
-            statement=f"{tool_name}: {statement}"[:_STATEMENT_MAX],
+            statement=f"{safe_tool}: {statement}"[:_STATEMENT_MAX],
             payload={"tool": tool_name, "result": result, "observation": observation},
             coverage=result.get("coverage"),
-            source_tool=tool_name,
+            source_tool=safe_tool,
         )
         db.add(evidence)
         db.commit()
@@ -233,9 +401,10 @@ def dispatch(state: UnderstandState) -> dict[str, Any]:
         "evidence": [
             {
                 "evidence_id": evidence_id,
-                "tool": tool_name,
-                "statement": f"{tool_name}: {statement}",
+                "tool": safe_tool,
+                "statement": f"{safe_tool}: {statement}",
                 "payload": result,
+                "ok": "ok" in observation,
             }
         ],
         "tool_history": [
@@ -243,6 +412,7 @@ def dispatch(state: UnderstandState) -> dict[str, Any]:
                 "tool": tool_name or "unknown",
                 "ok": "ok" in observation,
                 "error": observation.get("error"),
+                "sig": _action_sig(action),
             }
         ],
     }
@@ -262,6 +432,10 @@ class EvaluateOut(BaseModel):
 def evaluator(state: UnderstandState) -> dict[str, Any]:
     """LLM đánh giá evidence mới nhất (§39) — lưu vào state.evaluations."""
     latest = (state.get("evidence") or [{}])[-1]
+    if not _usable_evidence(latest):
+        return {"evaluations": [{"sufficient_evidence": False,
+                                 "data_quality_warning": "Bước tra cứu chưa có dữ liệu khả dụng; không suy ra rằng sản phẩm không có vấn đề."}],
+                "iteration": state.get("iteration", 0) + 1}
     user_payload = json.dumps(
         {
             "question": state["question"],
@@ -275,6 +449,11 @@ def evaluator(state: UnderstandState) -> dict[str, Any]:
         },
         ensure_ascii=False,
     )
+    with SessionLocal() as db:
+        used = _llm_budget_used(db, uuid.UUID(state["run_id"]))
+    if used >= state.get("llm_budget", get_settings().UNDERSTAND_LLM_BUDGET_PER_RUN) - 1:
+        return {"evaluations": [{"sufficient_evidence": False}],
+                "iteration": state.get("iteration", 0) + 1}
     try:
         out = chat_structured(
             "Bạn là điều tra viên khách quan. Đánh giá evidence mới nhất: có hỗ trợ "
@@ -289,7 +468,7 @@ def evaluator(state: UnderstandState) -> dict[str, Any]:
         )
         evaluation = out.model_dump()
     except LLMStructureError:
-        evaluation = {"sufficient_evidence": True, "supports": [], "contradictions": [], "new_questions": []}
+        evaluation = {"sufficient_evidence": False, "supports": [], "contradictions": [], "new_questions": []}
     return {
         "evaluations": [evaluation],
         "iteration": state.get("iteration", 0) + 1,
@@ -313,7 +492,10 @@ class InsightDraft(BaseModel):
 
 def synthesizer(state: UnderstandState) -> dict[str, Any]:
     """Tổng hợp insight draft — evidence whitelist server-side (§38/§42)."""
-    valid_ids = {e["evidence_id"] for e in state.get("evidence", [])}
+    evidence = [e for e in state.get("evidence", []) if _usable_evidence(e)]
+    if not evidence:
+        return {"draft_insight": _limited_insight(state)}
+    valid_ids = {e["evidence_id"] for e in evidence}
     user_payload = json.dumps(
         {
             "question": state["question"],
@@ -324,7 +506,7 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
                     "tool": e["tool"],
                     "statement": e["statement"][:_PROMPT_STATEMENT_MAX],
                 }
-                for e in state.get("evidence", [])
+                for e in evidence
             ],
             "evaluations": _compact_evaluations(state.get("evaluations", []), 5),
             "rules": [
@@ -338,7 +520,11 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
     try:
         out = chat_structured(
             "Tổng hợp evidence-grounded insight cho người quyết định (VoC OS §42). "
-            "Draft CHỈ từ evidence được cung cấp. Chỉ trả JSON khớp schema.",
+            "Draft CHỈ từ evidence được cung cấp. title/finding là PHÁT HIỆN cụ thể "
+            "đọc từ evidence — không lặp lại instructions, không diễn đạt chung "
+            "chung. Mẫu phản hồi và tìm kiếm ngữ nghĩa không đại diện toàn bộ sản phẩm; "
+            "không dùng chúng để khẳng định không có vấn đề/phản hồi. Nêu giới hạn mẫu "
+            "và điều chưa xác minh. Chỉ trả JSON khớp schema.",
             user_payload,
             InsightDraft,
             call_type=LlmCallType.synthesize,
@@ -352,10 +538,24 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
     if draft is None:
         draft = _limited_insight(state)
     else:
-        # Whitelist + fallback: id bịa → loại; rỗng → gán toàn bộ evidence
+        # Whitelist: id bịa → loại
         draft["evidence_ids"] = [e for e in draft["evidence_ids"] if e in valid_ids]
         if not draft["evidence_ids"]:
-            draft["evidence_ids"] = list(valid_ids)
+            if not valid_ids:
+                # Không còn evidence khả dụng → insight trung thực "chưa đủ
+                # bằng chứng", KHÔNG persist draft rỗng/hallucinate (model yếu
+                # từng echo nguyên system prompt làm title với confidence 1.0).
+                draft = _limited_insight(state)
+            else:
+                # Toàn bộ id LLM đưa là bịa → gán toàn bộ evidence thật
+                draft["evidence_ids"] = list(valid_ids)
+    if all(e.get("tool") in {"representative_feedback", "semantic_search"} for e in evidence):
+        if re.search(r"không có (?:phản hồi|bằng chứng|vấn đề)|no (?:user )?(?:feedback|reports|complaints|evidence)",
+                     f"{draft['title']} {draft['finding']}", re.IGNORECASE):
+            draft = _limited_insight(state)
+        else:
+            draft["finding_confidence"] = min(draft["finding_confidence"], .7)
+        draft.setdefault("limitations", []).append("Chỉ dựa trên mẫu phản hồi đã đọc; chưa đại diện toàn bộ sản phẩm.")
     return {"draft_insight": draft}
 
 
@@ -375,7 +575,7 @@ def _limited_insight(state: UnderstandState) -> dict[str, Any]:
         "affected_context": {},
         "impact": [],
         "limitations": ["Investigation dừng sớm — kết luận tạm thời, cần thêm dữ liệu."],
-        "evidence_ids": [e["evidence_id"] for e in state.get("evidence", [])][-5:],
+        "evidence_ids": [e["evidence_id"] for e in state.get("evidence", []) if _usable_evidence(e)][-5:],
     }
 
 
@@ -413,6 +613,7 @@ def persist_insight(state: UnderstandState) -> dict[str, Any]:
     evidence_summaries = [
         {"evidence_id": e["evidence_id"], "statement": e["statement"]}
         for e in state.get("evidence", [])
+        if e["evidence_id"] in draft.get("evidence_ids", [])
     ]
     # LẦN ĐẦU: raise GraphInterrupt TẠI ĐÂY; lần resume: interrupt() trả payload.
     decision = interrupt(
@@ -421,6 +622,7 @@ def persist_insight(state: UnderstandState) -> dict[str, Any]:
             "insight": draft,
             "evidence": evidence_summaries,
             "options": ["approve", "edit", "investigate_more", "reject"],
+            "question": state.get("question"),
         }
     )
     return {"decision": dict(decision), "insights_created": [insight_id]}
@@ -532,5 +734,7 @@ def apply_decision(state: UnderstandState) -> dict[str, Any]:
             "draft_insight": None,
             "iteration": state.get("iteration", 0) + 1,
             "next_action": None,
+            "review_round_start": len(state.get("evaluations", [])),
+            "review_feedback": decision.get("reason"),
         }
     return {"final_status": final_status}

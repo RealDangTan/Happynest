@@ -33,7 +33,7 @@ def _unit_vec(idx: int) -> list[float]:
 
 
 @pytest.fixture()
-def seeded():
+def seeded(owner_user_id):
     """Product DEDICATED (tránh nhiễm data suite khác dùng chung test_product) +
     schema active (2 field) + 6 feedback có embedding tay + data JSONB."""
     with SessionLocal() as db:
@@ -41,8 +41,17 @@ def seeded():
             select(Product).where(Product.name == _PRODUCT_NAME)
         ).first()
         if product is None:
-            product = Product(name=_PRODUCT_NAME, description="analytics suite fixture")
+            product = Product(
+                name=_PRODUCT_NAME,
+                description="analytics suite fixture",
+                owner_id=owner_user_id,
+            )
             db.add(product)
+            db.commit()
+            db.refresh(product)
+        elif product.owner_id != owner_user_id:
+            # Row cũ tạo trước migration 0020 (owner=pm) → về quyền test-primary.
+            product.owner_id = owner_user_id
             db.commit()
             db.refresh(product)
         # dọn rác lần trước

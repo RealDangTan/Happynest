@@ -52,15 +52,23 @@ def _proposal():
 
 
 @pytest.fixture()
-def act_env():
+def act_env(owner_user_id):
     """Product dedicated + insight approved."""
     with SessionLocal() as db:
         product = db.scalars(
             select(Product).where(Product.name == "act-test-product")
         ).first()
         if product is None:
-            product = Product(name="act-test-product", description="act suite")
+            product = Product(
+                name="act-test-product",
+                description="act suite",
+                owner_id=owner_user_id,
+            )
             db.add(product)
+            db.commit()
+            db.refresh(product)
+        elif product.owner_id != owner_user_id:
+            product.owner_id = owner_user_id
             db.commit()
             db.refresh(product)
         db.query(Action).filter(Action.insight_id.in_(

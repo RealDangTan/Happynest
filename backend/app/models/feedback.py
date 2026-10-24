@@ -29,8 +29,12 @@ class Feedback(Base):
 
     @property
     def has_embedding(self) -> bool:
-        """Expose readiness, never the vector itself, to API consumers."""
-        return self.embedding is not None
+        """Expose readiness, never the vector itself, to API consumers.
+
+        Đọc `__dict__` thay vì attr: các endpoint list defer cột `embedding`
+        (perf 2026-10-23) — truy attr sẽ lazy-load 1 query/row (N+1); chưa load
+        → False (list không dùng flag này, detail vẫn load full → đúng)."""
+        return self.__dict__.get("embedding") is not None
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     product_id: Mapped[uuid.UUID] = mapped_column(

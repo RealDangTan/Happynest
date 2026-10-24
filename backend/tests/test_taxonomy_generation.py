@@ -6,7 +6,7 @@ dọn trong fixture (self-seeding rule — taste 2026-09).
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -104,6 +104,99 @@ def test_generate_proposal_prompt_uses_sanitized_only(gen_env, monkeypatch) -> N
     assert "0900999888" not in captured["user"]
     assert captured["kwargs"]["call_type"].value == "taxonomy_generate"
     assert captured["kwargs"]["prompt_version"] == taxonomy_service.PROMPT_VERSION_TAXONOMY
+
+
+def test_generate_proposal_stratifies_across_time_and_dedupes(gen_env, monkeypatch) -> None:
+    """Prompt v5: mẫu phải phủ CẢ khoảng thời gian (không chỉ mới nhất) và
+    gộp trùng lặp — payload kèm corpus_stats cho model biết bối cảnh thật."""
+    import json
+
+    captured: dict = {}
+
+    def _fake_chat(system, user, schema, **kwargs):
+        captured["user"] = user
+        return _FIXTURE_PROPOSAL
+
+    monkeypatch.setattr(taxonomy_service, "chat_structured", _fake_chat)
+
+    now = datetime.now(timezone.utc)
+    old = now - timedelta(days=120)
+    rows = []
+    # 3 feedback cũ + 20 feedback mới (một đợt bug wave) + 1 trùng lặp nguyên văn
+    for i in range(3):
+        rows.append(
+            Feedback(
+                product_id=gen_env.id,
+                source="test-generate",
+                occurred_at=old + timedelta(days=i),
+                raw_content=f"old {i}",
+                feedback_text=f"app crash khi mo file lan {i}",
+            )
+        )
+    for i in range(20):
+        rows.append(
+            Feedback(
+                product_id=gen_env.id,
+                source="test-generate",
+                occurred_at=now - timedelta(hours=i),
+                raw_content=f"new {i}",
+                feedback_text=f"bot tra loi sai thu {i}",
+            )
+        )
+    rows.append(
+        Feedback(
+            product_id=gen_env.id,
+            source="test-generate",
+            occurred_at=now - timedelta(hours=1),
+            raw_content="dup",
+            feedback_text="BOT TRA LOI SAI thu 2 ",  # trùng (casefold+whitespace) bản mới
+        )
+    )
+    with SessionLocal() as db:
+        db.add_all(rows)
+        db.commit()
+        product = db.get(Product, gen_env.id)
+        proposal, sample_count = taxonomy_service.generate_proposal(
+            db, product, sample_size=6
+        )
+
+    payload = json.loads(captured["user"])
+    samples = payload["sample_feedback"]
+    stats = payload["corpus_stats"]
+    assert sample_count == 6
+    # round-robin bucket: sample đầu tiên của mỗi bucket là feedback CŨ
+    # (bucket oldest được duyệt trước) — không bị wave mới nuốt hết mẫu.
+    assert any("crash khi mo file" in s["text"] for s in samples)
+    # trùng lặp nguyên văn bị gộp — unique_texts < tổng rows
+    assert stats["unique_texts"] == 23  # 3 cũ + 20 mới (1 dup gộp)
+    assert stats["duplicates_merged"] == 1
+    assert stats["total_feedback_in_pool"] == 24
+    assert stats["sampled"] == 6
+    assert stats["time_buckets_stratified"] == 6
+    assert set(s for s in stats["sources"]) == {"test-generate"}
+    # mỗi sample kèm metadata thời gian/nguồn cho prompt
+    assert all({"occurred_at", "source", "text"} <= set(s) for s in samples)
+
+
+def test_generate_proposal_empty_corpus_raises(seeded_users) -> None:
+    """Không có feedback nào → 422 từ service (không đốt LLM call bịa taxonomy).
+    Product riêng để không phụ thuộc feedback sót của test khác."""
+    with SessionLocal() as db:
+        product = Product(
+            name=f"gen-empty-{uuid.uuid4().hex[:8]}",
+            owner_id=seeded_users["primary"].id,
+        )
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+        try:
+            with pytest.raises(
+                taxonomy_service.TaxonomyValidationError, match="Chưa có phản hồi"
+            ):
+                taxonomy_service.generate_proposal(db, product)
+        finally:
+            db.delete(product)
+            db.commit()
 
 
 def test_apply_creates_tree_slugs_and_bumps_version(gen_env) -> None:
@@ -205,16 +298,18 @@ def test_routes_generate_and_apply(client, gen_env, monkeypatch) -> None:
     assert tree["total"] == 4
 
 
-def test_second_account_can_generate(client, gen_env, monkeypatch) -> None:
+def test_other_account_cannot_generate(client, gen_env, monkeypatch) -> None:
+    """Isolation 2026-10-22: account khác không generate được trên product
+    của mình (404 như thể product không tồn tại)."""
     monkeypatch.setattr(taxonomy_service, "chat_structured",
                         lambda *args, **kwargs: _FIXTURE_PROPOSAL)
-    ops = _login(client, "secondary")
+    other = _login(client, "secondary")
     resp = client.post(
         "/api/taxonomies/generate",
         json={"product_id": str(gen_env.id)},
-        headers=ops,
+        headers=other,
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 404, resp.text
 
 
 def test_apply_unknown_parent_maps_422(client, gen_env) -> None:

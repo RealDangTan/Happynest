@@ -93,15 +93,23 @@ def _fake_chat_structured(monkeypatch):
 
 
 @pytest.fixture()
-def u_product():
+def u_product(owner_user_id):
     """Product dedicated + schema + 4 feedback có embedding tay."""
     with SessionLocal() as db:
         product = db.scalars(
             select(Product).where(Product.name == _PRODUCT_NAME)
         ).first()
         if product is None:
-            product = Product(name=_PRODUCT_NAME, description="understand suite")
+            product = Product(
+                name=_PRODUCT_NAME,
+                description="understand suite",
+                owner_id=owner_user_id,
+            )
             db.add(product)
+            db.commit()
+            db.refresh(product)
+        elif product.owner_id != owner_user_id:
+            product.owner_id = owner_user_id
             db.commit()
             db.refresh(product)
         db.query(Insight).filter(Insight.product_id == product.id).delete(
