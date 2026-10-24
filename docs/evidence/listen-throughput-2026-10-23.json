@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-23",
+  "timezone": "Asia/Saigon",
+  "method": "One before/after pass; 6 synthetic feedbacks, mocked enrich and embedding each wait 1 second; real Supabase; no paid provider requests",
+  "baseline_runner_sha256": "eadf5617924422523a9bce0affbe9acd98f0bd9c5aa0d13a916fbe3e24d6e3b6",
+  "optimized_runner_sha256": "c42c478322f9bba1bf08e5eb9616163cccaecabd4d03e20e562db6f6f4d44df1",
+  "measurements": [
+    {
+      "name": "before_v4",
+      "items": 6,
+      "wall_s": 38.881,
+      "sql_statements": 41,
+      "commits": 19,
+      "run_attributed_logs": 6
+    },
+    {
+      "name": "after_v5_workers3",
+      "items": 6,
+      "wall_s": 15.323,
+      "sql_statements": 23,
+      "commits": 7,
+      "run_attributed_logs": 12
+    },
+    {
+      "speedup": 2.54,
+      "method": "6 synthetic feedbacks, 1s enrich + 1s embed per item, real Supabase; one pass, no paid providers"
+    }
+  ],
+  "limitations": [
+    "Synthetic provider delays; actual provider throughput not measured",
+    "SQL counts exclude driver-level pre-ping and transaction protocol messages",
+    "Single pass, no statistical confidence interval",
+    "Rows created for the benchmark were removed by exact identifiers"
+  ]
+}
