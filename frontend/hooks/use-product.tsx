@@ -48,7 +48,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         description,
       });
       setProductId(created.id);
-      void qc.invalidateQueries({ queryKey: ["products"] });
+      // Chờ danh sách làm mới để màn kế tiếp thấy ngay product vừa tạo
+      // (không loé "Chọn một product" trong lúc refetch).
+      await qc.invalidateQueries({ queryKey: ["products"] });
       return created;
     },
     [createProductMutation, qc, setProductId],

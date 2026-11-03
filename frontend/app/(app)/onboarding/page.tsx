@@ -1,12 +1,12 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
   FileSpreadsheet,
   LifeBuoy,
-  PlayCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,7 @@ function StageStrip({ active }: { active: number }) {
 export default function OnboardingPage() {
   usePageTitle("Onboarding");
   const { products, loading, createProduct } = useProduct();
+  const router = useRouter();
   const [justCreated, setJustCreated] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -93,7 +94,9 @@ export default function OnboardingPage() {
         description.trim() || undefined,
       );
       setJustCreated(created.name);
-      toast.success("Workspace đã tạo — giờ import dữ liệu của bạn.");
+      toast.success("Workspace đã tạo — giờ chọn file phản hồi đầu tiên.");
+      // Không dừng ở màn trung gian: tạo xong là sang thẳng bước chọn file.
+      router.push("/importer?new=1");
     } catch (err) {
       toast.error(
         err instanceof ApiError ? err.message : "Không tạo được workspace.",
@@ -180,17 +183,11 @@ export default function OnboardingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <Button asChild>
-              <Link href="/importer">
+            <Button asChild size="lg">
+              <Link href="/importer?new=1">
                 <FileSpreadsheet data-icon="inline-start" />
-                Import CSV đầu tiên
+                Nhập file phản hồi đầu tiên
                 <ArrowRight data-icon="inline-end" />
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/analysis">
-                <PlayCircle data-icon="inline-start" />
-                Xem màn Analysis
               </Link>
             </Button>
             {hasWorkspace && !justCreated ? (

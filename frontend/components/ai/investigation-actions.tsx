@@ -1,5 +1,6 @@
 "use client";
 import { useId, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useActions, useGenerateActions, useUpdateAction } from "@/hooks/use-actions";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import type { ActionItem } from "@/lib/types";
 
 const TEAMS: Record<string, string> = { MARKETING:"Tiếp thị", LEGAL:"Pháp chế", DESIGN:"Thiết kế", FINANCE:"Tài chính", ENGINEERING:"Kỹ thuật", OPERATION:"Vận hành", SALES:"Kinh doanh", SUPPORT:"Hỗ trợ" };
 
-function ReviewAction({action}: {action: ActionItem}) {
+export function ReviewAction({action}: {action: ActionItem}) {
   const id = useId();
   const update = useUpdateAction();
   const [editing, setEditing] = useState(false);
@@ -54,7 +55,9 @@ export function InvestigationActions({insightId}: {insightId: string}) {
     <p className="text-xs text-muted-foreground">Bạn có thể nhận, chỉnh sửa hoặc từ chối từng gợi ý ngay trong cuộc trò chuyện.</p>
     {actions.isError ? <Button size="sm" variant="outline" onClick={() => void actions.refetch()}>Tải lại gợi ý</Button> : null}
     {(actions.data?.items ?? []).map(action => <ReviewAction key={action.id} action={action} />)}
+    {actions.data?.items.length ? <Button size="sm" variant="outline" className="self-start" asChild><Link href={`/matrix?report=${insightId}`}>Xem trên ma trận ưu tiên</Link></Button> : null}
     {!actions.isPending && !actions.isError && !actions.data?.items.length ? <Button size="sm" variant="outline" disabled={generate.isPending} onClick={() => {setError(false); generate.mutate(insightId, {onSuccess: result => {setError(Boolean(result.generation_error)); if (!result.generation_error && !result.actions_created) toast.info("Chưa có gợi ý phù hợp từ bằng chứng hiện tại.");}, onError: () => setError(true)});}}>{generate.isPending ? <Spinner data-icon="inline-start" /> : null}{generate.isPending ? "Đang tạo gợi ý…" : "Tạo gợi ý hành động bằng AI"}</Button> : null}
+    {generate.isPending ? <p role="status" className="text-xs text-muted-foreground">AI đang đề xuất việc cho từng nhóm phụ trách — thường mất vài phút.</p> : null}
     {error ? <p role="alert" className="text-sm text-destructive">Chưa tạo được gợi ý. Bạn có thể thử lại; kết luận đã duyệt vẫn được giữ.</p> : null}
   </section>;
 }

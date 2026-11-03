@@ -1,6 +1,6 @@
 "use client"
 import { SentimentIndicator } from "@/components/sentiment-indicator"
-import { Suspense, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
@@ -14,7 +14,7 @@ import {
   useLegacyTable,
   type LegacyColumnDef,
 } from "@tanstack/react-table/legacy"
-import { Send } from "lucide-react"
+import { Send, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -50,6 +50,8 @@ import {
 } from "@/lib/table-sorts"
 import { scopeLine, shortDate, topTopics, topicLabeler, trendByDate } from "@/lib/graph"
 import { PageHeader } from "@/components/page-header"
+import { NextStepBar } from "@/components/journey/next-step-bar"
+import { useT } from "@/lib/i18n"
 
 function useImportFeedbacks(importIds: string[]) {
   return useQuery({
@@ -320,13 +322,18 @@ function DataGraph({
   initialImportId,
   initialTopic,
   initialRunId,
+  askIntent,
 }: {
   initialImportId: string | null
   initialTopic: string
   initialRunId: string | null
+  /** ?ask=1 từ lộ trình: đưa con trỏ vào ô hỏi. */
+  askIntent: boolean
 }) {
-  const { product, productId } = useProduct()
+  const t = useT()
+  const { productId } = useProduct()
   const router = useRouter()
+  const askRef = useRef<HTMLInputElement>(null)
   const taxonomyQuery = useTaxonomy(productId)
   const topicLabel = useMemo(
     () => topicLabeler(taxonomyQuery.data?.items ?? []),
@@ -373,29 +380,44 @@ function DataGraph({
 
   const createRun = useCreateAgentRun()
 
-  const askAI = async () => {
-    if (!productId || question.trim().length < 3) return
+  const askAI = async (text: string = question) => {
+    const asked = text.trim()
+    if (!productId || asked.length < 3 || createRun.isPending) return
+    setQuestion(asked)
     try {
       const { run_id } = await createRun.mutateAsync({
         product_id: productId,
-        question: question.trim(),
+        question: asked,
       })
       setRunId(run_id)
-      setRunQuestion(question.trim())
+      setRunQuestion(asked)
       router.replace(`/data-graph?run=${run_id}`, { scroll: false })
-      toast.success("Đã bắt đầu điều tra. Kết quả và duyệt hiển thị ngay bên dưới.")
+      toast.success(t.graph.started)
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not start investigation"
-      )
+      toast.error(err instanceof Error ? err.message : t.graph.startFailed)
     }
   }
 
+  useEffect(() => {
+    if (!askIntent) return
+    askRef.current?.focus()
+    askRef.current?.scrollIntoView({ block: "center" })
+    router.replace("/data-graph", { scroll: false })
+  }, [askIntent, router])
+
+  // Chưa có gì được phân loại thì AI không có bằng chứng để tìm — chặn sớm và
+  // chỉ đường về bước 2 thay vì để cuộc điều tra chạy rồi trả kết luận rỗng.
+  const noAnalyzed = !feedbacks.isPending && items.length === 0
+
   return (
     <div className="flex flex-col gap-6">
+      {/* Đã hỏi và cuộc điều tra đang mở → thẻ điều tra (có sẵn phần tạo
+          hành động sau khi duyệt) là việc chính, không lặp lời mời. */}
+      <NextStepBar
+        hideKinds={runId ? ["ask", "open-actions", "generate-actions"] : []}
+      />
       <PageHeader
-        title={product?.name ?? "Data Graph"}
-        documentTitle="Data Graph"
+        title={t.nav.items.dataGraph}
         description={
           effectiveScope.length > 0
             ? scopeLine(
@@ -429,38 +451,69 @@ function DataGraph({
         />
 
         <div className="flex min-w-0 flex-col gap-4">
+          {/* Cuộc điều tra đang mở (đang chạy / chờ duyệt) là việc chính của
+              màn — đặt trên ô hỏi để không phải cuộn mới thấy phần duyệt. */}
+          {runId ? <InvestigationCard key={runId} runId={runId} question={savedRunId === runId ? runQuestion : null} onRetry={() => void askAI()} /> : null}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Hỏi và duyệt kết luận</CardTitle>
-              <CardDescription>
-                Đặt câu hỏi về sản phẩm đang chọn. Theo dõi bằng chứng và duyệt kết luận ngay tại đây.
-              </CardDescription>
+              <CardTitle>{t.graph.askTitle}</CardTitle>
+              <CardDescription>{t.graph.askBody}</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
+            <CardContent className="flex flex-col gap-3">
               <div className="flex flex-wrap gap-2">
                 <InputGroup className="flex-1">
                   <InputGroupInput
-                    placeholder="Ví dụ: Vấn đề nào đang ảnh hưởng người dùng nhiều nhất?"
+                    ref={askRef}
+                    placeholder={t.graph.placeholder}
                     value={question}
+                    disabled={noAnalyzed}
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && void askAI()}
                   />
                 </InputGroup>
                 <Button
                   onClick={() => void askAI()}
-                  disabled={question.trim().length < 3 || createRun.isPending}
+                  disabled={
+                    noAnalyzed || question.trim().length < 3 || createRun.isPending
+                  }
                 >
                   {createRun.isPending ? (
                     <Spinner data-icon="inline-start" />
                   ) : (
                     <Send data-icon="inline-start" />
                   )}
-                  Bắt đầu điều tra
+                  {t.graph.ask}
                 </Button>
               </div>
+              {noAnalyzed ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span>{t.graph.noData}</span>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href="/vault">{t.graph.goClassify}</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                  aria-label={t.graph.suggestionsLabel}
+                >
+                  {t.graph.suggestions.map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      size="sm"
+                      variant="outline"
+                      disabled={createRun.isPending}
+                      onClick={() => void askAI(suggestion)}
+                    >
+                      <Sparkles data-icon="inline-start" />
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
-          {runId ? <InvestigationCard key={runId} runId={runId} question={savedRunId === runId ? runQuestion : null} onRetry={() => void askAI()} /> : null}
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
@@ -621,6 +674,7 @@ function DataGraphWithParams() {
       initialRunId={params.get("run")}
       initialImportId={params.get("import")}
       initialTopic={params.get("topic") ?? ""}
+      askIntent={params.get("ask") === "1"}
     />
   )
 }

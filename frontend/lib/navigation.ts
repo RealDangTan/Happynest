@@ -1,4 +1,5 @@
 import type { Dictionary } from "@/lib/i18n";
+import type { JourneyStepId } from "@/lib/journey";
 import {
   FileText,
   Inbox,
@@ -49,6 +50,31 @@ export const STAGES: {
     ],
   },
 ];
+
+/** Lộ trình E2E 5 bước (plan 41) — thứ tự là thật nên sidebar đánh số.
+ * `id` khớp `JourneyStepId` trong lib/journey.ts; nhãn lấy từ `t.nav.items`. */
+export const JOURNEY: {
+  id: JourneyStepId;
+  href: string;
+  key: NavItemKey;
+  icon: LucideIcon;
+}[] = [
+  { id: "import", href: "/importer", key: "importer", icon: Upload },
+  { id: "classify", href: "/vault", key: "vault", icon: Inbox },
+  { id: "investigate", href: "/data-graph", key: "dataGraph", icon: Waypoints },
+  { id: "act", href: "/matrix", key: "matrix", icon: LayoutGrid },
+  { id: "handoff", href: "/stakeholders", key: "stakeholders", icon: Users },
+];
+
+/** Màn tra cứu ngoài lộ trình chính: kết quả đã lưu và cấu hình chủ đề. */
+export const LIBRARY: { href: string; key: NavItemKey; icon: LucideIcon }[] = [
+  { href: "/reports", key: "reports", icon: FileText },
+  { href: "/taxonomy", key: "taxonomy", icon: ListTree },
+];
+
+export function journeyIndex(pathname: string): number {
+  return JOURNEY.findIndex((step) => step.href === pathname);
+}
 
 export function findStage(
   pathname: string,

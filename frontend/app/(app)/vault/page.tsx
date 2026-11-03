@@ -23,6 +23,7 @@ import {
   type LegacyColumnDef,
 } from "@tanstack/react-table/legacy"
 import {
+  ArrowRight,
   Ban,
   FileSpreadsheet,
   Pencil,
@@ -86,6 +87,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
   DataTable,
@@ -95,6 +97,8 @@ import {
 } from "@/components/data-table"
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
+import { useT } from "@/lib/i18n"
+import { NextStepBar } from "@/components/journey/next-step-bar"
 import type {
   Feedback,
   FeedbackListResponse,
@@ -558,6 +562,7 @@ function RunningAnalysisCard({
   runId: string
   onDismiss: () => void
 }) {
+  const t = useT().vault
   const run = useRunProgress(runId)
   const cancel = useCancelRun()
   const qc = useQueryClient()
@@ -573,26 +578,26 @@ function RunningAnalysisCard({
     if (prevStatus.current === "running" && data.status !== "running") {
       void qc.invalidateQueries({ queryKey: ["feedbacks"] })
       if (data.status === "completed") {
-        toast.success("Phân tích hoàn tất — danh sách đã cập nhật.")
+        toast.success(t.toastDone)
       } else if (data.status === "failed") {
-        toast.error("Run phân tích lỗi — xem tóm tắt trong thẻ tiến trình.")
+        toast.error(t.toastFailed)
       }
     }
     prevStatus.current = data.status
-  }, [data, qc])
+  }, [data, qc, t])
 
   if (!data) return null
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          Analysis{" "}
-          <span className="font-mono text-signal">{runId.slice(0, 8)}</span>
+        <CardTitle className="flex items-center gap-2">
+          {data.status === "running" ? <Spinner /> : null}
+          {t.runTitle}
         </CardTitle>
-        <CardDescription>Processing selected feedback</CardDescription>
+        <CardDescription>{t.runLeave}</CardDescription>
         <CardAction>
           <Badge variant={data.status === "running" ? "secondary" : "outline"}>
-            {data.status}
+            {t.runStatus[data.status] ?? data.status}
           </Badge>
         </CardAction>
       </CardHeader>
@@ -601,9 +606,12 @@ function RunningAnalysisCard({
         <p className="font-mono text-sm">
           {data.processed_count} / {data.total_count}
         </p>
-        <p className="text-xs text-muted-foreground">
-          You can leave this screen. Reopen from Current tasks.
-        </p>
+        {data.status === "completed" ? (
+          <div className="mt-2 flex flex-col gap-1 rounded-lg bg-secondary/40 p-3">
+            <p className="text-sm font-medium">{t.nextTitle}</p>
+            <p className="text-xs text-muted-foreground">{t.nextBody}</p>
+          </div>
+        ) : null}
       </CardContent>
       <CardFooter>
         {data.status === "running" ? (
@@ -614,28 +622,47 @@ function RunningAnalysisCard({
             onClick={() =>
               cancel.mutate(runId, {
                 onSuccess: () => {
-                  toast.success(
-                    "Stop requested — it applies after the current item."
-                  )
+                  toast.success(t.stopRequested)
                   void qc.invalidateQueries({ queryKey: ["feedbacks"] })
                 },
               })
             }
           >
             <Ban data-icon="inline-start" />
-            {data.cancel_requested_at ? "Stopping…" : "Stop analysis"}
+            {data.cancel_requested_at ? t.stopping : t.stop}
           </Button>
         ) : (
-          <Button size="sm" variant="ghost" onClick={onDismiss}>
-            Đóng thẻ tiến trình
-          </Button>
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <Button size="sm" variant="ghost" onClick={onDismiss}>
+              {t.closeCard}
+            </Button>
+            {data.status === "completed" ? (
+              <Button asChild>
+                <Link href="/data-graph?ask=1">
+                  {t.nextCta}
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         )}
       </CardFooter>
     </Card>
   )
 }
 
-function Vault({ initialImportId }: { initialImportId: string | null }) {
+function Vault({
+  initialImportId,
+  analyzeIntent,
+  reclassifyIntent,
+}: {
+  initialImportId: string | null
+  /** ?analyze=1 từ lộ trình / kết quả import: mở biên nhận phân loại ngay. */
+  analyzeIntent: boolean
+  /** ?reclassify=1: mở khoá mục UNCATEGORIZED rồi mở biên nhận. */
+  reclassifyIntent: boolean
+}) {
+  const t = useT()
   const { product, productId } = useProduct()
   const router = useRouter()
   const qc = useQueryClient()
@@ -763,26 +790,6 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
     staleTime: 15_000,
   })
   const reEnrich = useReEnrichUncategorized()
-  const unlockUncategorized = () => {
-    if (!productId) return
-    reEnrich.mutate(
-      { product_id: productId },
-      {
-        onSuccess: (res) => {
-          toast.success(
-            res.released > 0
-              ? `Đã mở khoá ${res.released} phản hồi — bấm Analyze pending items để chạy lại theo nhãn mới.`
-              : "Không có phản hồi nào cần mở khoá."
-          )
-          void qc.invalidateQueries({ queryKey: ["feedbacks"] })
-        },
-        onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : "Không mở khoá được phản hồi."
-          ),
-      }
-    )
-  }
 
   const preview = useAnalysisPreview()
   const trigger = useTriggerRun()
@@ -804,6 +811,10 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
       (r) => r.import_id && r.import_id === activeImportId
     )?.id ??
     null
+
+  // Đang có run chạy cho file này → khoá nút phân loại, tránh bấm chồng lượt.
+  const activeRun = useRunProgress(activeRunId)
+  const classifying = activeRun.data?.status === "running"
 
   const selectedPending = useMemo(() => {
     return [...selected].filter((id) => {
@@ -833,8 +844,7 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
     )
   }
 
-  const openReceipt = async () => {
-    if (!productId) return
+  const receiptScopeFor = (): Scope | null => {
     const scope: Scope =
       selectedPending.length > 0 && activeImportId
         ? {
@@ -844,20 +854,86 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
           }
         : activeImportId
           ? { mode: "batch", import_id: activeImportId }
-          : { mode: "batch", import_id: imports[0]?.id ?? "" }
-    if (!scope.import_id) {
-      toast.error("Choose an import first.")
+          : {
+              // "All imports": phân loại theo file đang thật sự có mục chờ,
+              // không phải file đầu danh sách (có thể đã xong hết).
+              mode: "batch",
+              import_id:
+                pendingCount.data?.items[0]?.import_id ?? imports[0]?.id ?? "",
+            }
+    return scope.import_id ? scope : null
+  }
+
+  // Ước tính trước, chỉ mở biên nhận khi server đã trả preview.
+  const requestReceipt = (scope: Scope) =>
+    preview.mutateAsync(scope).then(
+      () => setReceiptScope(scope),
+      (err) =>
+        toast.error(
+          err instanceof Error ? err.message : "Could not preview analysis"
+        )
+    )
+
+  const openReceipt = () => {
+    if (!productId) return
+    const scope = receiptScopeFor()
+    if (!scope) {
+      toast.error(t.vault.chooseImport)
       return
     }
-    try {
-      await preview.mutateAsync(scope)
-      setReceiptScope(scope)
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not preview analysis"
-      )
-    }
+    void requestReceipt(scope)
   }
+
+  // Mở khoá các mục UNCATEGORIZED rồi mở luôn biên nhận phân loại cho file có
+  // mục vừa mở khoá — người dùng chỉ còn một bước xác nhận chi phí.
+  const unlockAndClassify = () => {
+    if (!productId) return
+    reEnrich
+      .mutateAsync({ product_id: productId })
+      .then(async (res) => {
+        void qc.invalidateQueries({ queryKey: ["feedbacks"] })
+        if (res.released === 0) {
+          toast.info("Không có phản hồi nào cần mở khoá.")
+          return
+        }
+        toast.success(`Đã mở khoá ${res.released} phản hồi để phân loại lại.`)
+        const next = await apiFetch<FeedbackListResponse>(
+          `/api/feedbacks?limit=1&analysis_state=pending&product_id=${productId}`
+        )
+        const importId = activeImportId ?? next.items[0]?.import_id
+        if (importId) void requestReceipt({ mode: "batch", import_id: importId })
+      })
+      .catch((err) =>
+        toast.error(
+          err instanceof Error ? err.message : "Không mở khoá được phản hồi."
+        )
+      )
+  }
+
+  // Intent ?reclassify=1 từ lộ trình: chạy đúng một lần.
+  const reclassifyHandled = useRef(false)
+  useEffect(() => {
+    if (!reclassifyIntent || reclassifyHandled.current || !productId) return
+    reclassifyHandled.current = true
+    router.replace(activeImportId ? `/vault?import=${activeImportId}` : "/vault", {
+      scroll: false,
+    })
+    unlockAndClassify()
+  })
+
+  // Intent ?analyze=1: mở biên nhận đúng một lần khi số mục chờ đã có, rồi gỡ
+  // param để refresh/back không mở lại.
+  const analyzeHandled = useRef(false)
+  useEffect(() => {
+    if (!analyzeIntent || analyzeHandled.current) return
+    if (!productId || !pendingCount.isSuccess || preview.isPending) return
+    analyzeHandled.current = true
+    router.replace(activeImportId ? `/vault?import=${activeImportId}` : "/vault", {
+      scroll: false,
+    })
+    const scope = receiptScopeFor()
+    if (scope && (pendingCount.data?.total ?? 0) > 0) void requestReceipt(scope)
+  })
 
   const exploreSelected = () => {
     if (activeImportId) {
@@ -1070,13 +1146,13 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <NextStepBar />
       <PageHeader
-        title={product?.name ?? "Feedback Vault"}
-        documentTitle="Feedback Vault"
+        title={t.nav.items.vault}
         description="Duyệt từng phản hồi, gắn nhãn hàng loạt, và chạy phân loại có kiểm soát."
         actions={
-          <Button asChild>
-            <Link href="/importer">Import CSV</Link>
+          <Button asChild variant="outline">
+            <Link href="/importer?new=1">{t.importer.result.another}</Link>
           </Button>
         }
       />
@@ -1114,7 +1190,9 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
               onDelete={() => setConfirmImport(item)}
             />
           ))}
-          {imports.length === 0 ? (
+          {importsQuery.isPending ? (
+            <Skeleton className="mx-2 h-8" />
+          ) : imports.length === 0 ? (
             <p className="px-2 text-sm text-muted-foreground">
               No imported files yet.
             </p>
@@ -1191,8 +1269,11 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
 
           {/* Taxonomy vừa đổi nhưng nhãn cũ còn treo: gợi ý mở khoá ngay tại
               vault thay vì bắt user quay lại trang Taxonomy (2026-10-23). */}
+          {/* Chưa có chủ đề nào thì phân loại lại vẫn ra UNCATEGORIZED — lộ
+              trình phía trên đã dẫn sang bước tạo bộ chủ đề. */}
           {(pendingCount.data?.total ?? 0) === 0 &&
-          (uncategorizedCount.data?.total ?? 0) > 0 ? (
+          (uncategorizedCount.data?.total ?? 0) > 0 &&
+          (taxonomy.data?.items ?? []).some((n) => n.status === "active") ? (
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border bg-secondary/40 px-4 py-3 text-sm">
               <p className="flex min-w-0 items-center gap-2 text-muted-foreground">
                 <Unlock className="size-4 shrink-0" aria-hidden />
@@ -1208,14 +1289,14 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                 size="sm"
                 variant="outline"
                 disabled={reEnrich.isPending}
-                onClick={unlockUncategorized}
+                onClick={unlockAndClassify}
               >
                 {reEnrich.isPending ? (
                   <Spinner data-icon="inline-start" />
                 ) : (
                   <Unlock data-icon="inline-start" />
                 )}
-                Mở khoá để phân tích lại
+                {t.journey.next.reclassify.cta}
               </Button>
             </div>
           ) : null}
@@ -1247,17 +1328,15 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                     </Button>
                   </>
                 ) : (
-                  <>
-                    {pendingCount.data?.total ?? 0} pending in this scope ·
-                    batch caps at 100
-                  </>
+                  <>{t.vault.pendingLine(pendingCount.data?.total ?? 0)}</>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  onClick={() => void openReceipt()}
+                  onClick={openReceipt}
                   disabled={
                     preview.isPending ||
+                    classifying ||
                     (selectedPending.length === 0 &&
                       !activeImportId &&
                       (pendingCount.data?.total ?? 0) === 0)
@@ -1265,8 +1344,12 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                 >
                   {preview.isPending ? (
                     <Spinner data-icon="inline-start" />
-                  ) : null}
-                  Analyze pending items
+                  ) : (
+                    <Play data-icon="inline-start" />
+                  )}
+                  {t.vault.analyze(
+                    selectedPending.length || (pendingCount.data?.total ?? 0)
+                  )}
                 </Button>
                 {selected.size > 0 && selectedPending.length > 0 ? (
                   <p className="text-xs text-muted-foreground">
@@ -1333,13 +1416,18 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
       >
         <AlertDialogContent className="sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Review analysis</AlertDialogTitle>
+            <AlertDialogTitle>{t.vault.receiptTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Product: {product?.name ?? "—"} · Import:{" "}
+              {product?.name ?? "—"} ·{" "}
               {imports.find((i) => i.id === receiptScope?.import_id)
                 ?.original_filename ?? receiptScope?.import_id.slice(0, 8)}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {preview.data ? (
+            <p className="font-heading text-lg">
+              {t.vault.receiptHeadline(preview.data.selected_count)}
+            </p>
+          ) : null}
           {preview.data ? (
             <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary/50 p-3 text-sm sm:grid-cols-3">
               <span>
@@ -1347,53 +1435,50 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                   {preview.data.selected_count}
                 </strong>
                 <br />
-                in scope
+                {t.vault.inScope}
               </span>
               <span>
                 <strong className="font-mono">
                   {preview.data.logical_classify_requests}
                 </strong>
                 <br />
-                classify calls
+                {t.vault.classifyCalls}
               </span>
               <span>
                 <strong className="font-mono">
                   {preview.data.logical_embedding_requests}
                 </strong>
                 <br />
-                embed calls
+                {t.vault.embedCalls}
               </span>
               <span>
                 <strong className="font-mono">
                   {preview.data.max_provider_attempts}
                 </strong>
                 <br />
-                max attempts
+                {t.vault.maxAttempts}
               </span>
               <span>
                 <strong className="font-mono">
                   ~{preview.data.estimated_input_tokens}
                 </strong>
                 <br />
-                input tokens
+                {t.vault.inputTokens}
               </span>
               <span>
                 <strong className="font-mono">
                   {preview.data.remaining_count}
                 </strong>
                 <br />
-                remaining
+                {t.vault.remaining}
               </span>
             </div>
           ) : (
             <Spinner />
           )}
-          <p className="text-xs text-muted-foreground">
-            Estimate available before starting. If the selection changed since
-            this preview, the run is rejected and you review again.
-          </p>
+          <p className="text-xs text-muted-foreground">{t.vault.receiptNote}</p>
           <AlertDialogFooter>
-            <AlertDialogCancel>Back</AlertDialogCancel>
+            <AlertDialogCancel>{t.vault.back}</AlertDialogCancel>
             <AlertDialogAction
               disabled={!preview.data || trigger.isPending}
               onClick={(e) => {
@@ -1401,8 +1486,12 @@ function Vault({ initialImportId }: { initialImportId: string | null }) {
                 startAnalysis()
               }}
             >
-              <Play data-icon="inline-start" />
-              Start analysis
+              {trigger.isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Play data-icon="inline-start" />
+              )}
+              {t.vault.start}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1561,5 +1650,11 @@ export default function VaultPage() {
 
 function VaultWithParams() {
   const params = useSearchParams()
-  return <Vault initialImportId={params.get("import")} />
+  return (
+    <Vault
+      initialImportId={params.get("import")}
+      analyzeIntent={params.get("analyze") === "1"}
+      reclassifyIntent={params.get("reclassify") === "1"}
+    />
+  )
 }

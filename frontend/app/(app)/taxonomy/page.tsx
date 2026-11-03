@@ -12,9 +12,11 @@ import {
   Trash2,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { NextStepBar } from "@/components/journey/next-step-bar"
 import { PageHeader } from "@/components/page-header"
 import {
   AlertDialog,
@@ -94,6 +96,7 @@ import {
 } from "@/lib/taxonomy"
 import type { ProposedTopic, TaxonomyNode, TopicRecommendation } from "@/lib/types"
 import { ApiError } from "@/lib/api"
+import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 /** Đổi tên canonical (EN) một node trong proposal — cập nhật cả parent của con
@@ -112,7 +115,21 @@ function renameTopic(
 }
 
 export default function TaxonomyPage() {
+  const t = useT()
   const { product, productId } = useProduct()
+  const router = useRouter()
+  // ?generate=1 từ lộ trình: mở sẵn hộp xác nhận sinh đề xuất (vẫn cần bấm
+  // xác nhận trước khi gọi AI). Áp intent trong render, gỡ param bằng effect.
+  const generateIntent = useSearchParams().get("generate") === "1"
+  const [confirmGenerate, setConfirmGenerate] = useState(generateIntent)
+  const [seenIntent, setSeenIntent] = useState(generateIntent)
+  if (generateIntent !== seenIntent) {
+    setSeenIntent(generateIntent)
+    if (generateIntent) setConfirmGenerate(true)
+  }
+  useEffect(() => {
+    if (generateIntent) router.replace("/taxonomy", { scroll: false })
+  }, [generateIntent, router])
   const taxonomy = useTaxonomy(productId)
   const generate = useGenerateProposal()
   const applyProposal = useApplyProposal(productId)
@@ -374,11 +391,14 @@ export default function TaxonomyPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Đang có bản nháp chờ duyệt thì việc kế tiếp là "Áp dụng" ngay trong
+          thẻ đề xuất — ẩn dải lộ trình để không có hai lời mời khác nhau. */}
+      {proposal || recommendations ? null : <NextStepBar />}
       <PageHeader
-        title="Taxonomy"
+        title={t.nav.items.taxonomy}
         description="Bộ nhãn chủ đề cho việc phân loại phản hồi. AI chỉ đề xuất — bạn là người duyệt và áp dụng."
         actions={
-          <AlertDialog>
+          <AlertDialog open={confirmGenerate} onOpenChange={setConfirmGenerate}>
             <AlertDialogTrigger asChild>
               <Button disabled={!productId || busy}>
                 {generate.isPending ? (

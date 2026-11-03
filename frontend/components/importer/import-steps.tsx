@@ -65,6 +65,7 @@ import {
   useProposeMapping,
 } from "@/hooks/use-imports"
 import { ApiError } from "@/lib/api"
+import { useT } from "@/lib/i18n"
 
 export const IMPORT_STEPS = ["File", "Preview", "Mapping", "Result"] as const
 
@@ -111,95 +112,95 @@ export function StepFile({
   productReady,
   onUploaded,
   onCancel,
+  embedded = false,
 }: {
   productReady: boolean
   onUploaded: (importId: string) => void
   onCancel: () => void
+  /** Nhúng thẳng trên màn Importer: không khung căn giữa, không nút Huỷ. */
+  embedded?: boolean
 }) {
+  const t = useT().importer
   const createImport = useCreateImport()
   const [file, setFile] = useState<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const { productId } = useProduct()
+  const { productId, loading } = useProduct()
 
-  const upload = async () => {
-    if (!file || !productId) return
+  // Chọn hoặc thả file là tải lên ngay — không cần thêm một nút xác nhận.
+  const upload = async (picked: File | null) => {
+    setFile(picked)
+    if (!picked || !productId || createImport.isPending) return
     try {
-      const created = await createImport.mutateAsync({ file, productId })
-      toast.success("Preview ready — no AI used yet.")
+      const created = await createImport.mutateAsync({ file: picked, productId })
+      toast.success(t.file.uploaded)
       onUploaded(created.id)
     } catch (err) {
-      toast.error(
-        err instanceof ApiError ? err.message : "Could not upload the file"
-      )
+      toast.error(err instanceof ApiError ? err.message : t.file.uploadFailed)
     }
   }
 
   return (
-    <section className="mx-auto flex max-w-xl flex-col gap-6 py-10">
+    <section
+      className={
+        embedded ? "flex flex-col" : "mx-auto flex max-w-xl flex-col gap-6 py-10"
+      }
+    >
       <Card>
         <CardHeader>
-          <CardTitle>Tải CSV lên</CardTitle>
-          <CardDescription>
-            Preview chỉ dùng dữ liệu đã sanitize — chưa gọi AI.
-          </CardDescription>
+          <CardTitle>{t.file.title}</CardTitle>
+          <CardDescription>{t.file.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <div
-            className="rounded-lg border-2 border-dashed border-border p-8 text-center"
+            className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-signal/60"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault()
               const dropped = e.dataTransfer.files?.[0]
-              if (dropped) setFile(dropped)
+              if (dropped && productReady) void upload(dropped)
             }}
           >
-            <Upload className="mx-auto mb-3 size-8 text-muted-foreground" />
-            <p className="text-sm">
-              Drop a CSV here, or{" "}
-              <button
-                className="font-medium text-signal underline underline-offset-4"
-                onClick={() => inputRef.current?.click()}
-              >
-                Choose file
-              </button>
-            </p>
-            {file ? (
-              <p className="mt-2 flex items-center justify-center gap-2 text-sm font-medium">
-                <FileSpreadsheet className="size-4" /> {file.name}
+            {createImport.isPending && file ? (
+              <p className="flex items-center gap-2 text-sm font-medium" role="status">
+                <Spinner /> {t.file.uploading(file.name)}
               </p>
-            ) : null}
+            ) : (
+              <>
+                <Upload className="size-8 text-muted-foreground" />
+                <p className="text-sm">{t.file.drop}</p>
+                <p className="text-xs text-muted-foreground">{t.file.or}</p>
+                <Button
+                  disabled={!productReady}
+                  onClick={() => inputRef.current?.click()}
+                >
+                  <FileSpreadsheet data-icon="inline-start" />
+                  {t.file.choose}
+                </Button>
+              </>
+            )}
             <input
               ref={inputRef}
               type="file"
               accept=".csv,text/csv"
               className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                void upload(e.target.files?.[0] ?? null)
+                e.target.value = ""
+              }}
             />
-            {!productReady ? (
-              <p className="mt-3 text-sm text-destructive">
-                Choose a product first — the header dropdown lists your
-                products.
-              </p>
+            {!productReady && !loading ? (
+              <p className="text-sm text-destructive">{t.file.needProduct}</p>
             ) : null}
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            File errors appear here, with a specific correction.
-          </p>
+          <p className="mt-4 text-sm text-muted-foreground">{t.file.errorsHint}</p>
         </CardContent>
-        <CardFooter className="justify-between">
-          <Button variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            disabled={!file || !productReady || createImport.isPending}
-            onClick={() => void upload()}
-          >
-            {createImport.isPending ? (
-              <Spinner data-icon="inline-start" />
-            ) : null}
-            Upload and preview
-          </Button>
-        </CardFooter>
+        {embedded ? null : (
+          <CardFooter>
+            <Button variant="ghost" onClick={onCancel} disabled={createImport.isPending}>
+              {t.file.cancel}
+            </Button>
+          </CardFooter>
+        )}
       </Card>
     </section>
   )
@@ -216,6 +217,7 @@ export function StepPreview({
   onBack?: () => void
   onProposed?: () => void
 }) {
+  const t = useT().importer
   const preview = useImportPreview(importId)
   const detail = useImport(importId)
   const propose = useProposeMapping()
@@ -229,17 +231,16 @@ export function StepPreview({
       {detail.data?.status === "mapping_generating" ? (
         <Alert>
           <Play className="size-4" />
-          <AlertTitle>AI is proposing column meanings</AlertTitle>
-          <AlertDescription>
-            Only the sanitized profile and samples are sent — never the raw
-            file. You can leave this screen; the task stays in Current tasks.
-          </AlertDescription>
+          <AlertTitle className="flex items-center gap-2">
+            <Spinner /> {t.preview.proposing}
+          </AlertTitle>
+          <AlertDescription>{t.preview.proposingBody}</AlertDescription>
         </Alert>
       ) : null}
       {detail.data?.error ? (
         <Alert variant="destructive">
           <TriangleAlert className="size-4" />
-          <AlertTitle>Last attempt failed</AlertTitle>
+          <AlertTitle>{t.preview.lastFailed}</AlertTitle>
           <AlertDescription>{detail.data.error}</AlertDescription>
         </Alert>
       ) : null}
@@ -252,10 +253,9 @@ export function StepPreview({
       ) : preview.isError ? (
         <Alert variant="destructive">
           <TriangleAlert className="size-4" />
-          <AlertTitle>Could not load the preview</AlertTitle>
+          <AlertTitle>{t.preview.loadFailed}</AlertTitle>
           <AlertDescription>
-            {preview.error.message} — the sanitized profile is still on the
-            server.
+            {preview.error.message} — {t.preview.loadFailedHint}
           </AlertDescription>
           <Button
             size="sm"
@@ -263,7 +263,7 @@ export function StepPreview({
             className="mt-2 w-fit"
             onClick={() => void preview.refetch()}
           >
-            Retry
+            {t.preview.retry}
           </Button>
         </Alert>
       ) : preview.data ? (
@@ -271,22 +271,22 @@ export function StepPreview({
           <CardHeader>
             <CardTitle>{preview.data.original_filename ?? "CSV"}</CardTitle>
             <CardDescription className="font-mono text-xs">
-              {preview.data.source_row_count} rows ·{" "}
-              {preview.data.column_profiles.length} columns
+              {t.preview.rowsCols(
+                preview.data.source_row_count,
+                preview.data.column_profiles.length
+              )}
             </CardDescription>
             <CardAction>
-              <Badge variant="outline">
-                No AI used yet. Samples sanitized.
-              </Badge>
+              <Badge variant="outline">{t.preview.noAi}</Badge>
             </CardAction>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Column</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Sample (sanitized)</TableHead>
+                  <TableHead>{t.preview.colColumn}</TableHead>
+                  <TableHead>{t.preview.colType}</TableHead>
+                  <TableHead>{t.preview.colSample}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -307,9 +307,7 @@ export function StepPreview({
             </Table>
           </CardContent>
           <CardFooter>
-            <p className="text-xs text-muted-foreground">
-              Review the structure before asking AI to propose column meanings.
-            </p>
+            <p className="text-xs text-muted-foreground">{t.preview.hint}</p>
           </CardFooter>
         </Card>
       ) : null}
@@ -317,28 +315,32 @@ export function StepPreview({
         {onBack ? (
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft data-icon="inline-start" />
-            Back to file
+            {t.preview.backToFile}
           </Button>
         ) : (
           <span />
         )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button disabled={!preview.data}>
-              Suggest mapping
+            <Button
+              disabled={
+                !preview.data ||
+                propose.isPending ||
+                detail.data?.status === "mapping_generating"
+              }
+            >
+              {propose.isPending ? <Spinner data-icon="inline-start" /> : null}
+              {t.preview.suggest}
               <ArrowRight data-icon="inline-end" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Review expected usage</AlertDialogTitle>
-              <AlertDialogDescription>
-                One logical mapping job. Only the sanitized profile and sample
-                values are sent to the provider. You confirm the result next.
-              </AlertDialogDescription>
+              <AlertDialogTitle>{t.preview.confirmTitle}</AlertDialogTitle>
+              <AlertDialogDescription>{t.preview.confirmBody}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Back</AlertDialogCancel>
+              <AlertDialogCancel>{t.preview.confirmBack}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() =>
                   propose.mutate(importId, {
@@ -347,12 +349,12 @@ export function StepPreview({
                       toast.error(
                         err instanceof ApiError
                           ? err.message
-                          : "Could not start mapping"
+                          : t.preview.startFailed
                       ),
                   })
                 }
               >
-                Start mapping proposal
+                {t.preview.confirmGo}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -364,26 +366,53 @@ export function StepPreview({
 
 // ---------------------------------------------------------------- Step 3: Mapping (G1)
 
-const CORE_TARGET_LABELS: Record<string, string> = {
-  feedback_text: "Feedback text",
-  occurred_at: "Feedback date",
-  source: "Source metadata",
-  source_record_id: "Source record ID",
-}
-
 /** Quyết định người dùng trên mỗi hàng — "change" được dịch thành remap
  * (key đã có trong schema) hoặc promote (field mới) lúc submit. */
 type RowAction = "approve" | "change" | "ignore"
 
-function suggestView(entry: MappingItem): { key: string | null; note: string } {
-  if (entry.decision === "AMBIGUOUS") return { key: null, note: "Ambiguous" }
-  if (entry.target)
-    return { key: entry.target, note: CORE_TARGET_LABELS[entry.target] ?? "" }
-  if (entry.candidate)
-    return { key: entry.candidate.key, note: "product field mới" }
-  if (entry.decision === "SOURCE_META")
-    return { key: null, note: "Source metadata" }
-  return { key: null, note: "Ignore" }
+function suggestView(
+  entry: MappingItem,
+  t: ReturnType<typeof useT>["importer"]["mapping"]
+): { key: string | null; note: string } {
+  if (entry.decision === "AMBIGUOUS") return { key: null, note: t.ambiguous }
+  if (entry.target) return { key: entry.target, note: t.core[entry.target] ?? "" }
+  if (entry.candidate) return { key: entry.candidate.key, note: t.newField }
+  if (entry.decision === "SOURCE_META") return { key: null, note: t.sourceMeta }
+  return { key: null, note: t.ignore }
+}
+
+/** Đích mà đề xuất AI gán cho một cột (MAP/PROMOTE), null nếu không ghi vào field. */
+function proposedTarget(entry: MappingItem): string | null {
+  if (entry.decision === "MAP") return entry.target
+  if (entry.decision === "PROMOTE") return entry.candidate?.key ?? null
+  return null
+}
+
+const TEXT_COLUMN = /content|text|body|comment|review|feedback|message|noi.?dung/i
+
+/** Mỗi đích chỉ nhận một cột (server trả 422 nếu trùng). Khi AI đề xuất trùng,
+ * giữ cột tin cậy nhất (hoà thì ưu tiên tên kiểu "content") và mặc định bỏ qua
+ * các cột còn lại — trả về map cột bị bỏ → cột được giữ. */
+export function autoIgnoredDuplicates(
+  mappings: MappingItem[]
+): Map<string, string> {
+  const byTarget = new Map<string, MappingItem[]>()
+  for (const entry of mappings) {
+    const key = proposedTarget(entry)
+    if (key) byTarget.set(key, [...(byTarget.get(key) ?? []), entry])
+  }
+  const ignored = new Map<string, string>()
+  for (const group of byTarget.values()) {
+    if (group.length < 2) continue
+    const [keep, ...rest] = [...group].sort(
+      (a, b) =>
+        b.confidence - a.confidence ||
+        Number(TEXT_COLUMN.test(b.source_field)) -
+          Number(TEXT_COLUMN.test(a.source_field))
+    )
+    for (const entry of rest) ignored.set(entry.source_field, keep.source_field)
+  }
+  return ignored
 }
 
 function humanizeKey(key: string): string {
@@ -402,6 +431,8 @@ export function StepMapping({
   onBack?: () => void
   onDecided?: () => void
 }) {
+  const { mapping: t, preview: previewCopy } = useT().importer
+  const proposingLabel = previewCopy.proposing
   const mapping = useGetMapping(importId)
   const decide = useDecideMapping()
   const { productId } = useProduct()
@@ -409,15 +440,42 @@ export function StepMapping({
   const [actions, setActions] = useState<
     Record<string, { action: RowAction; targetKey?: string }>
   >({})
-  const mappings = mapping.data?.mappings ?? []
+  const mappings = useMemo(() => mapping.data?.mappings ?? [], [mapping.data])
   const knownKeys = useMemo(() => {
     const core = schema.data?.core_fields.map((f) => f.key) ?? []
     const fields = schema.data?.schema?.definition.fields.map((f) => f.key) ?? []
     return new Set([...core, ...fields])
   }, [schema.data])
 
+  const autoIgnored = useMemo(() => autoIgnoredDuplicates(mappings), [mappings])
   const defaultAction = (entry: MappingItem): RowAction =>
-    entry.decision === "AMBIGUOUS" ? "ignore" : "approve"
+    entry.decision === "AMBIGUOUS" || autoIgnored.has(entry.source_field)
+      ? "ignore"
+      : "approve"
+
+  // Đích thực tế theo quyết định hiện tại — phát hiện trùng ngay trên giao diện.
+  const owners = new Map<string, string[]>()
+  for (const entry of mappings) {
+    const override = actions[entry.source_field]
+    const action = override?.action ?? defaultAction(entry)
+    const key =
+      action === "approve"
+        ? proposedTarget(entry)
+        : action === "change"
+          ? (override?.targetKey ?? "").trim() || null
+          : null
+    if (key) owners.set(key, [...(owners.get(key) ?? []), entry.source_field])
+  }
+  const conflictWith = (field: string): string | null => {
+    for (const fields of owners.values()) {
+      if (fields.length > 1 && fields.includes(field))
+        return fields.find((f) => f !== field) ?? null
+    }
+    return null
+  }
+  const conflictCount = [...owners.values()]
+    .filter((fields) => fields.length > 1)
+    .reduce((n, fields) => n + fields.length, 0)
 
   const changed = mappings.filter((e) => {
     const override = actions[e.source_field]
@@ -472,7 +530,7 @@ export function StepMapping({
         ...(onDecided ? { onSuccess: onDecided } : {}),
         onError: (err) =>
           toast.error(
-            err instanceof ApiError ? err.message : "Import could not start"
+            err instanceof ApiError ? err.message : t.importFailed
           ),
       }
     )
@@ -485,24 +543,26 @@ export function StepMapping({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-40">CSV column</TableHead>
-                <TableHead className="w-44">AI column suggest</TableHead>
-                <TableHead>Explain</TableHead>
-                <TableHead className="w-56">Action</TableHead>
+                <TableHead className="w-40">{t.colCsv}</TableHead>
+                <TableHead className="w-44">{t.colSuggest}</TableHead>
+                <TableHead>{t.colExplain}</TableHead>
+                <TableHead className="w-56">{t.colAction}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {mapping.isPending ? (
                 <TableRow>
                   <TableCell colSpan={4}>
-                    <Spinner />
+                    <p className="flex items-center gap-2 py-4 text-sm text-muted-foreground" role="status">
+                      <Spinner /> {proposingLabel}
+                    </p>
                   </TableCell>
                 </TableRow>
               ) : (
                 mappings.map((entry) => {
                   const override = actions[entry.source_field]
                   const current = override?.action ?? defaultAction(entry)
-                  const suggest = suggestView(entry)
+                  const suggest = suggestView(entry, t)
                   const typedKey = (override?.targetKey ?? "").trim()
                   return (
                     <TableRow key={entry.source_field}>
@@ -539,7 +599,7 @@ export function StepMapping({
                         >
                           <SelectTrigger
                             className="w-40"
-                            aria-label={`Quyết định cho ${entry.source_field}`}
+                            aria-label={t.decisionFor(entry.source_field)}
                           >
                             <SelectValue />
                           </SelectTrigger>
@@ -548,16 +608,27 @@ export function StepMapping({
                               value="approve"
                               disabled={entry.decision === "AMBIGUOUS"}
                             >
-                              Approve
+                              {t.approve}
                             </SelectItem>
-                            <SelectItem value="change">Change…</SelectItem>
-                            <SelectItem value="ignore">Ignore</SelectItem>
+                            <SelectItem value="change">{t.change}</SelectItem>
+                            <SelectItem value="ignore">{t.ignore}</SelectItem>
                           </SelectContent>
                         </Select>
+                        {current === "ignore" &&
+                        autoIgnored.has(entry.source_field) ? (
+                          <p className="mt-1 max-w-48 text-xs text-muted-foreground">
+                            {t.duplicateAuto(autoIgnored.get(entry.source_field) ?? "")}
+                          </p>
+                        ) : null}
+                        {conflictWith(entry.source_field) ? (
+                          <p className="mt-1 max-w-48 text-xs text-destructive" role="alert">
+                            {t.duplicateConflict(conflictWith(entry.source_field) ?? "")}
+                          </p>
+                        ) : null}
                         {current === "change" ? (
                           <div className="mt-2">
                             <Input
-                              placeholder="target_key — vd: occurred_at"
+                              placeholder={t.targetPlaceholder}
                               value={override?.targetKey ?? ""}
                               aria-invalid={typedKey === ""}
                               onChange={(event) =>
@@ -572,8 +643,7 @@ export function StepMapping({
                             />
                             {typedKey !== "" && !knownKeys.has(typedKey) ? (
                               <p className="mt-1 text-xs text-muted-foreground">
-                                Sẽ tạo product field mới “{humanizeKey(typedKey)}
-                                ”.
+                                {t.willCreate(humanizeKey(typedKey))}
                               </p>
                             ) : null}
                           </div>
@@ -589,16 +659,12 @@ export function StepMapping({
       </Card>
 
       <Alert>
-        <AlertTitle>G1 — Confirm what these columns mean</AlertTitle>
+        <AlertTitle>{t.gateTitle}</AlertTitle>
         <AlertDescription>
-          Resolve ambiguous mappings and missing required fields before
-          importing.
-          {changed.length > 0
-            ? ` ${changed.length} column(s) changed from the AI proposal.`
-            : " The AI proposal is accepted as shown."}
-          {pendingChanges.length > 0
-            ? ` ${pendingChanges.length} cột đang Change nhưng chưa nhập target_key.`
-            : ""}
+          {t.gateBody}
+          {changed.length > 0 ? t.changed(changed.length) : ""}
+          {pendingChanges.length > 0 ? t.pendingChange(pendingChanges.length) : ""}
+          {conflictCount > 0 ? t.conflicts(conflictCount) : ""}
         </AlertDescription>
       </Alert>
 
@@ -606,7 +672,7 @@ export function StepMapping({
         {onBack ? (
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft data-icon="inline-start" />
-            Back to preview
+            {t.backToPreview}
           </Button>
         ) : (
           <span />
@@ -617,27 +683,22 @@ export function StepMapping({
               disabled={
                 decide.isPending ||
                 mappings.length === 0 ||
-                pendingChanges.length > 0
+                pendingChanges.length > 0 ||
+                conflictCount > 0
               }
             >
-              Confirm mapping &amp; import
+              {decide.isPending ? <Spinner data-icon="inline-start" /> : null}
+              {t.confirm}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                G1 — Confirm mapping &amp; import?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Import runs in the background and writes sanitized feedback
-                only. Analysis never starts automatically.
-              </AlertDialogDescription>
+              <AlertDialogTitle>{t.confirmTitle}</AlertDialogTitle>
+              <AlertDialogDescription>{t.confirmBody}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Check again</AlertDialogCancel>
-              <AlertDialogAction onClick={submit}>
-                Confirm &amp; import
-              </AlertDialogAction>
+              <AlertDialogCancel>{t.checkAgain}</AlertDialogCancel>
+              <AlertDialogAction onClick={submit}>{t.go}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -649,6 +710,7 @@ export function StepMapping({
 // ---------------------------------------------------------------- Step 4: Result
 
 export function StepResult({ importId }: { importId: string }) {
+  const t = useT().importer.result
   const detail = useImport(importId)
   const item = detail.data
   if (!item) return <Spinner />
@@ -657,15 +719,13 @@ export function StepResult({ importId }: { importId: string }) {
     return (
       <Card className="mx-auto max-w-xl">
         <CardHeader>
-          <CardTitle>Importing…</CardTitle>
+          <CardTitle>{t.importing}</CardTitle>
           {/* No honest % exists server-side yet — spin instead of faking progress. */}
-          <CardDescription>
-            You can leave this screen. Reopen the task from Current tasks.
-          </CardDescription>
+          <CardDescription>{t.importingBody}</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner /> Sanitizing rows and storing them…
+            <Spinner /> {t.importingStatus}
           </p>
         </CardContent>
       </Card>
@@ -678,11 +738,11 @@ export function StepResult({ importId }: { importId: string }) {
         <CardContent className="gap-4">
           <Alert variant="destructive">
             <TriangleAlert className="size-4" />
-            <AlertTitle>Import failed</AlertTitle>
-            <AlertDescription>{item.error ?? "Unknown error"}</AlertDescription>
+            <AlertTitle>{t.failed}</AlertTitle>
+            <AlertDescription>{item.error ?? t.unknownError}</AlertDescription>
           </Alert>
           <Button variant="outline" asChild className="self-start">
-            <Link href="/importer">Import another file</Link>
+            <Link href="/importer?new=1">{t.another}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -693,14 +753,12 @@ export function StepResult({ importId }: { importId: string }) {
     return (
       <Card className="mx-auto max-w-xl">
         <CardHeader>
-          <CardTitle>Import cancelled</CardTitle>
-          <CardDescription>
-            Nothing was written. Start over whenever you are ready.
-          </CardDescription>
+          <CardTitle>{t.cancelled}</CardTitle>
+          <CardDescription>{t.cancelledBody}</CardDescription>
         </CardHeader>
         <CardFooter>
           <Button variant="outline" asChild>
-            <Link href="/importer">Import another file</Link>
+            <Link href="/importer?new=1">{t.another}</Link>
           </Button>
         </CardFooter>
       </Card>
@@ -714,14 +772,12 @@ export function StepResult({ importId }: { importId: string }) {
     return (
       <Card className="mx-auto max-w-xl">
         <CardHeader>
-          <CardTitle>Import still in review</CardTitle>
-          <CardDescription>
-            This import has not run yet — confirm its column mapping first.
-          </CardDescription>
+          <CardTitle>{t.inReview}</CardTitle>
+          <CardDescription>{t.inReviewBody}</CardDescription>
         </CardHeader>
         <CardFooter>
           <Button variant="outline" asChild>
-            <Link href="/importer">Back to the Importer</Link>
+            <Link href="/importer">{t.backToImporter}</Link>
           </Button>
         </CardFooter>
       </Card>
@@ -729,11 +785,12 @@ export function StepResult({ importId }: { importId: string }) {
   }
 
   const report = item.report
+  const importedRows = report?.imported ?? item.row_count ?? 0
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-6 py-10">
       <div className="flex items-center gap-2">
         <CheckCircle2 className="size-5 text-lichen" />
-        <h2 className="font-heading text-xl">Import completed</h2>
+        <h2 className="font-heading text-xl">{t.done}</h2>
       </div>
       <div className="grid grid-cols-3 gap-3 text-center">
         <Card size="sm">
@@ -741,15 +798,15 @@ export function StepResult({ importId }: { importId: string }) {
             <span className="font-mono text-2xl font-semibold">
               {item.source_row_count ?? item.row_count ?? 0}
             </span>
-            <span className="text-xs text-muted-foreground">source rows</span>
+            <span className="text-xs text-muted-foreground">{t.sourceRows}</span>
           </CardContent>
         </Card>
         <Card size="sm">
           <CardContent className="items-center gap-1">
             <span className="font-mono text-2xl font-semibold text-lichen">
-              {report?.imported ?? item.row_count ?? 0}
+              {importedRows}
             </span>
-            <span className="text-xs text-muted-foreground">imported</span>
+            <span className="text-xs text-muted-foreground">{t.imported}</span>
           </CardContent>
         </Card>
         <Card size="sm">
@@ -761,14 +818,14 @@ export function StepResult({ importId }: { importId: string }) {
             >
               {report?.failed ?? 0}
             </span>
-            <span className="text-xs text-muted-foreground">failed</span>
+            <span className="text-xs text-muted-foreground">{t.failedRows}</span>
           </CardContent>
         </Card>
       </div>
       {report && report.errors.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Row errors</CardTitle>
+            <CardTitle className="text-sm">{t.rowErrors}</CardTitle>
           </CardHeader>
           <CardContent className="gap-2">
             <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
@@ -777,24 +834,37 @@ export function StepResult({ importId }: { importId: string }) {
                   key={`${e.row}-${i}`}
                   className="font-mono text-xs break-words"
                 >
-                  Row {e.row}: {e.reason}
+                  {t.rowError(e.row, e.reason)}
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground">
-              Correct and re-import only the failed rows.
-            </p>
+            <p className="text-xs text-muted-foreground">{t.rowErrorsHint}</p>
           </CardContent>
         </Card>
       ) : null}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" asChild>
-          <Link href="/importer">Import another file</Link>
+      {importedRows > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.nextTitle}</CardTitle>
+            <CardDescription>{t.nextBody}</CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-between gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/importer?new=1">{t.another}</Link>
+            </Button>
+            <Button asChild size="lg">
+              <Link href={`/vault?import=${importId}&analyze=1`}>
+                {t.classify}
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : (
+        <Button variant="outline" asChild className="self-start">
+          <Link href="/importer?new=1">{t.another}</Link>
         </Button>
-        <Button asChild>
-          <Link href={`/vault?import=${importId}`}>Open Feedback Vault</Link>
-        </Button>
-      </div>
+      )}
     </section>
   )
 }

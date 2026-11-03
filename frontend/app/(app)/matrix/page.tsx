@@ -60,10 +60,16 @@ import { PageHeader } from "@/components/page-header"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useInsights } from "@/hooks/use-insights"
-import { useActions, useAddAction, useUpdateAction } from "@/hooks/use-actions"
-import { useProduct } from "@/hooks/use-product"
+import {
+  useActions,
+  useAddAction,
+  useGenerateActions,
+  useUpdateAction,
+} from "@/hooks/use-actions"
 import { departmentLabel } from "@/lib/departments"
-import { useAppLang } from "@/lib/i18n"
+import { useAppLang, useT } from "@/lib/i18n"
+import { NextStepBar } from "@/components/journey/next-step-bar"
+import { ReviewAction } from "@/components/ai/investigation-actions"
 import { cn } from "@/lib/utils"
 import { effectiveScores, QUADRANT_LABEL, quadrantOf } from "@/lib/matrix"
 import type { ActionItem, BusinessFunction, Quadrant } from "@/lib/types"
@@ -537,8 +543,10 @@ function AddActionDialog({
 
 function Matrix({ initialReportId }: { initialReportId: string | null }) {
   const lang = useAppLang()
-  const { product } = useProduct()
+  const t = useT()
   const insights = useInsights()
+  const generate = useGenerateActions()
+  const [generateError, setGenerateError] = useState(false)
   const [reportId, setReportId] = useState<string | null>(initialReportId)
   const [department, setDepartment] = useState("all")
   const [statusFilter, setStatusFilter] = useState("active")
@@ -561,8 +569,19 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
     [insights.data]
   )
 
-  // Derived selection: falls back to the first eligible report.
-  const effectiveReportId = reportId ?? eligibleReports[0]?.id ?? null
+  // Derived selection: mặc định là kết luận ĐÃ DUYỆT mới nhất (chỉ nó tạo
+  // được hành động), rồi mới tới kết luận đang chờ duyệt.
+  const effectiveReportId =
+    reportId ??
+    [...eligibleReports]
+      .filter((r) => r.status === "approved" || r.status === "edited")
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.id ??
+    eligibleReports[0]?.id ??
+    null
+  const selectedReport =
+    eligibleReports.find((r) => r.id === effectiveReportId) ?? null
+  const reportApproved =
+    selectedReport?.status === "approved" || selectedReport?.status === "edited"
 
   const actions = useActions(effectiveReportId)
   const allItems = useMemo(() => actions.data?.items ?? [], [actions.data])
@@ -583,18 +602,36 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
 
   const openAction = items.find((a) => a.id === openActionId) ?? null
   const matrix = actions.data?.matrix
+  const undecided = allItems.filter(
+    (a) => a.status === "proposed" || a.status === "edited"
+  )
+
+  const runGenerate = () => {
+    if (!effectiveReportId) return
+    setGenerateError(false)
+    generate.mutate(effectiveReportId, {
+      onSuccess: (result) => {
+        setGenerateError(Boolean(result.generation_error))
+        if (!result.generation_error && !result.actions_created)
+          toast.info(t.matrixPage.noSuggestion)
+      },
+      onError: () => setGenerateError(true),
+    })
+  }
 
   return (
     <div className="flex flex-col gap-6">
+      <NextStepBar />
       <PageHeader
-        title={product?.name ?? "Priority Matrix"}
+        title={t.nav.items.matrix}
         description="Ưu tiên hành động theo tác động và nỗ lực — giữ khuyến nghị gốc của hệ thống khi ghi đè."
         actions={
           <Button
-            disabled={!effectiveReportId}
+            variant="outline"
+            disabled={!effectiveReportId || !reportApproved}
             onClick={() => setAddOpen(true)}
           >
-            + Add action
+            {t.matrixPage.addManual}
           </Button>
         }
       />
@@ -639,17 +676,34 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
         </CardContent>
       </Card>
 
-      {!effectiveReportId ? (
+      {insights.isPending ? (
+        <Spinner />
+      ) : !effectiveReportId ? (
         <Empty className="border">
           <EmptyHeader>
-            <EmptyTitle>No reviewed report yet</EmptyTitle>
-            <EmptyDescription>
-              Approve a finding in Reports first — actions are generated from
-              reviewed findings only.
-            </EmptyDescription>
+            <EmptyTitle>{t.matrixPage.noReportTitle}</EmptyTitle>
+            <EmptyDescription>{t.matrixPage.noReportBody}</EmptyDescription>
           </EmptyHeader>
           <Button asChild>
-            <Link href="/reports">Open Reports</Link>
+            <Link href="/data-graph?ask=1">{t.matrixPage.noReportCta}</Link>
+          </Button>
+        </Empty>
+      ) : !reportApproved ? (
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyTitle>{t.matrixPage.notApprovedTitle}</EmptyTitle>
+            <EmptyDescription>{t.matrixPage.notApprovedBody}</EmptyDescription>
+          </EmptyHeader>
+          <Button asChild>
+            <Link
+              href={
+                selectedReport?.run_id
+                  ? `/data-graph?run=${selectedReport.run_id}`
+                  : `/reports?report=${effectiveReportId}`
+              }
+            >
+              {t.matrixPage.reviewIt}
+            </Link>
           </Button>
         </Empty>
       ) : actions.isError ? (
@@ -669,19 +723,33 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
         </Alert>
       ) : actions.isPending ? (
         <Spinner />
+      ) : allItems.length === 0 ? (
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyTitle>{t.matrixPage.noActionsTitle}</EmptyTitle>
+            <EmptyDescription>{t.matrixPage.noActionsBody}</EmptyDescription>
+          </EmptyHeader>
+          <Button
+            size="lg"
+            disabled={generate.isPending}
+            onClick={runGenerate}
+          >
+            {generate.isPending ? <Spinner data-icon="inline-start" /> : null}
+            {generate.isPending
+              ? t.matrixPage.generating
+              : t.matrixPage.generate}
+          </Button>
+          {generateError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {t.matrixPage.generateFailed}
+            </p>
+          ) : null}
+        </Empty>
       ) : items.length === 0 ? (
         <Empty className="border">
           <EmptyHeader>
-            <EmptyTitle>No actions here</EmptyTitle>
-            <EmptyDescription>
-              Generate actions from the approved report, or add one manually.
-            </EmptyDescription>
+            <EmptyTitle>{t.matrixPage.filteredEmpty}</EmptyTitle>
           </EmptyHeader>
-          <Button asChild>
-            <Link href={`/reports?report=${effectiveReportId}`}>
-              Open source report
-            </Link>
-          </Button>
         </Empty>
       ) : (
         <Card>
@@ -778,18 +846,32 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/reports?report=${effectiveReportId}`}>
-                  View source report
+                  {t.matrixPage.sourceReport}
                 </Link>
               </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/stakeholders?report=${effectiveReportId}`}>
-                  View by department
+                  {t.matrixPage.byDepartment}
                 </Link>
               </Button>
             </div>
           </CardFooter>
         </Card>
       )}
+
+      {reportApproved && undecided.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.matrixPage.decideTitle(undecided.length)}</CardTitle>
+            <CardDescription>{t.matrixPage.decideBody}</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 lg:grid-cols-2">
+            {undecided.map((action) => (
+              <ReviewAction key={action.id} action={action} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <ActionDrawer
         key={openActionId ?? "none"}

@@ -39,10 +39,11 @@ import {
 } from "@/components/data-table"
 import { AiBadge } from "@/components/ai/ai-badge"
 import { PageHeader } from "@/components/page-header"
+import { NextStepBar } from "@/components/journey/next-step-bar"
+import { useT } from "@/lib/i18n"
 import { useInsights } from "@/hooks/use-insights"
 import { useActions } from "@/hooks/use-actions"
 import { ActionDecisionSupport } from "@/components/actions/action-decision-support"
-import { useProduct } from "@/hooks/use-product"
 import { DEPARTMENTS, departmentLabel, toDepartment } from "@/lib/departments"
 import { effectiveScores } from "@/lib/matrix"
 import type { ActionItem } from "@/lib/types"
@@ -152,7 +153,7 @@ function ActionsTable({
 }
 
 function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
-  const { product } = useProduct()
+  const t = useT()
   const insights = useInsights()
   const [reportId, setReportId] = useState<string | null>(initialReportId)
   const [statusFilter, setStatusFilter] = useState("accepted")
@@ -203,8 +204,9 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <NextStepBar />
       <PageHeader
-        title={product?.name ?? "Stakeholders"}
+        title={t.nav.items.stakeholders}
         description="Gói insight thành bản tin cho từng phòng ban — ai cần biết gì, vì sao."
       />
 

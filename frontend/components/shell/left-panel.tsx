@@ -1,49 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
+import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Route, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { STAGES } from "@/lib/navigation";
+import { JourneyRail } from "@/components/journey/journey-rail";
 import { useT } from "@/lib/i18n";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePanel } from "./panel-provider";
 import { useChat } from "./chat-provider";
 import { ChatThread } from "./chat-thread";
 import { WhatsNew } from "./whats-new";
-
-function NavItem({
-  href,
-  label,
-  icon: Icon,
-  active,
-  collapsed,
-  onNavigate,
-}: {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  active: boolean;
-  collapsed: boolean;
-  onNavigate?: () => void;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      title={collapsed ? label : undefined}
-      className={cn(
-        "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-        collapsed && "justify-center px-0",
-        active
-          ? "bg-sidebar-accent font-medium text-sidebar-foreground"
-          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
-      )}
-    >
-      <Icon className="size-4 shrink-0" />
-      {!collapsed ? <span className="min-w-0 truncate">{label}</span> : null}
-    </Link>
-  );
-}
 
 function SegmentButton({
   active,
@@ -168,17 +134,7 @@ export function LeftPanel() {
               active={tab === "home"}
               collapsed={collapsed && tab === "home"}
               label={t.panel.home}
-              icon={() => (
-                <svg viewBox="0 0 24 24" fill="none" className="size-4">
-                  <path
-                    d="M3 10.5 12 3l9 7.5M5 9.5V21h5v-6h4v6h5V9.5"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
+              icon={Route}
               onClick={() => closeChat()}
             />
             <SegmentButton
@@ -206,7 +162,7 @@ export function LeftPanel() {
           </div>
         </div>
 
-        {/* Home tab: the six-screen journey + frozen utilities footer */}
+        {/* Journey tab: lộ trình 5 bước + nhóm tra cứu + footer tiện ích */}
         <div className={cn("min-h-0 flex-1 flex-col", tab === "home" ? "flex" : "hidden")}>
           <ScrollArea className="min-h-0 flex-1">
             <nav
@@ -216,30 +172,11 @@ export function LeftPanel() {
               )}
               aria-label="Panel"
             >
-              <div className="w-full space-y-5">
-                {STAGES.map((stage) => (
-                  <div key={stage.group}>
-                    {!collapsed ? (
-                      <p className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-                        {t.nav.groups[stage.group]}
-                      </p>
-                    ) : null}
-                    <div className="space-y-1">
-                      {stage.items.map((item) => (
-                        <NavItem
-                          key={item.href}
-                          href={item.href}
-                          label={t.nav.items[item.key]}
-                          icon={item.icon}
-                          active={pathname === item.href}
-                          collapsed={collapsed}
-                          onNavigate={() => setMobileOpen(false)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <JourneyRail
+                pathname={pathname}
+                collapsed={collapsed}
+                onNavigate={() => setMobileOpen(false)}
+              />
             </nav>
           </ScrollArea>
 

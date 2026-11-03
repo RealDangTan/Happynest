@@ -29,6 +29,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AiBadge } from "@/components/ai/ai-badge"
 import { PageHeader } from "@/components/page-header"
+import { NextStepBar } from "@/components/journey/next-step-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -323,6 +324,7 @@ function Reports({
 
   return (
     <div className="flex flex-col gap-6">
+      <NextStepBar />
       <PageHeader
         title={product?.name ?? "Reports"}
         description="Kết quả điều tra và bằng chứng. Duyệt kết luận ngay trong cuộc điều tra hoặc Chat."

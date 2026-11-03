@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { useProduct } from "@/hooks/use-product";
 import {
@@ -43,18 +44,19 @@ import { ProfilePanel } from "./profile-panel";
 import { ActivityNavButton } from "@/components/activity/activity-nav-button";
 import { WhatsNew } from "./whats-new";
 import { CommandPalette } from "./command-palette";
-import { findStage } from "@/lib/navigation";
+import { findStage, JOURNEY, journeyIndex } from "@/lib/navigation";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** Breadcrumb: Happynest ▸ product ▸ stage ▸ screen (product doubles as switcher). */
 function Breadcrumb() {
-  const { products, product, setProductId } = useProduct();
+  const { products, product, setProductId, loading } = useProduct();
   const { chatOpen } = useChat();
   const router = useRouter();
   const pathname = usePathname();
   const t = useT();
   const stage = findStage(pathname);
+  const stepIndex = journeyIndex(pathname);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -132,7 +134,11 @@ function Breadcrumb() {
           className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Switch product"
         >
-          <span className="max-w-40 truncate">{product?.name ?? t.navbar.chooseProduct}</span>
+          {loading ? (
+            <Skeleton className="h-4 w-24" />
+          ) : (
+            <span className="max-w-40 truncate">{product?.name ?? t.navbar.chooseProduct}</span>
+          )}
           <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
@@ -183,7 +189,9 @@ function Breadcrumb() {
             /
           </span>
           <span className="shrink-0 whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
-            {t.nav.groups[stage.group]}
+            {stepIndex >= 0
+              ? t.journey.stepOf(stepIndex + 1, JOURNEY.length)
+              : t.nav.groups[stage.group]}
           </span>
           <span className="text-muted-foreground/60" aria-hidden>
             /

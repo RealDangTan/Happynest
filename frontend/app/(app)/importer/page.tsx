@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, ArrowRight, FileSpreadsheet, Inbox } from "lucide-react"
+import { ArrowLeft, FileSpreadsheet } from "lucide-react"
 import {
   Badge,
 } from "@/components/ui/badge"
@@ -12,16 +12,9 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import {
   Table,
   TableBody,
@@ -31,10 +24,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { apiFetch } from "@/lib/api"
+import { useT } from "@/lib/i18n"
 import type { ImportListResponse } from "@/lib/types"
 import { useImport } from "@/hooks/use-imports"
 import { useProduct } from "@/hooks/use-product"
-import { FirstRunGuide } from "@/components/onboarding/first-run-guide"
+import { NextStepBar } from "@/components/journey/next-step-bar"
 import { PageHeader } from "@/components/page-header"
 import { Stepper } from "@/components/stepper"
 import {
@@ -48,27 +42,26 @@ import {
   type Phase,
 } from "@/components/importer/import-steps"
 
-const SOURCE_TILES = ["Survey app", "App store", "Support inbox", "NPS tool"]
-
-const STATUS_BADGE: Record<
+const STATUS_TONE: Record<
   string,
-  { label: string; tone: "secondary" | "default" | "destructive" | "outline" }
+  "secondary" | "default" | "destructive" | "outline"
 > = {
-  profile_ready: { label: "Needs mapping review", tone: "default" },
-  mapping_generating: { label: "Proposing mapping", tone: "secondary" },
-  mapping_review: { label: "Needs mapping review", tone: "default" },
-  importing: { label: "Importing", tone: "secondary" },
-  imported: { label: "Imported", tone: "outline" },
-  failed: { label: "Failed", tone: "destructive" },
-  cancelled: { label: "Cancelled", tone: "outline" },
+  profile_ready: "default",
+  mapping_generating: "secondary",
+  mapping_review: "default",
+  importing: "secondary",
+  imported: "outline",
+  failed: "destructive",
+  cancelled: "outline",
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_BADGE[status] ?? {
-    label: status,
-    tone: "secondary" as const,
-  }
-  return <Badge variant={s.tone}>{s.label}</Badge>
+  const t = useT().importer
+  return (
+    <Badge variant={STATUS_TONE[status] ?? "secondary"}>
+      {t.status[status] ?? status}
+    </Badge>
+  )
 }
 
 function useProductImports(productId: string | null) {
@@ -87,23 +80,35 @@ function useProductImports(productId: string | null) {
 // ---------------------------------------------------------------- S01 screen
 
 export default function ImporterPage() {
+  const t = useT().importer
   const { product, productId } = useProduct()
   const imports = useProductImports(productId)
   const router = useRouter()
   const searchParams = useSearchParams()
   const resumeId = searchParams.get("import")
+  const startNew = searchParams.get("new") === "1"
   const [phase, setPhase] = useState<Phase>("idle")
   const [importId, setImportId] = useState<string | null>(null)
   const wizardImport = useImport(importId)
 
-  // Deep-link từ Activity Center (/importer?import=<id>): mở wizard tại bước
-  // khớp trạng thái server rồi gỡ param để refresh không bị kéo lại wizard.
+  // Deep-link từ Activity Center / lộ trình (/importer?import=<id>): mở wizard
+  // tại bước khớp trạng thái server; ?new=1 mở thẳng bước chọn file. Áp intent
+  // ngay trong render (không qua effect), rồi gỡ param để refresh không kéo lại.
+  const intent = resumeId ? `import:${resumeId}` : startNew ? "new" : null
+  const [appliedIntent, setAppliedIntent] = useState<string | null>(null)
+  if (intent !== appliedIntent) {
+    setAppliedIntent(intent)
+    if (resumeId) {
+      setImportId(resumeId)
+      setPhase("preview")
+    } else if (startNew) {
+      setImportId(null)
+      setPhase("file")
+    }
+  }
   useEffect(() => {
-    if (!resumeId) return
-    setImportId(resumeId)
-    setPhase("preview")
-    router.replace("/importer", { scroll: false })
-  }, [resumeId, router])
+    if (intent) router.replace("/importer", { scroll: false })
+  }, [intent, router])
 
   // Proposal accepted → the mapping review (G1) replaces the preview step.
   // Phase luôn được đối chiếu với trạng thái server để một task mở lại từ
@@ -116,7 +121,7 @@ export default function ImporterPage() {
         ? phase
         : phaseForImport(wizardImport.data)
 
-  const recent = useMemo(() => {
+  const waiting = useMemo(() => {
     const items = imports.data?.items ?? []
     return items.filter((i) =>
       [
@@ -136,21 +141,22 @@ export default function ImporterPage() {
   // "file" phase has no importId yet — it is set by the upload callback before
   // preview/mapping/result, which always run with a valid importId.
   if (effectivePhase !== "idle" && (effectivePhase === "file" || importId)) {
+    const stepIndex = IMPORT_STEPS.indexOf(PHASE_STEP[effectivePhase])
     return (
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={() => setPhase("idle")}>
             <ArrowLeft data-icon="inline-start" />
-            Importer
+            {t.back}
           </Button>
           <Stepper
-            steps={IMPORT_STEPS}
-            current={PHASE_STEP[effectivePhase]}
-            label="Import steps"
+            steps={t.steps}
+            current={t.steps[stepIndex]}
+            label={t.stepsLabel}
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          Product: {product?.name ?? "…"}
+          {t.productLine(product?.name ?? "…")}
         </p>
         {effectivePhase === "file" ? (
           <StepFile
@@ -185,58 +191,30 @@ export default function ImporterPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <FirstRunGuide onStartImport={() => setPhase("file")} />
+      <NextStepBar />
 
-      <PageHeader
-        title="Bring feedback into your product."
-        actions={
-          <p className="font-mono text-sm text-muted-foreground">
-            Product: {product?.name ?? "—"}
-          </p>
-        }
-      />
+      <PageHeader title={t.title} description={t.description} />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
         <div className="flex min-w-0 flex-col gap-8">
-          <Card>
-            <CardContent className="items-center gap-6 py-10 text-center">
-              <Button
-                size="lg"
-                onClick={() => setPhase("file")}
-                disabled={!productId}
-              >
-                <Inbox data-icon="inline-start" />
-                Import CSV
-              </Button>
-              <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
-                {SOURCE_TILES.map((tile) => (
-                  <div
-                    key={tile}
-                    className="rounded-lg border bg-secondary/50 p-3 text-sm text-muted-foreground"
-                    title="Coming later"
-                  >
-                    {tile}
-                    <span className="ml-1 text-xs">(coming later)</span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                CSV is the supported source. Additional sources are
-                placeholders.
-              </p>
-            </CardContent>
-          </Card>
+          <StepFile
+            productReady={Boolean(productId)}
+            onUploaded={(id) => {
+              setImportId(id)
+              setPhase("preview")
+            }}
+            onCancel={() => setPhase("idle")}
+            embedded
+          />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Current tasks — imports</CardTitle>
-              <CardDescription>
-                Các lô đang chờ duyệt mapping hoặc gặp lỗi.
-              </CardDescription>
-            </CardHeader>
-            {recent.length ? (
+          {waiting.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.queueTitle}</CardTitle>
+                <CardDescription>{t.queueDescription}</CardDescription>
+              </CardHeader>
               <CardContent className="gap-2">
-                {recent.map((item) => (
+                {waiting.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center gap-4 rounded-lg bg-secondary/30 px-4 py-3"
@@ -246,50 +224,38 @@ export default function ImporterPage() {
                       <p className="truncate text-sm font-medium">
                         {item.original_filename ?? item.id}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.source_row_count ?? item.row_count ?? 0} rows
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {item.source_row_count ?? item.row_count ?? 0}
                       </p>
                     </div>
                     <StatusBadge status={item.status} />
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={() => {
                         setImportId(item.id)
                         setPhase("preview")
                       }}
                     >
-                      Continue mapping
+                      {t.continue}
                     </Button>
                   </div>
                 ))}
               </CardContent>
-            ) : (
-              <CardContent>
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyTitle>No imports waiting</EmptyTitle>
-                    <EmptyDescription>
-                      Import a CSV to get started.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              </CardContent>
-            )}
-          </Card>
+            </Card>
+          ) : null}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent imports</CardTitle>
-            </CardHeader>
-            {history.length ? (
+          {history.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.historyTitle}</CardTitle>
+              </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>File</TableHead>
-                      <TableHead>Rows</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t.colFile}</TableHead>
+                      <TableHead>{t.colRows}</TableHead>
+                      <TableHead>{t.colStatus}</TableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
@@ -306,8 +272,8 @@ export default function ImporterPage() {
                           <StatusBadge status={item.status} />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/vault?import=${item.id}`}>Open</Link>
+                          <Button size="sm" variant="ghost" asChild>
+                            <Link href={`/vault?import=${item.id}`}>{t.open}</Link>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -315,42 +281,21 @@ export default function ImporterPage() {
                   </TableBody>
                 </Table>
               </CardContent>
-            ) : (
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  No completed imports yet.
-                </p>
-              </CardContent>
-            )}
-          </Card>
+            </Card>
+          ) : null}
         </div>
 
         <Card size="sm" className="self-start">
           <CardHeader>
-            <CardTitle>How it works</CardTitle>
+            <CardTitle>{t.howTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
-              <li>1. Upload a CSV — preview stays sanitized, no AI yet.</li>
-              <li>2. AI proposes column meanings.</li>
-              <li>
-                <strong>G1</strong> — you confirm the mapping before anything
-                imports.
-              </li>
-              <li>3. Import runs; row errors are reported per row.</li>
-              <li>4. Continue in the Feedback Vault.</li>
+              {t.how.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
             </ol>
           </CardContent>
-          {history.length ? (
-            <CardFooter>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/vault">
-                  Open Feedback Vault
-                  <ArrowRight data-icon="inline-end" />
-                </Link>
-              </Button>
-            </CardFooter>
-          ) : null}
         </Card>
       </div>
     </div>
