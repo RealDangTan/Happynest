@@ -76,7 +76,7 @@ export function scopeLine(
   analyzed: number,
   pending: number,
 ): string {
-  return `${imports} ${imports === 1 ? "import" : "imports"} / ${shortDate(from)} – ${shortDate(
+  return `${imports} file · ${shortDate(from)} – ${shortDate(
     to,
-  )} / ${analyzed} analyzed / ${pending} pending excluded`;
+  )} · ${analyzed} đã phân loại · ${pending} chưa phân loại (không tính)`;
 }

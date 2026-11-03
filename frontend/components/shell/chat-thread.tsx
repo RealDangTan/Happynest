@@ -44,6 +44,7 @@ import { useProduct } from "@/hooks/use-product";
 import { useChat } from "@/components/shell/chat-provider";
 import { ApiError } from "@/lib/api";
 import { shortDate } from "@/lib/graph";
+import { BrandMark } from "@/components/brand-mark";
 
 /** Signature motif: a woven nest holding the investigation until it hatches. */
 function NestMark() {
@@ -183,8 +184,8 @@ export function ChatThread() {
     <div className="chat-night flex min-h-0 flex-1 flex-col bg-background text-foreground">
       {/* agent header */}
       <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lichen/20 font-heading text-sm font-semibold text-lichen">
-          H
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent">
+          <BrandMark className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-heading text-sm leading-tight">Happynest</p>

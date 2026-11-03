@@ -4,134 +4,212 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Evidence Loom — 2026-09-15 visual brief:
-   Pine Ink sidebar/primary · Field Paper workspace · Chalk canvas
-   Lichen selected/accepted · Pollen review badges · Signal Blue evidence. */
+/* Happynest brand theme (2026-11-03) — theo brand guideline trong
+   public/assets/@DO_NOT_TOUCH (UIchart + mascot chart):
+   - Nền Ivory ấm, chữ Charcoal-Moss, primary Moss, sidebar Moss Charcoal.
+   - Ba màu cánh logo (xanh lá / vàng / đỏ) làm dịu thành pastel và gán cho
+     ba chặng VoC: Lắng nghe = leaf, Hiểu = sun, Hành động = coral.
+   - Thêm sky (thông tin / bằng chứng) và iris (AI) cho màu ngữ nghĩa.
+   Mỗi sắc có 4 bậc theo cách Radix: -soft (nền), -line (viền), base (chấm,
+   thanh, icon ≥3:1), -ink (chữ ≥4.5:1 trên -soft, card và nền). */
 :root {
-  --background: #f1f3e9;
-  --foreground: #14251d;
-  --card: #fcfcf8;
-  --card-foreground: #14251d;
-  --popover: #fcfcf8;
-  --popover-foreground: #14251d;
-  --primary: #14251d;
-  --primary-foreground: #fcfcf8;
-  --secondary: #e5e9da;
-  --secondary-foreground: #14251d;
-  --muted: #e5e9da;
-  --muted-foreground: #5c6b5e;
-  --accent: #e2e8d6;
-  --accent-foreground: #14251d;
-  --destructive: #a63a2e;
-  --warning: #dbac3b;
-  --border: #d9ddca;
-  --input: #d9ddca;
-  --ring: #3f738b;
-  --chart-1: #91a873;
-  --chart-2: #3f738b;
-  --chart-3: #dbac3b;
-  --chart-4: #5c6b5e;
-  --chart-5: #14251d;
-  --lichen: #91a873;
-  --pollen: #dbac3b;
-  --signal: #3f738b;
-  --sentiment-positive: #2f6b46;
-  --sentiment-mixed: #8a651b;
-  --department-engineering: #2563eb;
-  --department-support: #0f766e;
-  --department-design: #9333ea;
-  --department-marketing: #c2410c;
-  --department-legal: #475569;
-  --department-finance: #a16207;
-  --department-operations: #4d7c0f;
-  --department-sales: #be185d;
-  --radius: 0.5rem;
-  --sidebar: #14251d;
-  --sidebar-foreground: #eef1e4;
-  --sidebar-primary: #fcfcf8;
-  --sidebar-primary-foreground: #14251d;
-  --sidebar-accent: #22352b;
-  --sidebar-accent-foreground: #fcfcf8;
-  --sidebar-border: #22352b;
-  --sidebar-ring: #91a873;
+  --background: #f6f3ea;
+  --foreground: #2b2e26;
+  --card: #fffdf8;
+  --card-foreground: #2b2e26;
+  --popover: #fffdf8;
+  --popover-foreground: #2b2e26;
+  --primary: #4a5a3f;
+  --primary-foreground: #fffdf8;
+  --secondary: #ede8da;
+  --secondary-foreground: #2b2e26;
+  --muted: #efebdf;
+  --muted-foreground: #66695d;
+  --accent: #e8edda;
+  --accent-foreground: #2b2e26;
+  --destructive: #b4472f;
+  --border: #e3ddcc;
+  --input: #dad3c0;
+  --ring: #6b7a54;
+  --radius: 0.625rem;
+
+  --leaf: #5e9a4c;
+  --leaf-soft: #e3f0da;
+  --leaf-line: #c4ddb3;
+  --leaf-ink: #2e5e24;
+  --sun: #b08d1a;
+  --sun-soft: #f7edc6;
+  --sun-line: #e6d08a;
+  --sun-ink: #6e5300;
+  --coral: #d4644f;
+  --coral-soft: #f8e0da;
+  --coral-line: #edbfb4;
+  --coral-ink: #93321f;
+  --sky: #4f86a8;
+  --sky-soft: #dfeaf2;
+  --sky-line: #bcd3e3;
+  --sky-ink: #2a5670;
+  --iris: #8a74c2;
+  --iris-soft: #e9e3f5;
+  --iris-line: #cfc3ea;
+  --iris-ink: #4e3c85;
+
+  /* Tên cũ giữ nguyên để code hiện có không gãy — trỏ vào hệ sắc mới. */
+  --lichen: #3f7a33;
+  --pollen: #b08d1a;
+  --signal: #2f6688;
+  --warning: #b08d1a;
+  --sentiment-positive: #3f7a33;
+  --sentiment-mixed: #8a6a12;
+
+  --chart-1: #7fb069;
+  --chart-2: #5e93b8;
+  --chart-3: #d9b23f;
+  --chart-4: #e07f67;
+  --chart-5: #9b86cf;
+
+  --department-engineering: #4f86a8;
+  --department-support: #3f8c80;
+  --department-design: #8a74c2;
+  --department-marketing: #c97a3d;
+  --department-legal: #6f7987;
+  --department-finance: #b08d1a;
+  --department-operations: #5e9a4c;
+  --department-sales: #c25a80;
+
+  --sidebar: #2b2f28;
+  --sidebar-foreground: #edeae0;
+  --sidebar-primary: #f6f3ea;
+  --sidebar-primary-foreground: #2b2f28;
+  --sidebar-accent: #3a4035;
+  --sidebar-accent-foreground: #fffdf8;
+  --sidebar-border: #3a4035;
+  --sidebar-ring: #b7bf9a;
 }
 
 .dark {
-  --sentiment-positive: #9fc6a8;
-  --sentiment-mixed: #f0ca75;
-  --department-engineering: #60a5fa;
-  --department-support: #2dd4bf;
-  --department-design: #c084fc;
-  --department-marketing: #fb923c;
-  --department-legal: #94a3b8;
-  --department-finance: #facc15;
-  --department-operations: #a3e635;
-  --department-sales: #f472b6;
-  --background: oklch(0.153 0.006 107.1);
-  --foreground: oklch(0.988 0.003 106.5);
-  --card: oklch(0.228 0.013 107.4);
-  --card-foreground: oklch(0.988 0.003 106.5);
-  --popover: oklch(0.228 0.013 107.4);
-  --popover-foreground: oklch(0.988 0.003 106.5);
-  --primary: oklch(0.93 0.007 106.5);
-  --primary-foreground: oklch(0.228 0.013 107.4);
-  --secondary: oklch(0.286 0.016 107.4);
-  --secondary-foreground: oklch(0.988 0.003 106.5);
-  --muted: oklch(0.286 0.016 107.4);
-  --muted-foreground: oklch(0.737 0.021 106.9);
-  --accent: oklch(0.286 0.016 107.4);
-  --accent-foreground: oklch(0.988 0.003 106.5);
-  --destructive: oklch(0.704 0.191 22.216);
-  --warning: oklch(0.828 0.189 84.429);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.58 0.031 107.3);
-  --chart-1: oklch(0.88 0.011 106.6);
-  --chart-2: oklch(0.58 0.031 107.3);
-  --chart-3: oklch(0.466 0.025 107.3);
-  --chart-4: oklch(0.394 0.023 107.4);
-  --chart-5: oklch(0.286 0.016 107.4);
-  --sidebar: oklch(0.228 0.013 107.4);
-  --sidebar-foreground: oklch(0.988 0.003 106.5);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.988 0.003 106.5);
-  --sidebar-accent: oklch(0.286 0.016 107.4);
-  --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.58 0.031 107.3);
+  --background: #181a17;
+  --foreground: #ece9df;
+  --card: #22251f;
+  --card-foreground: #ece9df;
+  --popover: #22251f;
+  --popover-foreground: #ece9df;
+  --primary: #c9d1a8;
+  --primary-foreground: #1d2019;
+  --secondary: #2b2f28;
+  --secondary-foreground: #ece9df;
+  --muted: #2b2f28;
+  --muted-foreground: #a8a89b;
+  --accent: #343a2e;
+  --accent-foreground: #ece9df;
+  --destructive: #ee8a74;
+  --border: #34382f;
+  --input: #3d4237;
+  --ring: #b7bf9a;
+
+  --leaf: #7fb069;
+  --leaf-soft: #22301d;
+  --leaf-line: #35502c;
+  --leaf-ink: #b5d9a2;
+  --sun: #d9b23f;
+  --sun-soft: #33290f;
+  --sun-line: #5a4718;
+  --sun-ink: #eed48a;
+  --coral: #e07f67;
+  --coral-soft: #3a211b;
+  --coral-line: #5e3328;
+  --coral-ink: #f2b3a3;
+  --sky: #6fa3c6;
+  --sky-soft: #1b2a35;
+  --sky-line: #2c4659;
+  --sky-ink: #afd0e6;
+  --iris: #9b86cf;
+  --iris-soft: #2a2340;
+  --iris-line: #43386a;
+  --iris-ink: #cdbff0;
+
+  --lichen: #9fcb8a;
+  --pollen: #d9b23f;
+  --signal: #8fbad8;
+  --warning: #d9b23f;
+  --sentiment-positive: #9fcb8a;
+  --sentiment-mixed: #eed48a;
+
+  --chart-1: #7fb069;
+  --chart-2: #6fa3c6;
+  --chart-3: #d9b23f;
+  --chart-4: #e07f67;
+  --chart-5: #9b86cf;
+
+  --department-engineering: #6fa3c6;
+  --department-support: #5fb3a6;
+  --department-design: #a996dc;
+  --department-marketing: #e09a62;
+  --department-legal: #98a2b0;
+  --department-finance: #d9b23f;
+  --department-operations: #7fb069;
+  --department-sales: #df86a6;
+
+  --sidebar: #121411;
+  --sidebar-foreground: #e9e7df;
+  --sidebar-primary: #e9e7df;
+  --sidebar-primary-foreground: #121411;
+  --sidebar-accent: #23271f;
+  --sidebar-accent-foreground: #f6f3ea;
+  --sidebar-border: #23271f;
+  --sidebar-ring: #b7bf9a;
 }
 
-/* Night nest — chat dock surface (2026-10-12). The chat tab keeps the Pine Ink
-   dock dark end-to-end: same token set, remapped for a dark surface, so every
-   shadcn component inside flips without hand-coloring. Primary inverts to
-   Field Paper (user bubble / send button = paper on the dark nest); wells lift
-   to sidebar-accent green; signal + destructive get dark-tuned tints for
-   contrast. Scoped: only the subtree under .chat-night is affected. */
+/* Night nest — chat dock surface (2026-10-12, recolored 2026-11-03 to the
+   Moss Charcoal sidebar). Same token set remapped for a dark surface so every
+   shadcn component inside flips without hand-coloring. Scoped: only the
+   subtree under .chat-night is affected. */
 .chat-night {
-  --sentiment-positive: #9fc6a8;
-  --sentiment-mixed: #f0ca75;
-  --background: #14251d;
-  --foreground: #eef1e4;
-  --card: #22352b;
-  --card-foreground: #eef1e4;
-  --popover: #22352b;
-  --popover-foreground: #eef1e4;
-  --primary: #fcfcf8;
-  --primary-foreground: #14251d;
-  --secondary: #33463a;
-  --secondary-foreground: #eef1e4;
-  --muted: #2b3e32;
-  --muted-foreground: #a9b6a4;
-  --accent: #33463a;
-  --accent-foreground: #f4f6ea;
-  --destructive: #e28573;
-  --border: #33463a;
-  --input: #33463a;
-  --ring: #91a873;
-  --signal: #8ab4d6;
+  --sentiment-positive: #9fcb8a;
+  --sentiment-mixed: #eed48a;
+  --background: #2b2f28;
+  --foreground: #edeae0;
+  --card: #363b31;
+  --card-foreground: #edeae0;
+  --popover: #363b31;
+  --popover-foreground: #edeae0;
+  --primary: #f6f3ea;
+  --primary-foreground: #2b2f28;
+  --secondary: #41473b;
+  --secondary-foreground: #edeae0;
+  --muted: #343a2f;
+  --muted-foreground: #b3b4a6;
+  --accent: #41473b;
+  --accent-foreground: #f6f3ea;
+  --destructive: #ee9a86;
+  --border: #41473b;
+  --input: #41473b;
+  --ring: #b7bf9a;
+  --signal: #afd0e6;
 }
 
 @theme inline {
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-leaf-line: var(--leaf-line);
+  --color-leaf-ink: var(--leaf-ink);
+  --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
+  --color-sun-line: var(--sun-line);
+  --color-sun-ink: var(--sun-ink);
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
+  --color-coral-line: var(--coral-line);
+  --color-coral-ink: var(--coral-ink);
+  --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
+  --color-sky-line: var(--sky-line);
+  --color-sky-ink: var(--sky-ink);
+  --color-iris: var(--iris);
+  --color-iris-soft: var(--iris-soft);
+  --color-iris-line: var(--iris-line);
+  --color-iris-ink: var(--iris-ink);
+  --font-mono: var(--font-mono);
   --color-sentiment-positive: var(--sentiment-positive);
   --color-sentiment-mixed: var(--sentiment-mixed);
   --color-department-engineering: var(--department-engineering);
@@ -201,5 +279,15 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Brand guideline: display serif Fraunces Semibold, hơi mềm (SOFT) cho
+     giọng "warm intelligence"; khoảng chữ khít nhẹ ở cỡ lớn. */
+  .font-heading {
+    font-variation-settings: "SOFT" 50;
+    letter-spacing: -0.01em;
+  }
+  :is(h1, h2, h3, h4).font-heading,
+  [data-slot="card-title"].font-heading {
+    font-weight: 600;
   }
 }

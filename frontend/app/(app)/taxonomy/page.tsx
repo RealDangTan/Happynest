@@ -553,7 +553,9 @@ export default function TaxonomyPage() {
                 Nhãn đóng cho engine phân loại. Mỗi chủ đề có slug cố định — đổi
                 tên hiển thị không làm vỡ dữ liệu cũ.
               </CardDescription>
-              <CardAction className="flex items-center gap-2">
+              {/* Hàng nút riêng dưới mô tả — đặt cạnh tiêu đề làm tiêu đề bị bóp
+                  còn một chữ mỗi dòng ở màn hẹp. */}
+              <div className="col-span-full flex flex-wrap items-center gap-2 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -603,8 +605,8 @@ export default function TaxonomyPage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <Badge variant="outline">v{version}</Badge>
-              </CardAction>
+                <Badge variant="info">v{version}</Badge>
+              </div>
             </CardHeader>
             <CardContent>
               {taxonomy.isLoading ? (

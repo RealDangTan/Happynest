@@ -408,7 +408,7 @@ function MatrixPoint({
           style={{ left: `${left}%`, bottom: `${bottom}%` }}
         >
           <span aria-hidden="true" className={cn(
-            "size-3 rounded-full border-2 border-current",
+            "size-3.5 rounded-full border-2 border-current ring-2 ring-card",
             action.status !== "rejected" && "bg-current"
           )} />
         </button>
@@ -640,37 +640,37 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
         <CardContent className="flex-row flex-wrap items-center gap-2">
           <Select value={effectiveReportId ?? ""} onValueChange={setReportId}>
             <SelectTrigger className="w-72">
-              <SelectValue placeholder="Report: choose one" />
+              <SelectValue placeholder="Chọn kết luận" />
             </SelectTrigger>
             <SelectContent>
               {eligibleReports.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
-                  Report: {r.title}
+                  Kết luận: {r.title}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={department} onValueChange={setDepartment}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-52">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Department: All</SelectItem>
+              <SelectItem value="all">Phòng ban: tất cả</SelectItem>
               {BUSINESS_FUNCTIONS.map((f) => (
                 <SelectItem key={f.value} value={f.label.toLowerCase()}>
-                  Department: {f.label}
+                  Phòng ban: {f.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="active">Status: Active</SelectItem>
-              <SelectItem value="accepted">Status: Accepted</SelectItem>
-              <SelectItem value="rejected">Status: Rejected</SelectItem>
+              <SelectItem value="active">Trạng thái: đang mở</SelectItem>
+              <SelectItem value="accepted">Trạng thái: đã nhận</SelectItem>
+              <SelectItem value="rejected">Trạng thái: đã từ chối</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -763,8 +763,8 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex justify-between px-1 text-xs text-muted-foreground">
-              <span>Expected customer impact — High ↑</span>
-              <span>Effort → High</span>
+              <span>↑ Tác động tới khách hàng</span>
+              <span>Nỗ lực →</span>
             </div>
             <div
               className="relative h-[480px] overflow-hidden rounded-lg border bg-card"
@@ -794,25 +794,29 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
                 setOpenActionId(id)
               }}
             >
-              {/* quadrant midlines */}
-              <div className="absolute top-0 left-1/2 h-full w-px bg-border" />
-              <div className="absolute top-1/2 left-0 h-px w-full bg-border" />
-              {/* quadrant labels */}
+              {/* quadrant tints + labels */}
               {(
                 [
-                  ["Quick wins", "left-3 top-3"],
-                  ["Strategic investments", "right-3 top-3"],
-                  ["Low priority", "left-3 bottom-3"],
-                  ["Reconsider", "right-3 bottom-3"],
+                  ["Làm ngay", "left-0 top-0", "bg-leaf-soft/70", "text-leaf-ink", "left-3 top-3"],
+                  ["Đầu tư chiến lược", "right-0 top-0", "bg-sky-soft/70", "text-sky-ink", "right-3 top-3"],
+                  ["Ưu tiên thấp", "left-0 bottom-0", "bg-muted/60", "text-muted-foreground", "left-3 bottom-3"],
+                  ["Cân nhắc lại", "right-0 bottom-0", "bg-coral-soft/60", "text-coral-ink", "right-3 bottom-3"],
                 ] as const
-              ).map(([label, pos]) => (
-                <span
-                  key={label}
-                  className={`absolute ${pos} text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase`}
-                >
-                  {label}
-                </span>
+              ).map(([label, area, tint, ink, pos]) => (
+                <div key={label} className={cn("absolute h-1/2 w-1/2", area, tint)}>
+                  <span
+                    className={cn(
+                      "absolute text-xs font-semibold tracking-wide uppercase",
+                      pos,
+                      ink,
+                    )}
+                  >
+                    {label}
+                  </span>
+                </div>
               ))}
+              <div className="absolute top-0 left-1/2 h-full w-px bg-border" />
+              <div className="absolute top-1/2 left-0 h-px w-full bg-border" />
               {items.map((a) => (
                 <MatrixPoint
                   key={a.id}
@@ -823,8 +827,8 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
               {matrix ? null : null}
             </div>
             <div className="flex justify-between px-1 text-xs text-muted-foreground">
-              <span>Low effort</span>
-              <span>High effort</span>
+              <span>Nỗ lực thấp</span>
+              <span>Nỗ lực cao</span>
             </div>
             <ul
               aria-label={lang === "vi" ? "Chú giải phòng ban" : "Department legend"}
@@ -840,8 +844,8 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
           </CardContent>
           <CardFooter className="flex-wrap justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              Points are actions. Priority also considers urgency and
-              confidence.
+              Mỗi chấm là một hành động. Điểm ưu tiên còn tính cả độ khẩn
+              cấp và độ tin cậy.
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" asChild>

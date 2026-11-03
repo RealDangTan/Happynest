@@ -71,7 +71,7 @@ describe("analysisStats", () => {
 describe("scopeLine", () => {
   it("summarizes imports, period and analysis counts", () => {
     expect(scopeLine(2, "2026-09-01", "2026-09-14", 120, 15)).toBe(
-      "2 imports / Sep 1 – Sep 14 / 120 analyzed / 15 pending excluded",
+      "2 file · Sep 1 – Sep 14 · 120 đã phân loại · 15 chưa phân loại (không tính)",
     );
   });
 });

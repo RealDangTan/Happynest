@@ -15,6 +15,7 @@ import { useAgentDecision, useAgentRun } from "@/hooks/use-agent";
 import { apiFetch } from "@/lib/api";
 import { readableEvidence, TOOL_LABELS } from "@/lib/investigation";
 import { cn } from "@/lib/utils";
+import { RUN_STATUS_TONE } from "@/lib/tone";
 import type { AgentDecision, InsightsListResponse, PendingApproval } from "@/lib/types";
 import { AiTrace } from "./ai-trace";
 import { InvestigationActions } from "./investigation-actions";
@@ -93,7 +94,7 @@ export function InvestigationCard({runId, question, onRetry}: {
       <CardTitle className="text-base">{question || pending?.question || report?.title || "Điều tra phản hồi"}</CardTitle>
       <CardDescription className="flex flex-wrap items-center gap-2" aria-live="polite">
         {(running || processing || run.isPending) ? <Spinner /> : null}
-        <Badge variant={data?.status === "failed" ? "destructive" : "secondary"}>{data ? STATUS[data.status] ?? "Đang cập nhật" : "Đang kết nối"}</Badge>
+        <Badge variant={data ? RUN_STATUS_TONE[data.status] ?? "secondary" : "secondary"}>{data ? STATUS[data.status] ?? "Đang cập nhật" : "Đang kết nối"}</Badge>
         {data?.progress ? <span>{data.progress.evidence_count} kết quả đã thu thập</span> : null}
       </CardDescription>
     </CardHeader>

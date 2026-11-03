@@ -30,9 +30,9 @@ export function ActivityNavButton() {
       ) : null}
       <span className="hidden sm:inline">Current tasks</span>
       {activity.state === "running" && activity.runningCount > 0 ? (
-        <Badge variant="secondary">{activity.runningCount}</Badge>
+        <Badge variant="info">{activity.runningCount}</Badge>
       ) : activity.attentionCount > 0 ? (
-        <Badge variant={activity.state === "failed" ? "destructive" : "default"}>
+        <Badge variant={activity.state === "failed" ? "danger" : "warning"}>
           {activity.attentionCount}
         </Badge>
       ) : null}

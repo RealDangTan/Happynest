@@ -12,6 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ActionDecisionSupport } from "@/components/actions/action-decision-support";
 import { effectiveScores } from "@/lib/matrix";
 import type { ActionItem } from "@/lib/types";
+import { ACTION_STATUS_TONE } from "@/lib/tone";
 
 const TEAMS: Record<string, string> = { MARKETING:"Tiếp thị", LEGAL:"Pháp chế", DESIGN:"Thiết kế", FINANCE:"Tài chính", ENGINEERING:"Kỹ thuật", OPERATION:"Vận hành", SALES:"Kinh doanh", SUPPORT:"Hỗ trợ" };
 
@@ -28,7 +29,7 @@ export function ReviewAction({action}: {action: ActionItem}) {
     status, ...(editing && status === "accepted" ? {recommendation: text, ...scores, override_reason: reason} : {}),
   }}, {onSuccess: () => { setEditing(false); toast.success("Đã lưu quyết định hành động."); }, onError: () => toast.error("Chưa lưu được. Nội dung chỉnh sửa vẫn được giữ.")});
   return <div className="flex flex-col gap-3 rounded-lg border p-3">
-    <div className="flex flex-wrap items-center gap-2"><Badge variant="outline">{TEAMS[action.function] ?? "Nhóm phụ trách"}</Badge><span className="text-xs text-muted-foreground">Ưu tiên {action.priority_score.toFixed(1)}</span>{decided ? <Badge variant="secondary">{action.status === "accepted" ? "Đã nhận" : "Đã từ chối"}</Badge> : null}</div>
+    <div className="flex flex-wrap items-center gap-2"><Badge variant="outline">{TEAMS[action.function] ?? "Nhóm phụ trách"}</Badge><span className="text-xs text-muted-foreground">Ưu tiên {action.priority_score.toFixed(1)}</span>{decided ? <Badge variant={ACTION_STATUS_TONE[action.status] ?? "secondary"}>{action.status === "accepted" ? "Đã nhận" : "Đã từ chối"}</Badge> : null}</div>
     <p className="text-sm font-medium">{action.recommendation}</p>
     <p className="text-xs text-muted-foreground">{action.rationale}</p>
     {editing ? <FieldGroup>

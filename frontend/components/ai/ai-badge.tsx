@@ -16,8 +16,8 @@ export function AiBadge({
 }) {
   return (
     <span className={cn("inline-flex flex-wrap items-center gap-1.5", className)}>
-      <Badge variant="outline" className="text-[10px]">
-        AI-generated
+      <Badge variant="ai" className="text-[10px]">
+        AI tạo
       </Badge>
       {model ? (
         <span className="font-mono text-[10px] text-muted-foreground">{model}</span>

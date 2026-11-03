@@ -44,7 +44,7 @@ import { ProfilePanel } from "./profile-panel";
 import { ActivityNavButton } from "@/components/activity/activity-nav-button";
 import { WhatsNew } from "./whats-new";
 import { CommandPalette } from "./command-palette";
-import { findStage, JOURNEY, journeyIndex } from "@/lib/navigation";
+import { findStage, STAGE_TONE, TONE_CLASSES } from "@/lib/navigation";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +56,6 @@ function Breadcrumb() {
   const pathname = usePathname();
   const t = useT();
   const stage = findStage(pathname);
-  const stepIndex = journeyIndex(pathname);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -188,10 +187,13 @@ function Breadcrumb() {
           <span className="text-muted-foreground/60" aria-hidden>
             /
           </span>
-          <span className="shrink-0 whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
-            {stepIndex >= 0
-              ? t.journey.stepOf(stepIndex + 1, JOURNEY.length)
-              : t.nav.groups[stage.group]}
+          <span
+            className={cn(
+              "shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide",
+              TONE_CLASSES[STAGE_TONE[stage.group]].chip,
+            )}
+          >
+            {t.nav.groups[stage.group]}
           </span>
           <span className="text-muted-foreground/60" aria-hidden>
             /
@@ -203,7 +205,7 @@ function Breadcrumb() {
           <span className="text-muted-foreground/60" aria-hidden>
             /
           </span>
-          <span className="shrink-0 whitespace-nowrap rounded-full bg-signal/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-signal">
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-iris-soft px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide text-iris-ink">
             CHAT
           </span>
         </>
@@ -377,13 +379,13 @@ export function TopNavbar() {
             onClick={() => setPaletteOpen(true)}
             className={cn(
               "flex h-8 items-center gap-2 rounded-md border bg-background/60 px-2.5 text-sm text-muted-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
-              "w-9 justify-center lg:w-44 lg:justify-start",
+              "w-9 shrink-0 justify-center whitespace-nowrap lg:w-56 lg:justify-start",
             )}
             aria-label={t.navbar.searchAria}
           >
             <Search className="size-4 shrink-0" />
-            <span className="hidden lg:inline">{t.navbar.search}</span>
-            <kbd className="ml-auto hidden rounded border bg-secondary px-1.5 py-0.5 font-mono text-[10px] xl:inline">
+            <span className="hidden min-w-0 truncate lg:inline">{t.navbar.search}</span>
+            <kbd className="ml-auto hidden shrink-0 rounded border bg-secondary px-1.5 py-0.5 font-mono text-[10px] xl:inline">
               Ctrl K
             </kbd>
           </button>

@@ -1,5 +1,4 @@
 import type { Dictionary } from "@/lib/i18n";
-import type { JourneyStepId } from "@/lib/journey";
 import {
   FileText,
   Inbox,
@@ -51,30 +50,39 @@ export const STAGES: {
   },
 ];
 
-/** Lộ trình E2E 5 bước (plan 41) — thứ tự là thật nên sidebar đánh số.
- * `id` khớp `JourneyStepId` trong lib/journey.ts; nhãn lấy từ `t.nav.items`. */
-export const JOURNEY: {
-  id: JourneyStepId;
-  href: string;
-  key: NavItemKey;
-  icon: LucideIcon;
-}[] = [
-  { id: "import", href: "/importer", key: "importer", icon: Upload },
-  { id: "classify", href: "/vault", key: "vault", icon: Inbox },
-  { id: "investigate", href: "/data-graph", key: "dataGraph", icon: Waypoints },
-  { id: "act", href: "/matrix", key: "matrix", icon: LayoutGrid },
-  { id: "handoff", href: "/stakeholders", key: "stakeholders", icon: Users },
-];
+/** Mỗi chặng VoC mang một màu cánh của logo (pastel): Lắng nghe = leaf,
+ * Hiểu = sun, Hành động = coral. Lớp Tailwind phải là chuỗi tĩnh. */
+export type StageTone = "leaf" | "sun" | "coral";
 
-/** Màn tra cứu ngoài lộ trình chính: kết quả đã lưu và cấu hình chủ đề. */
-export const LIBRARY: { href: string; key: NavItemKey; icon: LucideIcon }[] = [
-  { href: "/reports", key: "reports", icon: FileText },
-  { href: "/taxonomy", key: "taxonomy", icon: ListTree },
-];
+export const STAGE_TONE: Record<NavGroupKey, StageTone> = {
+  listen: "leaf",
+  understand: "sun",
+  act: "coral",
+};
 
-export function journeyIndex(pathname: string): number {
-  return JOURNEY.findIndex((step) => step.href === pathname);
-}
+export const TONE_CLASSES: Record<
+  StageTone,
+  { dot: string; chip: string; bar: string; border: string }
+> = {
+  leaf: {
+    dot: "bg-leaf",
+    chip: "bg-leaf-soft text-leaf-ink",
+    bar: "before:bg-leaf",
+    border: "border-l-leaf",
+  },
+  sun: {
+    dot: "bg-sun",
+    chip: "bg-sun-soft text-sun-ink",
+    bar: "before:bg-sun",
+    border: "border-l-sun",
+  },
+  coral: {
+    dot: "bg-coral",
+    chip: "bg-coral-soft text-coral-ink",
+    bar: "before:bg-coral",
+    border: "border-l-coral",
+  },
+};
 
 export function findStage(
   pathname: string,

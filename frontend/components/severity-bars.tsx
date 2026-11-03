@@ -9,7 +9,7 @@ const ORDER: Severity[] = ["low", "medium", "high", "critical"]
  * critical vượt ra destructive vì là mức cần hành động ngay. */
 const BAR_COLOR: Record<Severity, string> = {
   low: "bg-chart-1",
-  medium: "bg-chart-2",
+  medium: "bg-chart-3",
   high: "bg-chart-4",
   critical: "bg-destructive",
 }

@@ -40,6 +40,7 @@ import {
 import { AiBadge } from "@/components/ai/ai-badge"
 import { PageHeader } from "@/components/page-header"
 import { NextStepBar } from "@/components/journey/next-step-bar"
+import { ACTION_STATUS_TONE } from "@/lib/tone"
 import { useT } from "@/lib/i18n"
 import { useInsights } from "@/hooks/use-insights"
 import { useActions } from "@/hooks/use-actions"
@@ -48,14 +49,23 @@ import { DEPARTMENTS, departmentLabel, toDepartment } from "@/lib/departments"
 import { effectiveScores } from "@/lib/matrix"
 import type { ActionItem } from "@/lib/types"
 
-const STATUS_TONE: Record<
-  string,
-  "secondary" | "default" | "destructive" | "outline"
-> = {
-  accepted: "secondary",
-  proposed: "default",
-  edited: "outline",
-  rejected: "destructive",
+// Cùng màu chấm phòng ban với Ma trận ưu tiên — nhận ra nhóm bằng màu.
+const DEPARTMENT_DOT: Record<string, string> = {
+  engineering: "text-department-engineering",
+  support: "text-department-support",
+  design: "text-department-design",
+  marketing: "text-department-marketing",
+  legal: "text-department-legal",
+  finance: "text-department-finance",
+  operations: "text-department-operations",
+  sales: "text-department-sales",
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  accepted: "Đã nhận",
+  proposed: "Đề xuất",
+  edited: "Đã chỉnh",
+  rejected: "Từ chối",
 }
 
 function ActionsTable({
@@ -74,7 +84,7 @@ function ActionsTable({
         enableSorting: false,
         enableHiding: false,
         meta: { thClassName: "w-[58%]" },
-        header: "Action",
+        header: "Hành động",
         cell: ({ row }) => (
           <>
             <span className="flex items-start gap-2">
@@ -99,26 +109,31 @@ function ActionsTable({
         id: "priority",
         accessorFn: (a: ActionItem) => a.priority_score,
         sortDescFirst: true,
-        meta: { label: "Priority", thClassName: "w-24", tdClassName: "w-24" },
+        meta: { label: "Ưu tiên", thClassName: "w-24", tdClassName: "w-24" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Priority" />
+          <DataTableColumnHeader column={column} title="Ưu tiên" />
         ),
         cell: ({ row }) => {
           const score = row.original.priority_score
-          const label = score >= 7 ? "High" : score >= 4 ? "Medium" : "Low"
-          return <Badge variant="outline">{label}</Badge>
+          const [label, tone] =
+            score >= 7
+              ? (["Cao", "danger"] as const)
+              : score >= 4
+                ? (["Vừa", "warning"] as const)
+                : (["Thấp", "info"] as const)
+          return <Badge variant={tone}>{label}</Badge>
         },
       },
       {
         id: "status",
         accessorFn: (a: ActionItem) => a.status,
-        meta: { label: "Status", thClassName: "w-28", tdClassName: "w-28" },
+        meta: { label: "Trạng thái", thClassName: "w-28", tdClassName: "w-28" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Status" />
+          <DataTableColumnHeader column={column} title="Trạng thái" />
         ),
         cell: ({ row }) => (
-          <Badge variant={STATUS_TONE[row.original.status] ?? "secondary"}>
-            {row.original.status}
+          <Badge variant={ACTION_STATUS_TONE[row.original.status] ?? "secondary"}>
+            {STATUS_LABEL[row.original.status] ?? row.original.status}
           </Badge>
         ),
       },
@@ -214,26 +229,26 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         <CardContent className="flex-row flex-wrap items-center gap-2">
           <Select value={effectiveReportId ?? ""} onValueChange={setReportId}>
             <SelectTrigger className="w-72">
-              <SelectValue placeholder="Report: choose one" />
+              <SelectValue placeholder="Chọn kết luận" />
             </SelectTrigger>
             <SelectContent>
               {eligibleReports.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
-                  Report: {r.title}
+                  Kết luận: {r.title}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="accepted">Status: Accepted</SelectItem>
-              <SelectItem value="proposed">Status: Proposed</SelectItem>
-              <SelectItem value="edited">Status: Edited</SelectItem>
-              <SelectItem value="rejected">Status: Rejected</SelectItem>
-              <SelectItem value="all">Status: All</SelectItem>
+              <SelectItem value="accepted">Trạng thái: đã nhận</SelectItem>
+              <SelectItem value="proposed">Trạng thái: đề xuất</SelectItem>
+              <SelectItem value="edited">Trạng thái: đã chỉnh</SelectItem>
+              <SelectItem value="rejected">Trạng thái: đã từ chối</SelectItem>
+              <SelectItem value="all">Trạng thái: tất cả</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -243,7 +258,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         {/* By department */}
         <aside className="flex flex-col gap-1">
           <h2 className="px-2 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            By department
+            Theo phòng ban
           </h2>
           {["all", ...DEPARTMENTS.map((d) => d.toLowerCase())].map((key) => (
             <button
@@ -260,7 +275,15 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
               ) : (
                 <span className="w-2" aria-hidden />
               )}
-              <span className="flex-1 capitalize">{key}</span>
+              {key !== "all" ? (
+                <span
+                  aria-hidden
+                  className={`size-2 shrink-0 rounded-full bg-current ${DEPARTMENT_DOT[key] ?? ""}`}
+                />
+              ) : null}
+              <span className={`flex-1 ${key === "all" ? "" : "capitalize"}`}>
+                {key === "all" ? "Tất cả" : key}
+              </span>
               {key !== "all" && (departmentCounts.get(key) ?? 0) > 0 ? (
                 <span className="font-mono text-xs text-muted-foreground">
                   {departmentCounts.get(key)}
@@ -329,7 +352,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         {/* WHAT panel */}
         <Card size="sm" className="self-start">
           <CardHeader>
-            <CardTitle>What</CardTitle>
+            <CardTitle>Việc cần làm</CardTitle>
             <CardDescription>
               Mỗi phòng ban cần làm gì dựa trên action được chọn.
             </CardDescription>
@@ -391,8 +414,8 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
             </CardContent>
           ) : (
             <CardContent className="text-sm text-muted-foreground">
-              Select an action to see what each department should do and the
-              evidence behind the decision.
+              Chọn một hành động để xem từng phòng ban cần làm gì và bằng
+              chứng đằng sau quyết định.
             </CardContent>
           )}
         </Card>

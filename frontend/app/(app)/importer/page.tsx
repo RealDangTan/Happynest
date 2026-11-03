@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table"
 import { apiFetch } from "@/lib/api"
 import { useT } from "@/lib/i18n"
+import { IMPORT_STATUS_TONE } from "@/lib/tone"
 import type { ImportListResponse } from "@/lib/types"
 import { useImport } from "@/hooks/use-imports"
 import { useProduct } from "@/hooks/use-product"
@@ -42,23 +43,10 @@ import {
   type Phase,
 } from "@/components/importer/import-steps"
 
-const STATUS_TONE: Record<
-  string,
-  "secondary" | "default" | "destructive" | "outline"
-> = {
-  profile_ready: "default",
-  mapping_generating: "secondary",
-  mapping_review: "default",
-  importing: "secondary",
-  imported: "outline",
-  failed: "destructive",
-  cancelled: "outline",
-}
-
 function StatusBadge({ status }: { status: string }) {
   const t = useT().importer
   return (
-    <Badge variant={STATUS_TONE[status] ?? "secondary"}>
+    <Badge variant={IMPORT_STATUS_TONE[status] ?? "secondary"}>
       {t.status[status] ?? status}
     </Badge>
   )

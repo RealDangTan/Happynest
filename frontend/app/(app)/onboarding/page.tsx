@@ -27,38 +27,38 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useProduct } from "@/hooks/use-product";
+import { BrandMark } from "@/components/brand-mark";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
+import { STAGE_TONE, TONE_CLASSES } from "@/lib/navigation";
 
-/** Ba chặng của pipeline — dải tiến trình duy nhất trên trang, nhấn mạnh rằng
- * tạo workspace chỉ là bước 01 của hành trình LISTEN → UNDERSTAND → ACT. */
-const STAGE_FLOW = ["LISTEN", "UNDERSTAND", "ACT"] as const;
+/** Ba chặng của pipeline — mỗi chặng mang màu cánh logo như trên sidebar;
+ * tạo workspace là bước đầu của chặng Lắng nghe. */
+const STAGE_FLOW = ["listen", "understand", "act"] as const;
 
 function StageStrip({ active }: { active: number }) {
+  const t = useT();
   return (
     <ol aria-label="Tiến trình ba chặng" className="flex items-center gap-2">
       {STAGE_FLOW.map((stage, i) => (
         <li key={stage} className="flex items-center gap-2">
-          {i > 0 ? (
+          {i > 0 ? <span aria-hidden className="h-px w-5 bg-border" /> : null}
+          <span
+            className={cn(
+              "flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider",
+              i <= active ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
             <span
               aria-hidden
               className={cn(
-                "h-px w-6",
-                i <= active ? "bg-lichen/60" : "bg-border",
+                "size-1.5 rounded-full",
+                TONE_CLASSES[STAGE_TONE[stage]].dot,
+                i > active && "opacity-40",
               )}
             />
-          ) : null}
-          <span
-            className={cn(
-              "font-mono text-[10px] uppercase tracking-wider",
-              i < active
-                ? "text-lichen"
-                : i === active
-                  ? "text-signal"
-                  : "text-muted-foreground/50",
-            )}
-          >
-            {stage}
+            {t.nav.groups[stage]}
           </span>
         </li>
       ))}
@@ -137,19 +137,14 @@ export default function OnboardingPage() {
     <div className="mx-auto flex min-h-[70vh] w-full max-w-lg flex-col justify-center gap-6 py-6">
       <header className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="flex size-7 items-center justify-center rounded-md bg-lichen/20 font-heading text-sm font-semibold text-lichen"
-          >
-            H
-          </span>
+          <BrandMark />
           <span className="font-heading text-base">Happynest</span>
           <span className="ml-auto">
             <StageStrip active={done ? 1 : 0} />
           </span>
         </div>
         <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-          Setup · 01 / 03 — Listen
+          Thiết lập · Lắng nghe
         </p>
       </header>
 
@@ -171,7 +166,7 @@ export default function OnboardingPage() {
                 <Check className="size-4" />
               </span>
               <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                Workspace · 01 ✓
+                Workspace ✓
               </p>
             </div>
             <CardTitle className="font-heading text-xl">
@@ -206,7 +201,7 @@ export default function OnboardingPage() {
         <Card>
           <CardHeader>
             <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              Workspace · 01
+              Workspace
             </p>
             <CardTitle className="font-heading text-xl">
               Tạo workspace đầu tiên

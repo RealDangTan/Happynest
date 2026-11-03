@@ -8,8 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { useJourney } from "@/hooks/use-journey";
 import { useT, type Dictionary } from "@/lib/i18n";
-import { JOURNEY_STEPS, type NextAction, type NextKind } from "@/lib/journey";
-import { JOURNEY } from "@/lib/navigation";
+import { type NextAction, type NextKind } from "@/lib/journey";
+import { findStage, STAGE_TONE, TONE_CLASSES } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 /** Những bước mà trang đích đọc URL rồi tự làm việc ngay cả khi đang đứng ở đó. */
@@ -92,39 +92,30 @@ export function NextStepBar({
   const href = complete ? "/importer?new=1" : next.href;
   const showCta = complete || (!alreadyThere && (!samePage || intentful) && !(next.waiting && samePage));
 
-  const stepIndex = JOURNEY_STEPS.indexOf(next.step);
-  const stepLabel = t.nav.items[JOURNEY[stepIndex].key];
+  // Gợi ý mang màu của chặng chứa màn đích (giống sidebar), không đánh số
+  // bước — người dùng vẫn đi theo ba chặng tự do.
+  const stage = findStage(complete ? "/importer" : target.pathname);
+  const tone = TONE_CLASSES[STAGE_TONE[stage.group ?? "listen"]];
 
   return (
     <section
       aria-label={t.journey.progressLabel}
       className={cn(
-        "flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5",
+        "flex flex-col gap-4 rounded-xl border border-l-4 bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-5",
+        tone.border,
         className,
       )}
     >
       <div className="flex min-w-0 flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <ol className="flex items-center gap-1" aria-hidden>
-            {JOURNEY_STEPS.map((id) => {
-              const status = complete ? "done" : journey.steps[id].status;
-              return (
-                <li
-                  key={id}
-                  className={cn(
-                    "h-1.5 w-6 rounded-full",
-                    status === "done" && "bg-lichen",
-                    status === "current" && "bg-signal",
-                    status === "upcoming" && "bg-secondary",
-                  )}
-                />
-              );
-            })}
-          </ol>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-signal">
-            {t.journey.stepOf(stepIndex + 1, JOURNEY_STEPS.length)} · {stepLabel}
-          </p>
-        </div>
+        <p
+          className={cn(
+            "w-fit rounded-full px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide",
+            tone.chip,
+          )}
+        >
+          {t.journey.nextLabel}
+          {stage.key ? ` · ${t.nav.items[stage.key]}` : ""}
+        </p>
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 className="flex items-center gap-2 font-heading text-lg leading-snug" aria-live="polite">
             {next.waiting && !complete ? <Spinner /> : null}

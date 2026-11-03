@@ -19,13 +19,13 @@ const vi = {
   nav: {
     groups: { listen: "LẮNG NGHE", understand: "HIỂU", act: "HÀNH ĐỘNG" },
     items: {
-      importer: "Nhập phản hồi",
-      taxonomy: "Bộ chủ đề",
-      vault: "Phân loại phản hồi",
-      dataGraph: "Hỏi AI & duyệt",
+      importer: "Nhập dữ liệu",
+      taxonomy: "Taxonomy",
+      vault: "Kho phản hồi",
+      dataGraph: "Đồ thị dữ liệu",
       reports: "Báo cáo",
-      matrix: "Chọn hành động",
-      stakeholders: "Bàn giao",
+      matrix: "Ma trận ưu tiên",
+      stakeholders: "Các bên liên quan",
     },
     utility: {
       settings: {
@@ -51,7 +51,7 @@ const vi = {
     },
   },
   panel: {
-    home: "Lộ trình",
+    home: "Trang chủ",
     chat: "Chat",
     collapse: "Thu gọn panel",
     expand: "Mở rộng panel",
@@ -59,7 +59,7 @@ const vi = {
     helpContact: "Trợ giúp & liên hệ",
   },
   importer: {
-    title: "Nhập phản hồi",
+    title: "Nhập dữ liệu",
     description:
       "Một file CSV có cột nội dung phản hồi là đủ. AI đoán ý nghĩa từng cột, bạn xác nhận trước khi lưu.",
     back: "Quay lại",
@@ -264,11 +264,9 @@ const vi = {
     byDepartment: "Bàn giao theo nhóm",
   },
   journey: {
-    title: "Lộ trình",
-    library: "Tra cứu",
-    stepOf: (n: number, total: number) => `Bước ${n}/${total}`,
     checking: "Đang kiểm tra tiến độ…",
-    progressLabel: "Tiến độ lộ trình",
+    progressLabel: "Bước tiếp theo",
+    nextLabel: "Bước tiếp theo",
     meta: {
       feedback: (n: number) => `${n} phản hồi`,
       pending: (n: number) => `${n} chờ phân loại`,
@@ -526,13 +524,13 @@ const en: Dictionary = {
   nav: {
     groups: { listen: "LISTEN", understand: "UNDERSTAND", act: "ACT" },
     items: {
-      importer: "Import feedback",
-      taxonomy: "Topics",
-      vault: "Classify feedback",
-      dataGraph: "Ask AI & review",
+      importer: "Importer",
+      taxonomy: "Taxonomy",
+      vault: "Feedback Vault",
+      dataGraph: "Data Graph",
       reports: "Reports",
-      matrix: "Choose actions",
-      stakeholders: "Hand off",
+      matrix: "Priority Matrix",
+      stakeholders: "Stakeholders",
     },
     utility: {
       settings: {
@@ -558,7 +556,7 @@ const en: Dictionary = {
     },
   },
   panel: {
-    home: "Journey",
+    home: "Home",
     chat: "Chat",
     collapse: "Collapse panel",
     expand: "Expand panel",
@@ -566,7 +564,7 @@ const en: Dictionary = {
     helpContact: "Help & contact",
   },
   importer: {
-    title: "Import feedback",
+    title: "Importer",
     description:
       "A CSV with a feedback text column is enough. AI guesses what each column means; you confirm before anything is stored.",
     back: "Back",
@@ -771,11 +769,9 @@ const en: Dictionary = {
     byDepartment: "Hand off by team",
   },
   journey: {
-    title: "Journey",
-    library: "Look up",
-    stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
     checking: "Checking progress…",
-    progressLabel: "Journey progress",
+    progressLabel: "Next step",
+    nextLabel: "Next step",
     meta: {
       feedback: (n: number) => `${n} feedback`,
       pending: (n: number) => `${n} to classify`,

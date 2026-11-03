@@ -19,6 +19,12 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // Trạng thái ngữ nghĩa (2026-11-03): nền pastel + chữ đậm cùng sắc.
+        success: "bg-leaf-soft text-leaf-ink [a]:hover:bg-leaf-line",
+        warning: "bg-sun-soft text-sun-ink [a]:hover:bg-sun-line",
+        info: "bg-sky-soft text-sky-ink [a]:hover:bg-sky-line",
+        danger: "bg-coral-soft text-coral-ink [a]:hover:bg-coral-line",
+        ai: "bg-iris-soft text-iris-ink [a]:hover:bg-iris-line",
       },
     },
     defaultVariants: {

@@ -40,3 +40,7 @@
 ## Validation
 
 `npm exec -- vitest run` · `npm exec -- tsc --noEmit` · focused `npm exec -- eslint <files>` · browser walk-through localhost:3000.
+
+## Cập nhật 2026-11-03 — theo phản hồi owner
+
+Sidebar quay về ba nhóm Lắng nghe / Hiểu / Hành động như cũ (người dùng đi nhiều đường, không ép một hàng); rail 5 bước đã bỏ. Logic `lib/journey.ts` và dải "Bước tiếp theo" giữ nguyên, chỉ đổi cách hiển thị: chip màu chặng thay cho "Bước n/5", số việc chờ thành badge trên mục nav. Hệ màu pastel, font và logo theo brand guideline — xem decisions.md cùng ngày.

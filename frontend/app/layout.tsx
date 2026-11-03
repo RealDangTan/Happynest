@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Lora } from "next/font/google"
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google"
 import type { Metadata } from "next"
 
 import "./globals.css"
@@ -16,12 +16,19 @@ export const metadata: Metadata = {
     "AI agent tổng hợp, phân loại và phát hiện vấn đề từ phản hồi người dùng về sản phẩm AI.",
 }
 
-const loraHeading = Lora({ subsets: ["latin"], variable: "--font-heading" })
+// Brand guideline (UIchart): display serif Fraunces + Inter. Cả ba font nạp
+// subset "vietnamese" — Lora/Geist trước đây chỉ có latin nên chữ có dấu bị
+// trộn font dự phòng.
+const frauncesHeading = Fraunces({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-heading",
+  axes: ["opsz", "SOFT"],
+})
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
+const inter = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-sans" })
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
+const fontMono = JetBrains_Mono({
+  subsets: ["latin", "vietnamese"],
   variable: "--font-mono",
 })
 
@@ -38,8 +45,8 @@ export default function RootLayout({
         "antialiased",
         fontMono.variable,
         "font-sans",
-        geist.variable,
-        loraHeading.variable
+        inter.variable,
+        frauncesHeading.variable
       )}
     >
       <body>

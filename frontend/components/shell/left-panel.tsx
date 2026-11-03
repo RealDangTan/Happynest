@@ -1,15 +1,87 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Route, Settings } from "lucide-react";
+import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { JourneyRail } from "@/components/journey/journey-rail";
+import { STAGES, STAGE_TONE, TONE_CLASSES, type StageTone } from "@/lib/navigation";
 import { useT } from "@/lib/i18n";
+import { useJourney } from "@/hooks/use-journey";
+import { BrandMark } from "@/components/brand-mark";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePanel } from "./panel-provider";
 import { useChat } from "./chat-provider";
 import { ChatThread } from "./chat-thread";
 import { WhatsNew } from "./whats-new";
+
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+  collapsed,
+  tone,
+  badge,
+  badgeTitle,
+  isNext,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+  collapsed: boolean;
+  tone: StageTone;
+  /** Số việc đang chờ ở màn này (0 = ẩn). */
+  badge: number;
+  badgeTitle?: string;
+  /** Màn chứa bước tiếp theo của luồng — chấm nhỏ, không ép thứ tự. */
+  isNext: boolean;
+  onNavigate?: () => void;
+}) {
+  const toneClass = TONE_CLASSES[tone];
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      title={collapsed ? label : undefined}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        "before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:opacity-0 before:transition-opacity",
+        toneClass.bar,
+        collapsed && "justify-center px-0",
+        active
+          ? "bg-sidebar-accent font-medium text-sidebar-foreground before:opacity-100"
+          : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      {!collapsed ? <span className="min-w-0 flex-1 truncate">{label}</span> : null}
+      {badge > 0 ? (
+        <span
+          title={badgeTitle}
+          className={cn(
+            "rounded-full px-1.5 py-px font-mono text-[10px] font-semibold leading-4",
+            toneClass.chip,
+            collapsed && "absolute top-0.5 right-0.5 px-1",
+          )}
+        >
+          {badge > 99 ? "99+" : badge}
+          {badgeTitle ? <span className="sr-only"> — {badgeTitle}</span> : null}
+        </span>
+      ) : isNext ? (
+        <span
+          aria-hidden
+          className={cn(
+            "size-1.5 shrink-0 rounded-full",
+            toneClass.dot,
+            collapsed && "absolute top-1.5 right-1.5",
+          )}
+        />
+      ) : null}
+    </Link>
+  );
+}
 
 function SegmentButton({
   active,
@@ -49,6 +121,25 @@ export function LeftPanel() {
   const { chatOpen, openChat, closeChat } = useChat();
   const pathname = usePathname();
   const t = useT();
+  // Số việc chờ theo màn — chỉ là gợi ý, điều hướng vẫn tự do theo ba chặng.
+  const { journey } = useJourney();
+  const nextPath = journey ? journey.next.href.split("?")[0] : null;
+  const badges: Record<string, { count: number; title?: string }> = journey
+    ? {
+        "/vault": {
+          count: journey.steps.classify.count ?? 0,
+          title: t.journey.meta.pending(journey.steps.classify.count ?? 0),
+        },
+        "/data-graph": {
+          count: journey.steps.investigate.count ?? 0,
+          title: t.journey.meta.review(journey.steps.investigate.count ?? 0),
+        },
+        "/matrix": {
+          count: journey.steps.act.count ?? 0,
+          title: t.journey.meta.open(journey.steps.act.count ?? 0),
+        },
+      }
+    : {};
   // Fully separate tabs: Chat replaces the dock content, Home brings it back.
   const tab: "home" | "chat" = chatOpen ? "chat" : "home";
 
@@ -86,9 +177,7 @@ export function LeftPanel() {
               setMobileOpen(false);
             }}
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-lichen/20 font-heading text-sm font-semibold text-lichen">
-              H
-            </span>
+            <BrandMark />
             {!(collapsed && tab === "home") ? (
               <span className="truncate font-heading text-base">Happynest</span>
             ) : null}
@@ -134,7 +223,17 @@ export function LeftPanel() {
               active={tab === "home"}
               collapsed={collapsed && tab === "home"}
               label={t.panel.home}
-              icon={Route}
+              icon={() => (
+                <svg viewBox="0 0 24 24" fill="none" className="size-4">
+                  <path
+                    d="M3 10.5 12 3l9 7.5M5 9.5V21h5v-6h4v6h5V9.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
               onClick={() => closeChat()}
             />
             <SegmentButton
@@ -162,7 +261,7 @@ export function LeftPanel() {
           </div>
         </div>
 
-        {/* Journey tab: lộ trình 5 bước + nhóm tra cứu + footer tiện ích */}
+        {/* Home tab: the six-screen journey + frozen utilities footer */}
         <div className={cn("min-h-0 flex-1 flex-col", tab === "home" ? "flex" : "hidden")}>
           <ScrollArea className="min-h-0 flex-1">
             <nav
@@ -172,11 +271,41 @@ export function LeftPanel() {
               )}
               aria-label="Panel"
             >
-              <JourneyRail
-                pathname={pathname}
-                collapsed={collapsed}
-                onNavigate={() => setMobileOpen(false)}
-              />
+              <div className="w-full space-y-5">
+                {STAGES.map((stage) => (
+                  <div key={stage.group}>
+                    {!collapsed ? (
+                      <p className="flex items-center gap-2 px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/55">
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "size-2 rounded-full",
+                            TONE_CLASSES[STAGE_TONE[stage.group]].dot,
+                          )}
+                        />
+                        {t.nav.groups[stage.group]}
+                      </p>
+                    ) : null}
+                    <div className="space-y-1">
+                      {stage.items.map((item) => (
+                        <NavItem
+                          key={item.href}
+                          href={item.href}
+                          label={t.nav.items[item.key]}
+                          icon={item.icon}
+                          active={pathname === item.href}
+                          collapsed={collapsed}
+                          tone={STAGE_TONE[stage.group]}
+                          badge={badges[item.href]?.count ?? 0}
+                          badgeTitle={badges[item.href]?.title}
+                          isNext={nextPath === item.href && pathname !== item.href}
+                          onNavigate={() => setMobileOpen(false)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </nav>
           </ScrollArea>
 

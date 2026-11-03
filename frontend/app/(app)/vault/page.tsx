@@ -98,13 +98,16 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
 import { useT } from "@/lib/i18n"
+import { IMPORT_STATUS_TONE, RUN_STATUS_TONE, SEVERITY_TONE } from "@/lib/tone"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import type {
   Feedback,
   FeedbackListResponse,
   ImportRecord,
   RunProgress,
+  Severity,
 } from "@/lib/types"
+import { SEVERITY_LABEL } from "@/lib/labels"
 import {
   useBulkDeleteFeedbacks,
   useDeleteFeedback,
@@ -168,9 +171,7 @@ function ImportRowButton({
           {item.original_filename ?? item.id.slice(0, 8)}
         </span>
         {item.status === "imported" ? null : (
-          <Badge
-            variant={item.status === "failed" ? "destructive" : "secondary"}
-          >
+          <Badge variant={IMPORT_STATUS_TONE[item.status] ?? "secondary"}>
             {item.status === "mapping_review" || item.status === "profile_ready"
               ? "mapping"
               : item.status}
@@ -471,7 +472,7 @@ function FeedbackDetailDrawer({
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Analysis</span>
                   <span>
-                    <Badge variant={analysis ? "secondary" : "outline"}>
+                    <Badge variant={analysis ? "success" : "warning"}>
                       {analysis ? "Ready" : "Pending"}
                     </Badge>
                   </span>
@@ -596,7 +597,7 @@ function RunningAnalysisCard({
         </CardTitle>
         <CardDescription>{t.runLeave}</CardDescription>
         <CardAction>
-          <Badge variant={data.status === "running" ? "secondary" : "outline"}>
+          <Badge variant={RUN_STATUS_TONE[data.status] ?? "secondary"}>
             {t.runStatus[data.status] ?? data.status}
           </Badge>
         </CardAction>
@@ -1000,16 +1001,20 @@ function Vault({
         id: "content",
         enableSorting: false,
         enableHiding: false,
-        meta: { label: "Feedback", thClassName: "w-[38%]" },
-        header: "Feedback",
+        meta: {
+          label: "Phản hồi",
+          thClassName: "w-[40%] min-w-56",
+          tdClassName: "min-w-56 whitespace-normal",
+        },
+        header: "Phản hồi",
         cell: ({ row }) => (
           <>
-            <span className="line-clamp-2 block max-w-md text-sm">
+            <span className="line-clamp-2 max-w-xl text-sm">
               {row.original.feedback_text ?? "—"}
             </span>
             {row.original.pii_detected ? (
               <Badge variant="outline" className="ml-2">
-                PII masked
+                Đã ẩn PII
               </Badge>
             ) : null}
           </>
@@ -1018,9 +1023,9 @@ function Vault({
       {
         id: "source",
         accessorFn: (f: Feedback) => f.source,
-        meta: { label: "Source" },
+        meta: { label: "Nguồn" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Source" />
+          <DataTableColumnHeader column={column} title="Nguồn" />
         ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
@@ -1031,9 +1036,9 @@ function Vault({
       {
         id: "occurred_at",
         accessorFn: (f: Feedback) => f.occurred_at,
-        meta: { label: "Occurred" },
+        meta: { label: "Ngày" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Occurred" />
+          <DataTableColumnHeader column={column} title="Ngày" />
         ),
         cell: ({ row }) => (
           <span className="font-mono text-xs whitespace-nowrap">
@@ -1046,22 +1051,16 @@ function Vault({
         accessorFn: (f: Feedback) => f.ai_analysis?.severity ?? "",
         filterFn: multiSelectFilterFn,
         sortDescFirst: true,
-        meta: { label: "Severity" },
+        meta: { label: "Mức độ" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Severity" />
+          <DataTableColumnHeader column={column} title="Mức độ" />
         ),
         cell: ({ row }) => {
           const severity = row.original.ai_analysis?.severity
           if (!severity) return <span className="text-muted-foreground">—</span>
           return (
-            <Badge
-              variant={
-                severity === "critical" || severity === "high"
-                  ? "destructive"
-                  : "secondary"
-              }
-            >
-              {severity}
+            <Badge variant={SEVERITY_TONE[severity] ?? "secondary"}>
+              {SEVERITY_LABEL.vi[severity as Severity] ?? severity}
             </Badge>
           )
         },
@@ -1069,16 +1068,16 @@ function Vault({
       {
         id: "topics",
         enableSorting: false,
-        meta: { label: "Topic" },
+        meta: { label: "Chủ đề" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Topic" />
+          <DataTableColumnHeader column={column} title="Chủ đề" />
         ),
         cell: ({ row }) => {
           if (row.original.ai_analysis?.uncategorized)
-            return <Badge variant="outline">UNCATEGORIZED</Badge>
+            return <Badge variant="outline">Chưa có chủ đề</Badge>
           const first = row.original.ai_analysis?.topics?.[0]
           return first ? (
-            <span title={first} className="block max-w-48 truncate text-sm">
+            <span title={first} className="block max-w-36 truncate text-sm">
               {labelTopic(first)}
             </span>
           ) : (
@@ -1090,15 +1089,15 @@ function Vault({
         id: "state",
         enableSorting: false,
         enableHiding: false,
-        meta: { label: "State" },
+        meta: { label: "Trạng thái" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="State" />
+          <DataTableColumnHeader column={column} title="Trạng thái" />
         ),
         cell: ({ row }) => {
           const ready = Boolean(row.original.ai_analysis)
           return (
-            <Badge variant={ready ? "secondary" : "outline"}>
-              {ready ? "Ready" : "Pending"}
+            <Badge variant={ready ? "success" : "warning"}>
+              {ready ? "Đã phân loại" : "Chờ phân loại"}
             </Badge>
           )
         },
@@ -1160,14 +1159,14 @@ function Vault({
       <div className="grid min-w-0 gap-6 lg:grid-cols-[248px_minmax(0,1fr)]">
         <aside className="flex flex-col gap-2">
           <h2 className="px-2 pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            Files
+            File đã nhập
           </h2>
           <ImportRowButton
             item={
               {
                 id: "all",
                 status: "imported",
-                original_filename: "All imports",
+                original_filename: "Tất cả file",
               } as ImportRecord
             }
             active={!activeImportId}
@@ -1229,8 +1228,8 @@ function Vault({
                 setPage(1)
               }}
             >
-              <SelectTrigger size="sm" className="w-40">
-                <SelectValue placeholder="Topic" />
+              <SelectTrigger size="sm" className="w-48">
+                <SelectValue placeholder="Chủ đề" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Topic: any</SelectItem>
@@ -1248,14 +1247,14 @@ function Vault({
                 setPage(1)
               }}
             >
-              <SelectTrigger size="sm" className="w-40">
-                <SelectValue placeholder="Analysis state" />
+              <SelectTrigger size="sm" className="w-48">
+                <SelectValue placeholder="Trạng thái phân loại" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Analysis: any</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Ready</SelectItem>
-                <SelectItem value="uncategorized">UNCATEGORIZED</SelectItem>
+                <SelectItem value="all">Mọi trạng thái</SelectItem>
+                <SelectItem value="pending">Chờ phân loại</SelectItem>
+                <SelectItem value="completed">Đã phân loại</SelectItem>
+                <SelectItem value="uncategorized">Chưa có chủ đề</SelectItem>
               </SelectContent>
             </Select>
           </DataTableToolbar>
@@ -1362,7 +1361,7 @@ function Vault({
                   disabled={selectedReady === 0 && !activeImportId}
                   onClick={exploreSelected}
                 >
-                  Explore selected
+                  Khám phá mục đã chọn
                 </Button>
               </div>
             </div>

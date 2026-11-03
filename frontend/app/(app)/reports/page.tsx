@@ -60,21 +60,22 @@ import {
 import { useProduct } from "@/hooks/use-product"
 import { readableEvidence } from "@/lib/investigation"
 import type { InsightItem } from "@/lib/types"
+import { INSIGHT_STATUS_TONE } from "@/lib/tone"
 
-const STATUS_TONE: Record<
-  string,
-  { label: string; tone: "default" | "secondary" | "destructive" | "outline" }
-> = {
-  pending: { label: "Needs review", tone: "default" },
-  investigating: { label: "Investigating", tone: "secondary" },
-  approved: { label: "Approved", tone: "outline" },
-  edited: { label: "Approved (edited)", tone: "outline" },
-  rejected: { label: "Rejected", tone: "destructive" },
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Chờ duyệt",
+  investigating: "Đang điều tra",
+  approved: "Đã duyệt",
+  edited: "Đã duyệt (có sửa)",
+  rejected: "Đã từ chối",
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_TONE[status] ?? { label: status, tone: "secondary" as const }
-  return <Badge variant={s.tone}>{s.label}</Badge>
+  return (
+    <Badge variant={INSIGHT_STATUS_TONE[status] ?? "secondary"}>
+      {STATUS_LABEL[status] ?? status}
+    </Badge>
+  )
 }
 
 // ------------------------------------------------------------------ Report body
@@ -118,12 +119,12 @@ function ReportBody({
       <CardContent className="flex flex-col gap-6">
         <section className="flex flex-col gap-2">
           <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Finding
+            Kết luận
           </h3>
           <p className="font-heading text-lg leading-relaxed">{finding}</p>
           {findingConfidence != null ? (
             <p className="font-mono text-xs text-muted-foreground">
-              Confidence {findingConfidence.toFixed(2)}
+              Độ tin cậy {Math.round(findingConfidence * 100)}%
             </p>
           ) : null}
         </section>
@@ -131,12 +132,12 @@ function ReportBody({
         {hypothesis?.statement ? (
           <section className="flex flex-col gap-2 border-l-2 border-pollen pl-4">
             <h3 className="text-xs font-semibold tracking-wide text-warning uppercase">
-              Hypothesis — unconfirmed
+              Giả thuyết — chưa xác nhận
             </h3>
             <p className="text-sm leading-relaxed">{hypothesis.statement}</p>
             {hypothesis.confidence != null ? (
               <p className="font-mono text-xs text-muted-foreground">
-                Confidence {hypothesis.confidence.toFixed(2)}
+                Độ tin cậy {Math.round(hypothesis.confidence * 100)}%
               </p>
             ) : null}
           </section>
@@ -145,7 +146,7 @@ function ReportBody({
         {impact.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Impact
+              Ảnh hưởng
             </h3>
             <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
               {impact.map((i, idx) => (
@@ -160,7 +161,7 @@ function ReportBody({
         {limitations.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Limitations
+              Giới hạn
             </h3>
             <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
               {limitations.map((l, idx) => (
@@ -174,7 +175,7 @@ function ReportBody({
 
         <section className="flex flex-col gap-2">
           <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Evidence
+            Bằng chứng
           </h3>
           {evidence.length ? (
             <ul className="flex flex-col gap-2">
@@ -249,7 +250,7 @@ function ReportEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit report</DialogTitle>
+          <DialogTitle>Sửa báo cáo</DialogTitle>
           <DialogDescription>
             Sửa title/finding sai do AI — mọi chỉnh sửa được log kèm reviewer.
           </DialogDescription>
@@ -294,7 +295,7 @@ function Reports({
   initialRunId: string | null
   initialReportId: string | null
 }) {
-  const { product, productId } = useProduct()
+  const { productId } = useProduct()
   const insights = useInsights()
   const [selectedId, setSelectedId] = useState<string | null>(initialReportId)
   const [statusFilter, setStatusFilter] = useState("all")
@@ -326,7 +327,7 @@ function Reports({
     <div className="flex flex-col gap-6">
       <NextStepBar />
       <PageHeader
-        title={product?.name ?? "Reports"}
+        title="Báo cáo"
         description="Kết quả điều tra và bằng chứng. Duyệt kết luận ngay trong cuộc điều tra hoặc Chat."
       />
 
@@ -335,26 +336,26 @@ function Reports({
         {/* Reports list */}
         <Card size="sm" className="self-start">
           <CardHeader>
-            <CardTitle>Reports</CardTitle>
+            <CardTitle>Danh sách báo cáo</CardTitle>
             <CardDescription>{insights.isPending ? "Đang tải báo cáo…" : `${items.length} trong sản phẩm này`}</CardDescription>
           </CardHeader>
           <CardContent className="gap-3">
             <Input
-              placeholder="Search reports…"
+              placeholder="Tìm báo cáo…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Status: all</SelectItem>
-                <SelectItem value="pending">Needs review</SelectItem>
-                <SelectItem value="investigating">Investigating</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="edited">Approved (edited)</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="all">Mọi trạng thái</SelectItem>
+                <SelectItem value="pending">Chờ duyệt</SelectItem>
+                <SelectItem value="investigating">Đang điều tra</SelectItem>
+                <SelectItem value="approved">Đã duyệt</SelectItem>
+                <SelectItem value="edited">Đã duyệt (có sửa)</SelectItem>
+                <SelectItem value="rejected">Đã từ chối</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex flex-col gap-1">
@@ -411,7 +412,7 @@ function Reports({
                     onClick={() => setEditingReport(selected)}
                   >
                     <Pencil data-icon="inline-start" />
-                    Edit report
+                    Sửa báo cáo
                   </Button>
                   <Button
                     size="sm"
@@ -420,7 +421,7 @@ function Reports({
                     onClick={() => setConfirmDeleteReport(true)}
                   >
                     <Trash2 data-icon="inline-start" />
-                    Delete report
+                    Xoá báo cáo
                   </Button>
                 </div>
               {selected.run_id ? <Button variant="outline" asChild><Link href={`/data-graph?run=${selected.run_id}`}>Xem cuộc điều tra và hành động</Link></Button> : null}
@@ -455,11 +456,11 @@ function Reports({
         {/* Review history rail */}
         <Card size="sm" className="self-start">
           <CardHeader>
-            <CardTitle>Review history</CardTitle>
+            <CardTitle>Lịch sử duyệt</CardTitle>
           </CardHeader>
           <CardContent className="gap-3 text-sm">
             {items.length === 0 ? (
-              <p className="text-muted-foreground">No decisions yet.</p>
+              <p className="text-muted-foreground">Chưa có quyết định nào.</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {items.slice(0, 8).map((i) => (
@@ -474,14 +475,14 @@ function Reports({
               </ul>
             )}
             <p className="text-xs text-muted-foreground">
-              Every approval, edit, and rejection is recorded with its reviewer.
+              Mọi lần duyệt, sửa và từ chối đều được ghi lại kèm người duyệt.
             </p>
           </CardContent>
           {selected &&
           (selected.status === "approved" || selected.status === "edited") ? (
             <CardFooter>
               <Button variant="outline" className="w-full" asChild>
-                <Link href={`/matrix?report=${selected.id}`}>View actions</Link>
+                <Link href={`/matrix?report=${selected.id}`}>Xem hành động</Link>
               </Button>
             </CardFooter>
           ) : null}
@@ -501,7 +502,7 @@ function Reports({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete report?</AlertDialogTitle>
+            <AlertDialogTitle>Xoá báo cáo?</AlertDialogTitle>
             <AlertDialogDescription>
               Báo cáo “{selected?.title}” và toàn bộ actions liên quan sẽ bị xoá
               vĩnh viễn (không thể hoàn tác).

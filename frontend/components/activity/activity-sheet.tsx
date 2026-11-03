@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { IMPORT_STATUS_TONE, RUN_STATUS_TONE } from "@/lib/tone";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
@@ -66,7 +67,11 @@ const STATUS_LABEL: Record<string, string> = {
 
 function statusBadge(status: string) {
   return (
-    <Badge variant={status === "failed" ? "destructive" : "secondary"}>
+    <Badge
+      variant={
+        IMPORT_STATUS_TONE[status] ?? RUN_STATUS_TONE[status] ?? "secondary"
+      }
+    >
       {STATUS_LABEL[status] ?? status}
     </Badge>
   );

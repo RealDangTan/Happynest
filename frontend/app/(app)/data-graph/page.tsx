@@ -38,7 +38,7 @@ import {
   DataTableToolbar,
 } from "@/components/data-table"
 import { apiFetch } from "@/lib/api"
-import type { Feedback, FeedbackListResponse, ImportRecord } from "@/lib/types"
+import type { Feedback, FeedbackListResponse, ImportRecord, Severity } from "@/lib/types"
 import { useCreateAgentRun } from "@/hooks/use-agent"
 import { InvestigationCard } from "@/components/ai/investigation-card"
 import { useInvestigationSession } from "@/hooks/use-investigation-session"
@@ -52,6 +52,9 @@ import { scopeLine, shortDate, topTopics, topicLabeler, trendByDate } from "@/li
 import { PageHeader } from "@/components/page-header"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import { useT } from "@/lib/i18n"
+import { SEVERITY_TONE } from "@/lib/tone"
+import { SEVERITY_LABEL } from "@/lib/labels"
+import { cn } from "@/lib/utils"
 
 function useImportFeedbacks(importIds: string[]) {
   return useQuery({
@@ -138,8 +141,8 @@ function ScopeTable({
         cell: ({ row }) => {
           const severity = row.original.ai_analysis?.severity
           return severity ? (
-            <Badge variant={severity === "critical" || severity === "high" ? "destructive" : "secondary"}>
-              {severity}
+            <Badge variant={SEVERITY_TONE[severity] ?? "secondary"}>
+              {SEVERITY_LABEL.vi[severity as Severity] ?? severity}
             </Badge>
           ) : (
             "—"
@@ -216,8 +219,8 @@ function DatasetsRail({
   return (
     <Card size="sm" className="self-start">
       <CardHeader>
-        <CardTitle>Datasets</CardTitle>
-        <CardDescription>Chọn import để giới hạn phạm vi</CardDescription>
+        <CardTitle>Bộ dữ liệu</CardTitle>
+        <CardDescription>Chọn file để giới hạn phạm vi xem</CardDescription>
       </CardHeader>
       <CardContent className="gap-2">
         {imports.map((item) => (
@@ -237,7 +240,7 @@ function DatasetsRail({
         ))}
         {imports.length === 0 ? (
           <p className="px-2 text-sm text-muted-foreground">
-            No imported datasets yet.
+            Chưa có file nào được nhập.
           </p>
         ) : null}
       </CardContent>
@@ -248,15 +251,23 @@ function DatasetsRail({
           onClick={onApply}
           disabled={checked.size === 0}
         >
-          Apply scope
+          Áp dụng phạm vi
         </Button>
         <Button size="sm" variant="ghost" asChild>
-          <Link href="/vault">Open Vault</Link>
+          <Link href="/vault">Mở Kho phản hồi</Link>
         </Button>
       </CardFooter>
     </Card>
   )
 }
+
+const CLOUD_INK = [
+  "text-leaf-ink",
+  "text-sky-ink",
+  "text-coral-ink",
+  "text-iris-ink",
+  "text-sun-ink",
+]
 
 function WordCloud({
   words,
@@ -270,7 +281,7 @@ function WordCloud({
   const max = Math.max(...words.map((w) => w.count), 1)
   return (
     <div className="flex flex-wrap items-baseline justify-center gap-x-5 gap-y-2 p-8">
-      {words.map(({ topic, count }) => {
+      {words.map(({ topic, count }, i) => {
         const scale = 0.8 + (count / max) * 1.6
         return (
           <button
@@ -278,9 +289,10 @@ function WordCloud({
             onClick={() => onSelect(topic)}
             title={label(topic) !== topic ? topic : undefined}
             style={{ fontSize: `${scale}rem` }}
-            className={`font-heading transition-colors hover:text-signal ${
-              count / max > 0.6 ? "text-foreground" : "text-muted-foreground"
-            }`}
+            className={cn(
+              "rounded-md px-1 font-heading underline-offset-4 transition-colors hover:underline",
+              CLOUD_INK[i % CLOUD_INK.length],
+            )}
           >
             {label(topic)}
           </button>
@@ -517,10 +529,10 @@ function DataGraph({
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
-              <TabsTrigger value="cloud">Word cloud</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
-              <TabsTrigger value="topics">Topics</TabsTrigger>
-              <TabsTrigger value="table">Table</TabsTrigger>
+              <TabsTrigger value="cloud">Đám mây chủ đề</TabsTrigger>
+              <TabsTrigger value="trends">Xu hướng</TabsTrigger>
+              <TabsTrigger value="topics">Chủ đề</TabsTrigger>
+              <TabsTrigger value="table">Bảng</TabsTrigger>
             </TabsList>
             <TabsContent value="cloud">
               <Card>
@@ -537,7 +549,7 @@ function DataGraph({
                         onSelect={setSelectedTopic}
                       />
                       <p className="pb-4 text-center text-xs text-muted-foreground">
-                        Word size = frequency in this scope.
+                        Cỡ chữ = số phản hồi nhắc tới chủ đề trong phạm vi này.
                       </p>
                     </>
                   ) : (
@@ -583,7 +595,7 @@ function DataGraph({
                     ))}
                     {words.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        No topics yet.
+                        Chưa có chủ đề.
                       </p>
                     ) : null}
                   </ul>
@@ -616,7 +628,7 @@ function DataGraph({
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">
-                  Selected:{" "}
+                  Đang xem:{" "}
                   <span className="text-signal">{topicLabel(selectedTopic)}</span>
 
                 </CardTitle>
@@ -630,8 +642,7 @@ function DataGraph({
                   </Button>
                 </CardAction>
                 <CardDescription className="font-mono text-xs">
-                  {matched.length} feedback{" "}
-                  {matched.length === 1 ? "item" : "items"}
+                  {matched.length} phản hồi
                 </CardDescription>
               </CardHeader>
               <CardContent>
