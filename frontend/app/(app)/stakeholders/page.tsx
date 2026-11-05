@@ -254,7 +254,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         </CardContent>
       </Card>
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[200px_minmax(0,1fr)_280px]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[200px_minmax(0,1fr)_minmax(300px,380px)]">
         {/* By department */}
         <aside className="flex flex-col gap-1">
           <h2 className="px-2 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -360,10 +360,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
           {selected ? (
             <CardContent className="flex flex-col gap-4">
               <div>
-                <p className="font-mono text-xs text-signal">
-                  A-{selected.id.slice(0, 8)}
-                </p>
-                <p className="mt-1 font-heading text-base leading-snug">
+                <p className="font-heading text-base leading-snug">
                   {selected.recommendation}
                 </p>
                 <div className="mt-2 flex items-center gap-2">
@@ -373,41 +370,40 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
                   <AiBadge />
                 </div>
               </div>
+              {selected.rationale ? (
+                <div className="flex flex-col gap-1 text-sm">
+                  <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Lý do đề xuất
+                  </h3>
+                  <p>{selected.rationale}</p>
+                </div>
+              ) : null}
               <div className="flex flex-col gap-1 text-sm">
                 <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Recommendation
-                </h3>
-                <p>{selected.recommendation}</p>
-                {selected.rationale ? (
-                  <p className="text-muted-foreground">{selected.rationale}</p>
-                ) : null}
-              </div>
-              <div className="flex flex-col gap-1 text-sm">
-                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Why
+                  Căn cứ
                 </h3>
                 <p>
-                  Finding in{" "}
+                  Từ kết luận trong{" "}
                   <Link
                     className="text-signal underline"
                     href={`/reports?report=${selected.insight_id}`}
                   >
-                    report
+                    báo cáo
                   </Link>{" "}
-                  · impact {effectiveScores(selected).impact}, effort{" "}
-                  {effectiveScores(selected).effort}
+                  · Tác động {effectiveScores(selected).impact}/10 · Nỗ lực{" "}
+                  {effectiveScores(selected).effort}/10
                 </p>
               </div>
               <ActionDecisionSupport action={selected} />
               <div className="flex flex-col gap-2">
                 <Button size="sm" variant="outline" asChild>
                   <Link href={`/reports?report=${selected.insight_id}`}>
-                    Open report
+                    Mở báo cáo
                   </Link>
                 </Button>
                 <Button size="sm" variant="outline" asChild>
                   <Link href={`/matrix?report=${selected.insight_id}`}>
-                    Show in matrix
+                    Xem trên ma trận
                   </Link>
                 </Button>
               </div>

@@ -71,7 +71,7 @@ import { useAppLang, useT } from "@/lib/i18n"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import { ReviewAction } from "@/components/ai/investigation-actions"
 import { cn } from "@/lib/utils"
-import { effectiveScores, QUADRANT_LABEL, quadrantOf } from "@/lib/matrix"
+import { effectiveScores, quadrantOf } from "@/lib/matrix"
 import type { ActionItem, BusinessFunction, Quadrant } from "@/lib/types"
 
 const BUSINESS_FUNCTIONS: { value: BusinessFunction; label: string }[] = [
@@ -113,8 +113,22 @@ function draftFrom(action: ActionItem): Draft {
   }
 }
 
+const QUADRANT_VI: Record<Quadrant, string> = {
+  quick_wins: "Làm ngay",
+  strategic_investments: "Đầu tư chiến lược",
+  low_priority: "Ưu tiên thấp",
+  reconsider: "Cân nhắc lại",
+}
+
+const ACTION_STATUS_VI: Record<string, string> = {
+  proposed: "Đề xuất",
+  edited: "Đã chỉnh",
+  accepted: "Đã nhận",
+  rejected: "Đã từ chối",
+}
+
 function toQuadrantLabel(q: Quadrant): string {
-  return QUADRANT_LABEL[q]
+  return QUADRANT_VI[q]
 }
 
 // ------------------------------------------------------------------ D02 drawer
@@ -186,14 +200,15 @@ function ActionDrawer({
             {action.recommendation}
           </SheetTitle>
           <SheetDescription>
-            {departmentLabel(action.function)} · {action.status}
+            {departmentLabel(action.function)} ·{" "}
+            {ACTION_STATUS_VI[action.status] ?? action.status}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-6 px-4 pb-8">
           <section className="flex flex-col gap-1">
             <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              What
+              Việc cần làm
             </h3>
             <p className="text-sm">{action.recommendation}</p>
             {action.rationale ? (
@@ -205,15 +220,15 @@ function ActionDrawer({
 
           <section className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Why
+              Căn cứ
             </h3>
             <p className="text-sm">
-              Supported by the reviewed finding.{" "}
+              Dựa trên kết luận đã được duyệt.{" "}
               <Link
                 className="text-signal underline"
                 href={`/reports?report=${action.insight_id}`}
               >
-                Open report
+                Mở báo cáo
               </Link>
             </p>
           </section>
@@ -224,16 +239,16 @@ function ActionDrawer({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs tracking-wide text-muted-foreground uppercase">
-                  <th className="pb-2 font-medium">AI estimate</th>
-                  <th className="pb-2 font-medium">Your decision</th>
+                  <th className="pb-2 font-medium">AI ước lượng</th>
+                  <th className="pb-2 font-medium">Quyết định của bạn</th>
                 </tr>
               </thead>
               <tbody className="font-mono">
                 {(
                   [
-                    ["Impact", "impact"],
-                    ["Effort", "effort"],
-                    ["Urgency", "urgency"],
+                    ["Tác động", "impact"],
+                    ["Nỗ lực", "effort"],
+                    ["Khẩn cấp", "urgency"],
                   ] as const
                 ).map(([label, key]) => (
                   <tr key={key} className="border-t">
@@ -264,22 +279,22 @@ function ActionDrawer({
             <AiBadge className="mt-2" />
             {previewQuadrant !== originalQuadrant ? (
               <p className="mt-2 text-xs">
-                Preview: moves to{" "}
-                <strong>{toQuadrantLabel(previewQuadrant)}</strong> (from{" "}
-                {toQuadrantLabel(originalQuadrant)}). Nothing changes until Save
-                or Accept.
+                Xem trước: chuyển sang{" "}
+                <strong>{toQuadrantLabel(previewQuadrant)}</strong> (từ{" "}
+                {toQuadrantLabel(originalQuadrant)}). Chưa có gì thay đổi cho
+                tới khi bạn lưu hoặc nhận.
               </p>
             ) : null}
           </section>
 
           <Field>
             <FieldLabel htmlFor="override-reason">
-              Reason for changes
+              Lý do thay đổi
             </FieldLabel>
             <Textarea
               id="override-reason"
               rows={2}
-              placeholder="Why did you adjust the AI estimates?"
+              placeholder="Vì sao bạn chỉnh ước lượng của AI?"
               value={draft.reason}
               onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
             />
@@ -287,8 +302,8 @@ function ActionDrawer({
 
           <Alert>
             <AlertDescription>
-              G3 — You decide the final priority. Saving an edit never implies
-              acceptance.
+              Bạn là người quyết định ưu tiên cuối cùng. Lưu chỉnh sửa không có
+              nghĩa là đã nhận hành động.
             </AlertDescription>
           </Alert>
 
@@ -299,11 +314,11 @@ function ActionDrawer({
               onClick={() =>
                 patch(
                   { status: "rejected" },
-                  "Action rejected — kept in history."
+                  "Đã từ chối hành động — vẫn giữ trong lịch sử."
                 )
               }
             >
-              Reject
+              Từ chối
             </Button>
             <div className="flex gap-2">
               <Button
@@ -317,11 +332,11 @@ function ActionDrawer({
                       urgency: draft.urgency,
                       override_reason: draft.reason || undefined,
                     },
-                    "Edits saved — awaiting decision."
+                    "Đã lưu chỉnh sửa — chờ bạn quyết định."
                   )
                 }
               >
-                Save edits
+                Lưu chỉnh sửa
               </Button>
               <Button
                 disabled={update.isPending}
@@ -334,11 +349,11 @@ function ActionDrawer({
                       urgency: draft.urgency,
                       override_reason: draft.reason || undefined,
                     },
-                    "Action accepted."
+                    "Đã nhận hành động."
                   )
                 }
               >
-                Accept action
+                Nhận hành động
               </Button>
             </div>
           </div>

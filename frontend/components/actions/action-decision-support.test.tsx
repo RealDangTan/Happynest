@@ -31,6 +31,21 @@ function render(support: typeof brief | null = brief, recommendation = brief.bas
 }
 
 describe("action decision support", () => {
+  it("renders tool evidence as readable text, never raw JSON", () => {
+    const html = render({
+      ...brief,
+      evidence: [{
+        evidence_id: "e-2",
+        statement: 'inspect_cluster: {"cluster_id": "03bb95ec-0bcb-4fdd-9418-495e1c793389", "name": "Lỗi đăng nhập", "feedback_count": 9, "is_emerging": f',
+        source_tool: "inspect_cluster",
+      }],
+    });
+    expect(html).toContain("Lỗi đăng nhập");
+    expect(html).toContain("Số phản hồi");
+    expect(html).not.toContain("cluster_id");
+    expect(html).not.toContain("03bb95ec");
+  });
+
   it("shows internal evidence separately from external guidance and application", () => {
     const html = render();
     expect(html).toContain("Users cannot correct answers");
@@ -41,14 +56,14 @@ describe("action decision support", () => {
   });
 
   it("identifies the original analysis after recommendation or rationale edits", () => {
-    expect(render(brief, "A different action")).toContain("original AI proposal");
-    expect(render(brief, undefined, "A different rationale")).toContain("original AI proposal");
-    expect(render()).not.toContain("original AI proposal");
+    expect(render(brief, "A different action")).toContain("đề xuất gốc của AI");
+    expect(render(brief, undefined, "A different rationale")).toContain("đề xuất gốc của AI");
+    expect(render()).not.toContain("đề xuất gốc của AI");
   });
 
   it("does not invent analysis for legacy or manual actions", () => {
     const html = render(null);
-    expect(html).toContain("No decision analysis");
+    expect(html).toContain("Chưa có phân tích");
     expect(html).not.toContain("Microsoft HAX");
   });
 

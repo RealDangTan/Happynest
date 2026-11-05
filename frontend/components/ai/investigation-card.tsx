@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { useAgentDecision, useAgentRun } from "@/hooks/use-agent";
 import { apiFetch } from "@/lib/api";
-import { readableEvidence, TOOL_LABELS } from "@/lib/investigation";
-import { cn } from "@/lib/utils";
+import { TOOL_LABELS } from "@/lib/investigation";
+import { EvidenceCard } from "./evidence-card";
+import { agentItemText, dedupeEvidence, humanizeAgentText } from "@/lib/evidence";
 import { RUN_STATUS_TONE } from "@/lib/tone";
 import type { AgentDecision, InsightsListResponse, PendingApproval } from "@/lib/types";
 import { AiTrace } from "./ai-trace";
@@ -85,7 +86,7 @@ export function InvestigationCard({runId, question, onRetry}: {
   });
   const report = reports.data?.items.find(item => item.run_id === runId);
   const draft = pending?.insight;
-  const evidence = pending?.evidence ?? report?.evidence ?? [];
+  const evidence = dedupeEvidence(pending?.evidence ?? report?.evidence ?? []);
   const [showEvidence, setShowEvidence] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
 
@@ -106,14 +107,14 @@ export function InvestigationCard({runId, question, onRetry}: {
       </div> : null}
       {draft || report ? <>
         <h3 className="font-heading text-lg leading-snug">{draft?.title ?? report?.title}</h3>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{draft?.finding ?? report?.finding}</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">{humanizeAgentText(draft?.finding ?? report?.finding ?? "")}</p>
         <p className="text-xs text-muted-foreground">Độ tin cậy ước lượng: {Math.round((draft?.finding_confidence ?? report?.finding_confidence ?? 0) * 100)}%</p>
-        {draft?.hypothesis_statement || report?.hypothesis?.statement ? <p className="border-l-2 pl-3 text-sm text-muted-foreground">Giả thuyết cần kiểm chứng: {draft?.hypothesis_statement ?? report?.hypothesis?.statement}</p> : null}
-        {(draft?.limitations ?? report?.limitations ?? []).length ? <ul className="flex list-disc flex-col gap-1 pl-5 text-xs text-muted-foreground">{(draft?.limitations ?? report?.limitations ?? []).map((text, i) => <li key={i}>{String(text)}</li>)}</ul> : null}
+        {draft?.hypothesis_statement || report?.hypothesis?.statement ? <p className="border-l-2 pl-3 text-sm text-muted-foreground">Giả thuyết cần kiểm chứng: {humanizeAgentText(draft?.hypothesis_statement ?? report?.hypothesis?.statement ?? "")}</p> : null}
+        {(draft?.limitations ?? report?.limitations ?? []).length ? <ul className="flex list-disc flex-col gap-1 pl-5 text-xs text-muted-foreground">{(draft?.limitations ?? report?.limitations ?? []).map((text, i) => <li key={i}>{agentItemText(text)}</li>)}</ul> : null}
         {evidence.length ? <div className="flex flex-col gap-2">
           <p className="text-sm font-medium">Bằng chứng ({evidence.length})</p>
-          {(showEvidence ? evidence : evidence.slice(0, 2)).map((item, i) => <p key={item.evidence_id ?? i} className={cn("rounded-md border p-3 text-sm leading-relaxed break-words", !showEvidence && "line-clamp-4")}>{readableEvidence(item.statement)}</p>)}
-          {evidence.length > 2 || evidence.some(item => item.statement.length > 400) ? <Button size="sm" variant="ghost" onClick={() => setShowEvidence(!showEvidence)}>{showEvidence ? "Thu gọn bằng chứng" : "Xem toàn bộ bằng chứng"}</Button> : null}
+          {(showEvidence ? evidence : evidence.slice(0, 2)).map(({ item, repeats }, i) => <EvidenceCard key={item.evidence_id ?? i} statement={item.statement} index={i + 1} repeats={repeats} compact={!showEvidence} />)}
+          {evidence.length > 2 || evidence.some(({ item }) => item.statement.length > 400) ? <Button size="sm" variant="ghost" onClick={() => setShowEvidence(!showEvidence)}>{showEvidence ? "Thu gọn bằng chứng" : `Xem toàn bộ ${evidence.length} bằng chứng`}</Button> : null}
         </div> : <p className="text-sm text-muted-foreground">Chưa có bằng chứng để xác nhận kết luận này.</p>}
       </> : null}
       {data?.error ? <Alert variant="destructive"><AlertTitle>{data.status === "failed" ? "Điều tra chưa hoàn tất" : "Chưa lưu được quyết định"}</AlertTitle><AlertDescription>Phiên và dữ liệu vẫn được giữ. Hãy kiểm tra kết nối rồi thử lại.</AlertDescription></Alert> : null}

@@ -66,6 +66,7 @@ import {
 } from "@/hooks/use-imports"
 import { ApiError } from "@/lib/api"
 import { useT } from "@/lib/i18n"
+import { readableError } from "@/lib/evidence"
 
 export const IMPORT_STEPS = ["File", "Preview", "Mapping", "Result"] as const
 
@@ -241,7 +242,7 @@ export function StepPreview({
         <Alert variant="destructive">
           <TriangleAlert className="size-4" />
           <AlertTitle>{t.preview.lastFailed}</AlertTitle>
-          <AlertDescription>{detail.data.error}</AlertDescription>
+          <AlertDescription>{readableError(detail.data.error)}</AlertDescription>
         </Alert>
       ) : null}
       {preview.isPending ? (
@@ -739,7 +740,7 @@ export function StepResult({ importId }: { importId: string }) {
           <Alert variant="destructive">
             <TriangleAlert className="size-4" />
             <AlertTitle>{t.failed}</AlertTitle>
-            <AlertDescription>{item.error ?? t.unknownError}</AlertDescription>
+            <AlertDescription>{item.error ? readableError(item.error) : t.unknownError}</AlertDescription>
           </Alert>
           <Button variant="outline" asChild className="self-start">
             <Link href="/importer?new=1">{t.another}</Link>

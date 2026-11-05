@@ -58,7 +58,8 @@ import {
   useUpdateInsight,
 } from "@/hooks/use-insights"
 import { useProduct } from "@/hooks/use-product"
-import { readableEvidence } from "@/lib/investigation"
+import { EvidenceCard } from "@/components/ai/evidence-card"
+import { agentItemText, dedupeEvidence, humanizeAgentText } from "@/lib/evidence"
 import type { InsightItem } from "@/lib/types"
 import { INSIGHT_STATUS_TONE } from "@/lib/tone"
 
@@ -121,7 +122,7 @@ function ReportBody({
           <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Kết luận
           </h3>
-          <p className="font-heading text-lg leading-relaxed">{finding}</p>
+          <p className="font-heading text-lg leading-relaxed">{humanizeAgentText(finding)}</p>
           {findingConfidence != null ? (
             <p className="font-mono text-xs text-muted-foreground">
               Độ tin cậy {Math.round(findingConfidence * 100)}%
@@ -134,7 +135,7 @@ function ReportBody({
             <h3 className="text-xs font-semibold tracking-wide text-warning uppercase">
               Giả thuyết — chưa xác nhận
             </h3>
-            <p className="text-sm leading-relaxed">{hypothesis.statement}</p>
+            <p className="text-sm leading-relaxed">{humanizeAgentText(hypothesis.statement)}</p>
             {hypothesis.confidence != null ? (
               <p className="font-mono text-xs text-muted-foreground">
                 Độ tin cậy {Math.round(hypothesis.confidence * 100)}%
@@ -151,7 +152,7 @@ function ReportBody({
             <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
               {impact.map((i, idx) => (
                 <li key={idx}>
-                  {typeof i === "string" ? i : JSON.stringify(i)}
+                  {agentItemText(i)}
                 </li>
               ))}
             </ul>
@@ -166,7 +167,7 @@ function ReportBody({
             <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
               {limitations.map((l, idx) => (
                 <li key={idx}>
-                  {typeof l === "string" ? l : JSON.stringify(l)}
+                  {agentItemText(l)}
                 </li>
               ))}
             </ul>
@@ -179,24 +180,15 @@ function ReportBody({
           </h3>
           {evidence.length ? (
             <ul className="flex flex-col gap-2">
-              {evidence.map((e, index) => (
-                <li
-                  key={e.evidence_id}
-                  className="rounded-lg border bg-secondary/30 p-3 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Bằng chứng {index + 1}</Badge>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      Nguồn dữ liệu đã kiểm tra
-                    </span>
-                  </div>
-                  <p className="mt-1 break-words">{readableEvidence(e.statement)}</p>
+              {dedupeEvidence(evidence).map(({ item: e, repeats }, index) => (
+                <li key={e.evidence_id}>
+                  <EvidenceCard statement={e.statement} index={index + 1} repeats={repeats} />
                 </li>
               ))}
             </ul>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No evidence recorded.
+              Chưa ghi nhận bằng chứng nào.
             </p>
           )}
         </section>

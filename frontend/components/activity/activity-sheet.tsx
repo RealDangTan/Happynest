@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { readableError } from "@/lib/evidence";
 import { IMPORT_STATUS_TONE, RUN_STATUS_TONE } from "@/lib/tone";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -243,7 +244,7 @@ function RunDetail({ id }: { id: string }) {
   const cancel = useCancelRun();
   const data = run.data;
   const pct = data?.total_count ? Math.round((data.processed_count / data.total_count) * 100) : 0;
-  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{data ? <><div className="flex flex-wrap items-start justify-between gap-3"><h2 className="font-heading text-xl">Analysis run</h2><div className="flex shrink-0 items-center gap-2">{statusBadge(data.status)}<OpenFullPageButton href={`/analysis?run=${id}`} /></div></div><section className="space-y-3 rounded-xl border p-4"><Progress value={pct} /><p className="text-sm">{data.processed_count}/{data.total_count} hoàn tất · {data.failed_count} lỗi</p><p className="text-xs text-muted-foreground">Phân loại từng mục (JEV per-item) · Dừng có hiệu lực sau mục hiện tại.</p><div className="flex flex-wrap gap-2">{data.status === "running" ? <Button variant="outline" disabled={cancel.isPending || Boolean(data.cancel_requested_at)} onClick={() => cancel.mutate(id)}><Ban data-icon="inline-start" />{data.cancel_requested_at ? "Đang chờ dừng" : "Dừng run"}</Button> : null}<Button variant="outline" asChild><Link href={`/analysis?run=${id}`}>Xem kết quả chi tiết</Link></Button></div>{data.error ? <Alert variant="destructive"><TriangleAlert className="size-4" /><AlertTitle>Có lỗi</AlertTitle><AlertDescription>{data.error}</AlertDescription></Alert> : null}</section></> : <Spinner />}</div>;
+  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{data ? <><div className="flex flex-wrap items-start justify-between gap-3"><h2 className="font-heading text-xl">Analysis run</h2><div className="flex shrink-0 items-center gap-2">{statusBadge(data.status)}<OpenFullPageButton href={`/analysis?run=${id}`} /></div></div><section className="space-y-3 rounded-xl border p-4"><Progress value={pct} /><p className="text-sm">{data.processed_count}/{data.total_count} hoàn tất · {data.failed_count} lỗi</p><p className="text-xs text-muted-foreground">Phân loại từng mục (JEV per-item) · Dừng có hiệu lực sau mục hiện tại.</p><div className="flex flex-wrap gap-2">{data.status === "running" ? <Button variant="outline" disabled={cancel.isPending || Boolean(data.cancel_requested_at)} onClick={() => cancel.mutate(id)}><Ban data-icon="inline-start" />{data.cancel_requested_at ? "Đang chờ dừng" : "Dừng run"}</Button> : null}<Button variant="outline" asChild><Link href={`/analysis?run=${id}`}>Xem kết quả chi tiết</Link></Button></div>{data.error ? <Alert variant="destructive"><TriangleAlert className="size-4" /><AlertTitle>Có lỗi</AlertTitle><AlertDescription>{readableError(data.error)}</AlertDescription></Alert> : null}</section></> : <Spinner />}</div>;
 }
 
 export function ActivitySheet() {

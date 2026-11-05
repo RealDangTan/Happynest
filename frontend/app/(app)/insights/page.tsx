@@ -1,4 +1,5 @@
 "use client"
+import { EvidenceCard } from "@/components/ai/evidence-card"
 import { CircleHelp } from "lucide-react"
 import { useInsights } from "@/hooks/use-insights"
 import type { InsightItem } from "@/lib/types"
@@ -112,12 +113,7 @@ function InsightCard({ insight }: { insight: InsightItem }) {
             <ul className="mt-2 flex flex-col gap-2">
               {insight.evidence.map((ev) => (
                 <li key={ev.evidence_id}>
-                  <blockquote className="border-l-2 border-border pl-3 text-sm break-words">
-                    {ev.statement}
-                    <footer className="mt-1 text-xs text-muted-foreground">
-                      nguồn: {ev.source_tool}
-                    </footer>
-                  </blockquote>
+                  <EvidenceCard statement={ev.statement} />
                 </li>
               ))}
             </ul>
