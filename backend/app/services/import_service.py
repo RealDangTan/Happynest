@@ -176,7 +176,12 @@ def execute_mapping_background(import_id: uuid.UUID) -> None:
         try:
             schema = schema_registry.get_active_schema(db, import_row.product_id)
             existing = schema_registry.core_fields_for_llm() + schema_registry.schema_fields(schema)
-            proposal = build_mapping_proposal(existing, import_row.column_profiles or [])
+            from app.services.tracing import trace_scope
+
+            # Gom mọi attempt schema_map (A/B/retry) của import vào 1 trace Langfuse
+            with trace_scope(seed=f"import-{import_id}", name="import-mapping",
+                             metadata={"import_id": str(import_id)}):
+                proposal = build_mapping_proposal(existing, import_row.column_profiles or [])
             import_row.mapping_proposal = proposal.model_dump()
             import_row.status = ImportStatus.mapping_review
             import_row.error = None

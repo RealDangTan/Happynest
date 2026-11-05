@@ -168,14 +168,23 @@ def generate_actions(
         evidence = load_act_evidence(db, insight)
         payload = _insight_payload(insight)
         payload["evidence"] = [item.model_dump(mode="json") for item in evidence]
-        proposal = chat_structured(
-            _SYSTEM.format(threshold=get_settings().ACT_RELEVANCE_THRESHOLD),
-            json.dumps({"insight": payload, "library_version": LIBRARY_VERSION,
-                        "best_practices": catalog_for_prompt()}, ensure_ascii=False),
-            ActProposalOut,
-            call_type=LlmCallType.act_generate,
-            prompt_version=PROMPT_VERSION,
-        )
+        from app.services.tracing import trace_scope
+
+        # ACT nằm CHUNG trace Langfuse với run điều tra sinh ra insight (seed =
+        # run_id) — đọc một mạch câu hỏi → evidence → insight → Gate #2 → action.
+        # Chỉ ảnh hưởng Langfuse; llm_call_logs/budget UNDERSTAND không đổi.
+        run_id, insight_id = getattr(insight, "run_id", None), getattr(insight, "id", None)
+        with trace_scope(seed=run_id or f"insight-{insight_id}",
+                         name="understand" if run_id else "act",
+                         metadata={"insight_id": str(insight_id)}):
+            proposal = chat_structured(
+                _SYSTEM.format(threshold=get_settings().ACT_RELEVANCE_THRESHOLD),
+                json.dumps({"insight": payload, "library_version": LIBRARY_VERSION,
+                            "best_practices": catalog_for_prompt()}, ensure_ascii=False),
+                ActProposalOut,
+                call_type=LlmCallType.act_generate,
+                prompt_version=PROMPT_VERSION,
+            )
         # Validate every selected action before deleting or updating any row.
         threshold = get_settings().ACT_RELEVANCE_THRESHOLD
         candidates = [c for c in proposal.functions if c.relevance >= threshold and c.recommendation]

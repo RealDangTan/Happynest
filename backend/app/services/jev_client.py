@@ -25,6 +25,7 @@ là chuỗi deterministic từ xác suất — không text model sinh (chặt h�
 caller (sanitize → enrich) chịu trách nhiệm.
 """
 
+import json
 import math
 import time
 from threading import Lock
@@ -282,6 +283,8 @@ def systemone_enrich(
     """
     from app.db.session import SessionLocal
 
+    from app.services import tracing
+
     settings = get_settings()
     slugs = [slug for slug, _, _ in taxonomy_labels]
     payload = {
@@ -289,6 +292,18 @@ def systemone_enrich(
         "state": sanitized_text,
         "questions": build_questions(taxonomy_labels),
     }
+    # Mở generation TRƯỚC request → latency đúng trên Langfuse; input = text đã
+    # sanitize + danh sách câu hỏi (slug taxonomy) để đọc lại vì sao ra nhãn đó.
+    obs = tracing.start_llm_observation(
+        name=f"enrich:SystemOne({settings.JEV_MODEL})",
+        model=settings.JEV_MODEL,
+        input_text_sanitized=sanitized_text,
+        system_prompt=f"System One questions: {sorted(payload['questions'])}",
+        call_type=LlmCallType.enrich,
+        prompt_version=JEV_PROMPT_VERSION,
+        analysis_run_id=analysis_run_id,
+        feedback_id=feedback_id,
+    )
     t0 = time.perf_counter()
     try:
         body = _post_systemone(
@@ -312,6 +327,7 @@ def systemone_enrich(
             feedback_id=feedback_id,
             analysis_run_id=analysis_run_id,
             session_factory=session_factory or SessionLocal,
+            observation=obs,
         )
         raise
 
@@ -326,7 +342,9 @@ def systemone_enrich(
         _record_attempt(
             name=f"enrich:SystemOne({settings.JEV_MODEL})",
             input_text_sanitized=sanitized_text,
-            output_text="",
+            # answers = xác suất theo câu hỏi (không có text) — đủ để debug vì sao parse fail
+            output_text=json.dumps(answers, ensure_ascii=False, default=str)[:4000],
+            observation=obs,
             schema_name="EnrichmentOut",
             call_type=LlmCallType.enrich,
             prompt_version=JEV_PROMPT_VERSION,
@@ -348,10 +366,18 @@ def systemone_enrich(
         "prompt": int(usage.get("prompt_tokens", usage.get("input_tokens")) or 0),
         "completion": int(usage.get("completion_tokens", usage.get("output_tokens")) or 0),
     }
+    from app.services.enricher import finalize_enrichment
+
+    final = finalize_enrichment(result, taxonomy_version=taxonomy_version)
+    # Output trace = nhãn đã chốt (sentiment/intent/topics/severity…), KHÔNG phải
+    # tên model như bản cũ (audit 2026-11-04: Langfuse chỉ thấy "typesafe/jev-…").
     _record_attempt(
         name=f"enrich:SystemOne({settings.JEV_MODEL})",
         input_text_sanitized=sanitized_text,
-        output_text=body.get("model") or settings.JEV_MODEL,
+        output_text=json.dumps(
+            {"engine_model": body.get("model"), "enrichment": final},
+            ensure_ascii=False, default=str,
+        ),
         schema_name="EnrichmentOut",
         call_type=LlmCallType.enrich,
         prompt_version=JEV_PROMPT_VERSION,
@@ -362,8 +388,6 @@ def systemone_enrich(
         feedback_id=feedback_id,
         analysis_run_id=analysis_run_id,
         session_factory=session_factory or SessionLocal,
+        observation=obs,
     )
-
-    from app.services.enricher import finalize_enrichment
-
-    return finalize_enrichment(result, taxonomy_version=taxonomy_version)
+    return final

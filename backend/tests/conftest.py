@@ -18,6 +18,9 @@ import os
 # Phải đứng trước MỌI import app.* dưới đây.
 if os.environ.get("TEST_DATABASE_URL"):
     os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+# Unit suite không bắn trace synthetic lên Langfuse Cloud thật (node agent giờ ghi
+# span/event trực tiếp). Test cần tracing tự monkeypatch settings; đặt env để bật lại.
+os.environ.setdefault("LANGFUSE_TRACING_ENABLED", "false")
 
 import pytest
 from fastapi.testclient import TestClient

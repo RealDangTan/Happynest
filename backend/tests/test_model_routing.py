@@ -96,7 +96,7 @@ class _FakeSession:
 def test_chat_structured_resolves_model_from_call_type(monkeypatch, routing_settings):
     captured: dict = {}
 
-    def _fake_api_call(messages, response_format, model=None):
+    def _fake_api_call(messages, response_format, model=None, max_tokens=None):
         captured["api_model"] = model
         return '{"name": "ok"}', {"prompt": 1, "completion": 1}
 
@@ -120,7 +120,7 @@ def test_chat_structured_resolves_model_from_call_type(monkeypatch, routing_sett
 def test_chat_structured_uses_override_model(monkeypatch, routing_settings):
     captured: dict = {}
 
-    def _fake_api_call(messages, response_format, model=None):
+    def _fake_api_call(messages, response_format, model=None, max_tokens=None):
         captured["api_model"] = model
         return '{"name": "ok"}', None
 
@@ -144,7 +144,7 @@ def test_chat_structured_enrich_call_type_routes(monkeypatch, routing_settings):
     MODEL_ENRICH trong khi health map vẫn hiển thị đúng (lỗi thầm lặng)."""
     captured: dict = {}
 
-    def _fake_api_call(messages, response_format, model=None):
+    def _fake_api_call(messages, response_format, model=None, max_tokens=None):
         captured["api_model"] = model
         return '{"name": "ok"}', None
 

@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_MODEL: str = ""
     LLM_MAX_TOKENS: int = 8192  # cap max_tokens per call — OpenRouter 402 khi mặc định model max vượt credit afford
+    #: Deadline TỔNG mỗi lượt chat (2026-11-05): OpenRouter đệm keep-alive cho request
+    #: non-streaming nên read-timeout 120 s của SDK không kích hoạt — e2e thấy call
+    #: treo 10+ phút làm run UNDERSTAND kẹt 'running'.
+    LLM_CALL_DEADLINE_S: float = 90.0
 
     # --- Model routing per use case (plan 30): rỗng → fallback LLM_MODEL ---
     MODEL_SCHEMA_MAP: str = ""

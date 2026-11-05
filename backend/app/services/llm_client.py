@@ -20,6 +20,9 @@ hợp đồng quy trình; caller (sanitize → classify) chịu trách nhiệm.
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
+from threading import Lock
 from typing import Any
 
 from pydantic import BaseModel, ValidationError
@@ -94,6 +97,36 @@ def _get_client() -> Any:
     return _client
 
 
+class LLMDeadlineExceeded(TimeoutError):
+    """Provider không trả lời trong LLM_CALL_DEADLINE_S — xử lý như provider error."""
+
+
+_deadline_pool: ThreadPoolExecutor | None = None
+_deadline_lock = Lock()
+
+
+def _call_with_deadline(fn: Any, deadline_s: float) -> Any:
+    """Chạy `fn` (request provider) với deadline TỔNG.
+
+    httpx/SDK chỉ có read-timeout giữa hai lần nhận byte; OpenRouter gửi byte
+    keep-alive khi chờ model nên request non-streaming treo được vô hạn (e2e
+    2026-11-05: run UNDERSTAND kẹt >10 phút ở evaluator; trước đó có call 399 s,
+    act_generate tới ~50 phút). Hết deadline → raise để fallback chain xử lý như
+    provider error; thread worker bị bỏ lại tự kết thúc khi server đóng kết nối."""
+    global _deadline_pool
+    if deadline_s is None or deadline_s <= 0:
+        return fn()
+    with _deadline_lock:
+        if _deadline_pool is None:
+            _deadline_pool = ThreadPoolExecutor(max_workers=16, thread_name_prefix="llm-call")
+    future = _deadline_pool.submit(fn)
+    try:
+        return future.result(timeout=deadline_s)
+    except FuturesTimeout:
+        future.cancel()
+        raise LLMDeadlineExceeded(f"provider không phản hồi sau {deadline_s:g}s") from None
+
+
 def _extract_json(text: str) -> str:
     """Strip code fence rồi bóc object JSON ngoài cùng (Mode B)."""
     cleaned = _FENCE_RE.sub("", text.strip()).strip()
@@ -101,8 +134,17 @@ def _extract_json(text: str) -> str:
     return m.group(0) if m else cleaned
 
 
+#: Trần max_tokens theo call_type của agent UNDERSTAND (2026-11-05). Output thật:
+#: plan ~70–150, evaluate ~130–450, synthesize ~140–310 token; trần chung
+#: LLM_MAX_TOKENS=8192 để model sinh lặp chạy 653 s tới 8192 token rồi ra JSON hỏng.
+_MAX_TOKENS_BY_CALL_TYPE: dict[str, int] = {"plan": 1024, "evaluate": 1536, "synthesize": 2048}
+
+
 def _api_call(
-    messages: list[dict[str, str]], response_format: dict | None, model: str | None = None
+    messages: list[dict[str, str]],
+    response_format: dict | None,
+    model: str | None = None,
+    max_tokens: int | None = None,
 ) -> tuple[str, dict[str, int] | None]:
     """Một call API thô. Trả (content, usage-dict); raise khi provider lỗi.
 
@@ -112,11 +154,15 @@ def _api_call(
         "model": model or get_settings().LLM_MODEL,
         "messages": messages,
         "temperature": 0,
-        "max_tokens": get_settings().LLM_MAX_TOKENS,
+        "max_tokens": min(max_tokens or get_settings().LLM_MAX_TOKENS, get_settings().LLM_MAX_TOKENS),
     }
     if response_format is not None:
         kwargs["response_format"] = response_format
-    resp = _get_client().chat.completions.create(**kwargs)
+    client = _get_client()
+    resp = _call_with_deadline(
+        lambda: client.chat.completions.create(**kwargs),
+        get_settings().LLM_CALL_DEADLINE_S,
+    )
     content = resp.choices[0].message.content or ""
     usage = None
     raw_usage = getattr(resp, "usage", None)
@@ -143,8 +189,11 @@ def _record_attempt(  # noqa: PLR0913 — metadata call đủ đầy quan trọn
     feedback_id: Any | None,
     analysis_run_id: Any | None,
     session_factory: Any,
+    observation: Any | None = None,
 ) -> None:
-    """Ghi CẢ HAI lớp trace cho một attempt. Log-fail chỉ warn — không phá pipeline."""
+    """Ghi CẢ HAI lớp trace cho một attempt. Log-fail chỉ warn — không phá pipeline.
+
+    `observation`: handle Langfuse mở TRƯỚC call (`_start_obs`) để timeline đúng."""
     from app.core.observability import telemetry
 
     telemetry.record_llm(call_type=call_type, latency_ms=latency_ms,
@@ -162,6 +211,10 @@ def _record_attempt(  # noqa: PLR0913 — metadata call đủ đầy quan trọn
             model=model,
             prompt_version=prompt_version,
             error=error_short,
+            observation=observation,
+            call_type=call_type,
+            analysis_run_id=analysis_run_id,
+            feedback_id=feedback_id,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("trace layer failed: %s", type(exc).__name__)
@@ -210,6 +263,7 @@ def chat_structured(
 
     factory = session_factory or SessionLocal
     model_name = _resolve_model(call_type, model)
+    max_tokens = _MAX_TOKENS_BY_CALL_TYPE.get(call_type.value)
     name = f"{call_type.value}:{schema.__name__}"
     base_messages = [
         {"role": "system", "content": system},
@@ -228,12 +282,25 @@ def chat_structured(
     def validate(content: str) -> BaseModel:
         return schema.model_validate_json(_extract_json(content))
 
+    def _start_obs(attempt: str, messages: list[dict[str, str]]) -> Any:
+        # system + toàn bộ lượt user/assistant đã sanitize — đọc lại đúng prompt trên Langfuse
+        convo = "\n\n".join(f"[{m['role']}] {m['content']}" for m in messages[1:])
+        return tracing.start_llm_observation(
+            name=name, model=model_name, input_text_sanitized=convo,
+            system_prompt=system, call_type=call_type, prompt_version=prompt_version,
+            analysis_run_id=analysis_run_id, feedback_id=feedback_id, attempt=attempt,
+        )
+
     # ---- Mode A: json_schema strict (S2: provider honor 10/10) ----
     fmt = {
         "type": "json_schema",
         "json_schema": {
             "name": schema.__name__,
-            "strict": True,
+            # strict CHỈ khi schema đạt chuẩn strict — provider OpenAI trả 400 cho
+            # schema Pydantic tự sinh (audit 2026-11-05: ~50% attempt gpt-4o-mini
+            # của plan/evaluate/synthesize/name_cluster/schema_map là 400 → phí 1
+            # lượt Mode A mỗi call). Non-strict vẫn dẫn hướng + Pydantic validate.
+            "strict": _is_strict_schema(schema),
             "schema": _schema_for(schema),
         },
     }
@@ -241,8 +308,9 @@ def chat_structured(
     a_error: str | None = None
     result: BaseModel | None = None
     usage_a: dict[str, int] | None = None
+    obs = _start_obs("A:json_schema", base_messages)
     try:
-        content_a, usage_a = _api_call(base_messages, fmt, model_name)
+        content_a, usage_a = _api_call(base_messages, fmt, model_name, max_tokens=max_tokens)
     except Exception as exc:  # noqa: BLE001 — mọi provider error đều rơi xuống Mode B
         a_error = f"provider: {type(exc).__name__}: {exc}"
         latency = int((time.perf_counter() - t0) * 1000)
@@ -250,7 +318,7 @@ def chat_structured(
         _structured_output_mode = "prompt_json"
         _record_attempt(
             name=name, output_text="", latency_ms=latency, usage=None,
-            error=a_error, schema_name=schema.__name__, **common,
+            error=a_error, schema_name=schema.__name__, observation=obs, **common,
         )
     else:
         latency = int((time.perf_counter() - t0) * 1000)
@@ -266,6 +334,7 @@ def chat_structured(
             usage=usage_a,
             error=a_error,
             schema_name=schema.__name__,
+            observation=obs,
             **common,
         )
         if result is not None:
@@ -289,14 +358,15 @@ def chat_structured(
         t0 = time.perf_counter()
         b_error: str | None = None
         content_b, usage_b = "", None
+        obs = _start_obs(f"B:prompt_json#{attempt + 1}", b_messages)
         try:
-            content_b, usage_b = _api_call(b_messages, None, model_name)
+            content_b, usage_b = _api_call(b_messages, None, model_name, max_tokens=max_tokens)
         except Exception as exc:  # noqa: BLE001
             b_error = f"provider: {type(exc).__name__}: {exc}"
             latency = int((time.perf_counter() - t0) * 1000)
             _record_attempt(
                 name=name, output_text="", latency_ms=latency, usage=None,
-                error=b_error, schema_name=schema.__name__, **common,
+                error=b_error, schema_name=schema.__name__, observation=obs, **common,
             )
             last_error = b_error
             break  # provider chết thì retry cũng chết — dừng sớm
@@ -307,7 +377,7 @@ def chat_structured(
             _record_attempt(
                 name=name, output_text=content_b, latency_ms=latency,
                 usage=usage_b, error=None,
-                schema_name=schema.__name__, **common,
+                schema_name=schema.__name__, observation=obs, **common,
             )
             return result
         except (ValidationError, ValueError, json.JSONDecodeError) as exc:
@@ -316,7 +386,7 @@ def chat_structured(
             _record_attempt(
                 name=name, output_text=content_b, latency_ms=latency,
                 usage=usage_b, error=b_error,
-                schema_name=schema.__name__, **common,
+                schema_name=schema.__name__, observation=obs, **common,
             )
             if attempt == 0:  # retry đúng MỘT lần kèm text lỗi
                 b_messages.append({"role": "assistant", "content": content_b[:500]})
@@ -332,6 +402,36 @@ def chat_structured(
 
 
 _SCHEMA_CACHE: dict[type[BaseModel], dict] = {}
+_STRICT_CACHE: dict[type[BaseModel], bool] = {}
+_NON_SCHEMA_KEYS = frozenset({"enum", "const", "default", "description", "title", "examples"})
+
+
+def _strict_compatible(node: Any) -> bool:
+    """Schema có dùng được với structured outputs strict (OpenAI) không: mọi object
+    khai báo properties, `additionalProperties: false`, required = toàn bộ khóa,
+    không $ref/$defs, không object tự do (dict[str, Any])."""
+    if isinstance(node, list):
+        return all(_strict_compatible(item) for item in node)
+    if not isinstance(node, dict):
+        return True
+    if "$ref" in node or "$defs" in node:
+        return False
+    if node.get("type") == "object":
+        props = node.get("properties")
+        if not isinstance(props, dict):
+            return False
+        if node.get("additionalProperties") is not False or set(node.get("required", [])) != set(props):
+            return False
+        return all(_strict_compatible(sub) for sub in props.values()) and all(
+            _strict_compatible(v) for k, v in node.items() if k not in _NON_SCHEMA_KEYS | {"properties"}
+        )
+    return all(_strict_compatible(v) for k, v in node.items() if k not in _NON_SCHEMA_KEYS)
+
+
+def _is_strict_schema(schema: type[BaseModel]) -> bool:
+    if schema not in _STRICT_CACHE:
+        _STRICT_CACHE[schema] = _strict_compatible(_schema_for(schema))
+    return _STRICT_CACHE[schema]
 
 
 def _schema_for(schema: type[BaseModel]) -> dict:
@@ -348,7 +448,13 @@ def _schema_for(schema: type[BaseModel]) -> dict:
             strict_topic_recommendation_schema,
         )
 
-        if schema is Classification:
+        custom = getattr(schema, "strict_json_schema", None)
+        if callable(custom):
+            # Schema tự khai báo bản strict (vd. PlannerOut: enum tool + mọi khóa
+            # required) — model_json_schema để khóa default ngoài `required` nên
+            # provider được phép BỎ khóa (audit 2026-11-04: planner bỏ "tool").
+            _SCHEMA_CACHE[schema] = custom()
+        elif schema is Classification:
             _SCHEMA_CACHE[schema] = strict_classification_schema()
         elif schema is TaxonomyProposalOut:
             _SCHEMA_CACHE[schema] = strict_taxonomy_proposal_schema()

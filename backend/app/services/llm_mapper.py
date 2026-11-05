@@ -85,10 +85,28 @@ def build_mapping_proposal(
         },
         ensure_ascii=False,
     )
-    return chat_structured(
+    proposal = chat_structured(
         SYSTEM_PROMPT_V1,
         user_payload,
         MappingProposal,
         call_type=LlmCallType.schema_map,
         prompt_version=PROMPT_VERSION,
     )
+    return normalize_promotions(proposal, existing_schema_fields)
+
+
+def normalize_promotions(proposal: MappingProposal, existing_schema_fields: list[dict]) -> MappingProposal:
+    """PROMOTE trỏ vào key ĐÃ CÓ (core hoặc product field) thực chất là MAP.
+
+    E2E 2026-11-05 (gpt-4o-mini): `created_at → PROMOTE occurred_at` → Gate #1
+    approve nhận 422 "key 'occurred_at' thuộc system core". Đổi deterministic sang
+    MAP cùng key (§13 ưu tiên MAP vào schema hiện có) — không tạo field mới,
+    không đổi nghĩa; human vẫn duyệt ở Gate #1."""
+    existing = {f.get("key") for f in existing_schema_fields if isinstance(f, dict)}
+    for item in proposal.mappings:
+        if item.decision == "PROMOTE" and item.candidate is not None and item.candidate.key in existing:
+            item.decision = "MAP"
+            item.target = item.candidate.key
+            item.candidate = None
+            item.reason = (item.reason + " (Chuẩn hoá: field đã tồn tại → MAP.)")[:500]
+    return proposal
