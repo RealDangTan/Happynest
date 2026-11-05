@@ -66,10 +66,13 @@ def stub_settings(monkeypatch):
     monkeypatch.setattr(nodes_mod, "get_settings", _StubSettings)
 
 
+_EV = [{"evidence_id": "e0", "tool": "aggregate_feedback", "statement": "counts"}]
+
+
 def _state(**over):
     base = {
         "run_id": _RUN_ID,
-        "question": "why did complaints rise?",
+        "question": "which complaint matters most?",
         "product_context": {},
         "iteration": 0,
         "evaluations": [],
@@ -111,7 +114,7 @@ def test_two_consecutive_sufficient_stops_without_plan_call(monkeypatch, plan_sp
 def test_one_sufficient_still_asks_planner(monkeypatch, plan_spy):
     """1 lần đủ bằng chứng → planner vẫn được 1 nhịp drill-down nữa."""
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
-    out = planner(_state(evaluations=[{"sufficient_evidence": True}]))
+    out = planner(_state(evidence=_EV, evaluations=[{"sufficient_evidence": True, "new_questions": ["vì sao?"]}]))
     assert plan_spy["n"] == 1
     assert out["next_action"]["action"] == "tool"
 
@@ -120,10 +123,11 @@ def test_insufficient_breaks_consecutive_count(monkeypatch, plan_spy):
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
     out = planner(
         _state(
+            evidence=_EV,
             evaluations=[
                 {"sufficient_evidence": True},
                 {"sufficient_evidence": False},
-                {"sufficient_evidence": True},
+                {"sufficient_evidence": True, "new_questions": ["vì sao?"]},
             ]
         )
     )
@@ -136,6 +140,7 @@ def test_repeat_same_tool_params_forces_synthesize(monkeypatch, plan_spy):
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
     out = planner(
         _state(
+            evidence=_EV,
             tool_history=[
                 {
                     "tool": "aggregate_feedback",
@@ -154,6 +159,7 @@ def test_different_params_still_allows_tool(monkeypatch, plan_spy):
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
     out = planner(
         _state(
+            evidence=_EV,
             tool_history=[
                 {
                     "tool": "aggregate_feedback",
@@ -168,15 +174,11 @@ def test_different_params_still_allows_tool(monkeypatch, plan_spy):
     assert out["next_action"]["action"] == "tool"
 
 
-def test_no_evidence_llm_synthesize_forces_opener_tool(monkeypatch, plan_spy):
-    """Planner đòi synthesize khi CHƯA có evidence (model yếu hay thế) → ép
-    mở màn bằng tool aggregate-first, không chấp nhận 'không điều tra'."""
+def test_first_step_is_aggregate_first_without_llm(monkeypatch, plan_spy):
+    """§69 aggregate-first là quy tắc cứng (owner 2026-11-05): chưa có evidence →
+    aggregate theo field schema đầu tiên, KHÔNG hỏi LLM (trace E2E: qwen3 lọc hẹp
+    ngay bước đầu và đếm thiếu)."""
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
-
-    def _fake(system, user, schema, **kwargs):
-        return PlannerOut(action="synthesize", objective="nothing to do")
-
-    monkeypatch.setattr(nodes_mod, "chat_structured", _fake)
     out = planner(
         _state(
             product_context={
@@ -184,19 +186,25 @@ def test_no_evidence_llm_synthesize_forces_opener_tool(monkeypatch, plan_spy):
             }
         )
     )
-    assert out["next_action"]["action"] == "tool"
+    assert plan_spy["n"] == 0
     assert out["next_action"]["tool"] == "aggregate_feedback"
     assert out["next_action"]["params"] == {"group_by": "app_version"}
 
 
-def test_no_evidence_no_schema_fields_opens_with_get_schema(monkeypatch):
+def test_first_step_prefers_topic_when_taxonomy_exists(monkeypatch, plan_spy):
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
+    out = planner(_state(product_context={
+        "schema_fields": [{"key": "app_version"}],
+        "taxonomy": [{"slug": "ai_output_quality", "name": "AI Output Quality", "name_vi": None}],
+    }))
+    assert plan_spy["n"] == 0
+    assert out["next_action"]["params"] == {"group_by": "topic"}
 
-    def _fake(system, user, schema, **kwargs):
-        return PlannerOut(action="synthesize", objective="nothing to do")
 
-    monkeypatch.setattr(nodes_mod, "chat_structured", _fake)
+def test_no_evidence_no_schema_fields_opens_with_get_schema(monkeypatch, plan_spy):
+    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
     out = planner(_state(product_context={"schema_fields": []}))
+    assert plan_spy["n"] == 0
     assert out["next_action"]["tool"] == "get_schema"
     assert out["next_action"]["params"] == {}
 
@@ -223,31 +231,11 @@ def test_with_evidence_llm_synthesize_is_allowed(monkeypatch):
     assert out["next_action"]["action"] == "synthesize"
 
 
-def test_invalid_tool_no_evidence_forces_opener(monkeypatch):
-    """Model trả action='tool' nhưng tên tool sai/thiếu (quan sát thật:
-    tool=None) → chưa có evidence thì phục hồi bằng opener thay vì để dispatch
-    crash (evidence.source_tool NOT NULL)."""
-    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
-
-    def _fake(system, user, schema, **kwargs):
-        return PlannerOut(action="tool", tool=None, params={}, objective="oops")
-
-    monkeypatch.setattr(nodes_mod, "chat_structured", _fake)
-    out = planner(
-        _state(
-            product_context={
-                "schema_fields": [{"key": "topic", "label": "Topic"}],
-            }
-        )
-    )
-    assert out["next_action"]["tool"] == "aggregate_feedback"
-
-
 def test_invalid_tool_with_evidence_wraps_up(monkeypatch):
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
 
     def _fake(system, user, schema, **kwargs):
-        return PlannerOut(
+        return PlannerOut.model_construct(
             action="tool", tool="tool_khong_ton_tai", params={}, objective="oops"
         )
 
@@ -276,7 +264,7 @@ def test_action_sig_canonical():
 
 def test_non_adjacent_repeat_stops_cycle(monkeypatch, plan_spy):
     monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=2))
-    out = planner(_state(tool_history=[
+    out = planner(_state(evidence=_EV, tool_history=[
         {"sig": nodes_mod._action_sig(_REPEAT_ACTION)},
         {"sig": nodes_mod._action_sig({"tool": "get_schema", "params": {}})},
     ]))
@@ -320,3 +308,80 @@ def test_empty_filtered_lookup_tries_actual_product_samples(monkeypatch, plan_sp
     assert out["next_action"]["tool"] == "representative_feedback"
     assert out["next_action"]["params"] == {}
     assert plan_spy["n"] == 0
+
+
+# ------------------------------------------------ audit trace 2026-11-04
+
+
+@pytest.mark.parametrize("raw, needle", [
+    # thiếu params bắt buộc (trace thật: inspect_cluster không cluster_id)
+    ({"action": "tool", "tool": "inspect_cluster", "params": {}, "objective": "x"}, "cluster_id"),
+    # thiếu khóa tool, tên tool nằm trong objective
+    ({"action": "tool", "params": {"cluster_id": str(uuid.uuid4())}, "objective": "inspect_cluster"},
+     "bắt buộc có khóa 'tool'"),
+    # tên tool méo
+    ({"action": "tool", "tool": "aggregate_feedback, ", "params": {}, "objective": "x"}, "tool"),
+])
+def test_planner_out_rejects_trace_failure_modes(raw, needle):
+    """Lỗi validate → fallback chain của chat_structured retry KÈM thông báo này."""
+    with pytest.raises(ValueError) as exc:
+        PlannerOut.model_validate(raw)
+    assert needle in str(exc.value)
+
+
+def test_planner_out_normalizes_params_and_strict_schema_requires_all_keys():
+    out = PlannerOut.model_validate({"action": "tool", "tool": "compare_periods", "objective": "x",
+                                     "params": {"current": "last_7_days", "previous": "previous_7_days"}})
+    assert out.params == {"filters": {}, "current": "last_7_days", "previous": "previous_7_days"}
+    schema = PlannerOut.strict_json_schema()
+    assert set(schema["required"]) == {"action", "tool", "params", "objective"}
+    assert "compare_periods" in schema["properties"]["tool"]["anyOf"][0]["enum"]
+
+
+def test_temporal_question_measures_trend_before_stopping(monkeypatch, plan_spy):
+    """'Vì sao tăng' + evaluator báo đủ 2 lần nhưng CHƯA đo xu hướng → compare_periods."""
+    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
+    out = planner(_state(
+        question="Vì sao phàn nàn về độ chính xác tăng trong tuần này?",
+        evaluations=[{"sufficient_evidence": True}, {"sufficient_evidence": True}],
+    ))
+    assert out["next_action"]["tool"] == "compare_periods"
+    assert out["next_action"]["params"]["current"] == "last_7_days"
+    assert plan_spy["n"] == 0
+
+
+def test_temporal_rule_runs_once(monkeypatch, plan_spy):
+    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
+    out = planner(_state(
+        question="why did complaints rise?",
+        evaluations=[{"sufficient_evidence": True}, {"sufficient_evidence": True}],
+        tool_history=[{"tool": "compare_periods", "ok": True, "sig": "{}"}],
+    ))
+    assert out["next_action"]["action"] == "synthesize"
+
+
+def test_temporal_llm_synthesize_reuses_last_filters(monkeypatch):
+    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=0))
+    monkeypatch.setattr(nodes_mod, "chat_structured",
+                        lambda *a, **k: PlannerOut(action="synthesize", objective="enough"))
+    prior = {"tool": "segment_feedback", "params": {"filters": {"ai_issue": "inaccuracy"}, "dimensions": ["source"]}}
+    out = planner(_state(
+        question="why did accuracy complaints rise?",
+        evidence=[{"evidence_id": "e1", "tool": "segment_feedback", "statement": "seg"}],
+        tool_history=[{"tool": "segment_feedback", "ok": True, "sig": nodes_mod._action_sig(prior)}],
+    ))
+    assert out["next_action"]["tool"] == "compare_periods"
+    assert out["next_action"]["params"]["filters"] == {"ai_issue": "inaccuracy"}
+
+
+def test_temporal_rule_respects_budget(monkeypatch, plan_spy):
+    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=8))  # budget 10 → còn 2 > ngưỡng stop? used>=9 mới stop
+    out = planner(_state(
+        question="why did complaints rise?",
+        evaluations=[{"sufficient_evidence": True}, {"sufficient_evidence": True}],
+    ))
+    # còn đúng 2 call → vẫn đủ cho evaluate + synthesize
+    assert out["next_action"]["tool"] == "compare_periods"
+    monkeypatch.setattr(nodes_mod, "SessionLocal", lambda: _FakeDB(used=9))
+    out = planner(_state(question="why did complaints rise?", evidence=_EV))
+    assert out["next_action"]["action"] == "synthesize"

@@ -5,7 +5,7 @@ thành JSONB path và TỪ CHỐI field lạ — LLM không bao giờ viết SQL
 §68). Filter hỗ trợ:
 - `topic`: containment trong `feedback.ai_analysis->'topics'` JSONB array.
 - product field key (đã validate): `feedback.data->>'key' == value`.
-- `source` / `severity` / `sentiment`: cột/ai_analysis chuẩn.
+- `source` / `severity` / `sentiment` / `intent` / `ai_issue`: cột/ai_analysis chuẩn.
 """
 
 import uuid
@@ -36,8 +36,11 @@ def resolve_filters(
             conditions.append(Feedback.ai_analysis["topics"].contains([str(value)]))
         elif key == "severity":
             conditions.append(Feedback.ai_analysis["severity"].astext == str(value))
-        elif key == "sentiment":
-            conditions.append(Feedback.ai_analysis["sentiment"].astext == str(value))
+        elif key in ("sentiment", "intent", "ai_issue"):
+            # intent/ai_issue (2026-11-04): nhãn scalar của enrichment — chiều tự
+            # nhiên cho câu hỏi "phàn nàn về độ chính xác AI" mà trước đó agent
+            # không lọc được.
+            conditions.append(Feedback.ai_analysis[key].astext == str(value))
         elif key == "source":
             conditions.append(Feedback.source == str(value))
         elif key in known_keys:

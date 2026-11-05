@@ -225,3 +225,51 @@ def test_inspect_cluster_metrics(seeded) -> None:
             if cluster is not None:
                 db.delete(cluster)
             db.commit()
+
+
+# ------------------------------------------ nhãn AI làm chiều group (2026-11-05)
+
+
+def test_aggregate_by_ai_scalar_dimension(seeded) -> None:
+    out = _call("aggregate_feedback", {"group_by": "severity"}, seeded)
+    assert {r["value"]: r["count"] for r in out["rows"]} == {"high": 2, "low": 4}
+    assert out["coverage"] == pytest.approx(1.0)
+    assert "multi_label" not in out
+
+
+def test_aggregate_by_topic_is_multi_label(seeded) -> None:
+    out = _call("aggregate_feedback", {"group_by": "topic", "metric": "avg_confidence"}, seeded)
+    assert {r["value"]: r["count"] for r in out["rows"]} == {"Search": 4, "Account": 2}
+    assert all(r["avg_confidence"] == pytest.approx(0.9) for r in out["rows"])
+    assert out["multi_label"] is True and out["coverage"] == pytest.approx(1.0)
+
+
+def test_aggregate_ai_dimension_with_filters(seeded) -> None:
+    out = _call("aggregate_feedback",
+                {"group_by": "topic", "filters": {"severity": "high"}}, seeded)
+    assert {r["value"]: r["count"] for r in out["rows"]} == {"Search": 2}
+
+
+def test_segment_mixes_schema_and_ai_dimensions(seeded) -> None:
+    out = _call("segment_feedback",
+                {"filters": {"customer_plan": "free"}, "dimensions": ["topic", "severity", "source"]},
+                seeded)
+    seg = out["segments"]
+    assert seg["topic"]["top"] == "Account" and seg["topic"]["multi_label"] is True
+    assert seg["severity"] == {"coverage": 1.0, "top": "low", "share": 1.0}
+    assert seg["source"]["coverage"] == pytest.approx(1.0)
+
+
+def test_unknown_dimension_still_rejected(seeded) -> None:
+    from app.analytics.query_compiler import UnknownFieldError
+
+    with pytest.raises(UnknownFieldError):
+        _call("aggregate_feedback", {"group_by": "emotion_scores"}, seeded)
+
+
+def test_intent_and_ai_issue_filters(seeded) -> None:
+    out = _call("compare_periods", {"filters": {"ai_issue": "inaccuracy"},
+                                    "current": "last_7_days", "previous": "previous_7_days"}, seeded)
+    assert out["current"] == 0  # seed không có ai_issue → filter hợp lệ, 0 dòng
+    out = _call("aggregate_feedback", {"group_by": "sentiment", "filters": {"intent": "bug_report"}}, seeded)
+    assert out["rows"] == []

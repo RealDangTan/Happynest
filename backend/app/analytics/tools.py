@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Float, cast, func, select
+from sqlalchemy import Float, case, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.analytics.query_compiler import UnknownFieldError, base_query
@@ -151,21 +151,84 @@ def profile_field(db: Session, product_id: uuid.UUID, inp: ProfileFieldInput) ->
     }
 
 
+#: Chiều nhãn AI (enrichment `ai_analysis`) group được bên cạnh field schema —
+#: whitelist cố định, LLM chỉ gửi TÊN chiều (§68). Owner duyệt 2026-11-05: trước
+#: đó agent không trả lời được "X% phản hồi tiêu cực là lỗi độ chính xác".
+AI_SCALAR_DIMENSIONS = ("sentiment", "severity", "intent", "ai_issue")
+AI_DIMENSIONS = (*AI_SCALAR_DIMENSIONS, "topic", "source")
+
+
+def _topics_array():
+    return Feedback.ai_analysis["topics"]
+
+
+def _dimension_expr(db: Session, product_id: uuid.UUID, key: str):
+    """Biểu thức SQL cho 1 chiều scalar; `topic` (multi-label) xử lý riêng."""
+    if key in AI_SCALAR_DIMENSIONS:
+        return Feedback.ai_analysis[key].astext
+    if key == "source":
+        return Feedback.source
+    _require_field(db, product_id, key)
+    return Feedback.data[key].astext
+
+
+def _ai_dimension_coverage(db: Session, product_id: uuid.UUID, key: str) -> float:
+    """Tỉ lệ feedback của product có giá trị ở chiều AI (topic: mảng không rỗng)."""
+    if key == "topic":
+        # CASE: jsonb_array_length nổ trên scalar — chỉ đo khi đúng là mảng
+        has_value = case(
+            (func.jsonb_typeof(_topics_array()) == "array", func.jsonb_array_length(_topics_array())),
+            else_=0,
+        ) > 0
+    else:
+        has_value = _dimension_expr(db, product_id, key).is_not(None)
+    total, with_value = db.execute(
+        select(func.count(), func.count().filter(has_value))
+        .where(Feedback.product_id == product_id)
+    ).one()
+    return round(int(with_value) / int(total), 4) if total else 0.0
+
+
+def _coverage_for(db: Session, product_id: uuid.UUID, key: str) -> float:
+    if key in AI_DIMENSIONS:
+        return _ai_dimension_coverage(db, product_id, key)
+    return field_coverage(db, product_id).get(key, 0.0)
+
+
 def aggregate_feedback(db: Session, product_id: uuid.UUID, inp: AggregateInput) -> dict:
-    """VoC OS §33: GROUP BY JSONB field + metric; coverage đi kèm."""
-    _require_field(db, product_id, inp.group_by)
-    col = Feedback.data[inp.group_by].astext  # một object duy nhất (xem profile_field)
-    columns = [col.label("val"), func.count().label("n")]
-    if inp.metric == "avg_confidence":
-        columns.append(
-            func.avg(cast(Feedback.ai_analysis["confidence"].astext, Float)).label("avg_conf")
+    """VoC OS §33: GROUP BY field schema HOẶC nhãn AI + metric; coverage đi kèm.
+
+    `topic` là multi-label: 1 feedback nhiều topic được đếm ở mỗi topic
+    (`multi_label=True` trong kết quả để agent không cộng dồn thành tổng)."""
+    conf = cast(Feedback.ai_analysis["confidence"].astext, Float)
+    multi = inp.group_by == "topic"
+    if multi:
+        sub = (
+            base_query(db, product_id, inp.filters)
+            .where(func.jsonb_typeof(_topics_array()) == "array")
+            .with_only_columns(
+                func.jsonb_array_elements_text(_topics_array()).label("val"),
+                conf.label("conf"),
+            )
+            .order_by(None)
+            .subquery()
         )
-    rows = db.execute(
-        base_query(db, product_id, inp.filters)
-        .with_only_columns(*columns)
-        .group_by(col)
-        .order_by(func.count().desc())
-    ).all()
+        columns = [sub.c.val.label("val"), func.count().label("n")]
+        if inp.metric == "avg_confidence":
+            columns.append(func.avg(sub.c.conf).label("avg_conf"))
+        stmt = select(*columns).group_by(sub.c.val).order_by(func.count().desc())
+    else:
+        col = _dimension_expr(db, product_id, inp.group_by)  # một object duy nhất (xem profile_field)
+        columns = [col.label("val"), func.count().label("n")]
+        if inp.metric == "avg_confidence":
+            columns.append(func.avg(conf).label("avg_conf"))
+        stmt = (
+            base_query(db, product_id, inp.filters)
+            .with_only_columns(*columns)
+            .group_by(col)
+            .order_by(func.count().desc())
+        )
+    rows = db.execute(stmt).all()
     data = [
         {
             "value": r.val,
@@ -176,12 +239,15 @@ def aggregate_feedback(db: Session, product_id: uuid.UUID, inp: AggregateInput) 
         }
         for r in rows
     ]
-    return {
+    out = {
         "group_by": inp.group_by,
         "metric": inp.metric,
-        "coverage": field_coverage(db, product_id).get(inp.group_by, 0.0),
+        "coverage": _coverage_for(db, product_id, inp.group_by),
         "rows": data[:20],
     }
+    if multi:
+        out["multi_label"] = True
+    return out
 
 
 def compare_periods(db: Session, product_id: uuid.UUID, inp: ComparePeriodsInput) -> dict:
@@ -211,10 +277,29 @@ def segment_feedback(db: Session, product_id: uuid.UUID, inp: SegmentInput) -> d
     """VoC OS §35: per-dimension {coverage, top, share} trong tập được filter."""
 
     def _top_share(field: str) -> dict:
-        _require_field(db, product_id, field)
+        if field == "topic":
+            # multi-label: coverage = row có ≥1 topic; share = row chứa top topic
+            base = (
+                base_query(db, product_id, inp.filters)
+                .with_only_columns(Feedback.id, _topics_array().label("val"))
+                .order_by(None)
+            )
+            rows = db.execute(base).all()
+            lists = [r.val for r in rows if isinstance(r.val, list) and r.val]
+            coverage = round(len(lists) / len(rows), 4) if rows else 0.0
+            if not lists:
+                return {"coverage": coverage, "top": None, "share": 0.0}
+            counter: dict[str, int] = {}
+            for topics in lists:
+                for t in {str(x) for x in topics}:
+                    counter[t] = counter.get(t, 0) + 1
+            top, count = max(counter.items(), key=lambda kv: kv[1])
+            return {"coverage": coverage, "top": top, "share": round(count / len(lists), 4),
+                    "multi_label": True}
+        expr = _dimension_expr(db, product_id, field)
         base = (
             base_query(db, product_id, inp.filters)
-            .with_only_columns(Feedback.id, Feedback.data[field].astext.label("val"))
+            .with_only_columns(Feedback.id, expr.label("val"))
             .order_by(None)
         )
         rows = db.execute(base).all()
@@ -222,7 +307,7 @@ def segment_feedback(db: Session, product_id: uuid.UUID, inp: SegmentInput) -> d
         coverage = round(len(vals) / len(rows), 4) if rows else 0.0
         if not vals:
             return {"coverage": coverage, "top": None, "share": 0.0}
-        counter: dict[str, int] = {}
+        counter = {}
         for v in vals:
             counter[v] = counter.get(v, 0) + 1
         top, count = max(counter.items(), key=lambda kv: kv[1])
@@ -399,9 +484,9 @@ TOOLS: dict[str, ToolSpec] = {
     for spec in [
         ToolSpec("get_schema", "List product analytical dimensions with coverage", GetSchemaInput, get_schema),
         ToolSpec("profile_field", "Coverage, distinct count and top values of one field", ProfileFieldInput, profile_field),
-        ToolSpec("aggregate_feedback", "Group-by counts (or avg confidence) over filtered feedback", AggregateInput, aggregate_feedback),
+        ToolSpec("aggregate_feedback", "Group-by counts (or avg confidence) over filtered feedback; group_by = a schema field key or an AI label dimension: sentiment, severity, intent, ai_issue, topic (multi-label slug), source", AggregateInput, aggregate_feedback),
         ToolSpec("compare_periods", "Count an issue in current vs previous window with change_pct", ComparePeriodsInput, compare_periods),
-        ToolSpec("segment_feedback", "Coverage/top/share per dimension for a filtered issue set", SegmentInput, segment_feedback),
+        ToolSpec("segment_feedback", "Coverage/top/share per dimension for a filtered issue set; dimensions = schema field keys and/or sentiment, severity, intent, ai_issue, topic, source", SegmentInput, segment_feedback),
         ToolSpec("semantic_search", "Cosine kNN over feedback embeddings, filtered and capped", SemanticSearchInput, semantic_search),
         ToolSpec("representative_feedback", "Diverse representative verbatims interleaved by source", RepresentativeInput, representative_feedback),
         ToolSpec("inspect_cluster", "Stored trend fields plus live member/severity metrics of one cluster", InspectClusterInput, inspect_cluster),

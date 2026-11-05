@@ -14,15 +14,16 @@ Safety boundaries (giữ từ graph cũ + §68):
   RE-SANITIZE trước persist.
 """
 
+import copy
 import json
 import logging
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from langgraph.types import interrupt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -33,7 +34,8 @@ from app.models.analysis_run import AnalysisRun
 from app.models.cluster import Cluster
 from app.models.evidence import Evidence
 from app.models.feedback import Feedback
-from app.models.enums import LlmCallType, RunStatus
+from app.models.enums import AiIssue, Intent, LlmCallType, RunStatus, Sentiment, Severity
+from app.services import tracing
 from app.services.llm_client import LLMStructureError, chat_structured
 from app.services.presidio_service import sanitize
 from understand_agent.state import UnderstandState
@@ -62,6 +64,53 @@ def _tool_catalog() -> list[dict[str, Any]]:
 
 
 _TOOL_CATALOG = _tool_catalog()
+
+#: Khóa `filters` mà query compiler chấp nhận NGOÀI field của product schema
+#: (xem app/analytics/query_compiler.resolve_filters). Đưa vào prompt để planner
+#: không đoán khóa/giá trị (audit 2026-11-04: planner lọc topic theo TÊN trong khi
+#: DB lưu slug → luôn 0 dòng).
+_AI_FILTERS: dict[str, list[str] | str] = {
+    "topic": "slug trong product_context.taxonomy[].slug",
+    "sentiment": [s.value for s in Sentiment],
+    "severity": [s.value for s in Severity],
+    "intent": [i.value for i in Intent],
+    "ai_issue": [a.value for a in AiIssue],
+    "source": "giá trị cột source (vd. App Review, Support)",
+}
+
+#: Câu hỏi/signal giả định THAY ĐỔI theo thời gian → phải có compare_periods
+#: trước khi tổng hợp (audit 2026-11-04: "vì sao tăng" được trả lời từ 6 mẫu
+#: feedback, không hề đo xu hướng).
+_TEMPORAL_RE = re.compile(
+    r"tăng|giảm|tuần này|tuần qua|tháng này|gần đây|dạo này|xu hướng|đột biến|spike|"
+    r"\brise\b|\brising\b|\brose\b|increas|decreas|\bdrop|declin|\btrend|this week|"
+    r"last week|recently|lately",
+    re.IGNORECASE,
+)
+
+
+def _is_temporal(state: UnderstandState) -> bool:
+    return state.get("trigger_type") == "system_signal" or bool(
+        _TEMPORAL_RE.search(state.get("question") or "")
+    )
+
+
+def _has_tool(state: UnderstandState, tool: str) -> bool:
+    return any(e.get("tool") == tool and _usable_evidence(e) for e in state.get("evidence", []))
+
+
+def _trace(state: UnderstandState, name: str, output: Any, **kwargs: Any) -> None:
+    """Event non-LLM trong trace Langfuse của run (no-op khi tracing tắt)."""
+    tracing.trace_event(run_id=state.get("run_id"), name=name, output=output,
+                        trace_name="understand", **kwargs)
+
+
+def _decide(state: UnderstandState, action: dict[str, Any], source: str) -> dict[str, Any]:
+    """Trả next_action + ghi lý do lên trace: rule deterministic hay LLM (đã/không
+    bị override) — đọc trace là biết vì sao agent rẽ nhánh."""
+    _trace(state, "planner:decision", action,
+           metadata={"source": source, "iteration": state.get("iteration", 0)})
+    return {"next_action": action}
 
 
 def _compact_evaluations(evaluations: list[dict[str, Any]], last_n: int) -> list[dict[str, Any]]:
@@ -101,13 +150,25 @@ def _action_sig(action: dict[str, Any] | None) -> str:
 
 
 def _opener_action(state: UnderstandState) -> dict[str, Any]:
-    """Bước mở màn deterministic khi CHƯA có evidence nào.
+    """Bước ĐẦU TIÊN deterministic của mọi cuộc điều tra (chưa có evidence).
 
-    Model yếu có xu hướng chọn synthesize ngay ở iteration 0 → investigation
-    'không điều tra' và insight rỗng. Chính sách §69 aggregate-first: mở bằng
-    aggregate theo chiều dữ liệu đầu tiên của schema; nếu schema chưa có field
-    nào thì get_schema (0 params, luôn chạy được)."""
-    fields = (state.get("product_context") or {}).get("schema_fields") or []
+    Chính sách §69 aggregate-first, thành quy tắc cứng từ 2026-11-05 (owner duyệt):
+    trace E2E cho thấy planner (qwen3) dù được dặn vẫn lọc hẹp ngay bước đầu
+    (`ai_issue=inaccuracy`) → bỏ sót `hallucination`, đếm thiếu. Mở bằng aggregate
+    theo topic khi có bộ chủ đề, không thì field schema đầu tiên, không nữa thì
+    get_schema (0 params, luôn chạy được). Không tốn plan call."""
+    context = state.get("product_context") or {}
+    if context.get("taxonomy"):
+        # 2026-11-05: aggregate được theo nhãn AI — chủ đề là chiều phủ toàn bộ
+        # feedback đã phân loại, sát câu hỏi VoC hơn field CSV đầu tiên (e2e
+        # 2026-11-03 mở bằng 'rating' coverage 0.62).
+        return {
+            "action": "tool",
+            "tool": "aggregate_feedback",
+            "params": {"group_by": "topic"},
+            "objective": "Chưa có evidence — aggregate toàn bộ feedback theo chủ đề (bắt buộc ở bước đầu tiên).",
+        }
+    fields = context.get("schema_fields") or []
     first_key = next(
         (f.get("key") for f in fields if isinstance(f, dict) and f.get("key")), None
     )
@@ -178,7 +239,13 @@ def load_context(state: UnderstandState) -> dict[str, Any]:
             "product_name": product.name if product else "unknown",
             "schema_fields": schema_registry.schema_fields(active),
             "coverage": field_coverage(db, product_id),
-            "taxonomy": taxonomy_service.get_taxonomy_names(db, product_id),
+            # slug = giá trị filter `topic` thật (ai_analysis.topics lưu slug);
+            # name/name_vi chỉ để model hiểu nghĩa.
+            "taxonomy": [
+                {"slug": slug, "name": name, "name_vi": name_vi}
+                for slug, name, name_vi in taxonomy_service.get_taxonomy_labels(db, product_id)
+            ],
+            "filter_keys": _AI_FILTERS,
             "clusters": [
                 {
                     "id": str(c.id),
@@ -203,19 +270,78 @@ def load_context(state: UnderstandState) -> dict[str, Any]:
                 ).all()
             ],
         }
+    _trace(
+        state, "load_context",
+        {"product_name": context["product_name"], "schema_fields": len(context["schema_fields"]),
+         "taxonomy": len(context["taxonomy"]), "clusters": len(context["clusters"])},
+        trace_update={
+            "name": "understand",
+            "input": {"question": state.get("question"), "trigger_type": state.get("trigger_type")},
+            "metadata": {"analysis_run_id": state.get("run_id"), "product_id": state.get("product_id")},
+            "tags": ["understand"],
+        },
+    )
     return {"product_context": context, "iteration": 0}
 
 
 # -------------------------------------------------------------------- planner
 
 
-class PlannerOut(BaseModel):
-    """Next step do LLM chọn — action tool (tool + params) hoặc synthesize."""
+ToolName = Literal[tuple(_TOOL_NAMES)]  # enum đóng từ registry
 
-    action: str = Field(pattern="^(tool|synthesize)$")
-    tool: str | None = None
+
+class PlannerOut(BaseModel):
+    """Next step do LLM chọn — action tool (tool + params) hoặc synthesize.
+
+    Audit trace 2026-11-04 (qwen3-30b): planner hay trả action='tool' nhưng THIẾU
+    khóa `tool`, nhét tên tool vào `objective`, hoặc thiếu params bắt buộc (vd.
+    inspect_cluster không cluster_id) → bước bị bỏ, run dừng sớm. Vì vậy:
+    - `tool` là enum tên tool; schema Mode A khai báo MỌI khóa required;
+    - validator kiểm `params` theo input_model của tool → lỗi validate đi vào
+      fallback chain của chat_structured (Mode B + 1 retry KÈM thông báo lỗi cụ
+      thể) để model tự sửa thay vì phí một vòng dispatch.
+    """
+
+    action: Literal["tool", "synthesize"]
+    tool: ToolName | None = None  # type: ignore[valid-type]
     params: dict[str, Any] = Field(default_factory=dict)
     objective: str = Field(max_length=300)
+
+    @model_validator(mode="after")
+    def _tool_params_match(self) -> "PlannerOut":
+        if self.action != "tool":
+            return self
+        if self.tool is None:
+            raise ValueError(
+                "action='tool' bắt buộc có khóa 'tool' = đúng một tên trong available_tools"
+            )
+        try:
+            parsed = analytics.TOOLS[self.tool].input_model.model_validate(self.params or {})
+        except ValidationError as exc:
+            problems = "; ".join(
+                f"{'.'.join(str(p) for p in err['loc']) or 'params'}: {err['msg']}"
+                for err in exc.errors()
+            )
+            raise ValueError(
+                f"params không khớp input_schema của tool '{self.tool}': {problems}"
+            ) from None
+        self.params = parsed.model_dump(mode="json")
+        return self
+
+    @classmethod
+    def strict_json_schema(cls) -> dict[str, Any]:
+        """Schema Mode A: mọi khóa required, tool = enum|null (llm_client hook)."""
+        return {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["tool", "synthesize"]},
+                "tool": {"anyOf": [{"type": "string", "enum": list(_TOOL_NAMES)}, {"type": "null"}]},
+                "params": {"type": "object"},
+                "objective": {"type": "string", "maxLength": 300},
+            },
+            "required": ["action", "tool", "params", "objective"],
+            "additionalProperties": False,
+        }
 
 
 def planner(state: UnderstandState) -> dict[str, Any]:
@@ -233,8 +359,9 @@ def planner(state: UnderstandState) -> dict[str, Any]:
 
     # Iteration cap must work even if the DB is temporarily unavailable.
     if iteration >= max_iter:
-        return {"next_action": {"action": "synthesize", "params": {},
-                                "objective": f"Buộc tổng hợp: đã đạt MAX_ITERATIONS={max_iter}."}}
+        return _decide(state, {"action": "synthesize", "params": {},
+                               "objective": f"Buộc tổng hợp: đã đạt MAX_ITERATIONS={max_iter}."},
+                       "rule:max_iterations")
     with SessionLocal() as db:
         used = _llm_budget_used(db, uuid.UUID(state["run_id"]))
     budget = state.get("llm_budget", settings.UNDERSTAND_LLM_BUDGET_PER_RUN)
@@ -255,19 +382,26 @@ def planner(state: UnderstandState) -> dict[str, Any]:
             f"{_SUFFICIENT_ROUNDS_TO_STOP} lần liên tiếp"
         )
     if force_reason:
-        return {
-            "next_action": {
-                "action": "synthesize",
-                "params": {},
-                "objective": f"Buộc tổng hợp: {force_reason}.",
-            }
-        }
+        if force_reason.startswith("đã đủ") or force_reason.startswith("evaluator"):
+            # "Đủ bằng chứng" chỉ đáng tin khi đã đo xu hướng cho câu hỏi về thay
+            # đổi theo thời gian — chưa đo thì đo trước (1 tool + 1 evaluate).
+            temporal = _temporal_action(state, budget_left=budget - used)
+            if temporal is not None:
+                return _decide(state, temporal, "rule:temporal_premise")
+        return _decide(state, {"action": "synthesize", "params": {},
+                               "objective": f"Buộc tổng hợp: {force_reason}."},
+                       "rule:stop")
+
+    if not state.get("evidence"):
+        # §69 aggregate-first là quy tắc cứng: thấy phân bố trước, LLM chọn
+        # cách khoan sâu từ bước 2 (investigate_more đã có evidence → không áp).
+        return _decide(state, _opener_action(state), "rule:aggregate_first")
 
     sample_action = {"action": "tool", "tool": "representative_feedback", "params": {},
                      "objective": "Tra cứu trước chưa có dữ liệu; đọc mẫu phản hồi thật của sản phẩm trước khi kết luận."}
     if (state.get("evidence") and not any(_usable_evidence(e) for e in state["evidence"])
             and not any(h.get("sig") == _action_sig(sample_action) for h in state.get("tool_history", []))):
-        return {"next_action": sample_action}
+        return _decide(state, sample_action, "rule:no_usable_evidence")
 
     user_payload = json.dumps(
         {
@@ -294,49 +428,55 @@ def planner(state: UnderstandState) -> dict[str, Any]:
 
     system = (
         "Bạn là điều tra viên phân tích phản hồi khách hàng. Cho câu hỏi/signal và "
-        "context đã có, chọn BƯỚC TIẾP: gọi 1 tool phân tích (action='tool', chỉ "
-        "định nghĩa params cho tool đó — params PHẢI khớp đúng signature trong "
-        "available_tools) hoặc tổng hợp insight khi bằng chứng đã đủ "
-        "(action='synthesize'). Aggregate first, drill down sau (§69). Nếu "
-        "evidence_so_far đang RỖNG thì action PHẢI là 'tool' — chưa điều tra mà "
-        "chưa tổng hợp là sai. KHÔNG chọn lại đúng tool+params đã chạy ngay trước "
-        "đó — kết quả sẽ giống hệt. Chỉ trả JSON."
+        "context đã có, chọn BƯỚC TIẾP: gọi 1 tool phân tích (action='tool') hoặc "
+        "tổng hợp insight khi bằng chứng đã đủ (action='synthesize'). Trả JSON đủ 4 "
+        "khóa action, tool, params, objective. Khi action='tool': 'tool' PHẢI là đúng "
+        "một tên trong available_tools (không ghi tên tool vào objective) và 'params' "
+        "PHẢI có đủ trường bắt buộc theo input_schema của tool đó — vd. inspect_cluster "
+        "cần cluster_id lấy từ product_context.clusters[].id; profile_field chỉ nhận "
+        "field trong product_context.schema_fields; aggregate_feedback.group_by và "
+        "segment_feedback.dimensions nhận field schema HOẶC chiều nhãn AI: sentiment, "
+        "severity, intent, ai_issue, topic, source (topic là multi-label). "
+        "Khi action='synthesize': tool=null, params={}. 'filters' chỉ dùng khóa trong "
+        "product_context.filter_keys hoặc schema_fields; lọc chủ đề bằng topic=<slug>. "
+        "Aggregate first, drill down sau (§69): khi chưa biết phân bố, aggregate theo "
+        "ai_issue hoặc topic TRƯỚC rồi mới lọc; KHÔNG AND nhiều nhãn AI hẹp khi chưa "
+        "thấy phân bố (vd. 'độ chính xác' gồm cả ai_issue=inaccuracy lẫn hallucination "
+        "— lọc một nhãn sẽ đếm thiếu). Nếu câu hỏi/signal nói về THAY ĐỔI "
+        "theo thời gian (tăng, giảm, tuần này, spike, rise…) thì PHẢI kiểm chứng bằng "
+        "compare_periods (current=last_7_days, previous=previous_7_days, filters của "
+        "vấn đề) trước khi synthesize. Nếu evidence_so_far RỖNG thì action PHẢI là "
+        "'tool'. KHÔNG chọn lại đúng tool+params đã chạy — kết quả sẽ giống hệt. "
+        "Chỉ trả JSON."
     )
+    source = "llm"
     try:
         out = chat_structured(
             system,
             user_payload,
             PlannerOut,
             call_type=LlmCallType.plan,
-            prompt_version="understand-v1",
+            prompt_version="understand-v2",
             analysis_run_id=uuid.UUID(state["run_id"]),
         )
         next_action = out.model_dump()
     except LLMStructureError:
-        # LLM fail → synthesize luôn nếu có evidence, không thì kết thúc sạch
+        # LLM fail → tổng hợp từ evidence đã có (bước 1 luôn có evidence nhờ
+        # aggregate_first)
         next_action = {"action": "synthesize", "params": {}, "objective": "fallback"}
-
-    if not state.get("evidence") and next_action.get("action") != "tool":
-        # Chưa chạy tool nào mà đã đòi synthesize (LLM yếu hay thế) → ép mở màn
-        # bằng aggregate-first; synthesize chỉ hợp lệ khi đã có evidence.
-        return {"next_action": _opener_action(state)}
+        source = "fallback:llm_structure_error"
 
     if next_action.get("action") == "tool" and next_action.get("tool") not in _TOOL_NAMES:
-        # Model chọn action='tool' nhưng thiếu/tên sai (quan sát thật 2026-10-23:
-        # tool=None → dispatch insert evidence source_tool NULL → crash). Tự phục
-        # hồi: chưa có evidence → opener; đã có → synthesize phần đã có.
-        if not state.get("evidence"):
-            return {"next_action": _opener_action(state)}
-        return {
-            "next_action": {
-                "action": "synthesize",
-                "params": {},
-                "objective": (
-                    f"Planner chọn tool không hợp lệ "
-                    f"({next_action.get('tool')!r}) — tổng hợp từ evidence hiện có."
-                ),
-            }
-        }
+        # Lưới an toàn (PlannerOut đã chặn ở validator; giữ cho output cũ/mock):
+        # tool thiếu/sai tên → tổng hợp phần evidence đã có.
+        return _decide(state, {
+            "action": "synthesize",
+            "params": {},
+            "objective": (
+                f"Planner chọn tool không hợp lệ "
+                f"({next_action.get('tool')!r}) — tổng hợp từ evidence hiện có."
+            ),
+        }, f"{source}→rule:invalid_tool")
 
     if (
         next_action.get("action") == "tool"
@@ -345,14 +485,44 @@ def planner(state: UnderstandState) -> dict[str, Any]:
     ):
         # Planner chọn lại đúng bước vừa chạy — sẽ không có thông tin mới;
         # tổng hợp luôn thay vì quét thêm vòng plan→evaluate.
-        return {
-            "next_action": {
-                "action": "synthesize",
-                "params": {},
-                "objective": "Bước kế trùng đúng bước vừa chạy — tổng hợp từ evidence hiện có.",
-            }
-        }
-    return {"next_action": next_action}
+        return _decide(state, {
+            "action": "synthesize",
+            "params": {},
+            "objective": "Bước kế trùng đúng bước vừa chạy — tổng hợp từ evidence hiện có.",
+        }, f"{source}→rule:repeat")
+
+    if next_action.get("action") == "synthesize":
+        temporal = _temporal_action(state, budget_left=budget - used - 1)
+        if temporal is not None:
+            return _decide(state, temporal, f"{source}→rule:temporal_premise")
+    return _decide(state, next_action, source)
+
+
+def _temporal_action(state: UnderstandState, *, budget_left: int) -> dict[str, Any] | None:
+    """compare_periods 7 ngày cho câu hỏi giả định xu hướng nếu CHƯA đo lần nào.
+
+    Lọc theo `filters` của bước tool gần nhất (thường là vấn đề đang điều tra);
+    chạy tối đa 1 lần (đã có trong tool_history → None) và chỉ khi còn ≥2 call
+    budget cho evaluate + synthesize."""
+    if not _is_temporal(state) or budget_left < 2:
+        return None
+    if any(h.get("tool") == "compare_periods" for h in state.get("tool_history", [])):
+        return None
+    filters: dict[str, Any] = {}
+    for step in reversed(state.get("tool_history", [])):
+        try:
+            params = json.loads(step.get("sig") or "{}").get("params") or {}
+        except ValueError:
+            params = {}
+        if step.get("ok") and isinstance(params.get("filters"), dict):
+            filters = params["filters"]
+            break
+    return {
+        "action": "tool",
+        "tool": "compare_periods",
+        "params": {"filters": filters, "current": "last_7_days", "previous": "previous_7_days"},
+        "objective": "Câu hỏi giả định thay đổi theo thời gian — kiểm chứng xu hướng 7 ngày trước khi kết luận.",
+    }
 
 
 # ------------------------------------------------------------------- dispatch
@@ -365,19 +535,32 @@ def dispatch(state: UnderstandState) -> dict[str, Any]:
     run_id = uuid.UUID(state["run_id"])
     product_id = uuid.UUID(state["product_id"])
 
-    if tool_name not in analytics.TOOLS:
-        observation = {"error": f"tool '{tool_name}' không tồn tại."}
-        result: dict[str, Any] = {}
-    else:
-        spec = analytics.TOOLS[tool_name]
-        try:
-            with SessionLocal() as tool_db:
-                result = spec(tool_db, product_id, action.get("params", {}))
-            observation = {"ok": True}
-        except Exception as exc:  # noqa: BLE001 — tool fail không được crash graph
-            logger.warning("tool %s fail: %s", tool_name, type(exc).__name__)
-            result = {}
-            observation = {"error": f"{type(exc).__name__}: {exc}"[:300]}
+    with tracing.trace_span(
+        run_id=state.get("run_id"), name=f"tool:{tool_name or 'unknown'}",
+        input={"params": action.get("params", {}), "objective": action.get("objective")},
+        metadata={"iteration": state.get("iteration", 0)},
+        trace_name="understand",
+    ) as span:
+        if tool_name not in analytics.TOOLS:
+            observation = {"error": f"tool '{tool_name}' không tồn tại."}
+            result: dict[str, Any] = {}
+        else:
+            spec = analytics.TOOLS[tool_name]
+            try:
+                with SessionLocal() as tool_db:
+                    result = spec(tool_db, product_id, action.get("params", {}))
+                observation = {"ok": True}
+            except Exception as exc:  # noqa: BLE001 — tool fail không được crash graph
+                logger.warning("tool %s fail: %s", tool_name, type(exc).__name__)
+                result = {}
+                observation = {"error": f"{type(exc).__name__}: {exc}"[:300]}
+        if span is not None:
+            # result = aggregate/snippet ĐÃ sanitize (feedback_text qua biên ingest)
+            span.update(
+                output={"observation": observation, "result": result},
+                level="ERROR" if "error" in observation else "DEFAULT",
+                status_message=observation.get("error"),
+            )
 
     # source_tool là NOT NULL — tool thiếu tên/sai (planner lỗi) vẫn phải ghi
     # được evidence để graph không crash; observation đã mang lỗi cho planner.
@@ -421,30 +604,70 @@ def dispatch(state: UnderstandState) -> dict[str, Any]:
 # ------------------------------------------------------------------ evaluator
 
 
+class Support(BaseModel):
+    """Một giả thuyết được evidence hỗ trợ — trích id, KHÔNG chép nội dung evidence
+    (audit 2026-11-04: evaluator chép nguyên statement → 434 token, 16 s/call)."""
+
+    hypothesis: str = Field(default="", max_length=400)
+    strength: Literal["weak", "moderate", "strong"] = "weak"
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class EvaluateOut(BaseModel):
-    supports: list[dict[str, Any]] = Field(default_factory=list)  # {hypothesis, strength, evidence_ids}
+    supports: list[Support] = Field(default_factory=list)
     contradictions: list[str] = Field(default_factory=list)
     new_questions: list[str] = Field(default_factory=list)
     data_quality_warning: str | None = None
     sufficient_evidence: bool
+
+    @classmethod
+    def strict_json_schema(cls) -> dict[str, Any]:
+        """Schema inline (không $ref — provider OpenRouter không đều tay với $defs)."""
+        return {
+            "type": "object",
+            "properties": {
+                "supports": {"type": "array", "items": {
+                    "type": "object",
+                    "properties": {
+                        "hypothesis": {"type": "string"},
+                        "strength": {"type": "string", "enum": ["weak", "moderate", "strong"]},
+                        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["hypothesis", "strength", "evidence_ids"],
+                    "additionalProperties": False,
+                }},
+                "contradictions": {"type": "array", "items": {"type": "string"}},
+                "new_questions": {"type": "array", "items": {"type": "string"}},
+                "data_quality_warning": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "sufficient_evidence": {"type": "boolean"},
+            },
+            "required": ["supports", "contradictions", "new_questions",
+                         "data_quality_warning", "sufficient_evidence"],
+            "additionalProperties": False,
+        }
 
 
 def evaluator(state: UnderstandState) -> dict[str, Any]:
     """LLM đánh giá evidence mới nhất (§39) — lưu vào state.evaluations."""
     latest = (state.get("evidence") or [{}])[-1]
     if not _usable_evidence(latest):
+        _trace(state, "evaluator:skip", {"reason": "latest evidence unusable", "tool": latest.get("tool")})
         return {"evaluations": [{"sufficient_evidence": False,
                                  "data_quality_warning": "Bước tra cứu chưa có dữ liệu khả dụng; không suy ra rằng sản phẩm không có vấn đề."}],
                 "iteration": state.get("iteration", 0) + 1}
     user_payload = json.dumps(
         {
             "question": state["question"],
+            "temporal_question": _is_temporal(state),
             "latest_evidence": {
+                "evidence_id": latest.get("evidence_id"),
                 "tool": latest.get("tool"),
                 "statement": latest.get("statement", "")[:_PROMPT_STATEMENT_MAX],
             },
-            "all_evidence_statements": [
-                e["statement"][:150] for e in state.get("evidence", [])
+            "all_evidence": [
+                {"evidence_id": e.get("evidence_id"), "tool": e.get("tool"),
+                 "statement": e["statement"][:150]}
+                for e in state.get("evidence", [])
             ],
         },
         ensure_ascii=False,
@@ -452,18 +675,22 @@ def evaluator(state: UnderstandState) -> dict[str, Any]:
     with SessionLocal() as db:
         used = _llm_budget_used(db, uuid.UUID(state["run_id"]))
     if used >= state.get("llm_budget", get_settings().UNDERSTAND_LLM_BUDGET_PER_RUN) - 1:
+        _trace(state, "evaluator:skip", {"reason": "llm budget", "used": used})
         return {"evaluations": [{"sufficient_evidence": False}],
                 "iteration": state.get("iteration", 0) + 1}
     try:
         out = chat_structured(
             "Bạn là điều tra viên khách quan. Đánh giá evidence mới nhất: có hỗ trợ "
-            "giả thuyết nào, mâu thuẫn gì, câu hỏi mới nào nảy sinh, dữ liệu có vấn "
-            "đề chất lượng không, và bằng chứng đã ĐỦ để trả lời câu hỏi chưa (§39). "
-            "Chỉ trả JSON.",
+            "giả thuyết nào (supports[].evidence_ids CHỈ dùng evidence_id đã cho, KHÔNG "
+            "chép lại nội dung evidence), mâu thuẫn gì, câu hỏi mới nào nảy sinh, dữ liệu "
+            "có vấn đề chất lượng không, và bằng chứng đã ĐỦ để trả lời câu hỏi chưa "
+            "(§39). Nếu temporal_question=true mà chưa có evidence compare_periods thì "
+            "sufficient_evidence=false (chưa đo xu hướng). Mẫu phản hồi/semantic_search "
+            "một mình không đủ để kết luận tần suất. Chỉ trả JSON.",
             user_payload,
             EvaluateOut,
             call_type=LlmCallType.evaluate,
-            prompt_version="understand-v1",
+            prompt_version="understand-v2",
             analysis_run_id=uuid.UUID(state["run_id"]),
         )
         evaluation = out.model_dump()
@@ -513,6 +740,15 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
                 "finding = fact có evidence; hypothesis = suy luận, KHÔNG trình bày như root cause xác nhận (§41).",
                 "evidence_ids CHỈ được dùng id có trong danh sách evidence.",
                 "limitations phải nêu coverage thấp nếu có (§42).",
+                "KHÔNG khẳng định tăng/giảm/xu hướng nếu không có evidence compare_periods; "
+                "câu hỏi giả định xu hướng mà chưa đo thì nêu rõ trong limitations.",
+                "finding_confidence = mức chắc chắn của finding theo độ mạnh evidence, "
+                "KHÔNG sao chép giá trị coverage.",
+                "Dùng MỌI evidence liên quan: nếu segment/aggregate cho thấy vấn đề tập "
+                "trung ở một giá trị (app_version, source, topic…) thì nêu hypothesis_statement "
+                "kèm hypothesis_confidence — là giả thuyết, không phải nguyên nhân đã xác nhận.",
+                "Phạm vi đếm phụ thuộc filters đã dùng: nêu rõ filters trong finding hoặc "
+                "limitations; câu hỏi mở còn lại của evaluator (new_questions) đưa vào limitations.",
             ],
         },
         ensure_ascii=False,
@@ -528,12 +764,13 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
             user_payload,
             InsightDraft,
             call_type=LlmCallType.synthesize,
-            prompt_version="understand-v1",
+            prompt_version="understand-v2",
             analysis_run_id=uuid.UUID(state["run_id"]),
         )
         draft = out.model_dump()
     except LLMStructureError:
         draft = None
+    llm_draft = copy.deepcopy(draft) if draft else None  # guard bên dưới mutate list
 
     if draft is None:
         draft = _limited_insight(state)
@@ -556,6 +793,19 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
         else:
             draft["finding_confidence"] = min(draft["finding_confidence"], .7)
         draft.setdefault("limitations", []).append("Chỉ dựa trên mẫu phản hồi đã đọc; chưa đại diện toàn bộ sản phẩm.")
+    if _is_temporal(state) and not _has_tool(state, "compare_periods"):
+        # Câu hỏi giả định "tăng/giảm" mà không đo xu hướng → không được trình bày
+        # như đã xác nhận; hạ trần confidence + nói thẳng giới hạn (§41–42).
+        draft["finding_confidence"] = min(draft["finding_confidence"], .6)
+        draft.setdefault("limitations", []).append(
+            "Chưa kiểm chứng xu hướng theo thời gian (không có compare_periods) — "
+            "chưa xác nhận được mức tăng/giảm mà câu hỏi giả định."
+        )
+    if llm_draft is not None and draft != llm_draft:
+        _trace(state, "synthesizer:guard", {
+            "changed": sorted(k for k in set(draft) | set(llm_draft) if draft.get(k) != llm_draft.get(k)),
+            "finding_confidence": [llm_draft.get("finding_confidence"), draft.get("finding_confidence")],
+        })
     return {"draft_insight": draft}
 
 
@@ -608,6 +858,13 @@ def persist_insight(state: UnderstandState) -> dict[str, Any]:
             db.add(insight)
             db.commit()
             db.refresh(insight)
+            # Chỉ lần INSERT đầu (node chạy lại khi resume) — tránh event trùng.
+            _trace(state, "gate2:awaiting_review",
+                   {"insight_id": str(insight.id), "draft": draft},
+                   trace_update={"output": {"insight_id": str(insight.id),
+                                            "title": draft.get("title"),
+                                            "finding": draft.get("finding"),
+                                            "finding_confidence": draft.get("finding_confidence")}})
         insight_id = str(insight.id)
 
     evidence_summaries = [
@@ -726,6 +983,14 @@ def apply_decision(state: UnderstandState) -> dict[str, Any]:
                 reason=decision.get("reason"),
                 reviewer_id=reviewer_id,
             )
+
+    # reason/edited_insight đã re-sanitize ở runner trước khi vào checkpoint.
+    _trace(state, "gate2:decision",
+           {"action": action, "final_status": final_status, "reason": decision.get("reason"),
+            "edited": edited_value},
+           trace_update={"metadata": {"gate2_decision": action}})
+    tracing.trace_score(run_id=state.get("run_id"), name="gate2_decision",
+                        value=str(action), comment=decision.get("reason"))
 
     if action == "investigate_more":
         # quay lại planner với feedback — clear draft, tăng iteration

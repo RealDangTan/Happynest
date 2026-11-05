@@ -110,3 +110,30 @@ def test_samples_cannot_prove_absence_across_the_product(monkeypatch):
     }]))
     assert out["draft_insight"]["title"].startswith("Không đủ bằng chứng")
     assert out["draft_insight"]["finding_confidence"] <= .5
+
+
+def _draft(conf=0.9):
+    return InsightDraft(title="Phàn nàn độ chính xác AI tăng", finding="Nhiều phản hồi báo AI bịa số",
+                        finding_confidence=conf, evidence_ids=[_REAL_EV])
+
+
+def test_temporal_claim_without_compare_periods_is_capped_and_disclosed(monkeypatch):
+    """Audit trace 2026-11-04: 'vì sao tăng' được trả lời mà không đo xu hướng."""
+    monkeypatch.setattr(nodes_mod, "chat_structured", lambda *a, **k: _draft())
+    out = synthesizer(_state(evidence=[
+        {"evidence_id": _REAL_EV, "tool": "aggregate_feedback", "statement": "counts", "payload": {"rows": [1]}},
+    ]))
+    draft = out["draft_insight"]
+    assert draft["finding_confidence"] <= 0.6
+    assert any("compare_periods" in item for item in draft["limitations"])
+
+
+def test_temporal_claim_with_compare_periods_keeps_confidence(monkeypatch):
+    monkeypatch.setattr(nodes_mod, "chat_structured", lambda *a, **k: _draft())
+    out = synthesizer(_state(evidence=[
+        {"evidence_id": _REAL_EV, "tool": "compare_periods", "statement": "cur 30 prev 5",
+         "payload": {"current": 30, "previous": 5, "change_pct": 500.0}},
+    ]))
+    draft = out["draft_insight"]
+    assert draft["finding_confidence"] == 0.9
+    assert not any("compare_periods" in item for item in draft["limitations"])
