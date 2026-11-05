@@ -123,6 +123,13 @@ class _CccdRecognizer(PatternRecognizer):
         )
 
 
+#: Token kỹ thuật viết hoa mà NER vi của Stanza hay gán nhầm PERSON — e2e
+#: 2026-11-04: "trợ lý AI" → "trợ lý <PERSON>" phá đúng từ khóa của đề tài.
+#: So khớp CHÍNH XÁC cả span (phân biệt hoa/thường; span dài hơn vẫn bị che) —
+#: owner duyệt 2026-11-05, chỉ áp dụng cho PERSON (email/phone/CCCD không đổi).
+_NON_PERSON_TOKENS = frozenset({"AI", "UI", "UX", "API", "CSV", "PDF", "SSO", "CRM"})
+
+
 class _StanzaPersonRecognizer(EntityRecognizer):
     """PERSON từ nlp_artifacts của engine stanza — workaround bug presidio
     2.2.364 (xem docstring module). Score cố định thấp-trung bình: NER tiếng
@@ -148,6 +155,7 @@ class _StanzaPersonRecognizer(EntityRecognizer):
             )
             for ent in nlp_artifacts.entities
             if ent.label_ == "PERSON" and ent.text.strip()
+            and ent.text.strip() not in _NON_PERSON_TOKENS
         ]
         return self.remove_duplicates(results)
 

@@ -130,6 +130,35 @@ class TestSanitizeService:
             pytest.fail(f"NLP fallback đã kích hoạt: {status['nlp_failed_reason']} — phải ghi decisions.md")
 
 
+# ------------------------------------------- PERSON allow-list (2026-11-05)
+
+
+def _person_hits(entity_texts):
+    """Chạy recognizer PERSON trên nlp_artifacts giả — không cần Stanza."""
+    from types import SimpleNamespace
+
+    from app.services.presidio_service import _StanzaPersonRecognizer
+
+    text = " ".join(entity_texts)
+    ents, pos = [], 0
+    for chunk in entity_texts:
+        ents.append(SimpleNamespace(label_="PERSON", text=chunk, start_char=pos, end_char=pos + len(chunk)))
+        pos += len(chunk) + 1
+    results = _StanzaPersonRecognizer().analyze(text, ["PERSON"], SimpleNamespace(entities=ents))
+    return [text[r.start:r.end] for r in results]
+
+
+def test_person_allow_list_keeps_tech_acronyms():
+    """e2e 2026-11-04: 'trợ lý AI' bị che thành '<PERSON>'."""
+    assert _person_hits(["AI", "UI", "API", "CRM"]) == []
+
+
+def test_person_allow_list_is_exact_and_case_sensitive():
+    """Tên người vẫn che; 'Ai'/'ai' (có thể là tên/đại từ) và span dài hơn vẫn che."""
+    hits = _person_hits(["Nguyễn Văn An", "Ai", "HappyBot AI"])
+    assert hits == ["Nguyễn Văn An", "Ai", "HappyBot AI"]
+
+
 # ------------------------------------------------------------ wiring (integration)
 
 
