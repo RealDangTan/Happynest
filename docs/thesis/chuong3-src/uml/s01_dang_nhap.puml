@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Nhập thư điện tử, mật khẩu
+FE -> API : POST /api/auth/token
+API -> DB : Tìm tài khoản
+DB --> API : Bản ghi tài khoản
+alt Sai thông tin
+  API --> FE : 401
+  FE --> U : Báo lỗi đăng nhập
+else Mật khẩu khớp (Argon2)
+  API -> API : Tạo JWT hạn 12 giờ
+  API --> FE : Đặt cookie phiên httpOnly
+  FE -> API : GET /api/auth/me
+  API --> FE : Mã, thư điện tử
+  FE --> U : Mở màn hình làm việc
+end
+
+@enduml

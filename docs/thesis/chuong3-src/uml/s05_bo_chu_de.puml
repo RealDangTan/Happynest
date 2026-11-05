@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+participant "Dịch vụ\nAI" as AI
+
+U -> FE : Yêu cầu sinh bộ chủ đề
+FE -> API : POST .../generate
+API -> DB : Lấy mẫu rải theo thời gian
+API -> AI : Mẫu đã che
+AI --> API : Cây chủ đề
+API -> API : Loại đề xuất rác
+API --> FE : Đề xuất (chưa lưu)
+U -> FE : Sửa, chọn "Áp dụng"
+FE -> API : POST .../apply
+API -> API : Kiểm tra nút cha, nút trùng
+API -> DB : Lưu chủ đề, tăng phiên bản,\nghi nhật ký
+API --> FE : Bộ chủ đề mới
+FE --> U : Hiển thị cây chủ đề
+
+@enduml

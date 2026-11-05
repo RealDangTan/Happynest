@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+
+start
+repeat
+  #D6E4F2:Kiểm duyệt 1: đồng ý hoặc\nđổi cách xử lý từng cột;
+  :Kiểm tra: đủ cột, không trùng đích,\ncó cột nội dung;
+repeat while (Hợp lệ?) is (không) not (có)
+:Kích hoạt lược đồ mới nếu có trường mới;
+:Ghi nhật ký quyết định;
+repeat
+  :Đọc một dòng;
+  :Che thông tin định danh;
+  if (Dòng hợp lệ?) then (có)
+    :Ghi phản hồi vào kho;
+  else (không)
+    :Ghi vào báo cáo lỗi;
+  endif
+repeat while (Còn dòng?) is (có) not (không)
+:Đánh dấu "đã nhập", lưu báo cáo;
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

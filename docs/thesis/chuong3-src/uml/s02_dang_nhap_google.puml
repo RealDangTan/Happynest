@@ -1,0 +1,28 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+participant "Google" as G
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Chọn đăng nhập bằng Google
+FE -> API : GET /api/auth/google/login
+API --> U : Chuyển hướng kèm mã chống giả mạo
+U -> G : Đăng nhập, đồng ý
+G --> API : Gọi lại kèm mã ủy quyền
+API -> API : Kiểm tra mã chống giả mạo
+API -> G : Đổi mã lấy id_token
+G --> API : id_token
+API -> API : Xác minh chữ ký
+API -> DB : Tìm hoặc tạo tài khoản
+API --> FE : Đặt cookie, chuyển về ứng dụng
+FE --> U : Mở màn hình làm việc
+
+@enduml

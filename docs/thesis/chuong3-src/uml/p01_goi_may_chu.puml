@@ -1,0 +1,39 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+package "app.api.routes\n(điểm cuối API)" as R {
+}
+package "app.schemas\n(lược đồ vào, ra)" as SC {
+}
+package "app.jobs\n(tác vụ phân loại nền)" as J {
+}
+package "understand_agent\n(luồng điều tra)" as UA {
+}
+package "app.analytics\n(công cụ tra cứu)" as AN {
+}
+package "app.services\n(nghiệp vụ và dịch vụ dùng chung)" as SV {
+}
+package "app.models\n(lớp dữ liệu)" as M {
+}
+package "app.db\n(kết nối CSDL)" as DBP {
+}
+package "app.core\n(cấu hình, bảo mật, quan sát)" as C {
+}
+package "alembic\n(chuyển đổi cấu trúc CSDL)" as AL {
+}
+R ..> SC
+R ..> SV
+R ..> J
+R ..> UA
+J ..> SV
+UA ..> AN
+UA ..> SV
+AN ..> M
+SV ..> M
+M ..> DBP
+AL ..> M
+R ..> C
+SV ..> C
+
+@enduml

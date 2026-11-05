@@ -1,0 +1,28 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+skinparam componentStyle uml2
+component "Giao diện web\n(Next.js)" as FE
+node "Máy chủ ứng dụng (FastAPI)" {
+  component "Lắng nghe" as LIS
+  component "Thấu hiểu\n(tác tử LangGraph)" as UND
+  component "Hành động" as ACT
+  component "Dùng chung: xác thực,\nche thông tin, gọi mô hình" as SH
+}
+database "PostgreSQL\n+ pgvector" as DB
+cloud "Dịch vụ AI\n(mô hình, véc-tơ)" as AI
+cloud "Langfuse" as LF
+FE --> LIS : REST /api
+FE --> UND : REST /api
+FE --> ACT : REST /api
+LIS --> SH
+UND --> SH
+ACT --> SH
+SH --> AI
+SH ..> LF
+LIS --> DB
+UND --> DB
+ACT --> DB
+
+@enduml

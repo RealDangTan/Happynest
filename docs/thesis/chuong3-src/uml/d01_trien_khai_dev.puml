@@ -1,0 +1,24 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+left to right direction
+node "Máy phát triển\nWindows 11, 8 GB RAM" as PC {
+  artifact "Next.js\n(cổng 3000)" as N
+  artifact "FastAPI\n(cổng 8000)" as F
+  folder "Tệp CSV gốc" as FS
+}
+node "Supabase" as SB {
+  database "PostgreSQL 17\n+ pgvector" as DB
+}
+cloud "OpenRouter" as OR
+cloud "Dịch vụ véc-tơ" as EMB
+cloud "Langfuse" as LF
+N --> F : /api
+F --> FS
+F --> DB : cổng 5432
+F --> OR
+F --> EMB
+F ..> LF
+
+@enduml

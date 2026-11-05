@@ -1,0 +1,23 @@
+@startuml
+!include ../style.iuml
+
+hide empty description
+state "Đang chạy" as Running {
+  state "Đang xử lý" as Busy
+  state "Chờ duyệt nhận định" as Wait
+  [*] --> Busy
+  Busy --> Wait : Lượt điều tra tạo nhận định
+  Wait --> Busy : Yêu cầu điều tra thêm
+}
+state "Hoàn tất" as Done
+state "Thất bại" as Failed
+state "Đã hủy" as Cancelled
+[*] --> Running : Tạo lượt
+Running --> Done : Xử lý xong hoặc\nduyệt, sửa, từ chối
+Running --> Failed : Quá nửa mục lỗi, lỗi luồng\nhoặc treo quá 30 phút
+Running --> Cancelled : Người dùng hủy\n(lượt phân loại)
+Done --> [*]
+Failed --> [*]
+Cancelled --> [*]
+
+@enduml

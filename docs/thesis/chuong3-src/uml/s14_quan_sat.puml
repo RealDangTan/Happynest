@@ -1,0 +1,22 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+
+U -> API : POST /api/impact-checks/run
+API -> DB : Kiểm tra quyền sở hữu
+API -> DB : Phương án đã chấp nhận\nquá 7 ngày, chưa đo
+loop Mỗi phương án
+  API -> DB : Đếm 7 ngày trước và sau
+  API -> DB : Lưu kết quả đo
+end
+API --> U : Kết quả trước – sau
+
+@enduml

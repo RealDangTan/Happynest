@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+
+start
+if (Nhận định đã duyệt?) then (không)
+  :Từ chối, yêu cầu duyệt trước;
+  stop
+else (có)
+endif
+:Nạp tối đa 10 bằng chứng\nvà 18 thẻ thực hành;
+#E9E9E9:Đánh giá liên quan 8 nhóm\nnghiệp vụ, soạn phương án;
+if (Căn cứ hợp lệ?) then (không)
+  :Báo lỗi, giữ nguyên;
+  stop
+else (có)
+endif
+:Giữ nhóm liên quan từ 0,5,\nđiền nguồn từ thư viện;
+:Tính điểm ưu tiên, xếp ma trận;
+#D6E4F2:Kiểm duyệt 3: sửa, chấp nhận\nhoặc từ chối;
+:Tính lại điểm, ghi nhật ký quyết định;
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

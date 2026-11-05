@@ -1,0 +1,33 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+participant "Dịch vụ\nAI" as AI
+
+U -> FE : Chọn "Gợi ý hành động"
+FE -> API : POST .../actions/generate
+API -> DB : Kiểm tra nhận định
+alt Chưa duyệt
+  API --> FE : 409
+else Đã duyệt hoặc đã sửa
+  API -> DB : Đọc tối đa 10 bằng chứng
+  API -> API : Nạp 18 thẻ thực hành
+  API -> AI : Bằng chứng, thư viện thẻ
+  AI --> API : Liên quan 8 nhóm,\nphương án
+  API -> API : Kiểm tra căn cứ,\ntính điểm ưu tiên
+  API -> DB : Thay phương án chưa xử lý
+  API --> FE : Số phương án
+  FE -> API : GET .../actions
+  API --> FE : Danh sách, ma trận
+  FE --> U : Hiển thị ma trận
+end
+
+@enduml

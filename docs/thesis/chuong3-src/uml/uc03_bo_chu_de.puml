@@ -1,0 +1,28 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+rectangle "Quản lý bộ chủ đề" {
+  usecase "Sinh bộ chủ đề\ntừ mẫu phản hồi" as T1
+  usecase "Gợi ý chủ đề mới từ\nnhóm chưa phân loại" as T2
+  usecase "Sửa đề xuất" as T3
+  usecase "Áp dụng chủ đề" as T4 #D6E4F2
+  usecase "Thêm chủ đề thủ công" as T5
+  usecase "Sửa tên, mô tả chủ đề" as T6
+  usecase "Xóa chủ đề" as T7
+  usecase "Xem bộ chủ đề hiện hành" as T8
+}
+U -- T1
+U -- T2
+U -- T4
+U -- T5
+U -- T6
+U -- T7
+U -- T8
+T3 .> T4 : <<extend>>
+T1 -- AI
+T2 -- AI
+
+@enduml

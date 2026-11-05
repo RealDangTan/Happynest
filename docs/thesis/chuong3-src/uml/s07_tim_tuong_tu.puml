@@ -1,0 +1,26 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "PostgreSQL\n+ pgvector" as DB
+
+U -> FE : Chọn "Phản hồi tương tự"
+FE -> API : GET .../{id}/similar
+API -> DB : Kiểm tra quyền sở hữu
+alt Chưa có véc-tơ
+  API --> FE : 409
+else Đã có véc-tơ
+  API -> DB : Tìm k phản hồi gần nhất\ntheo cô-sin, cùng sản phẩm
+  DB --> API : Danh sách, điểm tương đồng
+  API --> FE : Đoạn trích đã che
+  FE --> U : Hiển thị phản hồi\nnên đọc cùng
+end
+
+@enduml

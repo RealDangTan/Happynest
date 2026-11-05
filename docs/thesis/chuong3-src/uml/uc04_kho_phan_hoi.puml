@@ -1,0 +1,30 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+rectangle "Kho phản hồi và phân loại" {
+  usecase "Tra cứu, lọc phản hồi" as K1
+  usecase "Xem chi tiết phản hồi" as K2
+  usecase "Tìm phản hồi tương tự" as K3
+  usecase "Nhập tay một phản hồi" as K4
+  usecase "Sửa hoặc xóa phản hồi" as K5
+  usecase "Chạy phân loại" as K6
+  usecase "Xem phiếu ước tính chi phí" as K7
+  usecase "Hủy lượt phân loại" as K8
+  usecase "Phân loại lại nhóm\nchưa phân loại" as K9
+}
+U -- K1
+U -- K2
+U -- K4
+U -- K5
+U -- K6
+U -- K9
+K3 .> K2 : <<extend>>
+K6 .> K7 : <<include>>
+K8 .> K6 : <<extend>>
+K6 -- AI
+K9 -- AI
+
+@enduml

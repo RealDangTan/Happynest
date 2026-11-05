@@ -1,0 +1,23 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+actor "Người dùng" as USR
+node "Vercel" {
+  artifact "Next.js\n(giao diện)" as N
+}
+node "Máy chủ Ubuntu <<dự kiến>>" {
+  artifact "Caddy (HTTPS)" as C
+  artifact "FastAPI\n(systemd)" as F
+}
+node "Supabase" {
+  database "PostgreSQL 17\n+ pgvector" as DB
+}
+cloud "Dịch vụ AI bên ngoài" as AI
+USR --> N : HTTPS
+N --> C : /api (API_PROXY_ORIGIN)
+C --> F
+F --> DB
+F --> AI
+
+@enduml

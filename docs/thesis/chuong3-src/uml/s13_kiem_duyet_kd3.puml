@@ -1,0 +1,25 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Sửa điểm, nội dung;\nchấp nhận hoặc từ chối
+FE -> API : PATCH /api/actions/{id}
+API -> DB : Kiểm tra quyền sở hữu
+API -> API : Lưu giá trị người chấm,\ngiữ ước lượng AI
+API -> API : Che nội dung sửa
+API -> API : Tính lại điểm, vị trí
+API -> DB : Cập nhật phương án
+API -> DB : Nhật ký: giá trị AI\nvà giá trị người
+API --> FE : Phương án mới
+FE --> U : Cập nhật ma trận
+
+@enduml

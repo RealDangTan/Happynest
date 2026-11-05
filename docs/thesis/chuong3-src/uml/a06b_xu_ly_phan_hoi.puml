@@ -1,0 +1,33 @@
+@startuml
+!include ../style.iuml
+
+start
+repeat
+  :Lấy phản hồi tiếp theo\n(3 luồng gọi song song);
+  #E9E9E9:Gán chủ đề, thuộc tính phụ;
+  #E9E9E9:Tạo véc-tơ 1536 chiều;
+  if (Gọi thành công?) then (có)
+    if (Có chủ đề\nđạt 0,60?) then (có)
+      :Lưu chủ đề, thuộc tính;
+    else (không)
+      :Đưa vào nhóm\nchưa phân loại;
+    endif
+    :Lưu véc-tơ, tên mô hình;
+  else (không)
+    :Trả phản hồi về\ntrạng thái chờ;
+  endif
+repeat while (Còn phản hồi\nvà chưa hủy?) is (có) not (không)
+if (Quá nửa số\nphản hồi lỗi?) then (có)
+  :Đánh dấu lượt thất bại;
+else (không)
+  :Đánh dấu lượt hoàn tất;
+endif
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+!include ../style.iuml
+
+|Người phụ trách|
+start
+:Đặt câu hỏi điều tra;
+repeat
+  |HappyNest|
+  :Tác tử tra cứu,\nghi bằng chứng;
+  |Dịch vụ AI|
+  :Tổng hợp nhận định;
+  |Người phụ trách|
+  #D6E4F2:Kiểm duyệt 2:\nduyệt nhận định;
+repeat while (Điều tra thêm?) is (có) not (không)
+if (Nhận định\nđược duyệt?) then (có)
+  |Dịch vụ AI|
+  :Soạn phương án\ntheo nhóm nghiệp vụ;
+  |HappyNest|
+  :Kiểm tra căn cứ,\ntính điểm ưu tiên;
+  |Người phụ trách|
+  #D6E4F2:Kiểm duyệt 3:\nchọn phương án;
+  :Triển khai cải tiến\n(ngoài hệ thống);
+else (từ chối)
+endif
+stop
+
+@enduml

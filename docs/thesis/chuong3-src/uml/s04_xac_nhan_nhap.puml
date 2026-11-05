@@ -1,0 +1,32 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Đồng ý hoặc đổi từng cột
+FE -> API : POST .../mapping/decision
+API -> API : Kiểm tra quyết định
+alt Không hợp lệ
+  API --> FE : 422
+else Hợp lệ
+  API -> DB : Lược đồ mới (nếu có),\nnhật ký quyết định
+  API --> FE : 202
+  loop Từng dòng của tệp
+    API -> API : Che thông tin định danh
+    API -> DB : Ghi phản hồi\nhoặc ghi lỗi dòng
+  end
+  API -> DB : Trạng thái "đã nhập"
+end
+FE -> API : GET /api/imports/{id}
+API --> FE : Báo cáo nhập
+FE --> U : Số dòng nhập, dòng lỗi
+
+@enduml

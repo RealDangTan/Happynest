@@ -1,0 +1,38 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+hide members
+class User <<Tài khoản>>
+class Product <<Sản phẩm>>
+class ProductSchema <<Lược đồ dữ liệu>>
+class Taxonomy <<Chủ đề>>
+class Import <<Lượt nhập>>
+class Feedback <<Phản hồi>>
+class Cluster <<Cụm>>
+class AnalysisRun <<Lượt xử lý>>
+class Evidence <<Bằng chứng>>
+class Insight <<Nhận định>>
+class InsightReview <<Đánh giá nhận định>>
+class Action <<Phương án>>
+class DecisionLog <<Nhật ký quyết định>>
+class ImpactCheck <<Kết quả trước – sau>>
+class LlmCallLog <<Nhật ký lời gọi AI>>
+User "1" -- "0..*" Product
+Product "1" *-- "1..*" ProductSchema
+Product "1" *-- "0..*" Taxonomy
+Product "1" *-- "0..*" Import
+Product "1" *-- "0..*" Feedback
+Import "0..1" -- "0..*" Feedback
+Cluster "0..1" -- "0..*" Feedback
+Product "1" -- "0..*" AnalysisRun
+AnalysisRun "1" *-- "0..*" Evidence
+AnalysisRun "0..1" -- "0..*" Insight
+AnalysisRun "0..1" -- "0..*" LlmCallLog
+Insight "1" *-- "0..*" InsightReview
+Insight "1" *-- "0..*" Action
+Action "1" -- "0..*" ImpactCheck
+Insight ..> Evidence : dẫn mã
+Product "1" -- "0..*" DecisionLog
+
+@enduml

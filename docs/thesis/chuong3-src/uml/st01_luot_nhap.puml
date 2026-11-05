@@ -1,0 +1,25 @@
+@startuml
+!include ../style.iuml
+
+hide empty description
+[*] --> DaLapHoSo : Tải tệp CSV
+state "Đã lập hồ sơ" as DaLapHoSo
+state "Đang đề xuất ánh xạ" as DangDeXuat
+state "Chờ xác nhận ánh xạ" as ChoXacNhan
+state "Đang nhập" as DangNhap
+state "Đã nhập" as DaNhap
+state "Thất bại" as ThatBai
+state "Đã hủy" as DaHuy
+DaLapHoSo --> DangDeXuat : Yêu cầu AI đề xuất
+DangDeXuat --> ChoXacNhan : AI trả đề xuất
+DangDeXuat --> DaLapHoSo : AI lỗi
+ChoXacNhan --> DangNhap : Kiểm duyệt 1 đồng ý
+DangNhap --> DaNhap : Nhập xong
+DangNhap --> ThatBai : Lỗi khi nhập
+DaLapHoSo --> DaHuy : Người dùng hủy
+ChoXacNhan --> DaHuy : Người dùng hủy
+ThatBai --> DaHuy : Người dùng hủy
+DaNhap --> [*]
+DaHuy --> [*]
+
+@enduml

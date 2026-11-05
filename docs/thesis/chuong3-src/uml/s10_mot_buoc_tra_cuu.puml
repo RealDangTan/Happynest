@@ -1,0 +1,31 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+participant "Luồng\nđiều tra" as G
+participant "Dịch vụ\nAI" as AI
+participant "Bộ công\ncụ" as T
+participant "Bộ biên dịch\ntruy vấn" as Q
+database "Cơ sở\ndữ liệu" as DB
+
+G -> AI : Câu hỏi, bối cảnh,\nbằng chứng đã có
+AI --> G : Công cụ, điều kiện lọc
+G -> G : Kiểm tra theo lược đồ
+alt Không hợp lệ hoặc trùng
+  G -> G : Ghi lỗi như quan sát
+else Hợp lệ
+  G -> T : Gọi công cụ chỉ đọc
+  T -> Q : Tên trường, giá trị
+  Q -> Q : Đối chiếu trường hợp lệ
+  Q --> T : Truy vấn có tham số
+  T -> DB : Thực thi, tối đa 30 dòng
+  DB --> T : Số liệu, đoạn trích
+  T --> G : Kết quả, độ phủ
+  G -> DB : Lưu bằng chứng
+end
+
+@enduml

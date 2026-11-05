@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+
+start
+:Đọc véc-tơ phản hồi của sản phẩm,\nđóng giao dịch đọc;
+:Chạy HDBSCAN (khoảng cách cô-sin);
+if (Có cụm?) then (có)
+  repeat
+    #E9E9E9:Đặt tên, tóm tắt từ\ntối đa 5 mẫu đã che;
+    if (Gọi thành công?) then (không)
+      :Dùng tên đánh số;
+    else (có)
+    endif
+    :Tính tỷ lệ tăng giữa\nhai khoảng 30 ngày;
+    :Đánh dấu đột biến hoặc mới xuất hiện,\ntính điểm gợi ý điều tra;
+  repeat while (Còn cụm?) is (có) not (không)
+else (không)
+endif
+:Ghi cụm mới, gỡ cụm cũ\ntrong giao dịch ngắn;
+:Trả số cụm, số phản hồi ngoài cụm;
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

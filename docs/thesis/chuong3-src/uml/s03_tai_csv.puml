@@ -1,0 +1,37 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+participant "Dịch vụ\nAI" as AI
+
+U -> FE : Chọn tệp CSV
+FE -> API : POST /api/imports
+API -> DB : Kiểm tra lượt nhập đang mở
+alt Có lượt nhập dở
+  API --> FE : 409
+else Không có
+  API -> API : Lập hồ sơ cột, che mẫu
+  API -> DB : Lưu lượt nhập
+  API --> FE : 201, hồ sơ cột
+end
+U -> FE : Yêu cầu AI đề xuất
+FE -> API : POST .../mapping/proposal
+API --> FE : 202
+API -> AI : Hồ sơ cột đã che
+AI --> API : Cách xử lý từng cột
+API -> DB : Lưu đề xuất
+loop Đến khi có đề xuất
+  FE -> API : GET /api/imports/{id}
+  API --> FE : Trạng thái
+end
+FE --> U : Hiển thị đề xuất
+
+@enduml

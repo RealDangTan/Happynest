@@ -1,0 +1,31 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+participant "Dịch vụ\nAI" as AI
+
+U -> FE : Chọn "Tạo lại phân cụm"
+FE -> API : POST /api/clusters/run
+API -> DB : Kiểm tra quyền sở hữu
+API -> DB : Đọc véc-tơ, đóng giao dịch
+API -> API : Chạy HDBSCAN (cô-sin)
+loop Mỗi cụm
+  API -> AI : Tối đa 5 mẫu đã che
+  AI --> API : Tên, tóm tắt
+  API -> API : Tính biến động 30 ngày
+end
+API -> DB : Ghi cụm trong giao dịch ngắn
+API --> FE : Số cụm, số điểm nhiễu
+FE -> API : GET /api/clusters
+API --> FE : Danh sách cụm
+FE --> U : Hiển thị cụm
+
+@enduml

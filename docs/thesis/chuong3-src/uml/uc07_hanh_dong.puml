@@ -1,0 +1,27 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+rectangle "Xây dựng và chọn phương án" {
+  usecase "Sinh phương án từ\nnhận định đã duyệt" as A1
+  usecase "Xem ma trận ưu tiên" as A2
+  usecase "Xem căn cứ của phương án" as A3
+  usecase "Chọn phương án\n(kiểm duyệt thứ ba)" as A4 #D6E4F2
+  usecase "Sửa điểm, nội dung" as A5
+  usecase "Thêm phương án thủ công" as A6
+  usecase "Xem phương án theo\nnhóm nghiệp vụ" as A7
+  usecase "Quan sát trước – sau" as A8
+}
+U -- A1
+U -- A2
+U -- A4
+U -- A6
+U -- A7
+U -- A8
+A3 .> A2 : <<extend>>
+A5 .> A4 : <<extend>>
+A1 -- AI
+
+@enduml

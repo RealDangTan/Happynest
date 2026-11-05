@@ -1,0 +1,48 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+class Insight <<Nhận định>>
+class User <<Tài khoản>>
+class InsightReview <<Đánh giá nhận định>> {
+  +action: InsightReviewAction
+  +original_value: JSONB
+  +edited_value: JSONB
+  +reason: str
+}
+class Action <<Phương án>> {
+  +function: BusinessFunction
+  +recommendation: str
+  +impact: int
+  +urgency: int
+  +effort: int
+  +confidence: float
+  +human_impact: int
+  +human_urgency: int
+  +human_effort: int
+  +priority_score: float
+  +decision_support: JSONB
+  +status: str
+}
+class DecisionLog <<Nhật ký quyết định>> {
+  +subject_type: DecisionSubject
+  +subject_id: UUID
+  +agent_value: JSONB
+  +human_value: JSONB
+  +reason: str
+}
+class ImpactCheck <<Kết quả trước – sau>> {
+  +window_days: int
+  +before_count: int
+  +after_count: int
+  +delta_ratio: float
+}
+Insight "1" *-- "0..*" InsightReview
+Insight "1" *-- "0..*" Action
+Action "1" -- "0..*" ImpactCheck
+User "1" -- "0..*" InsightReview : người duyệt
+User "1" -- "0..*" DecisionLog : người duyệt
+DecisionLog ..> Action : tham chiếu
+DecisionLog ..> Insight : tham chiếu
+
+@enduml

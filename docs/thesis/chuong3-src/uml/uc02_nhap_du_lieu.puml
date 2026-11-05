@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+rectangle "Nhập dữ liệu" {
+  usecase "Tải tệp CSV" as U1
+  usecase "Lập hồ sơ cột" as U2
+  usecase "Xem hồ sơ cột\nvà dữ liệu mẫu" as U3
+  usecase "Đề xuất ý nghĩa cột" as U4
+  usecase "Xác nhận ý nghĩa các cột\n(kiểm duyệt thứ nhất)" as U5 #D6E4F2
+  usecase "Đổi cách xử lý\nmột cột" as U6
+  usecase "Nhập phản hồi vào kho" as U7
+  usecase "Hủy lượt nhập" as U8
+  usecase "Xem báo cáo nhập" as U9
+}
+U -- U1
+U -- U3
+U -- U4
+U -- U5
+U -- U8
+U -- U9
+U1 .> U2 : <<include>>
+U6 .> U5 : <<extend>>
+U5 .> U7 : <<include>>
+U4 -- AI
+
+@enduml

@@ -1,0 +1,23 @@
+@startuml
+!include ../style.iuml
+
+start
+:Người phụ trách chọn phạm vi phản hồi;
+:Lập phiếu ước tính: số phản hồi\nđủ điều kiện, số lượt gọi tối đa;
+#D6E4F2:Xác nhận số phản hồi;
+if (Khớp với phiếu?) then (không)
+  :Yêu cầu xem lại phiếu;
+  stop
+else (có)
+endif
+:Tạo lượt phân loại\n(tối đa 100 phản hồi);
+:Trả mã lượt, chạy nền;
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+!include ../style.iuml
+
+start
+#E9E9E9:Tổng hợp nhận định: quan sát,\ngiả thuyết, giới hạn;
+:Loại mã bằng chứng sai phạm vi;
+if (Còn bằng chứng\nkhả dụng?) then (không)
+  :Tạo nhận định\n"không đủ bằng chứng";
+else (có)
+  :Giới hạn độ tin cậy\nnếu chỉ dựa trên mẫu;
+endif
+:Lưu nhận định "chờ duyệt",\ntạm dừng lượt;
+#D6E4F2:Kiểm duyệt 2;
+if (Quyết định?) then (điều tra thêm)
+  :Quay lại vòng tra cứu;
+else (duyệt, sửa, từ chối)
+  :Cập nhật trạng thái nhận định,\nghi nhật ký, kết thúc lượt;
+endif
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+!include ../style.iuml
+
+hide empty description
+state "Đề xuất" as Proposed
+state "Đã sửa" as Edited
+state "Đã chấp nhận" as Accepted
+state "Đã từ chối" as Rejected
+[*] --> Proposed : AI sinh phương án
+[*] --> Accepted : Người dùng tự thêm
+Proposed --> Edited : Sửa điểm hoặc nội dung
+Proposed --> Accepted : Chấp nhận
+Proposed --> Rejected : Từ chối
+Edited --> Accepted : Chấp nhận
+Edited --> Rejected : Từ chối
+Proposed --> [*] : Bị thay khi sinh lại
+Accepted --> Accepted : Quan sát trước – sau\nsau 7 ngày
+Accepted --> [*]
+Rejected --> [*]
+
+@enduml

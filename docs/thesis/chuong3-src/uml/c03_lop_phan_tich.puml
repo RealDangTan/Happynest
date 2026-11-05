@@ -1,0 +1,45 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+class Product <<Sản phẩm>>
+class AnalysisRun <<Lượt xử lý>> {
+  +mode: str
+  +status: RunStatus
+  +llm_model: str
+  +prompt_version: str
+  +processed_count: int
+  +total_count: int
+  +failed_count: int
+}
+class Evidence <<Bằng chứng>> {
+  +source_tool: str
+  +statement: str
+  +payload: JSONB
+  +coverage: float
+}
+class Insight <<Nhận định>> {
+  +title: str
+  +finding: str
+  +finding_confidence: float
+  +hypothesis: JSONB
+  +affected_context: JSONB
+  +limitations: JSONB
+  +evidence: JSONB
+  +status: str
+}
+class LlmCallLog <<Nhật ký lời gọi AI>> {
+  +call_type: LlmCallType
+  +model: str
+  +latency_ms: int
+  +prompt_tokens: int
+  +completion_tokens: int
+  +error: str
+}
+Product "1" -- "0..*" AnalysisRun
+AnalysisRun "1" *-- "0..*" Evidence : ghi
+AnalysisRun "0..1" -- "0..*" Insight : tạo
+AnalysisRun "0..1" -- "0..*" LlmCallLog : đếm ngân sách
+Insight ..> Evidence : dẫn mã bằng chứng
+
+@enduml

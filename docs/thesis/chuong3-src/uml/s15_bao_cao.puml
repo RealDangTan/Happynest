@@ -1,0 +1,22 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Chọn kỳ 7, 30 hoặc 90 ngày
+FE -> API : GET /api/reports/summary
+API -> DB : Đếm theo chủ đề, mức\nnghiêm trọng, nguồn
+API -> DB : So sánh với kỳ trước
+DB --> API : Số liệu
+API --> FE : Báo cáo (không gọi AI)
+FE --> U : Thẻ số liệu, biểu đồ
+
+@enduml

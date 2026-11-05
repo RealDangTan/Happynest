@@ -1,0 +1,24 @@
+@startuml
+!include ../style.iuml
+
+start
+:Gửi yêu cầu kèm lược đồ JSON;
+if (Dịch vụ lỗi hoặc\nquá 90 giây?) then (có)
+  :Chuyển sang chế độ\nJSON trong nội dung;
+else (không)
+endif
+:Kiểm tra kết quả theo lược đồ;
+if (Hợp lệ?) then (không)
+  :Gửi lại một lần\nkèm thông báo lỗi;
+  if (Hợp lệ?) then (không)
+    :Ghi nhật ký lỗi,\nbáo lỗi cho tầng gọi;
+    stop
+  else (có)
+  endif
+else (có)
+endif
+:Ghi nhật ký: loại tác vụ, mô hình,\nthời gian, số token;
+:Trả kết quả đã kiểm tra;
+stop
+
+@enduml

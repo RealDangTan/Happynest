@@ -1,0 +1,25 @@
+@startuml
+!include ../style.iuml
+
+|Người phụ trách|
+start
+:Chọn sản phẩm, tải tệp CSV;
+|HappyNest|
+:Lập hồ sơ cột, che giá trị mẫu;
+|Dịch vụ AI|
+:Đề xuất ý nghĩa từng cột;
+|Người phụ trách|
+#D6E4F2:Kiểm duyệt 1:\nxác nhận các cột;
+|HappyNest|
+:Che thông tin,\nnhập phản hồi vào kho;
+|Dịch vụ AI|
+:Gợi ý bộ chủ đề;
+|Người phụ trách|
+#D6E4F2:Sửa và áp dụng\nbộ chủ đề;
+|Dịch vụ AI|
+:Phân loại, tạo véc-tơ;
+|HappyNest|
+:Phân cụm, tính biến động;
+stop
+
+@enduml

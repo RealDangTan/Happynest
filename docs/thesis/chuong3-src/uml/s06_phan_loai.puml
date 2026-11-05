@@ -1,0 +1,40 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+participant "Dịch vụ\nAI" as AI
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Chọn phạm vi
+FE -> API : POST .../runs/preview
+API -> DB : Đếm phản hồi đủ điều kiện
+API --> FE : Phiếu ước tính
+U -> FE : Xác nhận số phản hồi
+FE -> API : POST /api/analysis/runs
+alt Khác phiếu
+  API --> FE : 409
+else Khớp phiếu
+  API -> DB : Tạo lượt "đang chạy"
+  API --> FE : 201, mã lượt
+  loop Mỗi phản hồi, 3 luồng song song
+    API -> AI : Gán chủ đề (System One)
+    AI --> API : Nhãn, độ tin cậy
+    API -> AI : Tạo véc-tơ
+    AI --> API : Véc-tơ 1536 chiều
+    API -> DB : Lưu kết quả
+  end
+  API -> DB : Kết thúc lượt
+end
+loop Đến khi kết thúc
+  FE -> API : GET .../runs/{id}
+  API --> FE : Tiến độ
+end
+
+@enduml

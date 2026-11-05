@@ -1,0 +1,54 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+enum ImportStatus <<Trạng thái lượt nhập>> {
+  profile_ready
+  mapping_generating
+  mapping_review
+  importing
+  imported
+  failed
+  cancelled
+}
+enum RunStatus <<Trạng thái lượt xử lý>> {
+  running
+  completed
+  failed
+  cancelled
+}
+enum InsightReviewAction <<Quyết định ở kiểm duyệt 2>> {
+  approve
+  edit
+  reject
+  investigate_more
+}
+enum BusinessFunction <<Nhóm nghiệp vụ>> {
+  MARKETING
+  LEGAL
+  DESIGN
+  FINANCE
+  ENGINEERING
+  OPERATION
+  SALES
+  SUPPORT
+}
+enum Severity <<Mức nghiêm trọng>> {
+  low
+  medium
+  high
+  critical
+}
+enum DecisionSubject <<Đối tượng quyết định>> {
+  schema_mapping
+  taxonomy
+  insight
+  action
+}
+ImportStatus -[hidden]right- RunStatus
+RunStatus -[hidden]right- InsightReviewAction
+BusinessFunction -[hidden]right- Severity
+Severity -[hidden]right- DecisionSubject
+ImportStatus -[hidden]down- BusinessFunction
+
+@enduml

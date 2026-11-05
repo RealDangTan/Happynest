@@ -1,0 +1,34 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+participant "Luồng\nđiều tra" as G
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Duyệt, sửa, từ chối\nhoặc điều tra thêm
+FE -> API : POST .../decision
+alt Lượt đã kết thúc
+  API --> FE : 409
+else Đang chờ duyệt
+  API -> API : Xếp quyết định vào hàng đợi
+  API --> FE : 202
+  API ->> G : Tiếp tục từ trạng thái lưu
+  G -> DB : Ghi đánh giá, nhật ký
+  alt Điều tra thêm
+    G -> G : Quay lại chọn bước
+  else Duyệt, sửa, từ chối
+    G -> DB : Cập nhật nhận định,\nkết thúc lượt
+  end
+end
+FE -> API : GET .../runs/{id}
+API --> FE : Trạng thái mới
+FE --> U : Hiển thị kết quả
+
+@enduml

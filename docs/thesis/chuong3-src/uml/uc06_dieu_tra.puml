@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+rectangle "Điều tra và duyệt nhận định" {
+  usecase "Đặt câu hỏi điều tra" as Q1
+  usecase "Chọn câu hỏi gợi ý" as Q2
+  usecase "Theo dõi tiến độ điều tra" as Q3
+  usecase "Xem bằng chứng" as Q4
+  usecase "Duyệt nhận định\n(kiểm duyệt thứ hai)" as Q5 #D6E4F2
+  usecase "Sửa nhận định" as Q6
+  usecase "Từ chối nhận định" as Q7
+  usecase "Yêu cầu điều tra thêm" as Q8
+  usecase "Xem chi tiết kỹ thuật\ncủa lượt điều tra" as Q9
+}
+U -- Q1
+U -- Q3
+U -- Q5
+U -- Q9
+Q2 .> Q1 : <<extend>>
+Q5 .> Q4 : <<include>>
+Q6 .> Q5 : <<extend>>
+Q7 .> Q5 : <<extend>>
+Q8 .> Q5 : <<extend>>
+Q1 -- AI
+
+@enduml

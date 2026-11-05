@@ -1,0 +1,25 @@
+@startuml
+!include ../style.iuml
+
+start
+:Nhận yêu cầu đo cho một sản phẩm;
+:Lấy các phương án đã chấp nhận\nhoặc đã sửa, tạo quá 7 ngày, chưa đo;
+if (Có phương án phù hợp?) then (có)
+  repeat
+    :Đếm phản hồi cùng bối cảnh\ntrong 7 ngày trước ngày tạo;
+    :Đếm phản hồi trong 7 ngày sau;
+    :Tính tỷ lệ thay đổi;
+    :Lưu kết quả đo một lần;
+  repeat while (Còn phương án?) is (có) not (không)
+else (không)
+endif
+:Trả danh sách kết quả;
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

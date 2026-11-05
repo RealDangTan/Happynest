@@ -1,0 +1,43 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+skinparam packageStyle rectangle
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+actor "Google" as G
+rectangle "Hệ thống HappyNest" {
+  usecase "Đăng nhập" as A1
+  usecase "Quản lý sản phẩm" as A2
+  usecase "Nhập dữ liệu CSV" as L1
+  usecase "Quản lý bộ chủ đề" as L2
+  usecase "Phân loại phản hồi" as L3
+  usecase "Tra cứu, tìm phản hồi\ntương tự" as L4
+  usecase "Phân cụm phản hồi" as L5
+  usecase "Điều tra bằng\ntác tử AI" as T1
+  usecase "Duyệt nhận định" as T2 #D6E4F2
+  usecase "Sinh phương án" as H1
+  usecase "Chọn phương án" as H2 #D6E4F2
+  usecase "Xem báo cáo" as B1
+}
+U -- A1
+U -- A2
+U -- L1
+U -- L2
+U -- L3
+U -- L4
+U -- L5
+U -- T1
+U -- T2
+U -- H1
+U -- H2
+U -- B1
+A1 -- G
+L1 -- AI
+L2 -- AI
+L3 -- AI
+L5 -- AI
+T1 -- AI
+H1 -- AI
+
+@enduml

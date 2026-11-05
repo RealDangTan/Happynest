@@ -1,0 +1,22 @@
+@startuml
+!include ../style.iuml
+
+hide empty description
+state "Chờ duyệt" as Pending
+state "Đã duyệt" as Approved
+state "Đã sửa" as Edited
+state "Đã từ chối" as Rejected
+state "Đang điều tra thêm" as Investigating
+[*] --> Pending : Tác tử tổng hợp nhận định
+Pending --> Approved : Duyệt
+Pending --> Edited : Sửa rồi duyệt
+Pending --> Rejected : Từ chối
+Pending --> Investigating : Yêu cầu điều tra thêm
+Approved --> Approved : Sinh phương án
+Edited --> Edited : Sinh phương án
+Investigating --> [*] : Lượt tạo nhận định mới
+Approved --> [*]
+Edited --> [*]
+Rejected --> [*]
+
+@enduml

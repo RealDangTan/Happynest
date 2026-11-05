@@ -1,0 +1,24 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+package "app/(app)\n(màn hình)" as APP {
+}
+package "app\n(trang công khai)" as PUB {
+}
+package "components\n(thành phần)" as CMP {
+}
+package "hooks\n(truy vấn dữ liệu)" as HK {
+}
+package "lib\n(gọi API, kiểu dữ liệu)" as LIB {
+}
+package "next.config\n(chuyển tiếp /api)" as CFG {
+}
+APP ..> CMP
+APP ..> HK
+PUB ..> CMP
+CMP ..> LIB
+HK ..> LIB
+LIB ..> CFG
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Google" as G
+rectangle "Tài khoản và sản phẩm" {
+  usecase "Đăng ký tài khoản" as R
+  usecase "Đăng nhập" as L
+  usecase "Đăng nhập bằng Google" as LG
+  usecase "Đăng xuất" as O
+  usecase "Tạo sản phẩm" as P1
+  usecase "Chọn sản phẩm\nđang làm việc" as P2
+  usecase "Sửa thông tin sản phẩm" as P3
+  usecase "Xóa sản phẩm" as P4
+  usecase "Xem lược đồ dữ liệu\ncủa sản phẩm" as P5
+}
+U -- R
+U -- L
+U -- O
+U -- P1
+U -- P2
+U -- P3
+U -- P4
+U -- P5
+LG .> L : <<extend>>
+LG -- G
+
+@enduml

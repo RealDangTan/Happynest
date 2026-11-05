@@ -1,0 +1,23 @@
+@startuml
+!include ../style.iuml
+
+|Người phụ trách|
+start
+:Chọn sản phẩm, tải tệp CSV;
+|Hệ thống|
+if (Có lượt nhập dở?) then (có)
+  :Từ chối, yêu cầu\nhoàn tất lượt cũ;
+  stop
+else (không)
+endif
+:Lưu tệp gốc vào\nthư mục nội bộ;
+:Lập hồ sơ từng cột,\nche giá trị mẫu;
+|Người phụ trách|
+:Xem hồ sơ cột,\nyêu cầu AI đề xuất;
+|Dịch vụ AI|
+:Đề xuất cách xử lý\ntừng cột;
+|Hệ thống|
+:Lưu đề xuất, chờ\nngười xác nhận;
+stop
+
+@enduml

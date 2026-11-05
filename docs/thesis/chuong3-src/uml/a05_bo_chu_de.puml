@@ -1,0 +1,30 @@
+@startuml
+!include ../style.iuml
+
+start
+if (Sản phẩm đã có\nbộ chủ đề?) then (chưa)
+  :Chọn mẫu rải đều theo thời gian\n(mặc định 30, tối đa 50);
+  #E9E9E9:Đề xuất cây chủ đề;
+else (rồi)
+  :Lấy nhóm chưa phân loại\n(mặc định 100, tối đa 200);
+  #E9E9E9:Gợi ý tối đa 8 chủ đề mới;
+endif
+:Loại đề xuất trùng\nhoặc không hợp lệ;
+:Người phụ trách đọc mẫu, sửa đề xuất;
+if (Áp dụng?) then (có)
+  #D6E4F2:Áp dụng bộ chủ đề;
+  :Kiểm tra nút cha, bỏ nút trùng;
+  :Lưu chủ đề, tăng phiên bản;
+  :Ghi nhật ký cho chủ đề mới;
+else (không)
+  :Bỏ đề xuất, không ghi dữ liệu;
+endif
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml

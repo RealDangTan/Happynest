@@ -1,0 +1,24 @@
+@startmindmap
+!include ../style.iuml
+skinparam defaultFontSize 14
+* HappyNest
+** Lắng nghe
+*** Nhập dữ liệu
+*** Bộ chủ đề
+*** Kho phản hồi
+** Thấu hiểu
+*** Đồ thị dữ liệu
+*** Báo cáo
+** Hành động
+*** Ma trận ưu tiên
+*** Các bên liên quan
+left side
+** Trang công khai
+*** Trang giới thiệu
+*** Đăng nhập
+*** Đăng ký
+** Tiện ích
+*** Hướng dẫn bắt đầu
+*** Cài đặt, hồ sơ
+*** Trợ giúp
+@endmindmap

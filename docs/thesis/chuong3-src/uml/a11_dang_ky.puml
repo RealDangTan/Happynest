@@ -1,0 +1,24 @@
+@startuml
+!include ../style.iuml
+
+|Người phụ trách|
+start
+:Nhập thư điện tử và mật khẩu;
+|Hệ thống|
+if (Định dạng hợp lệ,\nmật khẩu từ 8 ký tự?) then (không)
+  :Báo lỗi dữ liệu;
+  stop
+else (có)
+endif
+if (Thư điện tử đã tồn tại?) then (có)
+  :Báo tài khoản đã tồn tại;
+  stop
+else (không)
+endif
+:Băm mật khẩu bằng Argon2;
+:Tạo tài khoản với không gian\nlàm việc trống;
+|Người phụ trách|
+:Đăng nhập, tạo sản phẩm đầu tiên;
+stop
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+rectangle "Báo cáo và theo dõi" {
+  usecase "Xem báo cáo tổng hợp\ntheo kỳ 7, 30, 90 ngày" as B1
+  usecase "Xem danh sách nhận định" as B2
+  usecase "Sửa hoặc xóa\nbáo cáo nhận định" as B3
+  usecase "Xem chỉ số thời gian\nvà kiểm duyệt" as B4
+  usecase "Theo dõi tác vụ nền" as B5
+  usecase "Kiểm tra tình trạng\nhệ thống" as B6
+}
+U -- B1
+U -- B2
+U -- B4
+U -- B5
+U -- B6
+B3 .> B2 : <<extend>>
+
+@enduml

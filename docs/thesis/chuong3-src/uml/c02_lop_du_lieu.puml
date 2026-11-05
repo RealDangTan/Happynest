@@ -1,0 +1,66 @@
+@startuml
+!include ../style.iuml
+
+!pragma layout smetana
+class User <<Tài khoản>> {
+  +id: UUID
+  +email: str
+  +password_hash: str
+  +google_sub: str
+}
+class Product <<Sản phẩm>> {
+  +id: UUID
+  +owner_id: UUID
+  +name: str
+  +taxonomy_version: int
+}
+class ProductSchema <<Lược đồ dữ liệu>> {
+  +version: int
+  +definition: JSONB
+  +status: str
+}
+class Taxonomy <<Chủ đề>> {
+  +slug: str
+  +name: str
+  +name_vi: str
+  +parent_id: UUID
+  +status: str
+}
+class Import <<Lượt nhập>> {
+  +original_filename: str
+  +status: ImportStatus
+  +column_profiles: JSONB
+  +mapping_proposal: JSONB
+  +report: JSONB
+}
+class Feedback <<Phản hồi>> {
+  +raw_content: str
+  +feedback_text: str
+  +pii_entities: JSONB
+  +data: JSONB
+  +source_meta: JSONB
+  +ai_analysis: JSONB
+  {field} +embedding: vector(1536)
+  +occurred_at: datetime
+  +imported_at: datetime
+}
+class Cluster <<Cụm>> {
+  +name: str
+  +summary: str
+  +current_count: int
+  +previous_count: int
+  +growth_ratio: float
+  +is_spike: bool
+  +is_emerging: bool
+  +suggested_priority: float
+}
+User "1" -- "0..*" Product : sở hữu
+Product "1" *-- "1..*" ProductSchema
+Product "1" *-- "0..*" Taxonomy
+Taxonomy "0..1" -- "0..*" Taxonomy : nút cha
+Product "1" *-- "0..*" Import
+Product "1" *-- "0..*" Feedback
+Import "0..1" -- "0..*" Feedback : tạo ra
+Cluster "0..1" -- "0..*" Feedback : gom
+
+@enduml

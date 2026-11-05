@@ -1,0 +1,23 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Người phụ trách" as U
+actor "Dịch vụ AI" as AI
+rectangle "Phân cụm và theo dõi biến động" {
+  usecase "Chạy phân cụm\ntheo sản phẩm" as C1
+  usecase "Đặt tên, tóm tắt cụm" as C2
+  usecase "Tính chỉ số biến động" as C3
+  usecase "Xem danh sách cụm" as C4
+  usecase "Xem phản hồi mẫu\ncủa cụm" as C5
+  usecase "Lọc cụm tăng đột biến\nhoặc mới xuất hiện" as C6
+}
+U -- C1
+U -- C4
+C1 .> C2 : <<include>>
+C1 .> C3 : <<include>>
+C5 .> C4 : <<extend>>
+C6 .> C4 : <<extend>>
+C2 -- AI
+
+@enduml

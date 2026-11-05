@@ -1,0 +1,35 @@
+@startuml
+!include ../style.iuml
+hide footbox
+autonumber
+skinparam defaultFontSize 13
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+actor "Người phụ\ntrách" as U
+participant "Giao diện\nweb" as FE
+participant "Máy chủ\nứng dụng" as API
+participant "Luồng\nđiều tra" as G
+participant "Dịch vụ\nAI" as AI
+database "Cơ sở\ndữ liệu" as DB
+
+U -> FE : Nhập câu hỏi
+FE -> API : POST /api/agent/runs
+API -> API : Che câu hỏi
+API -> DB : Tạo lượt
+API ->> G : Chạy nền
+API --> FE : Mã lượt
+G -> DB : Bối cảnh, đếm theo chủ đề
+loop Tối đa 8 vòng, 18 lời gọi
+  G -> AI : Chọn bước
+  G -> DB : Chạy công cụ,\nlưu bằng chứng
+  G -> AI : Đánh giá
+end
+G -> AI : Tổng hợp nhận định
+G -> DB : Lưu nhận định\n"chờ duyệt"
+G -> G : Tạm dừng
+FE -> API : GET .../runs/{id}
+API --> FE : Nhận định chờ duyệt
+FE --> U : Nhận định và bằng chứng
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+!include ../style.iuml
+
+start
+:Nhận văn bản cần xử lý;
+if (Mô hình Stanza sẵn sàng?) then (có)
+  :Nhận diện tên người, địa danh\nbằng Presidio và Stanza;
+else (không)
+  :Chỉ dùng biểu thức chính quy;
+endif
+:Nhận diện thư điện tử, số điện thoại\nViệt Nam, CCCD, đường dẫn, địa chỉ IP;
+:Bỏ qua từ viết tắt kỹ thuật\n(AI, UI, API, CSV...);
+if (Có thông tin định danh?) then (có)
+  :Thay bằng nhãn <EMAIL>, <PHONE_NUMBER>,\n<PERSON>...;
+  :Ghi loại và vị trí, không ghi chuỗi gốc;
+else (không)
+endif
+:Trả văn bản đã che;
+stop
+
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #FFFFFF
+legend bottom
+|<#D6E4F2>     | Người phụ trách quyết định |<#E9E9E9>     | Có gọi dịch vụ AI |<#FFFFFF>     | Chương trình xử lý |
+endlegend
+
+@enduml
