@@ -219,7 +219,7 @@ def main() -> int:
 
         from app.services.clustering import run_clustering
 
-        stats = run_clustering(db)
+        stats = run_clustering(db, product.id)
         print(f"[5] Clusters: {stats.clusters_upserted} cụm, {stats.assigned_count} members")
 
         from understand_agent import runner as u_runner

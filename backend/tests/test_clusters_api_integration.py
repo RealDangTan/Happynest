@@ -96,22 +96,23 @@ def _visible_cluster_count() -> int:
         )
 
 
-def _embedded_count() -> int:
+def _embedded_count(product_id) -> int:
     with SessionLocal() as db:
         return db.scalar(
             select(func.count())
             .select_from(Feedback)
-            .where(Feedback.embedding.is_not(None))
+            .where(Feedback.embedding.is_not(None), Feedback.product_id == product_id)
         )
 
 
-def test_clusters_run_then_list_idempotent(client: TestClient, demo_rows) -> None:
+def test_clusters_run_then_list_idempotent(client: TestClient, demo_rows, test_product) -> None:
     auth = _login(client)
-    embedded_total = _embedded_count()
+    run_body = {"product_id": str(test_product.id)}  # theo product từ 2026-11-05
+    embedded_total = _embedded_count(test_product.id)
     assert embedded_total >= 12, "seed phải tạo đủ row có embedding"
 
     # ---- Run 1: POST /api/clusters/run ----
-    r1 = client.post("/api/clusters/run", headers=auth)
+    r1 = client.post("/api/clusters/run", json=run_body, headers=auth)
     assert r1.status_code == 200, r1.text
     body1 = r1.json()
     assert set(body1) == {"clusters_upserted", "assigned_count",
@@ -147,7 +148,7 @@ def test_clusters_run_then_list_idempotent(client: TestClient, demo_rows) -> Non
     assert seen == sorted(seen, reverse=True)
 
     # ---- Rerun lần 2: idempotence thật trên Supabase ----
-    r2 = client.post("/api/clusters/run", headers=auth)
+    r2 = client.post("/api/clusters/run", json=run_body, headers=auth)
     assert r2.status_code == 200, r2.text
     body2 = r2.json()
     assert body2["clusters_upserted"] == body1["clusters_upserted"], (
@@ -173,3 +174,13 @@ def test_clusters_endpoints_require_auth(client: TestClient) -> None:
     """Guard router-level như feedback router: không credentials → 401."""
     assert client.get("/api/clusters").status_code == 401
     assert client.post("/api/clusters/run").status_code == 401
+
+
+def test_clusters_run_requires_owned_product(client: TestClient) -> None:
+    """Thiếu product_id → 422; product không thuộc tài khoản → 404 (isolation)."""
+    import uuid
+
+    auth = _login(client)
+    assert client.post("/api/clusters/run", json={}, headers=auth).status_code == 422
+    other = client.post("/api/clusters/run", json={"product_id": str(uuid.uuid4())}, headers=auth)
+    assert other.status_code == 404

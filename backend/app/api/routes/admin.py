@@ -7,7 +7,7 @@ Giữ lại: POST /clusters/run + GET /clusters (C1/C5) + GET /reports/summary (
 
 Tất cả endpoint yêu cầu đăng nhập và mặc định scope theo product của chính
 tài khoản (isolation — decisions.md 2026-10-22). Ngoại lệ ghi nhận rõ:
-POST /clusters/run và GET /reports/kpis vẫn toàn cục (batch job / KPI hệ thống).
+GET /reports/kpis vẫn toàn cục (KPI hệ thống). POST /clusters/run theo product từ 2026-11-05.
 """
 
 import time
@@ -84,16 +84,25 @@ def run_product_impact(
     )
 
 
-@router.post("/clusters/run", status_code=status.HTTP_200_OK)
-def run_clusters(db: Session = Depends(get_db)) -> ClusterRunOut:
-    """Chạy lại toàn bộ clustering — idempotent trong 1 transaction (C5).
+class ClusterRunIn(BaseModel):
+    product_id: uuid.UUID
 
-    Sync def: threadpool của FastAPI đủ cho dataset ≤1500 row; LLM naming +
-    HDBSCAN chạy trong thread này không block event loop.
+
+@router.post("/clusters/run", status_code=status.HTTP_200_OK)
+def run_clusters(
+    body: ClusterRunIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ClusterRunOut:
+    """Cụm lại feedback của MỘT product (owner 2026-11-05) — idempotent (C5).
+
+    Chỉ product của chính tài khoản (404 nếu không). Sync def: threadpool của
+    FastAPI đủ cho ≤1500 row/product; LLM naming chạy ngoài transaction DB.
     """
+    product_or_404(db, body.product_id, current_user)
     t0 = time.perf_counter()
     try:
-        stats = run_clustering(db)
+        stats = run_clustering(db, body.product_id)
     except Exception:  # noqa: BLE001 — 500 chuẩn không leak chi tiết nội bộ
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

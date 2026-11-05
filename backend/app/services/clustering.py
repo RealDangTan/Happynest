@@ -13,6 +13,7 @@ sanitize) — `raw_content` không bao giờ ra khỏi biên sanitize (test asse
 tests/test_clustering_unit.py).
 """
 
+import uuid
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -172,42 +173,55 @@ def apply_names(
 
 def run_clustering(
     db: Session,
+    product_id: uuid.UUID,
     settings: Settings | None = None,
     now: datetime | None = None,
 ) -> ClusteringRunStats:
-    """Chạy trọn vòng clustering idempotent theo thứ tự C5, TRONG 1 transaction.
+    """Cụm lại feedback của MỘT product, idempotent (C5) — owner 2026-11-05.
 
-    DELETE clusters → NULL feedback.cluster_id → INSERT cụm mới (trend +
-    naming) → gán lại membership → commit. Lỗi giữa chừng → rollback, DB về
-    trạng thái cũ. (Reshape 2026-08-28: không còn bảng insights để xoá trước —
-    insights mới sẽ đến ở plan 25 với FK riêng.)
+    Trước đây HDBSCAN chạy trên feedback của MỌI product: cụm trộn tenant (tên cụm
+    sinh từ feedback product khác), UNDERSTAND loại cụm trộn khỏi context (chỉ thấy
+    2/52 cụm ở e2e 2026-11-04), và call LLM đặt tên chạy khi transaction còn mở
+    (idle in transaction ~7 phút). Giờ:
+
+    1. Đọc cột cần thiết của product → kết thúc transaction đọc.
+    2. HDBSCAN + LLM naming NGOÀI transaction.
+    3. Một transaction ngắn: gỡ product khỏi cụm cũ (cụm còn member product khác
+       → tính lại trend; rỗng → xoá) → INSERT cụm mới → gán membership → commit.
+       Lỗi giữa chừng → rollback, DB về trạng thái cũ.
     """
     settings = settings or get_settings()
     now = now or datetime.now(timezone.utc)
 
-    rows = db.execute(select(Feedback)).scalars().all()
+    rows = db.execute(
+        select(
+            Feedback.id, Feedback.embedding, Feedback.feedback_text,
+            Feedback.ai_analysis, Feedback.occurred_at, Feedback.cluster_id,
+        ).where(Feedback.product_id == product_id)
+    ).all()
+    db.rollback()  # chỉ đọc — không giữ transaction qua HDBSCAN/LLM
     feedbacks, excluded = split_embedded(rows)
+    old_cluster_ids = {r.cluster_id for r in rows if r.cluster_id is not None}
 
-    if not feedbacks:
-        # Không có vector nào: vẫn phải xoá sạch cụm cũ để trạng thái nhất quán
-        db.execute(delete(Cluster))
-        db.execute(update(Feedback).values(cluster_id=None))
-        db.commit()
-        return ClusteringRunStats(0, 0, 0, excluded)
-
-    X = np.stack([np.asarray(fb.embedding, dtype=np.float32) for fb in feedbacks])
-    groups = group_feedbacks(feedbacks, cluster_embeddings(X, settings))
+    groups: list[MemberGroup] = []
+    if feedbacks:
+        X = np.stack([np.asarray(fb.embedding, dtype=np.float32) for fb in feedbacks])
+        groups = group_feedbacks(feedbacks, cluster_embeddings(X, settings))
 
     naming: NamingOut | None = None
     if groups:
+        from app.services.tracing import trace_scope
+
         try:
-            naming = chat_structured(
-                _NAMING_SYSTEM,
-                build_naming_payload(groups),
-                NamingOut,
-                call_type=LlmCallType.name_cluster,
-                prompt_version=NAMING_PROMPT_VERSION,
-            )
+            with trace_scope(seed=f"clustering-{product_id}-{now.isoformat()}", name="clustering",
+                             metadata={"product_id": str(product_id)}):
+                naming = chat_structured(
+                    _NAMING_SYSTEM,
+                    build_naming_payload(groups),
+                    NamingOut,
+                    call_type=LlmCallType.name_cluster,
+                    prompt_version=NAMING_PROMPT_VERSION,
+                )
         except LLMStructureError as exc:
             logger.warning("cluster naming fallback (LLM fail): %s", exc)
     apply_names(groups, naming)
@@ -215,31 +229,32 @@ def run_clustering(
     assigned = sum(len(g.members) for g in groups)
     unassigned = len(feedbacks) - assigned
 
-    # --- Rebuild idempotent trong 1 transaction (thứ tự C5) ---
-    # NULL feedback.cluster_id TRƯỚC — else DELETE FROM clusters vi phạm FK
-    # fk_feedback_cluster_id_clusters (regression branch activity-center).
-    db.execute(
-        update(Feedback)
-        .values(cluster_id=None)
-        .execution_options(synchronize_session=False)
-    )
-    for fb in rows:                      # đồng bộ identity map MỌI row đang load
-        fb.cluster_id = None
-    db.execute(delete(Cluster))
-
     total_members = 0
     try:
+        # NULL cluster_id của product TRƯỚC — else DELETE cụm vi phạm FK
+        # fk_feedback_cluster_id_clusters (regression branch activity-center).
+        db.execute(
+            update(Feedback)
+            .where(Feedback.product_id == product_id)
+            .values(cluster_id=None)
+            .execution_options(synchronize_session=False)
+        )
+        if old_cluster_ids:
+            _reconcile_old_clusters(db, old_cluster_ids, now, settings)
         for group in groups:
-            trend = compute_trend(group.members, now, settings)
             cluster = Cluster(
                 name=group.name,
                 summary=group.summary,
-                **trend,
+                **compute_trend(group.members, now, settings),
             )
             db.add(cluster)
             db.flush()                    # cần cluster.id trước khi gán member
-            for fb in group.members:
-                fb.cluster_id = cluster.id
+            db.execute(
+                update(Feedback)
+                .where(Feedback.id.in_([m.id for m in group.members]))
+                .values(cluster_id=cluster.id)
+                .execution_options(synchronize_session=False)
+            )
             total_members += len(group.members)
         db.commit()
     except Exception:                     # lỗi giữa chừng → DB về trạng thái cũ
@@ -258,6 +273,30 @@ def run_clustering(
         stats.unassigned_count, stats.excluded_no_embedding,
     )
     return stats
+
+
+def _reconcile_old_clusters(
+    db: Session, cluster_ids: set, now: datetime, settings: Settings
+) -> None:
+    """Cụm cũ product vừa rời khỏi: rỗng → xoá; còn member product khác (cụm trộn
+    từ thời clustering toàn cục) → tính lại trend trên member còn lại để không
+    đếm feedback đã chuyển sang cụm mới."""
+    remaining: dict = {}
+    for row in db.execute(
+        select(Feedback.cluster_id, Feedback.occurred_at, Feedback.ai_analysis)
+        .where(Feedback.cluster_id.in_(cluster_ids))
+    ).all():
+        remaining.setdefault(row.cluster_id, []).append(row)
+    for cluster_id in cluster_ids:
+        members = remaining.get(cluster_id)
+        if members:
+            db.execute(
+                update(Cluster)
+                .where(Cluster.id == cluster_id)
+                .values(**compute_trend(members, now, settings))
+            )
+        else:
+            db.execute(delete(Cluster).where(Cluster.id == cluster_id))
 
 
 def compute_trend(

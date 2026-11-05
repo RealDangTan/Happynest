@@ -82,7 +82,7 @@ def main() -> int:
         # 6. Clusters
         from app.services.clustering import run_clustering
 
-        stats = run_clustering(db)
+        stats = run_clustering(db, product.id)
         print(f"[5] Clusters: {stats.clusters_upserted} cụm, "
               f"{stats.assigned_count} members")
 

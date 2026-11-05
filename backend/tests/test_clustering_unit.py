@@ -26,6 +26,7 @@ from app.services.clustering import (
 from app.services.llm_client import LLMStructureError
 
 NOW = datetime(2026, 8, 26, 12, 0, tzinfo=timezone.utc)
+PRODUCT_ID = "00000000-0000-0000-0000-0000000000aa"
 
 SETTINGS_STUB = SimpleNamespace(
     CLUSTER_WINDOW_DAYS=30,
@@ -111,6 +112,7 @@ _DIM = 8
 
 
 def _fb(idx: int, embedding, **kwargs) -> SimpleNamespace:
+    kwargs.setdefault("cluster_id", None)  # run_clustering đọc cluster_id cũ (2026-11-05)
     return SimpleNamespace(id=f"fb-{idx}", embedding=embedding, **kwargs)
 
 
@@ -255,8 +257,8 @@ def test_run_clustering_end_to_end_with_mocks(monkeypatch) -> None:
         def commit(self):
             self.committed = True
 
-        def rollback(self):  # pragma: no cover — nhánh lỗi do integration phủ
-            pass
+        def rollback(self):  # kết thúc transaction đọc trước HDBSCAN/LLM
+            self.rolled_back = getattr(self, "rolled_back", 0) + 1
 
     session = _FakeSession()
 
@@ -274,7 +276,7 @@ def test_run_clustering_end_to_end_with_mocks(monkeypatch) -> None:
 
     monkeypatch.setattr(clustering, "chat_structured", fake_chat)
 
-    stats = clustering.run_clustering(session, ENGINE_SETTINGS_STUB, now=now)
+    stats = clustering.run_clustering(session, PRODUCT_ID, ENGINE_SETTINGS_STUB, now=now)
 
     assert stats.clusters_upserted == 2
     total_embedded = 28                       # 12 + 12 + 4 noise
@@ -283,6 +285,7 @@ def test_run_clustering_end_to_end_with_mocks(monkeypatch) -> None:
     # Số noise chính xác KHÔNG khóa cứng — HDBSCAN được phép hút điểm xa vào cụm.
     assert stats.assigned_count + stats.unassigned_count == total_embedded
     assert session.committed is True
+    assert session.rolled_back == 1            # transaction đọc đóng trước call LLM
     assert len(session.added) == 2
     # mỗi cluster nhận trend fields đầy đủ từ compute_trend
     for c in session.added:
@@ -321,7 +324,7 @@ def test_run_clustering_empty_db_is_safe(monkeypatch) -> None:
         def commit(self):
             self.committed = True
 
-        def rollback(self):  # pragma: no cover
+        def rollback(self):
             pass
 
     session = _FakeSession()
@@ -330,6 +333,34 @@ def test_run_clustering_empty_db_is_safe(monkeypatch) -> None:
         raise AssertionError("không gọi naming khi không có cụm")
 
     monkeypatch.setattr(clustering, "chat_structured", fail_chat)
-    stats = clustering.run_clustering(session, ENGINE_SETTINGS_STUB, now=NOW)
+    stats = clustering.run_clustering(session, PRODUCT_ID, ENGINE_SETTINGS_STUB, now=NOW)
     assert stats == clustering.ClusteringRunStats(0, 0, 0, 0)
     assert session.committed is True
+
+
+def test_reconcile_old_clusters_recomputes_mixed_and_deletes_empty() -> None:
+    """Cụm trộn tenant (di sản clustering toàn cục): còn member product khác →
+    UPDATE trend trên member còn lại; không còn ai → DELETE (2026-11-05)."""
+    mixed, empty = "c-mixed", "c-empty"
+    leftovers = [SimpleNamespace(cluster_id=mixed, occurred_at=NOW - timedelta(days=d), ai_analysis=None)
+                 for d in (1, 2, 40)]
+
+    class _Rows:
+        def all(self):
+            return leftovers
+
+    class _FakeSession:
+        def __init__(self):
+            self.statements = []
+
+        def execute(self, stmt, *a, **k):
+            self.statements.append(stmt)
+            return _Rows()
+
+    session = _FakeSession()
+    clustering._reconcile_old_clusters(session, {mixed, empty}, NOW, SETTINGS_STUB)
+    kinds = sorted(type(s).__name__ for s in session.statements[1:])
+    assert kinds == ["Delete", "Update"]
+    update_stmt = next(s for s in session.statements if type(s).__name__ == "Update")
+    params = update_stmt.compile().params
+    assert params["feedback_count"] == 3 and params["current_count"] == 2
