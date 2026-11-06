@@ -3,7 +3,6 @@
 
 left to right direction
 actor "Người phụ trách" as U
-actor "Dịch vụ AI" as AI
 rectangle "Xây dựng và chọn phương án" {
   usecase "Sinh phương án từ\nnhận định đã duyệt" as A1
   usecase "Xem ma trận ưu tiên" as A2
@@ -22,6 +21,5 @@ U -- A7
 U -- A8
 A3 .> A2 : <<extend>>
 A5 .> A4 : <<extend>>
-A1 -- AI
 
 @enduml

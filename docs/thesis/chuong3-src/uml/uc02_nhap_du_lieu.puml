@@ -3,7 +3,6 @@
 
 left to right direction
 actor "Người phụ trách" as U
-actor "Dịch vụ AI" as AI
 rectangle "Nhập dữ liệu" {
   usecase "Tải tệp CSV" as U1
   usecase "Lập hồ sơ cột" as U2
@@ -24,6 +23,5 @@ U -- U9
 U1 .> U2 : <<include>>
 U6 .> U5 : <<extend>>
 U5 .> U7 : <<include>>
-U4 -- AI
 
 @enduml

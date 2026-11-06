@@ -3,7 +3,6 @@
 
 left to right direction
 actor "Người phụ trách" as U
-actor "Dịch vụ AI" as AI
 rectangle "Kho phản hồi và phân loại" {
   usecase "Tra cứu, lọc phản hồi" as K1
   usecase "Xem chi tiết phản hồi" as K2
@@ -24,7 +23,5 @@ U -- K9
 K3 .> K2 : <<extend>>
 K6 .> K7 : <<include>>
 K8 .> K6 : <<extend>>
-K6 -- AI
-K9 -- AI
 
 @enduml

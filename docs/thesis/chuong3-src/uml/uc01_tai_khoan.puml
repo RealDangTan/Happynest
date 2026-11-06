@@ -3,7 +3,6 @@
 
 left to right direction
 actor "Người phụ trách" as U
-actor "Google" as G
 rectangle "Tài khoản và sản phẩm" {
   usecase "Đăng ký tài khoản" as R
   usecase "Đăng nhập" as L
@@ -24,6 +23,5 @@ U -- P3
 U -- P4
 U -- P5
 LG .> L : <<extend>>
-LG -- G
 
 @enduml

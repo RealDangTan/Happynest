@@ -3,7 +3,6 @@
 
 left to right direction
 actor "Người phụ trách" as U
-actor "Dịch vụ AI" as AI
 rectangle "Điều tra và duyệt nhận định" {
   usecase "Đặt câu hỏi điều tra" as Q1
   usecase "Chọn câu hỏi gợi ý" as Q2
@@ -24,6 +23,5 @@ Q5 .> Q4 : <<include>>
 Q6 .> Q5 : <<extend>>
 Q7 .> Q5 : <<extend>>
 Q8 .> Q5 : <<extend>>
-Q1 -- AI
 
 @enduml

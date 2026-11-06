@@ -3,7 +3,6 @@
 
 left to right direction
 actor "Người phụ trách" as U
-actor "Dịch vụ AI" as AI
 rectangle "Quản lý bộ chủ đề" {
   usecase "Sinh bộ chủ đề\ntừ mẫu phản hồi" as T1
   usecase "Gợi ý chủ đề mới từ\nnhóm chưa phân loại" as T2
@@ -22,7 +21,5 @@ U -- T6
 U -- T7
 U -- T8
 T3 .> T4 : <<extend>>
-T1 -- AI
-T2 -- AI
 
 @enduml

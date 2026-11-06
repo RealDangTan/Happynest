@@ -1,0 +1,21 @@
+@startuml
+!include ../style.iuml
+
+left to right direction
+actor "Quản lý sản phẩm" as PM
+actor "Quản lý thành công\nkhách hàng" as CSM
+actor "Nhân sự vận hành" as OPS
+actor "Người phụ trách" as U
+PM --|> U
+CSM --|> U
+OPS --|> U
+rectangle "HappyNest" {
+  usecase "Lắng nghe" as L
+  usecase "Thấu hiểu" as T
+  usecase "Hành động" as A
+}
+U -- L
+U -- T
+U -- A
+
+@enduml

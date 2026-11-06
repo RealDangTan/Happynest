@@ -4,8 +4,6 @@
 left to right direction
 skinparam packageStyle rectangle
 actor "Người phụ trách" as U
-actor "Dịch vụ AI" as AI
-actor "Google" as G
 rectangle "Hệ thống HappyNest" {
   usecase "Đăng nhập" as A1
   usecase "Quản lý sản phẩm" as A2
@@ -32,12 +30,5 @@ U -- T2
 U -- H1
 U -- H2
 U -- B1
-A1 -- G
-L1 -- AI
-L2 -- AI
-L3 -- AI
-L5 -- AI
-T1 -- AI
-H1 -- AI
 
 @enduml

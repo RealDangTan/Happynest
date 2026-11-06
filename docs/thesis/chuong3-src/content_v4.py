@@ -57,31 +57,156 @@ def spec(tid, name, actor, desc, pre, main, alt, post):
 
 # =============================================================================== intro
 p("Chương 1 đã chỉ ra bốn khó khăn chính của người xử lý phản hồi: phản hồi nằm rải rác ở nhiều nguồn, phải đọc và gán loại thủ công, khó nhận ra chủ đề mới và thường phát hiện muộn những vấn đề lặp lại. Chương 2 đã chọn cách tiếp cận Lắng nghe – Thấu hiểu – Hành động, trong đó chương trình đảm nhận các phép đếm và kiểm tra có quy tắc, mô hình AI hỗ trợ đọc hiểu và diễn giải, còn người phụ trách đưa ra quyết định cuối cùng.")
-p("Chương này trình bày cách các lựa chọn đó được hiện thực thành hệ thống HappyNest, theo trình tự: phương pháp thực hiện, phân tích yêu cầu, phân tích use case chi tiết, kiến trúc, thiết kế dữ liệu, thiết kế từng bước Lắng nghe, Thấu hiểu, Hành động và cuối cùng là giao diện. Với mỗi thành phần, khóa luận trả lời ba câu hỏi: thành phần đó giải quyết khó khăn nào, nó hoạt động ra sao và còn giới hạn gì. Các giá trị tham số được nêu theo cấu hình hiện tại của mã nguồn.")
+p("Chương này trình bày cách các lựa chọn đó được hiện thực thành hệ thống HappyNest. Chương bắt đầu từ người dùng: ai sử dụng hệ thống và họ cần làm gì, thể hiện bằng các biểu đồ use case. Tiếp theo là quy trình nghiệp vụ và yêu cầu, phương pháp thực hiện, kiến trúc, thiết kế dữ liệu, thiết kế từng bước Lắng nghe, Thấu hiểu, Hành động và cuối cùng là giao diện. Với mỗi thành phần, khóa luận trả lời ba câu hỏi: thành phần đó giải quyết khó khăn nào, nó hoạt động ra sao và còn giới hạn gì. Các giá trị tham số được nêu theo cấu hình hiện tại của mã nguồn.")
 
-# =============================================================================== 3.1
-h2("3.1. Phương pháp và quy trình thực hiện")
-h3("3.1.1. Phương pháp nghiên cứu")
-p("Đề tài xây dựng một phần mềm để giải quyết một vấn đề thực tế, nên khóa luận đi theo hướng nghiên cứu khoa học thiết kế (design science research). Theo Hevner và cộng sự, hướng nghiên cứu này tạo ra một sản phẩm nhân tạo nhằm giải quyết vấn đề, sau đó đánh giá sản phẩm đó trong bối cảnh sử dụng [38]. Peffers và cộng sự chia quá trình thành sáu hoạt động: xác định vấn đề, đặt mục tiêu cho giải pháp, thiết kế và phát triển, trình diễn, đánh giá và truyền đạt kết quả [39].")
-p("Các hoạt động này tương ứng với bố cục của khóa luận. Vấn đề được xác định qua bối cảnh và khảo sát 36 người ở Chương 1. Mục tiêu của giải pháp được nêu ở Mục 1.3 và được làm rõ bằng cơ sở lý thuyết ở Chương 2. Chương 3 trình bày hoạt động thiết kế và phát triển. Việc trình diễn và đánh giá hệ thống thuộc Chương 4. Nhờ cách tổ chức này, mỗi quyết định thiết kế đều có điểm xuất phát rõ ràng: một khó khăn đã được ghi nhận hoặc một nguyên tắc đã được lựa chọn ở các chương trước.")
-h3("3.1.2. Quy trình thực hiện và công cụ")
-p("Hệ thống được xây dựng theo từng giai đoạn nhỏ. Mỗi giai đoạn có tiêu chí nghiệm thu riêng và kết thúc bằng kiểm thử tự động: pytest cho phần máy chủ và Vitest cho phần giao diện. Mọi thay đổi so với kế hoạch được ghi vào nhật ký quyết định của dự án, kèm lý do và các phương án đã loại. Nhờ đó, khi một lựa chọn thay đổi giữa chừng, người đọc vẫn biết vì sao nó thay đổi.")
-p("Với những thành phần có rủi ro kỹ thuật cao, đề tài viết thử nghiệm ngắn trước khi đưa vào thiết kế chính thức. [[tbl:spike]] tóm tắt các thử nghiệm đó và quyết định rút ra. Đây là phép kiểm tra tính khả thi trên dữ liệu nhỏ hoặc giả lập, chưa phải số đo chất lượng của hệ thống hoàn chỉnh.")
-tbl("spike", "Các thử nghiệm kỹ thuật trước khi chốt thiết kế", [150, 135, 140], [
-    ["Điều cần kiểm tra", "Kết quả", "Quyết định thiết kế"],
-    ["Che thông tin định danh trên 20 câu giả lập Việt–Anh bằng Presidio và Stanza", "Thư điện tử, số điện thoại, CCCD, đường dẫn, địa chỉ IP: phát hiện đủ 100%; tên người: 66,7%", "Thêm bộ nhận dạng riêng cho các mẫu của Việt Nam; ghi nhận giới hạn với tên người"],
-    ["Mô hình trả kết quả đúng mẫu JSON (10 lượt gọi)", "10/10 lượt đúng mẫu", "Dùng lược đồ JSON làm cách gọi chính, có đường dự phòng"],
-    ["Lưu và tìm véc-tơ ngay trong PostgreSQL (10 câu)", "Mỗi câu đều tìm lại đúng chính nó ở vị trí đầu tiên", "Lưu véc-tơ trong cơ sở dữ liệu nghiệp vụ, không cần kho véc-tơ riêng"],
-    ["Phân cụm HDBSCAN trên 200 véc-tơ giả lập", "Tìm đúng 3 cụm; 7,5–8,5% điểm không thuộc cụm nào", "Chọn HDBSCAN cho bước phân cụm"],
-    ["Tạm dừng và tiếp tục lượt điều tra sau khi tắt tiến trình", "Tiếp tục đúng chỗ dừng; thao tác ghi dữ liệu chỉ thực hiện một lần", "Dùng cơ chế lưu trạng thái cho điểm kiểm duyệt thứ hai"],
-    ["Phân loại bằng dịch vụ System One trên 16 câu tự tạo có chủ ý mơ hồ", "16/16 kết quả hợp lệ; 95% lượt gọi xong trong khoảng 1,06 giây; chưa đạt ngưỡng chất lượng đặt trước", "Vẫn chọn vì nhanh và chỉ trả nhãn trong danh sách cho phép; cần đánh giá lại trên tập gán nhãn độc lập"],
+# =============================================================================== 3.1 use case
+h2("3.1. Phân tích use case")
+p("Phân tích bắt đầu từ người dùng: ai sử dụng HappyNest và họ cần thực hiện những công việc gì. Mục này xác định tác nhân, trình bày biểu đồ use case tổng quát, rồi phân rã từng nhóm use case kèm bảng đặc tả cho use case chính của nhóm. Mỗi nhóm được gắn với các yêu cầu chức năng F01–F12 liệt kê ở Mục 3.2.2.")
+p("Các biểu đồ trong chương được vẽ theo ký hiệu UML 2 bằng công cụ PlantUML, gồm biểu đồ use case, hoạt động, trình tự, lớp, trạng thái, gói, thành phần và triển khai. Trong biểu đồ use case, quan hệ «include» chỉ phần bắt buộc luôn diễn ra cùng use case gốc, còn quan hệ «extend» chỉ phần tùy chọn mà người dùng có thể thực hiện thêm; use case tô xanh nhạt là điểm kiểm duyệt. Trong biểu đồ hoạt động, hành động tô xanh nhạt là quyết định của người phụ trách, hành động tô xám là bước có gọi dịch vụ AI, còn hành động nền trắng do chương trình xử lý. Trong biểu đồ trình tự, các thông điệp được đánh số theo thứ tự; khung alt thể hiện rẽ nhánh, khung loop thể hiện vòng lặp, mũi tên nét đứt là thông điệp trả về.")
+h3("3.1.1. Tác nhân của hệ thống")
+p("Tác nhân trong biểu đồ use case là người sử dụng hệ thống để đạt một mục tiêu của mình. Với HappyNest, đó là người phụ trách phản hồi của một sản phẩm. Người phụ trách là vai trò đại diện cho những người dùng thực tế đã nêu ở Mục 1.5.1: quản lý sản phẩm, quản lý thành công khách hàng và nhân sự vận hành. Ba nhóm này đảm nhận những phần việc khác nhau, nhưng thiết kế không chia quyền theo vai trò: mỗi tài khoản toàn quyền với các sản phẩm do mình tạo và không thấy dữ liệu của tài khoản khác. Vì vậy, hệ thống chỉ có một tác nhân; các vai trò thực tế được thể hiện bằng quan hệ tổng quát hóa trong [[fig:uctn]].")
+fig("uctn", "uc_tac_nhan.png", "Tác nhân Người phụ trách và các vai trò người dùng")
+p("[[tbl:roles]] mô tả công việc chính của từng vai trò khi sử dụng HappyNest.")
+tbl("roles", "Các vai trò người dùng mà tác nhân Người phụ trách đại diện", [130, 295], [
+    ["Vai trò", "Công việc chính trên HappyNest"],
+    ["Quản lý sản phẩm", "Đặt câu hỏi điều tra, duyệt nhận định, chọn và ưu tiên phương án cải tiến"],
+    ["Quản lý thành công khách hàng", "Nhập phản hồi từ kênh hỗ trợ, theo dõi chủ đề và xu hướng, xem phương án dành cho nhóm hỗ trợ khách hàng"],
+    ["Nhân sự vận hành", "Nhập và chuẩn hóa dữ liệu, quản lý bộ chủ đề, chạy phân loại và phân cụm"],
 ])
-p("Các biểu đồ trong chương được vẽ theo ký hiệu UML 2 bằng công cụ PlantUML, gồm biểu đồ use case, hoạt động, trình tự, lớp, trạng thái, gói, thành phần và triển khai. Để dễ đọc, các biểu đồ dùng chung một quy ước. Trong biểu đồ hoạt động, hành động tô xanh nhạt là quyết định của người phụ trách, hành động tô xám là bước có gọi dịch vụ AI, còn hành động nền trắng do chương trình xử lý. Trong biểu đồ trình tự, các thông điệp được đánh số theo thứ tự; khung alt thể hiện rẽ nhánh, khung loop thể hiện vòng lặp, mũi tên nét đứt là thông điệp trả về.")
+p("Dịch vụ AI (mô hình ngôn ngữ và mô hình tạo véc-tơ) và Google không phải là tác nhân. Chúng không sử dụng HappyNest để đạt mục tiêu nào, mà là các hệ thống bên ngoài được HappyNest gọi tới khi thực hiện use case của người phụ trách. Vì vậy, chúng không xuất hiện trong biểu đồ use case; vai trò của chúng được thể hiện trong biểu đồ hoạt động, biểu đồ trình tự và biểu đồ triển khai ở các mục sau.")
+h3("3.1.2. Biểu đồ use case tổng quát")
+p("[[fig:uc00]] là biểu đồ use case tổng quát. Mười hai use case được nhóm theo ba bước Lắng nghe, Thấu hiểu, Hành động, cùng nhóm tài khoản và báo cáo. Hai use case tô màu là hai điểm kiểm duyệt có trên giao diện ở bước Thấu hiểu và Hành động; điểm kiểm duyệt thứ nhất nằm trong use case nhập dữ liệu CSV.")
+fig("uc00", "uc00_tong_quat.png", "Biểu đồ use case tổng quát của HappyNest")
+p("Những use case tốn chi phí gọi AI, như nhập dữ liệu (đề xuất ý nghĩa cột), phân loại, phân cụm, điều tra và sinh phương án, đều do người phụ trách chủ động kích hoạt thay vì tự chạy ngầm. Lựa chọn này đáp ứng yêu cầu kiểm soát chi phí ở Mục 1.5.3. Các mục tiếp theo phân rã từng nhóm use case.")
+h3("3.1.3. Nhóm tài khoản và sản phẩm")
+p("Nhóm này bảo đảm mỗi người chỉ làm việc với dữ liệu của mình, đáp ứng yêu cầu F01, F02 và N02. Người dùng có thể đăng ký bằng thư điện tử hoặc đăng nhập bằng Google; sau khi đăng nhập, mọi thao tác đều gắn với sản phẩm đang chọn (xem [[fig:uc01]]).")
+fig("uc01", "uc01_tai_khoan.png", "Biểu đồ use case nhóm tài khoản và sản phẩm")
+p("[[tbl:spec_login]] đặc tả use case đăng nhập. Thông báo lỗi khi sai thông tin được viết chung để không tiết lộ một thư điện tử có tồn tại trong hệ thống hay không. Quá trình đăng ký được thể hiện ở [[fig:a11]]: tài khoản mới luôn bắt đầu với không gian làm việc trống.")
+spec("spec_login", "Đăng nhập", "Người phụ trách",
+     "Người phụ trách xác thực để làm việc với các sản phẩm của mình.",
+     "Đã có tài khoản bằng thư điện tử hoặc tài khoản Google.",
+     ["1. Người phụ trách nhập thư điện tử và mật khẩu.",
+      "2. Hệ thống tìm tài khoản và so khớp mật khẩu đã băm bằng Argon2.",
+      "3. Hệ thống tạo phiên đăng nhập có hạn 12 giờ, lưu trong cookie mà mã trên trang không đọc được.",
+      "4. Giao diện mở màn hình làm việc."],
+     ["1a. Chọn đăng nhập bằng Google: hệ thống chuyển sang Google, xác minh id_token rồi tìm hoặc tạo tài khoản.",
+      "2a. Sai thông tin: hệ thống báo lỗi chung.",
+      "2b. Tài khoản chỉ đăng ký bằng Google: hệ thống đề nghị đăng nhập bằng Google."],
+     "Phiên đăng nhập hợp lệ; các yêu cầu sau chỉ truy cập dữ liệu của tài khoản.")
+fig("a11", "a11_dang_ky.png", "Biểu đồ hoạt động đăng ký tài khoản")
+h3("3.1.4. Nhóm nhập dữ liệu")
+p("Nhóm nhập dữ liệu giải quyết khó khăn đầu tiên ở Chương 1: phản hồi nằm rải rác ở nhiều nguồn với cấu trúc khác nhau (yêu cầu F03, F04). Trong [[fig:uc02]], việc tải tệp luôn kèm lập hồ sơ cột, còn việc xác nhận ý nghĩa các cột luôn dẫn tới nhập phản hồi vào kho. Đổi cách xử lý một cột là phần mở rộng của bước xác nhận.")
+fig("uc02", "uc02_nhap_du_lieu.png", "Biểu đồ use case nhóm nhập dữ liệu")
+p("[[tbl:spec_import]] đặc tả use case chính của nhóm. Luồng thay thế cho thấy hệ thống không bao giờ nhập dữ liệu khi chưa có quyết định hợp lệ của người phụ trách, và lỗi ở một dòng không làm hỏng cả tệp.")
+spec("spec_import", "Nhập tệp CSV và xác nhận ý nghĩa cột", "Người phụ trách",
+     "Đưa phản hồi từ một tệp CSV vào kho phản hồi của sản phẩm sau khi người phụ trách xác nhận ý nghĩa các cột.",
+     "Đã đăng nhập, đã chọn sản phẩm; sản phẩm không có lượt nhập đang dở.",
+     ["1. Người phụ trách tải tệp CSV.",
+      "2. Hệ thống lưu tệp gốc, lập hồ sơ cột và hiển thị dữ liệu mẫu đã che.",
+      "3. Người phụ trách yêu cầu AI đề xuất.",
+      "4. Hệ thống gọi dịch vụ AI để đề xuất cách xử lý từng cột.",
+      "5. Người phụ trách đồng ý hoặc đổi cách xử lý (điểm kiểm duyệt thứ nhất).",
+      "6. Hệ thống kiểm tra quyết định, ghi nhật ký, nhập nền từng dòng sau khi che thông tin.",
+      "7. Hệ thống hiển thị báo cáo nhập."],
+     ["1a. Sản phẩm có lượt nhập dở: hệ thống từ chối.",
+      "4a. Gọi dịch vụ AI lỗi: lượt nhập trở về trạng thái đã lập hồ sơ để yêu cầu lại.",
+      "6a. Quyết định không hợp lệ: hệ thống báo lỗi để người phụ trách sửa.",
+      "6b. Dòng thiếu nội dung hoặc sai ngày: ghi vào báo cáo lỗi, các dòng khác vẫn được nhập.",
+      "Người phụ trách có thể hủy lượt nhập trước khi xác nhận."],
+     "Phản hồi đã che thông tin nằm trong kho; quyết định ánh xạ được lưu trong nhật ký quyết định.")
+h3("3.1.5. Nhóm quản lý bộ chủ đề")
+p("Nhóm này đáp ứng nhu cầu nhận ra chủ đề mới (yêu cầu F11) và nguyên tắc ở Mục 2.4.1.1: bộ chủ đề do AI gợi ý nhưng phải được con người xem xét. Trong [[fig:uc03]], áp dụng chủ đề là quyết định của người phụ trách và được tô màu; sửa đề xuất là phần mở rộng trước khi áp dụng. Người phụ trách cũng có thể tự thêm, sửa hoặc xóa chủ đề.")
+fig("uc03", "uc03_bo_chu_de.png", "Biểu đồ use case nhóm quản lý bộ chủ đề")
+p("[[tbl:spec_tax]] đặc tả use case sinh và áp dụng bộ chủ đề. Đề xuất của AI chỉ tồn tại tạm thời trên giao diện; không có gì được ghi vào hệ thống cho đến khi người phụ trách bấm áp dụng.")
+spec("spec_tax", "Sinh và áp dụng bộ chủ đề", "Người phụ trách",
+     "Tạo hoặc mở rộng bộ chủ đề của sản phẩm bằng gợi ý của AI, có người duyệt.",
+     "Sản phẩm đã có phản hồi trong kho.",
+     ["1. Người phụ trách yêu cầu sinh bộ chủ đề.",
+      "2. Hệ thống chọn mẫu phản hồi đã che, rải đều theo thời gian.",
+      "3. Hệ thống gọi dịch vụ AI để đề xuất cây chủ đề.",
+      "4. Hệ thống loại đề xuất trùng hoặc không hợp lệ, hiển thị đề xuất.",
+      "5. Người phụ trách sửa và chọn áp dụng.",
+      "6. Hệ thống lưu chủ đề, tăng phiên bản bộ chủ đề và ghi nhật ký."],
+     ["1a. Sản phẩm đã có bộ chủ đề: hệ thống đọc nhóm chưa phân loại và gợi ý tối đa 8 chủ đề mới.",
+      "5a. Người phụ trách bỏ đề xuất: không có dữ liệu nào được ghi.",
+      "5b. Người phụ trách tự thêm, sửa hoặc xóa chủ đề."],
+     "Bộ chủ đề mới có hiệu lực cho các lượt phân loại sau.")
+h3("3.1.6. Nhóm kho phản hồi và phân loại")
+p("Nhóm này giảm gánh nặng đọc và gán loại thủ công (yêu cầu F05, F06). [[fig:uc04]] cho thấy chạy phân loại luôn kèm xem phiếu ước tính chi phí, còn hủy lượt là phần mở rộng. Tìm phản hồi tương tự được mở từ màn hình chi tiết của một phản hồi.")
+fig("uc04", "uc04_kho_phan_hoi.png", "Biểu đồ use case nhóm kho phản hồi và phân loại")
+p("[[tbl:spec_classify]] đặc tả use case chạy phân loại. Phiếu ước tính và bước xác nhận số phản hồi là cách hiện thực yêu cầu kiểm soát chi phí N03.")
+spec("spec_classify", "Chạy phân loại phản hồi", "Người phụ trách",
+     "Gán chủ đề, thuộc tính phụ và véc-tơ cho các phản hồi chưa được phân loại.",
+     "Sản phẩm có bộ chủ đề đang hiệu lực và có phản hồi chưa phân loại.",
+     ["1. Người phụ trách chọn phạm vi phản hồi.",
+      "2. Hệ thống lập phiếu ước tính số phản hồi và số lượt gọi tối đa.",
+      "3. Người phụ trách xác nhận số phản hồi.",
+      "4. Hệ thống tạo lượt phân loại (tối đa 100 phản hồi) và chạy nền.",
+      "5. Với mỗi phản hồi, hệ thống gọi dịch vụ AI để gán chủ đề, thuộc tính phụ và tạo véc-tơ.",
+      "6. Hệ thống lưu kết quả; giao diện hiển thị tiến độ đến khi lượt kết thúc."],
+     ["3a. Dữ liệu đã thay đổi so với phiếu: hệ thống yêu cầu xem lại.",
+      "5a. Không có chủ đề đạt 0,60: phản hồi vào nhóm chưa phân loại.",
+      "5b. Lỗi gọi dịch vụ: phản hồi trở về trạng thái chờ.",
+      "6a. Người phụ trách hủy lượt; 6b. Quá nửa số phản hồi lỗi: lượt thất bại."],
+     "Phản hồi có chủ đề, thuộc tính và véc-tơ, lưu kèm phiên bản bộ chủ đề đã dùng.")
+h3("3.1.7. Nhóm phân cụm và theo dõi biến động")
+p("Nhóm này phục vụ việc phát hiện sớm vấn đề lặp lại (yêu cầu F06), khó khăn mà 36/36 người tham gia khảo sát từng gặp. Trong [[fig:uc05]], chạy phân cụm luôn bao gồm đặt tên cụm và tính chỉ số biến động; xem phản hồi mẫu và lọc cụm đang tăng là các phần mở rộng của việc xem danh sách cụm.")
+fig("uc05", "uc05_phan_cum.png", "Biểu đồ use case nhóm phân cụm và theo dõi biến động")
+p("[[tbl:spec_cluster]] đặc tả use case chạy phân cụm. Phân cụm chạy riêng cho từng sản phẩm nên tên cụm chỉ được tạo từ phản hồi của chính sản phẩm đó.")
+spec("spec_cluster", "Chạy phân cụm", "Người phụ trách",
+     "Gom các phản hồi gần nghĩa của một sản phẩm thành cụm và tính mức biến động của từng cụm.",
+     "Phản hồi của sản phẩm đã có véc-tơ.",
+     ["1. Người phụ trách chọn “Tạo lại phân cụm”.",
+      "2. Hệ thống đọc véc-tơ của sản phẩm và chạy HDBSCAN.",
+      "3. Với mỗi cụm, hệ thống gọi dịch vụ AI để đặt tên và tóm tắt từ tối đa 5 phản hồi mẫu.",
+      "4. Hệ thống tính chỉ số biến động và điểm gợi ý điều tra.",
+      "5. Hệ thống ghi cụm mới, trả số cụm và số phản hồi ngoài cụm.",
+      "6. Người phụ trách xem danh sách cụm."],
+     ["2a. Không hình thành cụm nào: hệ thống báo không có cụm.",
+      "3a. Gọi dịch vụ AI lỗi: cụm được đặt tên đánh số."],
+     "Các cụm của sản phẩm được thay mới; cụm cũ không còn phản hồi bị xóa.")
+h3("3.1.8. Nhóm điều tra và duyệt nhận định")
+p("Nhóm này đáp ứng yêu cầu F07 và F08: đi từ “điều gì đang xảy ra” đến “vì sao”, có người kiểm tra căn cứ. Trong [[fig:uc06]], duyệt nhận định luôn bao gồm xem bằng chứng, thể hiện nguyên tắc ở Mục 2.4.3.2 rằng kiểm duyệt không chỉ là bấm nút. Sửa, từ chối và yêu cầu điều tra thêm là các phần mở rộng của bước duyệt.")
+fig("uc06", "uc06_dieu_tra.png", "Biểu đồ use case nhóm điều tra và duyệt nhận định")
+p("[[tbl:spec_inv]] đặc tả use case điều tra và duyệt nhận định. Lượt điều tra có thể lặp lại nhiều vòng khi người phụ trách yêu cầu điều tra thêm.")
+spec("spec_inv", "Điều tra và duyệt nhận định", "Người phụ trách",
+     "Tác tử AI tra cứu dữ liệu để trả lời một câu hỏi, tạo nhận định kèm bằng chứng cho người phụ trách duyệt.",
+     "Sản phẩm có phản hồi đã phân loại.",
+     ["1. Người phụ trách nhập câu hỏi hoặc chọn câu hỏi gợi ý.",
+      "2. Hệ thống che thông tin trong câu hỏi, tạo lượt điều tra và chạy nền.",
+      "3. Tác tử tra cứu bằng công cụ, lưu bằng chứng và đánh giá cho đến khi đủ hoặc chạm giới hạn.",
+      "4. Tác tử tổng hợp nhận định; lượt điều tra tạm dừng.",
+      "5. Người phụ trách xem nhận định, bằng chứng và chọn duyệt (điểm kiểm duyệt thứ hai).",
+      "6. Hệ thống ghi quyết định và kết thúc lượt."],
+     ["3a. Không có bằng chứng khả dụng: hệ thống tạo nhận định “không đủ bằng chứng”.",
+      "5a. Sửa nhận định trước khi duyệt; 5b. Từ chối nhận định.",
+      "5c. Yêu cầu điều tra thêm: tác tử tiếp tục tra cứu với ý kiến của người duyệt."],
+     "Nhận định ở trạng thái đã duyệt, đã sửa hoặc đã từ chối; quyết định được ghi cùng người duyệt.")
+h3("3.1.9. Nhóm xây dựng và chọn phương án")
+p("Nhóm này đáp ứng yêu cầu F09: biến nhận định đã duyệt thành phương án có căn cứ. Trong [[fig:uc07]], chọn phương án là điểm kiểm duyệt thứ ba, với phần mở rộng là sửa điểm và nội dung. Người phụ trách còn có thể tự thêm phương án, xem phương án theo nhóm nghiệp vụ và chạy phép quan sát trước – sau.")
+fig("uc07", "uc07_hanh_dong.png", "Biểu đồ use case nhóm xây dựng và chọn phương án")
+p("[[tbl:spec_act]] đặc tả use case sinh và chọn phương án. Giá trị do AI ước lượng và giá trị người phụ trách sửa được lưu song song để có thể so sánh về sau.")
+spec("spec_act", "Sinh và chọn phương án", "Người phụ trách",
+     "Đề xuất các phương án cải tiến từ một nhận định đã duyệt để người phụ trách so sánh và lựa chọn.",
+     "Nhận định đã được duyệt hoặc đã sửa.",
+     ["1. Người phụ trách chọn “Gợi ý hành động”.",
+      "2. Hệ thống nạp bằng chứng của nhận định và thư viện thực hành.",
+      "3. Hệ thống gọi dịch vụ AI để đánh giá tám nhóm nghiệp vụ và soạn phương án.",
+      "4. Hệ thống kiểm tra căn cứ, tính điểm ưu tiên và hiển thị ma trận.",
+      "5. Người phụ trách xem căn cứ, sửa điểm hoặc nội dung, chấp nhận hoặc từ chối (điểm kiểm duyệt thứ ba).",
+      "6. Hệ thống tính lại điểm và ghi nhật ký quyết định."],
+     ["1a. Nhận định chưa duyệt: hệ thống từ chối.",
+      "4a. Căn cứ không hợp lệ: hệ thống báo lỗi, giữ nguyên phương án cũ.",
+      "5a. Người phụ trách tự thêm phương án."],
+     "Phương án ở trạng thái đã chấp nhận hoặc đã từ chối; giá trị của AI và của người được lưu song song.")
+h3("3.1.10. Nhóm báo cáo và theo dõi")
+p("Nhóm cuối phục vụ mục tiêu theo dõi ở Mục 1.3.2 (yêu cầu F10, F12). [[fig:uc08]] gồm xem báo cáo tổng hợp theo kỳ, xem và chỉnh sửa các nhận định đã lưu, xem chỉ số thời gian và kiểm duyệt, theo dõi các tác vụ đang chạy nền và kiểm tra tình trạng hệ thống. Các use case này chỉ đọc dữ liệu đã có, không gọi dịch vụ AI.")
+fig("uc08", "uc08_bao_cao.png", "Biểu đồ use case nhóm báo cáo và theo dõi")
 
 # =============================================================================== 3.2
-h2("3.2. Phân tích yêu cầu")
+h2("3.2. Quy trình nghiệp vụ và yêu cầu")
 h3("3.2.1. Quy trình nghiệp vụ và ba điểm kiểm duyệt")
-p("Mục 2.5.3 đã mô tả cách làm thủ công: người phụ trách gom phản hồi từ các nguồn, đọc và phân nhóm, tìm nội dung lặp lại, kiểm tra căn cứ rồi soạn phương án cải tiến. HappyNest giữ nguyên trình tự công việc này. Những việc lặp lại như chuẩn hóa dữ liệu, gán chủ đề, đếm và tra cứu được chuyển cho hệ thống; những chỗ cần hiểu bối cảnh nghiệp vụ vẫn do người phụ trách quyết định. Quy trình được thể hiện bằng hai biểu đồ hoạt động có làn, mỗi làn là một bên tham gia: người phụ trách, hệ thống HappyNest và dịch vụ AI.")
+p("Mục 2.5.3 đã mô tả cách làm thủ công: người phụ trách gom phản hồi từ các nguồn, đọc và phân nhóm, tìm nội dung lặp lại, kiểm tra căn cứ rồi soạn phương án cải tiến. HappyNest giữ nguyên trình tự công việc này. Những việc lặp lại như chuẩn hóa dữ liệu, gán chủ đề, đếm và tra cứu được chuyển cho hệ thống; những chỗ cần hiểu bối cảnh nghiệp vụ vẫn do người phụ trách quyết định. Các use case ở Mục 3.1 được sắp theo trình tự công việc thành hai biểu đồ hoạt động có làn: người phụ trách, hệ thống HappyNest và dịch vụ AI. Dịch vụ AI được vẽ thành một làn riêng để thấy rõ bước nào có gọi mô hình; nó là hệ thống bên ngoài, không phải tác nhân.")
 p("[[fig:a01a]] mô tả giai đoạn Lắng nghe. Phản hồi đi từ tệp CSV qua điểm kiểm duyệt thứ nhất, được che thông tin, nhập vào kho, rồi được phân loại và phân cụm theo bộ chủ đề do người phụ trách áp dụng.")
 fig("a01a", "a01a_quy_trinh_lang_nghe.png", "Biểu đồ hoạt động nghiệp vụ giai đoạn Lắng nghe")
 p("[[fig:a01b]] mô tả hai giai đoạn còn lại. Người phụ trách đặt câu hỏi, tác tử tra cứu và tổng hợp nhận định; nhận định có thể được yêu cầu điều tra thêm nhiều lần trước khi được duyệt. Chỉ nhận định đã duyệt mới được dùng để soạn phương án, và quy trình kết thúc ở việc chọn phương án.")
@@ -91,20 +216,8 @@ b("Điểm kiểm duyệt thứ nhất: xác nhận ý nghĩa các cột dữ li
 b("Điểm kiểm duyệt thứ hai: duyệt nhận định. Tác tử AI có thể kết luận vượt quá bằng chứng. Người phụ trách đối chiếu nhận định với bằng chứng trước khi nhận định được dùng làm căn cứ cho phương án.", "Điểm kiểm duyệt thứ hai")
 b("Điểm kiểm duyệt thứ ba: chọn phương án. Điểm số và đề xuất do hệ thống tạo ra không biết hết nguồn lực, rủi ro và ưu tiên của tổ chức. Người phụ trách sửa, chấp nhận hoặc từ chối từng phương án.", "Điểm kiểm duyệt thứ ba")
 p("Ngoài ba điểm trên, mọi thay đổi bộ chủ đề do AI gợi ý chỉ có hiệu lực khi người phụ trách áp dụng. Quy trình dừng ở việc lựa chọn phương án; việc triển khai thay đổi lên sản phẩm diễn ra bên ngoài hệ thống, đúng phạm vi đã giới hạn ở Mục 1.5.4. Các bước không bắt buộc chạy liền một mạch: người phụ trách có thể nhập thêm dữ liệu, sửa bộ chủ đề hoặc đặt nhiều câu hỏi điều tra cho cùng một sản phẩm.")
-h3("3.2.2. Tác nhân của hệ thống")
-p("Hệ thống có một tác nhân người và hai tác nhân là hệ thống bên ngoài, được liệt kê trong [[tbl:actors]]. Tác nhân người là người phụ trách phản hồi, có thể là quản lý sản phẩm, quản lý thành công khách hàng hoặc nhân sự vận hành như đã nêu ở Mục 1.5.1. Thiết kế không chia vai trò: mỗi tài khoản toàn quyền với các sản phẩm do mình tạo và không thấy dữ liệu của tài khoản khác. Các tác nhân hệ thống được gọi đến khi cần, nhưng không tự khởi động công việc.")
-tbl("actors", "Các tác nhân của hệ thống", [95, 100, 230], [
-    ["Tác nhân", "Loại", "Vai trò"],
-    ["Người phụ trách", "Người dùng", "Nhập dữ liệu, duyệt bộ chủ đề, đặt câu hỏi điều tra, duyệt nhận định và chọn phương án"],
-    ["Dịch vụ AI", "Hệ thống bên ngoài", "Mô hình ngôn ngữ đề xuất ý nghĩa cột, chủ đề, nhận định và phương án; mô hình tạo véc-tơ biểu diễn phản hồi"],
-    ["Google", "Hệ thống bên ngoài", "Xác thực người dùng khi chọn đăng nhập bằng tài khoản Google"],
-])
-h3("3.2.3. Biểu đồ use case tổng quát")
-p("[[fig:uc00]] là biểu đồ use case tổng quát. Mười hai use case được nhóm theo ba bước của quy trình, cùng nhóm tài khoản và báo cáo. Hai use case tô màu là hai điểm kiểm duyệt có trên giao diện ở bước Thấu hiểu và Hành động; điểm kiểm duyệt thứ nhất nằm trong use case nhập dữ liệu. Dịch vụ AI tham gia các use case có gọi mô hình, còn Google chỉ tham gia đăng nhập.")
-fig("uc00", "uc00_tong_quat.png", "Biểu đồ use case tổng quát của HappyNest")
-p("Những use case tốn chi phí gọi AI, như nhập dữ liệu (đề xuất ý nghĩa cột), phân loại, phân cụm, điều tra và sinh phương án, đều do người phụ trách chủ động kích hoạt thay vì tự chạy ngầm. Lựa chọn này đáp ứng yêu cầu kiểm soát chi phí ở Mục 1.5.3. Các use case được phân rã chi tiết ở Mục 3.3.")
-h3("3.2.4. Yêu cầu chức năng")
-p("Mỗi yêu cầu chức năng phải trả lời được câu hỏi “vì sao hệ thống cần chức năng này”. [[tbl:F]] liệt kê các yêu cầu cùng lý do, lấy từ kết quả khảo sát ở Mục 1.2.1 hoặc mục tiêu ở Mục 1.3.2. Cảm xúc và mức độ nghiêm trọng không được tách thành yêu cầu riêng vì 33/36 người chỉ chấm mức 2 cho tính hữu ích của chúng; hệ thống giữ chúng như thuộc tính phụ trong kết quả phân loại để lọc và sắp xếp. Các mã F01–F12 được dùng lại trong ma trận kiểm chứng ở Phụ lục A.")
+h3("3.2.2. Yêu cầu chức năng")
+p("Mỗi yêu cầu chức năng ứng với một hoặc vài use case ở Mục 3.1 và phải trả lời được câu hỏi “vì sao hệ thống cần chức năng này”. [[tbl:F]] liệt kê các yêu cầu cùng lý do, lấy từ kết quả khảo sát ở Mục 1.2.1 hoặc mục tiêu ở Mục 1.3.2. Cảm xúc và mức độ nghiêm trọng không được tách thành yêu cầu riêng vì 33/36 người chỉ chấm mức 2 cho tính hữu ích của chúng; hệ thống giữ chúng như thuộc tính phụ trong kết quả phân loại để lọc và sắp xếp. Các mã F01–F12 được dùng lại trong ma trận kiểm chứng ở Phụ lục A.")
 tbl("F", "Yêu cầu chức năng và lý do cần có", [40, 170, 215], [
     ["Mã", "Chức năng", "Vì sao cần"],
     ["F01", "Đăng ký, đăng nhập, đăng xuất", "Mỗi người dùng chỉ được thấy dữ liệu của mình (Mục 1.5.3)"],
@@ -120,7 +233,7 @@ tbl("F", "Yêu cầu chức năng và lý do cần có", [40, 170, 215], [
     ["F11", "Quản lý bộ chủ đề theo từng sản phẩm", "25/36 người gặp khó khăn khi nhận ra chủ đề mới"],
     ["F12", "Kiểm tra tình trạng và ghi nhận hoạt động của hệ thống", "Cần số liệu về thời gian và chi phí để đánh giá hệ thống (Mục 1.3.2)"],
 ])
-h3("3.2.5. Yêu cầu phi chức năng")
+h3("3.2.3. Yêu cầu phi chức năng")
 p("Yêu cầu phi chức năng tập trung vào những rủi ro riêng của một hệ thống có dùng AI: lộ thông tin cá nhân, trộn dữ liệu giữa các tài khoản, chi phí gọi mô hình tăng ngoài kiểm soát và tác tử AI chạy vòng lặp không dừng. [[tbl:N]] nêu từng yêu cầu và cách thiết kế đáp ứng. Các yêu cầu này không bảo đảm độ chính xác của phân loại hay chất lượng của nhận định; hai nội dung đó cần được đánh giá riêng theo tiêu chí ở Mục 2.4.5.")
 tbl("N", "Yêu cầu phi chức năng", [40, 115, 270], [
     ["Mã", "Yêu cầu", "Cách thiết kế đáp ứng"],
@@ -131,133 +244,24 @@ tbl("N", "Yêu cầu phi chức năng", [40, 115, 270], [
     ["N05", "Theo dõi tiến độ và chịu lỗi", "Tác vụ dài chạy nền và báo tiến độ; lỗi ở một phản hồi không làm dừng cả lượt; trạng thái điều tra được lưu để tiếp tục"],
 ])
 
-# =============================================================================== 3.3 use case detail
-h2("3.3. Phân tích use case chi tiết")
-p("Mục này phân rã từng nhóm use case trong [[fig:uc00]]. Mỗi nhóm gồm một biểu đồ use case chi tiết và bảng đặc tả cho use case chính của nhóm. Quan hệ «include» chỉ phần bắt buộc luôn diễn ra cùng use case gốc, còn quan hệ «extend» chỉ phần tùy chọn mà người dùng có thể thực hiện thêm.")
-h3("3.3.1. Nhóm tài khoản và sản phẩm")
-p("Nhóm này bảo đảm mỗi người chỉ làm việc với dữ liệu của mình, đáp ứng yêu cầu F01, F02 và N02. Người dùng có thể đăng ký bằng thư điện tử hoặc đăng nhập bằng Google; sau khi đăng nhập, mọi thao tác đều gắn với sản phẩm đang chọn (xem [[fig:uc01]]).")
-fig("uc01", "uc01_tai_khoan.png", "Biểu đồ use case nhóm tài khoản và sản phẩm")
-p("[[tbl:spec_login]] đặc tả use case đăng nhập. Thông báo lỗi khi sai thông tin được viết chung để không tiết lộ một thư điện tử có tồn tại trong hệ thống hay không. Quá trình đăng ký được thể hiện ở [[fig:a11]]: tài khoản mới luôn bắt đầu với không gian làm việc trống.")
-spec("spec_login", "Đăng nhập", "Người phụ trách; Google (khi đăng nhập bằng Google)",
-     "Người phụ trách xác thực để làm việc với các sản phẩm của mình.",
-     "Đã có tài khoản bằng thư điện tử hoặc tài khoản Google.",
-     ["1. Người phụ trách nhập thư điện tử và mật khẩu.",
-      "2. Hệ thống tìm tài khoản và so khớp mật khẩu đã băm bằng Argon2.",
-      "3. Hệ thống tạo phiên đăng nhập có hạn 12 giờ, lưu trong cookie mà mã trên trang không đọc được.",
-      "4. Giao diện mở màn hình làm việc."],
-     ["1a. Chọn đăng nhập bằng Google: hệ thống chuyển sang Google, xác minh id_token rồi tìm hoặc tạo tài khoản.",
-      "2a. Sai thông tin: hệ thống báo lỗi chung.",
-      "2b. Tài khoản chỉ đăng ký bằng Google: hệ thống đề nghị đăng nhập bằng Google."],
-     "Phiên đăng nhập hợp lệ; các yêu cầu sau chỉ truy cập dữ liệu của tài khoản.")
-fig("a11", "a11_dang_ky.png", "Biểu đồ hoạt động đăng ký tài khoản")
-h3("3.3.2. Nhóm nhập dữ liệu")
-p("Nhóm nhập dữ liệu giải quyết khó khăn đầu tiên ở Chương 1: phản hồi nằm rải rác ở nhiều nguồn với cấu trúc khác nhau (yêu cầu F03, F04). Trong [[fig:uc02]], việc tải tệp luôn kèm lập hồ sơ cột, còn việc xác nhận ý nghĩa các cột luôn dẫn tới nhập phản hồi vào kho. Đổi cách xử lý một cột là phần mở rộng của bước xác nhận.")
-fig("uc02", "uc02_nhap_du_lieu.png", "Biểu đồ use case nhóm nhập dữ liệu")
-p("[[tbl:spec_import]] đặc tả use case chính của nhóm. Luồng thay thế cho thấy hệ thống không bao giờ nhập dữ liệu khi chưa có quyết định hợp lệ của người phụ trách, và lỗi ở một dòng không làm hỏng cả tệp.")
-spec("spec_import", "Nhập tệp CSV và xác nhận ý nghĩa cột", "Người phụ trách; Dịch vụ AI",
-     "Đưa phản hồi từ một tệp CSV vào kho phản hồi của sản phẩm sau khi người phụ trách xác nhận ý nghĩa các cột.",
-     "Đã đăng nhập, đã chọn sản phẩm; sản phẩm không có lượt nhập đang dở.",
-     ["1. Người phụ trách tải tệp CSV.",
-      "2. Hệ thống lưu tệp gốc, lập hồ sơ cột và hiển thị dữ liệu mẫu đã che.",
-      "3. Người phụ trách yêu cầu AI đề xuất.",
-      "4. Dịch vụ AI đề xuất cách xử lý từng cột.",
-      "5. Người phụ trách đồng ý hoặc đổi cách xử lý (điểm kiểm duyệt thứ nhất).",
-      "6. Hệ thống kiểm tra quyết định, ghi nhật ký, nhập nền từng dòng sau khi che thông tin.",
-      "7. Hệ thống hiển thị báo cáo nhập."],
-     ["1a. Sản phẩm có lượt nhập dở: hệ thống từ chối.",
-      "4a. Dịch vụ AI lỗi: lượt nhập trở về trạng thái đã lập hồ sơ để yêu cầu lại.",
-      "6a. Quyết định không hợp lệ: hệ thống báo lỗi để người phụ trách sửa.",
-      "6b. Dòng thiếu nội dung hoặc sai ngày: ghi vào báo cáo lỗi, các dòng khác vẫn được nhập.",
-      "Người phụ trách có thể hủy lượt nhập trước khi xác nhận."],
-     "Phản hồi đã che thông tin nằm trong kho; quyết định ánh xạ được lưu trong nhật ký quyết định.")
-h3("3.3.3. Nhóm quản lý bộ chủ đề")
-p("Nhóm này đáp ứng nhu cầu nhận ra chủ đề mới (yêu cầu F11) và nguyên tắc ở Mục 2.4.1.1: bộ chủ đề do AI gợi ý nhưng phải được con người xem xét. Trong [[fig:uc03]], áp dụng chủ đề là quyết định của người phụ trách và được tô màu; sửa đề xuất là phần mở rộng trước khi áp dụng. Người phụ trách cũng có thể tự thêm, sửa hoặc xóa chủ đề.")
-fig("uc03", "uc03_bo_chu_de.png", "Biểu đồ use case nhóm quản lý bộ chủ đề")
-p("[[tbl:spec_tax]] đặc tả use case sinh và áp dụng bộ chủ đề. Đề xuất của AI chỉ tồn tại tạm thời trên giao diện; không có gì được ghi vào hệ thống cho đến khi người phụ trách bấm áp dụng.")
-spec("spec_tax", "Sinh và áp dụng bộ chủ đề", "Người phụ trách; Dịch vụ AI",
-     "Tạo hoặc mở rộng bộ chủ đề của sản phẩm bằng gợi ý của AI, có người duyệt.",
-     "Sản phẩm đã có phản hồi trong kho.",
-     ["1. Người phụ trách yêu cầu sinh bộ chủ đề.",
-      "2. Hệ thống chọn mẫu phản hồi đã che, rải đều theo thời gian.",
-      "3. Dịch vụ AI đề xuất cây chủ đề.",
-      "4. Hệ thống loại đề xuất trùng hoặc không hợp lệ, hiển thị đề xuất.",
-      "5. Người phụ trách sửa và chọn áp dụng.",
-      "6. Hệ thống lưu chủ đề, tăng phiên bản bộ chủ đề và ghi nhật ký."],
-     ["1a. Sản phẩm đã có bộ chủ đề: hệ thống đọc nhóm chưa phân loại và gợi ý tối đa 8 chủ đề mới.",
-      "5a. Người phụ trách bỏ đề xuất: không có dữ liệu nào được ghi.",
-      "5b. Người phụ trách tự thêm, sửa hoặc xóa chủ đề."],
-     "Bộ chủ đề mới có hiệu lực cho các lượt phân loại sau.")
-h3("3.3.4. Nhóm kho phản hồi và phân loại")
-p("Nhóm này giảm gánh nặng đọc và gán loại thủ công (yêu cầu F05, F06). [[fig:uc04]] cho thấy chạy phân loại luôn kèm xem phiếu ước tính chi phí, còn hủy lượt là phần mở rộng. Tìm phản hồi tương tự được mở từ màn hình chi tiết của một phản hồi.")
-fig("uc04", "uc04_kho_phan_hoi.png", "Biểu đồ use case nhóm kho phản hồi và phân loại")
-p("[[tbl:spec_classify]] đặc tả use case chạy phân loại. Phiếu ước tính và bước xác nhận số phản hồi là cách hiện thực yêu cầu kiểm soát chi phí N03.")
-spec("spec_classify", "Chạy phân loại phản hồi", "Người phụ trách; Dịch vụ AI",
-     "Gán chủ đề, thuộc tính phụ và véc-tơ cho các phản hồi chưa được phân loại.",
-     "Sản phẩm có bộ chủ đề đang hiệu lực và có phản hồi chưa phân loại.",
-     ["1. Người phụ trách chọn phạm vi phản hồi.",
-      "2. Hệ thống lập phiếu ước tính số phản hồi và số lượt gọi tối đa.",
-      "3. Người phụ trách xác nhận số phản hồi.",
-      "4. Hệ thống tạo lượt phân loại (tối đa 100 phản hồi) và chạy nền.",
-      "5. Với mỗi phản hồi, dịch vụ AI gán chủ đề, thuộc tính phụ và tạo véc-tơ.",
-      "6. Hệ thống lưu kết quả; giao diện hiển thị tiến độ đến khi lượt kết thúc."],
-     ["3a. Dữ liệu đã thay đổi so với phiếu: hệ thống yêu cầu xem lại.",
-      "5a. Không có chủ đề đạt 0,60: phản hồi vào nhóm chưa phân loại.",
-      "5b. Lỗi gọi dịch vụ: phản hồi trở về trạng thái chờ.",
-      "6a. Người phụ trách hủy lượt; 6b. Quá nửa số phản hồi lỗi: lượt thất bại."],
-     "Phản hồi có chủ đề, thuộc tính và véc-tơ, lưu kèm phiên bản bộ chủ đề đã dùng.")
-h3("3.3.5. Nhóm phân cụm và theo dõi biến động")
-p("Nhóm này phục vụ việc phát hiện sớm vấn đề lặp lại (yêu cầu F06), khó khăn mà 36/36 người tham gia khảo sát từng gặp. Trong [[fig:uc05]], chạy phân cụm luôn bao gồm đặt tên cụm và tính chỉ số biến động; xem phản hồi mẫu và lọc cụm đang tăng là các phần mở rộng của việc xem danh sách cụm.")
-fig("uc05", "uc05_phan_cum.png", "Biểu đồ use case nhóm phân cụm và theo dõi biến động")
-p("[[tbl:spec_cluster]] đặc tả use case chạy phân cụm. Phân cụm chạy riêng cho từng sản phẩm nên tên cụm chỉ được tạo từ phản hồi của chính sản phẩm đó.")
-spec("spec_cluster", "Chạy phân cụm", "Người phụ trách; Dịch vụ AI",
-     "Gom các phản hồi gần nghĩa của một sản phẩm thành cụm và tính mức biến động của từng cụm.",
-     "Phản hồi của sản phẩm đã có véc-tơ.",
-     ["1. Người phụ trách chọn “Tạo lại phân cụm”.",
-      "2. Hệ thống đọc véc-tơ của sản phẩm và chạy HDBSCAN.",
-      "3. Với mỗi cụm, dịch vụ AI đặt tên và tóm tắt từ tối đa 5 phản hồi mẫu.",
-      "4. Hệ thống tính chỉ số biến động và điểm gợi ý điều tra.",
-      "5. Hệ thống ghi cụm mới, trả số cụm và số phản hồi ngoài cụm.",
-      "6. Người phụ trách xem danh sách cụm."],
-     ["2a. Không hình thành cụm nào: hệ thống báo không có cụm.",
-      "3a. Gọi dịch vụ AI lỗi: cụm được đặt tên đánh số."],
-     "Các cụm của sản phẩm được thay mới; cụm cũ không còn phản hồi bị xóa.")
-h3("3.3.6. Nhóm điều tra và duyệt nhận định")
-p("Nhóm này đáp ứng yêu cầu F07 và F08: đi từ “điều gì đang xảy ra” đến “vì sao”, có người kiểm tra căn cứ. Trong [[fig:uc06]], duyệt nhận định luôn bao gồm xem bằng chứng, thể hiện nguyên tắc ở Mục 2.4.3.2 rằng kiểm duyệt không chỉ là bấm nút. Sửa, từ chối và yêu cầu điều tra thêm là các phần mở rộng của bước duyệt.")
-fig("uc06", "uc06_dieu_tra.png", "Biểu đồ use case nhóm điều tra và duyệt nhận định")
-p("[[tbl:spec_inv]] đặc tả use case điều tra và duyệt nhận định. Lượt điều tra có thể lặp lại nhiều vòng khi người phụ trách yêu cầu điều tra thêm.")
-spec("spec_inv", "Điều tra và duyệt nhận định", "Người phụ trách; Dịch vụ AI",
-     "Tác tử AI tra cứu dữ liệu để trả lời một câu hỏi, tạo nhận định kèm bằng chứng cho người phụ trách duyệt.",
-     "Sản phẩm có phản hồi đã phân loại.",
-     ["1. Người phụ trách nhập câu hỏi hoặc chọn câu hỏi gợi ý.",
-      "2. Hệ thống che thông tin trong câu hỏi, tạo lượt điều tra và chạy nền.",
-      "3. Tác tử tra cứu bằng công cụ, lưu bằng chứng và đánh giá cho đến khi đủ hoặc chạm giới hạn.",
-      "4. Tác tử tổng hợp nhận định; lượt điều tra tạm dừng.",
-      "5. Người phụ trách xem nhận định, bằng chứng và chọn duyệt (điểm kiểm duyệt thứ hai).",
-      "6. Hệ thống ghi quyết định và kết thúc lượt."],
-     ["3a. Không có bằng chứng khả dụng: hệ thống tạo nhận định “không đủ bằng chứng”.",
-      "5a. Sửa nhận định trước khi duyệt; 5b. Từ chối nhận định.",
-      "5c. Yêu cầu điều tra thêm: tác tử tiếp tục tra cứu với ý kiến của người duyệt."],
-     "Nhận định ở trạng thái đã duyệt, đã sửa hoặc đã từ chối; quyết định được ghi cùng người duyệt.")
-h3("3.3.7. Nhóm xây dựng và chọn phương án")
-p("Nhóm này đáp ứng yêu cầu F09: biến nhận định đã duyệt thành phương án có căn cứ. Trong [[fig:uc07]], chọn phương án là điểm kiểm duyệt thứ ba, với phần mở rộng là sửa điểm và nội dung. Người phụ trách còn có thể tự thêm phương án, xem phương án theo nhóm nghiệp vụ và chạy phép quan sát trước – sau.")
-fig("uc07", "uc07_hanh_dong.png", "Biểu đồ use case nhóm xây dựng và chọn phương án")
-p("[[tbl:spec_act]] đặc tả use case sinh và chọn phương án. Giá trị do AI ước lượng và giá trị người phụ trách sửa được lưu song song để có thể so sánh về sau.")
-spec("spec_act", "Sinh và chọn phương án", "Người phụ trách; Dịch vụ AI",
-     "Đề xuất các phương án cải tiến từ một nhận định đã duyệt để người phụ trách so sánh và lựa chọn.",
-     "Nhận định đã được duyệt hoặc đã sửa.",
-     ["1. Người phụ trách chọn “Gợi ý hành động”.",
-      "2. Hệ thống nạp bằng chứng của nhận định và thư viện thực hành.",
-      "3. Dịch vụ AI đánh giá tám nhóm nghiệp vụ và soạn phương án.",
-      "4. Hệ thống kiểm tra căn cứ, tính điểm ưu tiên và hiển thị ma trận.",
-      "5. Người phụ trách xem căn cứ, sửa điểm hoặc nội dung, chấp nhận hoặc từ chối (điểm kiểm duyệt thứ ba).",
-      "6. Hệ thống tính lại điểm và ghi nhật ký quyết định."],
-     ["1a. Nhận định chưa duyệt: hệ thống từ chối.",
-      "4a. Căn cứ không hợp lệ: hệ thống báo lỗi, giữ nguyên phương án cũ.",
-      "5a. Người phụ trách tự thêm phương án."],
-     "Phương án ở trạng thái đã chấp nhận hoặc đã từ chối; giá trị của AI và của người được lưu song song.")
-h3("3.3.8. Nhóm báo cáo và theo dõi")
-p("Nhóm cuối phục vụ mục tiêu theo dõi ở Mục 1.3.2 (yêu cầu F10, F12). [[fig:uc08]] gồm xem báo cáo tổng hợp theo kỳ, xem và chỉnh sửa các nhận định đã lưu, xem chỉ số thời gian và kiểm duyệt, theo dõi các tác vụ đang chạy nền và kiểm tra tình trạng hệ thống. Các use case này chỉ đọc dữ liệu đã có, không gọi dịch vụ AI.")
-fig("uc08", "uc08_bao_cao.png", "Biểu đồ use case nhóm báo cáo và theo dõi")
+# =============================================================================== 3.3 method
+h2("3.3. Phương pháp và quy trình thực hiện")
+p("Sau khi đã xác định người dùng cần gì và hệ thống phải đáp ứng những yêu cầu nào, mục này trình bày cách đề tài được thực hiện: phương pháp nghiên cứu, quy trình làm việc và các thử nghiệm kỹ thuật dùng để chốt thiết kế.")
+h3("3.3.1. Phương pháp nghiên cứu")
+p("Đề tài xây dựng một phần mềm để giải quyết một vấn đề thực tế, nên khóa luận đi theo hướng nghiên cứu khoa học thiết kế (design science research). Theo Hevner và cộng sự, hướng nghiên cứu này tạo ra một sản phẩm nhân tạo nhằm giải quyết vấn đề, sau đó đánh giá sản phẩm đó trong bối cảnh sử dụng [38]. Peffers và cộng sự chia quá trình thành sáu hoạt động: xác định vấn đề, đặt mục tiêu cho giải pháp, thiết kế và phát triển, trình diễn, đánh giá và truyền đạt kết quả [39].")
+p("Các hoạt động này tương ứng với bố cục của khóa luận. Vấn đề được xác định qua bối cảnh và khảo sát 36 người ở Chương 1. Mục tiêu của giải pháp được nêu ở Mục 1.3 và được làm rõ bằng cơ sở lý thuyết ở Chương 2. Chương 3 trình bày hoạt động thiết kế và phát triển. Việc trình diễn và đánh giá hệ thống thuộc Chương 4. Nhờ cách tổ chức này, mỗi quyết định thiết kế đều có điểm xuất phát rõ ràng: một khó khăn đã được ghi nhận hoặc một nguyên tắc đã được lựa chọn ở các chương trước.")
+h3("3.3.2. Quy trình thực hiện và công cụ")
+p("Hệ thống được xây dựng theo từng giai đoạn nhỏ. Mỗi giai đoạn có tiêu chí nghiệm thu riêng và kết thúc bằng kiểm thử tự động: pytest cho phần máy chủ và Vitest cho phần giao diện. Mọi thay đổi so với kế hoạch được ghi vào nhật ký quyết định của dự án, kèm lý do và các phương án đã loại. Nhờ đó, khi một lựa chọn thay đổi giữa chừng, người đọc vẫn biết vì sao nó thay đổi.")
+p("Với những thành phần có rủi ro kỹ thuật cao, đề tài viết thử nghiệm ngắn trước khi đưa vào thiết kế chính thức. [[tbl:spike]] tóm tắt các thử nghiệm đó và quyết định rút ra. Đây là phép kiểm tra tính khả thi trên dữ liệu nhỏ hoặc giả lập, chưa phải số đo chất lượng của hệ thống hoàn chỉnh.")
+tbl("spike", "Các thử nghiệm kỹ thuật trước khi chốt thiết kế", [150, 135, 140], [
+    ["Điều cần kiểm tra", "Kết quả", "Quyết định thiết kế"],
+    ["Che thông tin định danh trên 20 câu giả lập Việt–Anh bằng Presidio và Stanza", "Thư điện tử, số điện thoại, CCCD, đường dẫn, địa chỉ IP: phát hiện đủ 100%; tên người: 66,7%", "Thêm bộ nhận dạng riêng cho các mẫu của Việt Nam; ghi nhận giới hạn với tên người"],
+    ["Mô hình trả kết quả đúng mẫu JSON (10 lượt gọi)", "10/10 lượt đúng mẫu", "Dùng lược đồ JSON làm cách gọi chính, có đường dự phòng"],
+    ["Lưu và tìm véc-tơ ngay trong PostgreSQL (10 câu)", "Mỗi câu đều tìm lại đúng chính nó ở vị trí đầu tiên", "Lưu véc-tơ trong cơ sở dữ liệu nghiệp vụ, không cần kho véc-tơ riêng"],
+    ["Phân cụm HDBSCAN trên 200 véc-tơ giả lập", "Tìm đúng 3 cụm; 7,5–8,5% điểm không thuộc cụm nào", "Chọn HDBSCAN cho bước phân cụm"],
+    ["Tạm dừng và tiếp tục lượt điều tra sau khi tắt tiến trình", "Tiếp tục đúng chỗ dừng; thao tác ghi dữ liệu chỉ thực hiện một lần", "Dùng cơ chế lưu trạng thái cho điểm kiểm duyệt thứ hai"],
+    ["Phân loại bằng dịch vụ System One trên 16 câu tự tạo có chủ ý mơ hồ", "16/16 kết quả hợp lệ; 95% lượt gọi xong trong khoảng 1,06 giây; chưa đạt ngưỡng chất lượng đặt trước", "Vẫn chọn vì nhanh và chỉ trả nhãn trong danh sách cho phép; cần đánh giá lại trên tập gán nhãn độc lập"],
+])
 
 # =============================================================================== 3.4 architecture
 h2("3.4. Kiến trúc hệ thống")
