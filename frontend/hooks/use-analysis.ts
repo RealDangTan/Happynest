@@ -54,7 +54,15 @@ export function useRuns() {
   return useQuery({
     queryKey: ["analysis", "runs"],
     queryFn: () => apiFetch<RunListResponse>("/api/analysis/runs?limit=50"),
-    refetchInterval: 4000,
+    // Nhịp nhanh chỉ khi có lượt PHÂN LOẠI đang chạy. Trước đây poll 4s vô
+    // điều kiện trên mọi trang — tải nền thường trực lên DB xa (QA HN-015).
+    // Row của cuộc điều tra AI giữ `running` tới khi được duyệt nên không tính.
+    refetchInterval: (query) =>
+      query.state.data?.items.some(
+        (run) => run.status === "running" && run.import_id != null,
+      )
+        ? 4000
+        : 20_000,
     staleTime: 0,
   });
 }

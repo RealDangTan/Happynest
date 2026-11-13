@@ -38,7 +38,10 @@ export function useJourney(): { journey: Journey | null; ready: boolean } {
     queryKey: ["analysis", "runs", "journey"],
     queryFn: () => apiFetch<RunListResponse>("/api/analysis/runs?limit=10&status=running"),
     enabled,
-    refetchInterval: (q) => ((q.state.data?.items.length ?? 0) > 0 ? 4000 : 30_000),
+    // Chỉ lượt phân loại (có import_id) mới cần nhịp nhanh — row của cuộc điều
+    // tra AI bỏ dở giữ `running` vĩnh viễn và từng ép poll 4s mãi mãi.
+    refetchInterval: (q) =>
+      q.state.data?.items.some((r) => r.import_id != null) ? 4000 : 30_000,
   });
   const productImportIds = useMemo(
     () => new Set((imports.data?.items ?? []).map((i) => i.id)),

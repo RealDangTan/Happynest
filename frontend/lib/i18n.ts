@@ -203,6 +203,16 @@ const vi = {
     remaining: "còn chờ sau lượt này",
     receiptNote:
       "Ước tính có trước khi chạy. Nếu dữ liệu đổi từ lúc xem ước tính, hệ thống từ chối để bạn xem lại.",
+    receiptFile: "File",
+    receiptNothingTitle: "File này không còn mục nào chạy được",
+    receiptNothingBody:
+      "Các phản hồi chờ phân loại của file này đang được một lượt khác xử lý, hoặc đã phân loại xong. Đợi lượt đang chạy kết thúc rồi thử lại.",
+    receiptOtherFiles: (n: number) =>
+      `Mỗi lượt chạy một file. Còn ${n} mục chờ ở các file khác — sau lượt này, bấm “Phân loại” lần nữa để chạy tiếp.`,
+    receiptStartFailed: "Chưa bắt đầu được lượt phân loại",
+    receiptRefresh: "Xem lại ước tính",
+    busyLine: (n: number) =>
+      `${n} mục đang được phân loại trong lượt đang chạy — chưa còn mục nào để chạy thêm.`,
     back: "Quay lại",
     start: "Bắt đầu phân loại",
     runTitle: "Phân loại bằng AI",
@@ -241,6 +251,16 @@ const vi = {
     started: "Đã bắt đầu điều tra. Tiến độ và phần duyệt hiện ngay bên dưới.",
     startFailed: "Không bắt đầu được cuộc điều tra.",
     exploreTitle: "Khám phá dữ liệu",
+    scopeLoading: "Đang tải phạm vi dữ liệu…",
+    scopeEmpty: "Chọn file ở cột bên trái rồi bấm Áp dụng để khám phá.",
+    emptyNoneTitle: "Chưa có phản hồi nào được phân loại trong phạm vi này",
+    emptyNoneBody: "Phân loại các mục chờ ở Kho phản hồi, rồi quay lại đây.",
+    emptyNoneCta: "Mở Kho phản hồi",
+    emptyUncatTitle: (n: number) => `${n} phản hồi đã phân loại nhưng chưa có chủ đề`,
+    emptyUncatBody:
+      "Lúc phân loại, sản phẩm chưa có bộ chủ đề (hoặc không chủ đề nào khớp) nên AI gắn nhãn UNCATEGORIZED. Tạo hoặc cập nhật bộ chủ đề, rồi mở khoá để phân loại lại.",
+    emptyUncatCta: "Tạo bộ chủ đề",
+    emptyUncatReclassify: "Mở khoá và phân loại lại",
   },
   matrixPage: {
     addManual: "Tự thêm hành động",
@@ -708,6 +728,16 @@ const en: Dictionary = {
     remaining: "still pending after this",
     receiptNote:
       "The estimate comes before anything runs. If the selection changed since, the run is rejected so you can review again.",
+    receiptFile: "File",
+    receiptNothingTitle: "Nothing left to run in this file",
+    receiptNothingBody:
+      "This file's pending feedback is being classified by another run, or is already done. Wait for the running one to finish, then try again.",
+    receiptOtherFiles: (n: number) =>
+      `Each run covers one file. ${n} more are pending in other files — after this run, click “Classify” again to continue.`,
+    receiptStartFailed: "Could not start the classification run",
+    receiptRefresh: "Refresh estimate",
+    busyLine: (n: number) =>
+      `${n} items are being classified by the running job — nothing more to start yet.`,
     back: "Back",
     start: "Start classifying",
     runTitle: "AI classification",
@@ -745,6 +775,16 @@ const en: Dictionary = {
     goClassify: "Go to classification",
     started: "Investigation started. Progress and review appear right below.",
     startFailed: "Could not start the investigation.",
+    scopeLoading: "Loading the dataset scope…",
+    scopeEmpty: "Pick files in the left column, then click Apply to explore.",
+    emptyNoneTitle: "No classified feedback in this scope yet",
+    emptyNoneBody: "Classify the pending items in the Vault, then come back.",
+    emptyNoneCta: "Open the Vault",
+    emptyUncatTitle: (n: number) => `${n} items are classified but have no topic`,
+    emptyUncatBody:
+      "The product had no topic set when these were classified (or no topic matched), so AI tagged them UNCATEGORIZED. Create or update the topic set, then unlock to reclassify.",
+    emptyUncatCta: "Create the topic set",
+    emptyUncatReclassify: "Unlock and reclassify",
     exploreTitle: "Explore the data",
   },
   matrixPage: {

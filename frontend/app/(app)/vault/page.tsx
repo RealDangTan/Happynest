@@ -43,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -778,6 +779,25 @@ function Vault({
     staleTime: 15_000,
   })
 
+  // Mục THẬT SỰ chạy được = chờ phân loại và chưa bị lượt nào giữ. `pending`
+  // ở trên còn tính cả mục đang nằm trong lượt đang chạy; dùng nó để chọn file
+  // chạy tiếp ở "All imports" từng chọn nhầm file đang chạy → biên nhận 0 mục
+  // → server từ chối 422 (QA HN-013, 2026-11-11).
+  const eligibleCount = useQuery({
+    queryKey: ["feedbacks", "eligible-count", activeImportId],
+    queryFn: () =>
+      apiFetch<FeedbackListResponse>(
+        `/api/feedbacks?limit=1&analysis_state=eligible${
+          activeImportId ? `&import_id=${activeImportId}` : ""
+        }`
+      ),
+    staleTime: 5_000,
+  })
+  const pendingTotal = pendingCount.data?.total ?? 0
+  const eligibleTotal = eligibleCount.data?.total ?? pendingTotal
+  // Còn mục chờ nhưng tất cả đang nằm trong lượt đang chạy.
+  const allPendingBusy = pendingTotal > 0 && eligibleTotal === 0
+
   // Đếm rows ĐÃ analyzed nhưng mang nhãn UNCATEGORIZED theo taxonomy cũ —
   // hết pending mà vẫn còn UNCATEGORIZED = taxonomy vừa đổi, cần mở khoá
   // re-enrich (vòng taxonomy evolution, plan 32).
@@ -806,10 +826,16 @@ function Vault({
       ),
     refetchInterval: 30_000,
   })
+  // "All imports" (không chọn file): lượt đang chạy của BẤT KỲ file nào thuộc
+  // sản phẩm này đều phải hiện tiến độ và khoá nút, không chỉ file đang chọn.
   const activeRunId =
     startedRunId ??
     runningRun.data?.items.find(
-      (r) => r.import_id && r.import_id === activeImportId
+      (r) =>
+        r.import_id &&
+        (activeImportId
+          ? r.import_id === activeImportId
+          : imports.some((i) => i.id === r.import_id))
     )?.id ??
     null
 
@@ -835,14 +861,21 @@ function Vault({
           setStartedRunId(run_id)
           setReceiptScope(null)
           preview.reset()
+          trigger.reset()
           void qc.invalidateQueries({ queryKey: ["feedbacks"] })
         },
-        onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : "Could not start analysis"
-          ),
+        // Lỗi hiện NGAY TRONG hộp biên nhận (trigger.error) kèm nút xem lại
+        // ước tính — toast tự biến mất khiến người dùng không biết vì sao hộp
+        // thoại đứng yên (QA HN-013).
+        onError: () => void qc.invalidateQueries({ queryKey: ["feedbacks"] }),
       }
     )
+  }
+
+  const refreshReceipt = () => {
+    if (!receiptScope) return
+    trigger.reset()
+    void preview.mutateAsync(receiptScope).catch(() => undefined)
   }
 
   const receiptScopeFor = (): Scope | null => {
@@ -856,11 +889,15 @@ function Vault({
         : activeImportId
           ? { mode: "batch", import_id: activeImportId }
           : {
-              // "All imports": phân loại theo file đang thật sự có mục chờ,
-              // không phải file đầu danh sách (có thể đã xong hết).
+              // "All imports": phân loại theo file còn mục THẬT SỰ chạy được
+              // (chưa bị lượt nào giữ) — không phải file đầu danh sách, cũng
+              // không phải file đang chạy dở.
               mode: "batch",
               import_id:
-                pendingCount.data?.items[0]?.import_id ?? imports[0]?.id ?? "",
+                eligibleCount.data?.items[0]?.import_id ??
+                pendingCount.data?.items[0]?.import_id ??
+                imports[0]?.id ??
+                "",
             }
     return scope.import_id ? scope : null
   }
@@ -899,7 +936,7 @@ function Vault({
         }
         toast.success(`Đã mở khoá ${res.released} phản hồi để phân loại lại.`)
         const next = await apiFetch<FeedbackListResponse>(
-          `/api/feedbacks?limit=1&analysis_state=pending&product_id=${productId}`
+          `/api/feedbacks?limit=1&analysis_state=eligible&product_id=${productId}`
         )
         const importId = activeImportId ?? next.items[0]?.import_id
         if (importId) void requestReceipt({ mode: "batch", import_id: importId })
@@ -927,13 +964,19 @@ function Vault({
   const analyzeHandled = useRef(false)
   useEffect(() => {
     if (!analyzeIntent || analyzeHandled.current) return
-    if (!productId || !pendingCount.isSuccess || preview.isPending) return
+    if (
+      !productId ||
+      !pendingCount.isSuccess ||
+      !eligibleCount.isSuccess ||
+      preview.isPending
+    )
+      return
     analyzeHandled.current = true
     router.replace(activeImportId ? `/vault?import=${activeImportId}` : "/vault", {
       scroll: false,
     })
     const scope = receiptScopeFor()
-    if (scope && (pendingCount.data?.total ?? 0) > 0) void requestReceipt(scope)
+    if (scope && eligibleTotal > 0) void requestReceipt(scope)
   })
 
   const exploreSelected = () => {
@@ -1326,8 +1369,10 @@ function Vault({
                       Delete selected
                     </Button>
                   </>
+                ) : allPendingBusy ? (
+                  <>{t.vault.busyLine(pendingTotal)}</>
                 ) : (
-                  <>{t.vault.pendingLine(pendingCount.data?.total ?? 0)}</>
+                  <>{t.vault.pendingLine(pendingTotal)}</>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1336,9 +1381,7 @@ function Vault({
                   disabled={
                     preview.isPending ||
                     classifying ||
-                    (selectedPending.length === 0 &&
-                      !activeImportId &&
-                      (pendingCount.data?.total ?? 0) === 0)
+                    (selectedPending.length === 0 && eligibleTotal === 0)
                   }
                 >
                   {preview.isPending ? (
@@ -1346,9 +1389,7 @@ function Vault({
                   ) : (
                     <Play data-icon="inline-start" />
                   )}
-                  {t.vault.analyze(
-                    selectedPending.length || (pendingCount.data?.total ?? 0)
-                  )}
+                  {t.vault.analyze(selectedPending.length || eligibleTotal)}
                 </Button>
                 {selected.size > 0 && selectedPending.length > 0 ? (
                   <p className="text-xs text-muted-foreground">
@@ -1410,6 +1451,7 @@ function Vault({
           if (!open) {
             setReceiptScope(null)
             preview.reset()
+            trigger.reset()
           }
         }}
       >
@@ -1417,15 +1459,53 @@ function Vault({
           <AlertDialogHeader>
             <AlertDialogTitle>{t.vault.receiptTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              {product?.name ?? "—"} ·{" "}
+              {product?.name ?? "—"} · {t.vault.receiptFile}:{" "}
               {imports.find((i) => i.id === receiptScope?.import_id)
                 ?.original_filename ?? receiptScope?.import_id.slice(0, 8)}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {preview.data ? (
+          {preview.data && preview.data.selected_count === 0 ? (
+            <Alert>
+              <AlertTitle>{t.vault.receiptNothingTitle}</AlertTitle>
+              <AlertDescription>{t.vault.receiptNothingBody}</AlertDescription>
+            </Alert>
+          ) : preview.data ? (
             <p className="font-heading text-lg">
               {t.vault.receiptHeadline(preview.data.selected_count)}
             </p>
+          ) : null}
+          {/* "All imports": nói rõ lượt này chỉ chạy MỘT file và còn bao nhiêu
+              mục ở file khác — tránh hiểu nhầm đã phân loại toàn bộ (HN-005). */}
+          {preview.data &&
+          preview.data.selected_count > 0 &&
+          !activeImportId &&
+          eligibleTotal > preview.data.eligible_count ? (
+            <p className="text-sm text-muted-foreground">
+              {t.vault.receiptOtherFiles(
+                eligibleTotal - preview.data.eligible_count
+              )}
+            </p>
+          ) : null}
+          {trigger.isError ? (
+            <Alert variant="destructive" role="alert">
+              <AlertTitle>{t.vault.receiptStartFailed}</AlertTitle>
+              <AlertDescription className="flex flex-col gap-3">
+                <span>{trigger.error.message}</span>
+                <div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={preview.isPending}
+                    onClick={refreshReceipt}
+                  >
+                    {preview.isPending ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : null}
+                    {t.vault.receiptRefresh}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
           ) : null}
           {preview.data ? (
             <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary/50 p-3 text-sm sm:grid-cols-3">
@@ -1479,7 +1559,12 @@ function Vault({
           <AlertDialogFooter>
             <AlertDialogCancel>{t.vault.back}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={!preview.data || trigger.isPending}
+              disabled={
+                !preview.data ||
+                preview.isPending ||
+                preview.data.selected_count === 0 ||
+                trigger.isPending
+              }
               onClick={(e) => {
                 e.preventDefault()
                 startAnalysis()

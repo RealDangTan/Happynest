@@ -37,7 +37,9 @@ class AnalysisScopeIn(BaseModel):
 
 
 class AnalysisRunCreateIn(AnalysisScopeIn):
-    confirmed_item_count: int = Field(ge=1, le=100)
+    # ge=0 (không phải 1): biên nhận "0 mục" phải nhận lỗi nghiệp vụ 409
+    # `nothing_eligible` đọc được, không phải 422 validation khó hiểu (HN-013).
+    confirmed_item_count: int = Field(ge=0, le=100)
 
 
 class ReEnrichIn(BaseModel):

@@ -84,7 +84,10 @@ def create_analysis_run(
     session: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RunCreatedOut:
-    """Claim exactly the import-scoped rows covered by a confirmed receipt."""
+    """Claim exactly the import-scoped rows covered by a confirmed receipt.
+
+    409 `nothing_eligible` khi file không còn mục chạy được; 409
+    `selection_changed` khi số mục lệch với biên nhận đã xác nhận."""
     import_row = session.get(Import, body.import_id)
     if import_row is None:
         raise HTTPException(status_code=404, detail="Import không tồn tại.")
@@ -98,10 +101,26 @@ def create_analysis_run(
             status_code=409,
             detail={"code": "selection_changed", "message": "Selection is no longer eligible."},
         )
+    if not rows:
+        # Không còn gì để chạy trong file này: hoặc đã phân loại hết, hoặc phần
+        # còn lại đang nằm trong một lượt khác. KHÔNG tạo run rỗng (HN-013).
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "nothing_eligible",
+                "message": (
+                    "Không còn phản hồi nào chờ phân loại trong file này — "
+                    "các mục còn lại đang được một lượt khác xử lý hoặc đã xong."
+                ),
+            },
+        )
     if len(rows) != body.confirmed_item_count:
         raise HTTPException(
             status_code=409,
-            detail={"code": "selection_changed", "message": "Pending item count changed; preview again."},
+            detail={
+                "code": "selection_changed",
+                "message": "Số phản hồi chờ phân loại vừa thay đổi — hãy xem lại ước tính rồi chạy lại.",
+            },
         )
     run = AnalysisRun(
         pipeline_version=PIPELINE_VERSION,

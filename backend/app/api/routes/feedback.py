@@ -112,7 +112,7 @@ def list_feedbacks(
     product_id: uuid.UUID | None = Query(default=None),
     import_id: uuid.UUID | None = Query(default=None),
     analysis_state: str | None = Query(
-        default=None, pattern="^(pending|completed|uncategorized)$"
+        default=None, pattern="^(pending|eligible|completed|uncategorized)$"
     ),
     severity: str | None = Query(default=None, min_length=1),
     sentiment: str | None = Query(default=None, min_length=1),
@@ -141,6 +141,9 @@ def list_feedbacks(
     `severity`/`sentiment` (2026-10-24): nhận comma-list (faceted multi-select
     FE: `severity=high,critical`) — giá trị đơn vẫn chạy như cũ.
 
+    `analysis_state=eligible` (2026-11-13): `pending` trừ các mục đang được
+    một run claim — vault dùng để chọn file còn mục THẬT SỰ chạy được.
+
     `analysis_state=uncategorized` (2026-10-23): rows ĐÃ analyzed nhưng đang
     mang nhãn UNCATEGORIZED — vault dùng đếm để gợi ý mở khoá re-enrich sau
     khi taxonomy đổi. Perf: 1 query duy nhất (count() OVER() kèm page) + defer
@@ -158,6 +161,13 @@ def list_feedbacks(
         conditions.append(Feedback.import_id == import_id)
     if analysis_state == "pending":
         conditions.append(Feedback.ai_analysis.is_(None))
+    elif analysis_state == "eligible":
+        # Chờ phân loại VÀ chưa bị lượt đang chạy claim — đúng tập mà
+        # `select_eligible_feedback` sẽ nhận. `pending` còn gồm cả mục đang
+        # nằm trong một run, nên dùng nó để chọn file chạy tiếp sẽ chọn nhầm
+        # file đang chạy → preview 0 mục → 422 (QA HN-013, 2026-11-11).
+        conditions.append(Feedback.ai_analysis.is_(None))
+        conditions.append(Feedback.analysis_run_id.is_(None))
     elif analysis_state == "completed":
         conditions.append(Feedback.ai_analysis.is_not(None))
     elif analysis_state == "uncategorized":
