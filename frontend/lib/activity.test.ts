@@ -64,6 +64,39 @@ describe("activity summary", () => {
   });
 });
 
+describe("investigation in the activity summary (HN-016)", () => {
+  const base = { imports: [], runs: [], seenFailures: "", completedRecently: false };
+
+  it("counts a running investigation as a running task", () => {
+    const result = deriveActivitySummary({
+      ...base,
+      investigation: { id: "r1", status: "running" },
+    });
+    expect(result.state).toBe("running");
+    expect(result.runningCount).toBe(1);
+    expect(result.attentionCount).toBe(0);
+  });
+
+  it("flags a finding awaiting review as needing attention, not running", () => {
+    const result = deriveActivitySummary({
+      ...base,
+      investigation: { id: "r1", status: "pending_approval" },
+    });
+    expect(result.state).toBe("needs_attention");
+    expect(result.runningCount).toBe(0);
+    expect(result.attentionCount).toBe(1);
+  });
+
+  it("ignores finished investigations", () => {
+    const result = deriveActivitySummary({
+      ...base,
+      investigation: { id: "r1", status: "completed" },
+    });
+    expect(result.state).toBe("idle");
+    expect(result.runningCount).toBe(0);
+  });
+});
+
 describe("activity query param", () => {
   it("opens and closes activity without losing existing filters", () => {
     expect(withActivityParam("page=2&severity=high", "import:abc")).toBe("page=2&severity=high&activity=import%3Aabc");

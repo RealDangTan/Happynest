@@ -58,6 +58,7 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
+  EmptyContent,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
@@ -116,7 +117,7 @@ function renameTopic(
 
 export default function TaxonomyPage() {
   const t = useT()
-  const { product, productId } = useProduct()
+  const { product, productId, loading: productLoading } = useProduct()
   const router = useRouter()
   // ?generate=1 từ lộ trình: mở sẵn hộp xác nhận sinh đề xuất (vẫn cần bấm
   // xác nhận trước khi gọi AI). Áp intent trong render, gỡ param bằng effect.
@@ -609,7 +610,7 @@ export default function TaxonomyPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {taxonomy.isLoading ? (
+              {taxonomy.isLoading || productLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" /> Đang tải…
                 </div>
@@ -619,13 +620,35 @@ export default function TaxonomyPage() {
                     <EmptyMedia variant="icon">
                       <ListTree />
                     </EmptyMedia>
-                    <EmptyTitle>Chưa có taxonomy nào</EmptyTitle>
+                    <EmptyTitle>Chưa có bộ chủ đề nào</EmptyTitle>
                     <EmptyDescription>
-                      Sinh đề xuất bằng AI từ chính phản hồi của sản phẩm, rồi
-                      duyệt và áp dụng — hoặc nhập thử vài feedback trước để AI
-                      có dữ kiện.
+                      {productId
+                        ? "Chưa có bộ chủ đề thì mọi phản hồi sẽ bị gắn UNCATEGORIZED. Để AI đề xuất từ chính phản hồi của sản phẩm, bạn duyệt rồi áp dụng — sau đó mở khoá để phân loại lại."
+                        : "Chưa chọn được sản phẩm nên các nút tạo chủ đề đang bị khoá. Chọn hoặc tạo sản phẩm ở thanh trên cùng trước."}
                     </EmptyDescription>
                   </EmptyHeader>
+                  {productId ? (
+                    <EmptyContent className="flex-row flex-wrap justify-center">
+                      <Button
+                        disabled={busy}
+                        onClick={() => setConfirmGenerate(true)}
+                      >
+                        <Sparkles data-icon="inline-start" />
+                        Sinh đề xuất bằng AI
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => {
+                          setAddForm({ name: "", name_vi: "", parent_slug: "__root__", description: "" })
+                          setAddOpen(true)
+                        }}
+                      >
+                        <Plus data-icon="inline-start" />
+                        Tự thêm chủ đề
+                      </Button>
+                    </EmptyContent>
+                  ) : null}
                 </Empty>
               ) : (
                 <div className="flex flex-col gap-2">

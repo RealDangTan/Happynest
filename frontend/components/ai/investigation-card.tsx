@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { useAgentDecision, useAgentRun } from "@/hooks/use-agent";
 import { apiFetch } from "@/lib/api";
-import { TOOL_LABELS } from "@/lib/investigation";
+import { TOOL_LABELS, formatElapsed, isSlowInvestigation } from "@/lib/investigation";
 import { EvidenceCard } from "./evidence-card";
 import { agentItemText, dedupeEvidence, humanizeAgentText } from "@/lib/evidence";
 import { RUN_STATUS_TONE } from "@/lib/tone";
@@ -70,6 +70,34 @@ export function FindingReview({ pending, busy, onSubmit }: {
   );
 }
 
+/** Đồng hồ + bước hiện tại ngay trên thẻ (không giấu trong "Chi tiết kỹ thuật"):
+ * người dùng phân biệt được "đang chạy" với "treo", và biết phải làm gì khi
+ * cuộc điều tra lâu hơn thường lệ (QA HN-016). */
+function RunningProgress({startedAt, step, collected, onRetry}: {
+  startedAt?: string | null; step: string; collected: number; onRetry?: () => void;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const slow = isSlowInvestigation(startedAt, now);
+  return <div className="flex flex-col gap-2 text-sm" role="status">
+    <p>{step}…{startedAt ? <span className="ml-2 font-mono text-xs text-muted-foreground">đã chạy {formatElapsed(startedAt, now)}</span> : null}</p>
+    <p className="text-xs text-muted-foreground">
+      {collected > 0 ? `Đã thu thập ${collected} kết quả. ` : "AI đang lập kế hoạch — bước đầu thường mất 20–60 giây. "}
+      Thông thường mất 1–3 phút. Khi đủ bằng chứng, bản nháp sẽ xuất hiện tại đây để bạn duyệt. Bạn có thể rời trang rồi quay lại.
+    </p>
+    {slow ? <Alert>
+      <AlertTitle>Lâu hơn thường lệ</AlertTitle>
+      <AlertDescription className="flex flex-col gap-3">
+        <span>Cuộc điều tra vẫn đang chạy và chưa báo lỗi. Bạn có thể đợi thêm, hoặc hỏi lại câu này — phiên cũ vẫn được giữ trong lịch sử.</span>
+        {onRetry ? <div><Button size="sm" variant="outline" onClick={onRetry}>Hỏi lại câu này</Button></div> : null}
+      </AlertDescription>
+    </Alert> : null}
+  </div>;
+}
+
 export function InvestigationCard({runId, question, onRetry}: {
   runId: string; question?: string | null; onRetry?: () => void;
 }) {
@@ -101,10 +129,12 @@ export function InvestigationCard({runId, question, onRetry}: {
     </CardHeader>
     <CardContent className="flex flex-col gap-4">
       {run.isError ? <Alert variant="destructive"><AlertTitle>Chưa đọc được trạng thái</AlertTitle><AlertDescription>Phiên vẫn được giữ. Bạn có thể kết nối lại.</AlertDescription><Button size="sm" variant="outline" onClick={() => void run.refetch()}>Kết nối lại</Button></Alert> : null}
-      {running ? <div className="flex flex-col gap-2 text-sm">
-        <p>{data.progress?.last_tool ? TOOL_LABELS[data.progress.last_tool] ?? "Đối chiếu dữ liệu" : "Đang xác định dữ liệu cần kiểm tra"}…</p>
-        <p className="text-xs text-muted-foreground">Khi đủ bằng chứng, bản nháp sẽ xuất hiện tại đây để bạn duyệt. Bạn có thể rời trang rồi quay lại.</p>
-      </div> : null}
+      {running ? <RunningProgress
+        startedAt={data.started_at}
+        step={data.progress?.last_tool ? TOOL_LABELS[data.progress.last_tool] ?? "Đối chiếu dữ liệu" : "Đang xác định dữ liệu cần kiểm tra"}
+        collected={data.progress?.evidence_count ?? 0}
+        onRetry={onRetry}
+      /> : null}
       {draft || report ? <>
         <h3 className="font-heading text-lg leading-snug">{draft?.title ?? report?.title}</h3>
         <p className="whitespace-pre-wrap text-sm leading-relaxed">{humanizeAgentText(draft?.finding ?? report?.finding ?? "")}</p>

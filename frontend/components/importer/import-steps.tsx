@@ -669,6 +669,20 @@ export function StepMapping({
         </AlertDescription>
       </Alert>
 
+      {/* Server từ chối mapping (4xx/5xx): giữ lỗi NGAY TRÊN MÀN cho tới khi
+          người dùng sửa và gửi lại — toast tự tắt từng khiến người dùng tưởng
+          đã nhập xong (QA HN-003). */}
+      {decide.isError ? (
+        <Alert variant="destructive" role="alert">
+          <AlertTitle>{t.importFailed}</AlertTitle>
+          <AlertDescription>
+            {decide.error instanceof ApiError
+              ? `${decide.error.message} (HTTP ${decide.error.status})`
+              : decide.error.message}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <div className="flex items-center justify-between">
         {onBack ? (
           <Button variant="ghost" onClick={onBack}>

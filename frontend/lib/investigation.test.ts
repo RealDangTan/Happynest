@@ -1,5 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { readableEvidence, restoreSession } from "./investigation";
+import {
+  SLOW_INVESTIGATION_MS,
+  formatElapsed,
+  isSlowInvestigation,
+  readableEvidence,
+  restoreSession,
+} from "./investigation";
+
+describe("investigation progress clock (HN-016)", () => {
+  const start = "2026-11-11T14:43:00Z";
+  const at = (ms: number) => new Date(start).getTime() + ms;
+
+  it("formats elapsed time as m:ss and never goes negative", () => {
+    expect(formatElapsed(start, at(23_000))).toBe("0:23");
+    expect(formatElapsed(start, at(233_000))).toBe("3:53");
+    expect(formatElapsed(start, at(-5_000))).toBe("0:00");
+  });
+
+  it("marks a run slow only past the threshold", () => {
+    expect(isSlowInvestigation(start, at(SLOW_INVESTIGATION_MS - 1))).toBe(false);
+    expect(isSlowInvestigation(start, at(SLOW_INVESTIGATION_MS))).toBe(true);
+    expect(isSlowInvestigation(null, at(SLOW_INVESTIGATION_MS))).toBe(false);
+  });
+});
 
 describe("investigation evidence", () => {
   it("turns aggregate payload into readable counts without internal keys", () => {

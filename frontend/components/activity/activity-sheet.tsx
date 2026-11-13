@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   Maximize2,
   Play,
+  Search,
   TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -119,8 +120,33 @@ function RunActivityRow({ run }: { run: RunProgress }) {
   );
 }
 
+/** Cuộc điều tra AI đang mở — dẫn thẳng về thẻ điều tra ở Data Graph. */
+function InvestigationActivityRow({ id, awaitingReview }: { id: string; awaitingReview: boolean }) {
+  const { closeActivity } = useActivity();
+  return (
+    <Link
+      href={`/data-graph?run=${id}`}
+      onClick={closeActivity}
+      className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent"
+    >
+      <Search className="size-4 text-muted-foreground" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">Điều tra bằng AI</span>
+        <span className="text-xs text-muted-foreground">
+          {awaitingReview ? "Kết luận nháp đang chờ bạn duyệt" : "AI đang thu thập bằng chứng"}
+        </span>
+      </span>
+      <Badge variant={awaitingReview ? "warning" : "info"}>
+        {awaitingReview ? "Chờ duyệt" : "Đang điều tra"}
+      </Badge>
+    </Link>
+  );
+}
+
 function ActivityQueue() {
-  const { imports, runs } = useActivity();
+  const { imports, runs, investigation } = useActivity();
+  const investigating = investigation?.status === "running" || investigation?.status === "decision_processing";
+  const awaitingReview = investigation?.status === "pending_approval";
   const scopedRuns = runs.filter(
     (run) => run.import_id && (run.mode === "selected" || run.mode === "batch"),
   );
@@ -137,19 +163,22 @@ function ActivityQueue() {
   );
 
   return (
-    <Tabs defaultValue={attention.length ? "attention" : runningImports.length + runningRuns.length ? "running" : "recent"} className="mt-4">
+    <Tabs defaultValue={attention.length || awaitingReview ? "attention" : runningImports.length + runningRuns.length || investigating ? "running" : "recent"} className="mt-4">
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="attention">Cần xử lý ({attention.length})</TabsTrigger>
-        <TabsTrigger value="running">Đang chạy ({runningImports.length + runningRuns.length})</TabsTrigger>
+        <TabsTrigger value="attention">Cần xử lý ({attention.length + (awaitingReview ? 1 : 0)})</TabsTrigger>
+        <TabsTrigger value="running">Đang chạy ({runningImports.length + runningRuns.length + (investigating ? 1 : 0)})</TabsTrigger>
         <TabsTrigger value="recent">Gần đây</TabsTrigger>
       </TabsList>
       <TabsContent value="attention" className="space-y-2">
-        {attention.length ? attention.map((item) => <ImportActivityRow key={item.id} item={item} />) : empty("Upload CSV từ trang Phản hồi để bắt đầu.")}
+        {awaitingReview && investigation ? <InvestigationActivityRow id={investigation.id} awaitingReview /> : null}
+        {attention.map((item) => <ImportActivityRow key={item.id} item={item} />)}
+        {!attention.length && !awaitingReview ? empty("Upload CSV từ trang Phản hồi để bắt đầu.") : null}
       </TabsContent>
       <TabsContent value="running" className="space-y-2">
+        {investigating && investigation ? <InvestigationActivityRow id={investigation.id} awaitingReview={false} /> : null}
         {runningImports.map((item) => <ImportActivityRow key={item.id} item={item} />)}
         {runningRuns.map((run) => <RunActivityRow key={run.id} run={run} />)}
-        {!runningImports.length && !runningRuns.length ? empty("Không có job nào đang dùng provider.") : null}
+        {!runningImports.length && !runningRuns.length && !investigating ? empty("Không có job nào đang dùng provider.") : null}
       </TabsContent>
       <TabsContent value="recent" className="space-y-2">
         {recentImports.slice(0, 10).map((item) => <ImportActivityRow key={item.id} item={item} />)}

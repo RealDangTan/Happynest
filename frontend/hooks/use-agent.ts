@@ -28,10 +28,15 @@ export function useAgentRun(runId: string | null) {
     enabled: runId != null,
     queryFn: () =>
       apiFetch<AgentRunStatusResponse>(`/api/agent/runs/${runId}`),
-    refetchInterval: (query) =>
-      ["running", "pending_approval", "decision_processing"].includes(query.state.data?.status ?? "")
-        ? (query.state.data?.status === "decision_processing" ? 1500 : 3000)
-        : false,
+    // pending_approval chỉ đổi khi CHÍNH người dùng quyết định (mutation tự
+    // cập nhật cache) — poll thưa để bộ đếm task toàn app không tạo tải nền.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status ?? "";
+      if (status === "decision_processing") return 1500;
+      if (status === "running") return 3000;
+      if (status === "pending_approval") return 15_000;
+      return false;
+    },
     staleTime: 0,
   });
 }

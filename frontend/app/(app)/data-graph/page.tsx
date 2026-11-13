@@ -28,6 +28,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -330,6 +337,43 @@ function Trends({ points }: { points: { date: string; count: number }[] }) {
   )
 }
 
+/** Vì sao biểu đồ chủ đề trống: chưa phân loại gì, hay đã phân loại nhưng mọi
+ * mục đều UNCATEGORIZED (chưa có bộ chủ đề lúc chạy). Hai tình huống cần hai
+ * việc khác nhau — trước đây cùng hiện một dòng "chưa có chủ đề" (HN-007). */
+function TopicsEmpty({ analyzed }: { analyzed: number }) {
+  const t = useT().graph
+  if (analyzed === 0)
+    return (
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>{t.emptyNoneTitle}</EmptyTitle>
+          <EmptyDescription>{t.emptyNoneBody}</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/vault?analyze=1">{t.emptyNoneCta}</Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
+    )
+  return (
+    <Empty>
+      <EmptyHeader>
+        <EmptyTitle>{t.emptyUncatTitle(analyzed)}</EmptyTitle>
+        <EmptyDescription>{t.emptyUncatBody}</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent className="flex-row flex-wrap justify-center">
+        <Button size="sm" asChild>
+          <Link href="/taxonomy">{t.emptyUncatCta}</Link>
+        </Button>
+        <Button size="sm" variant="outline" asChild>
+          <Link href="/vault?reclassify=1">{t.emptyUncatReclassify}</Link>
+        </Button>
+      </EmptyContent>
+    </Empty>
+  )
+}
+
 function DataGraph({
   initialImportId,
   initialTopic,
@@ -420,6 +464,12 @@ function DataGraph({
   // Chưa có gì được phân loại thì AI không có bằng chứng để tìm — chặn sớm và
   // chỉ đường về bước 2 thay vì để cuộc điều tra chạy rồi trả kết luận rỗng.
   const noAnalyzed = !feedbacks.isPending && items.length === 0
+  // Số liệu ở header chỉ đúng khi cả danh sách file lẫn phản hồi đã về; trước
+  // đó `items` rỗng sẽ bị đọc nhầm thành "0 đã phân loại" (QA HN-006).
+  const scopeLoading =
+    productId == null ||
+    importsQuery.isPending ||
+    (effectiveScope.length > 0 && feedbacks.isPending)
 
   return (
     <div className="flex flex-col gap-6">
@@ -431,15 +481,17 @@ function DataGraph({
       <PageHeader
         title={t.nav.items.dataGraph}
         description={
-          effectiveScope.length > 0
-            ? scopeLine(
-                effectiveScope.length,
-                dates[0] ?? "—",
-                dates.at(-1) ?? "—",
-                items.length,
-                pendingExcluded
-              )
-            : "Apply a dataset scope to explore."
+          scopeLoading
+            ? t.graph.scopeLoading
+            : effectiveScope.length > 0
+              ? scopeLine(
+                  effectiveScope.length,
+                  dates[0] ?? "—",
+                  dates.at(-1) ?? "—",
+                  items.length,
+                  pendingExcluded
+                )
+              : t.graph.scopeEmpty
         }
       />
 
@@ -553,10 +605,7 @@ function DataGraph({
                       </p>
                     </>
                   ) : (
-                    <p className="p-8 text-center text-sm text-muted-foreground">
-                      No analyzed feedback in this scope yet — analyze pending
-                      items in the Vault.
-                    </p>
+                    <TopicsEmpty analyzed={items.length} />
                   )}
                 </CardContent>
               </Card>
@@ -571,6 +620,13 @@ function DataGraph({
             <TabsContent value="topics">
               <Card>
                 <CardContent className="p-0">
+                  {feedbacks.isPending ? (
+                    <div className="p-8 text-center">
+                      <Spinner />
+                    </div>
+                  ) : words.length === 0 ? (
+                    <TopicsEmpty analyzed={items.length} />
+                  ) : (
                   <ul className="flex flex-col gap-3 p-6">
                       {words.map(({ topic, count }) => (
                         <li key={topic} className="flex items-center gap-3">
@@ -593,12 +649,8 @@ function DataGraph({
                         </span>
                       </li>
                     ))}
-                    {words.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Chưa có chủ đề.
-                      </p>
-                    ) : null}
                   </ul>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -614,10 +666,7 @@ function DataGraph({
               ) : (
                 <Card>
                   <CardContent className="p-0">
-                    <p className="p-8 text-center text-sm text-muted-foreground">
-                      No analyzed feedback in this scope yet — analyze pending
-                      items in the Vault.
-                    </p>
+                    <TopicsEmpty analyzed={0} />
                   </CardContent>
                 </Card>
               )}

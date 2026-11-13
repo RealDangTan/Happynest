@@ -14,6 +14,20 @@ export function readableEvidence(statement: string): string {
   return evidenceText(statement);
 }
 
+/** Thời gian đã chạy dạng m:ss. */
+export function formatElapsed(fromIso: string, now: number): string {
+  const seconds = Math.max(0, Math.floor((now - new Date(fromIso).getTime()) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+/** Sau ngưỡng này cuộc điều tra được coi là lâu hơn thường lệ. */
+export const SLOW_INVESTIGATION_MS = 3 * 60_000;
+
+export function isSlowInvestigation(fromIso: string | null | undefined, now: number): boolean {
+  if (!fromIso) return false;
+  return now - new Date(fromIso).getTime() >= SLOW_INVESTIGATION_MS;
+}
+
 export function restoreSession<T>(raw: string | null, productId: string | null, fallback: T): T {
   if (!raw || !productId) return fallback;
   try {

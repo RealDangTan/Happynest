@@ -3,14 +3,9 @@ import { useEffect, useState } from "react";
 import { CircleCheck, CircleX, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAgentTrace } from "@/hooks/use-agent";
+import { formatElapsed } from "@/lib/investigation";
 import { cn } from "@/lib/utils";
 
-function formatElapsed(fromIso: string, now: number) {
-  const seconds = Math.max(0, Math.floor((now - new Date(fromIso).getTime()) / 1000));
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 /**
  * Live metadata trace for an agent run (HAX G4 "show contextually relevant
@@ -44,22 +39,24 @@ export function AiTrace({
     <div className={cn("rounded-lg border bg-muted/30 p-2", className)}>
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-          Trace — what the agent is doing
+          Nhật ký — AI đang làm gì
         </span>
         {active && startedAt ? (
           <span className="font-mono text-[10px] text-muted-foreground">
-            elapsed {formatElapsed(startedAt, now)}
+            đã chạy {formatElapsed(startedAt, now)}
           </span>
         ) : null}
       </div>
 
       {trace.isError ? (
         <p className="mt-1.5 text-[11px] text-destructive">
-          Lost the connection while reading the trace — retrying automatically.
+          Mất kết nối khi đọc nhật ký — đang tự thử lại.
         </p>
       ) : items.length === 0 ? (
         <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Loader2 className="size-3 animate-spin" /> Waiting for the first step…
+          <Loader2 className="size-3 animate-spin" /> {active
+            ? "AI đang lập kế hoạch điều tra — bước đầu thường mất 20–60 giây…"
+            : "Chưa có bước nào được ghi lại."}
         </p>
       ) : (
         <ul className="mt-1.5 flex max-h-64 flex-col gap-1 overflow-y-auto">
@@ -92,7 +89,7 @@ export function AiTrace({
 
       {active ? (
         <p className="mt-1.5 text-[10px] text-muted-foreground">
-          You can leave this screen — the run keeps going.
+          Bạn có thể rời màn này — cuộc điều tra vẫn tiếp tục.
         </p>
       ) : null}
       {!active && items.length > 0 ? (

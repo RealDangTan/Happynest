@@ -327,6 +327,14 @@ export type ActivitySummary = {
   primaryActivity: ActivityRef | null;
 };
 
+/** Cuộc điều tra AI đang mở trong tab này — trạng thái HIỆU LỰC từ
+ * `/api/agent/runs/{id}` (row run vẫn là `running` cả khi đang chờ duyệt, nên
+ * không suy ra được từ danh sách analysis runs). */
+export type ActivityInvestigation = {
+  id: string;
+  status: AgentRunStatus | (string & {});
+};
+
 // ------------------------------------------------------------------ agent (UNDERSTAND graph)
 
 export type AgentRunStatus =
