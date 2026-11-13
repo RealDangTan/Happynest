@@ -46,6 +46,12 @@ import { useInsights } from "@/hooks/use-insights"
 import { useActions } from "@/hooks/use-actions"
 import { ActionDecisionSupport } from "@/components/actions/action-decision-support"
 import { DEPARTMENTS, departmentLabel, toDepartment } from "@/lib/departments"
+import {
+  countByStatus,
+  filterStakeholderActions,
+  type StakeholderStatusFilter,
+} from "@/lib/stakeholders"
+import { cn } from "@/lib/utils"
 import { effectiveScores } from "@/lib/matrix"
 import type { ActionItem } from "@/lib/types"
 
@@ -171,7 +177,8 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
   const t = useT()
   const insights = useInsights()
   const [reportId, setReportId] = useState<string | null>(initialReportId)
-  const [statusFilter, setStatusFilter] = useState("accepted")
+  const [statusFilter, setStatusFilter] =
+    useState<StakeholderStatusFilter>("accepted")
   const [department, setDepartment] = useState("all")
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -186,23 +193,16 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
   const actions = useActions(effectiveReportId)
   const allItems = useMemo(() => actions.data?.items ?? [], [actions.data])
 
-  const filtered = useMemo(() => {
-    return allItems.filter((a) => {
-      if (department !== "all" && toDepartment(a.function) !== department)
-        return false
-      // A selected proposed action stays visible even under the Accepted filter.
-      const statusVisible =
-        a.status === statusFilter ||
-        (statusFilter === "accepted" &&
-          a.status === "edited" &&
-          a.id === selectedId) ||
-        (statusFilter === "accepted" &&
-          a.status === "proposed" &&
-          a.id === selectedId)
-      if (!statusVisible) return false
-      return true
-    })
-  }, [allItems, department, statusFilter, selectedId])
+  const filtered = useMemo(
+    () =>
+      filterStakeholderActions(allItems, {
+        department,
+        status: statusFilter,
+        selectedId,
+      }),
+    [allItems, department, statusFilter, selectedId]
+  )
+  const statusCounts = useMemo(() => countByStatus(allItems), [allItems])
 
   const selected = allItems.find((a) => a.id === selectedId) ?? null
 
@@ -215,7 +215,23 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
     return counts
   }, [allItems])
 
-  const emptyDepartment = department !== "all" && filtered.length === 0
+  // Empty state phải nói đúng lý do: kết luận chưa có hành động nào, hay có
+  // nhưng đang bị bộ lọc trạng thái/phòng ban ẩn đi (HN-010).
+  const hiddenByStatus =
+    statusFilter === "all"
+      ? 0
+      : filterStakeholderActions(allItems, {
+          department,
+          status: "all",
+          selectedId,
+        }).length
+  const statusName: Record<StakeholderStatusFilter, string> = {
+    all: "tất cả",
+    accepted: "đã nhận",
+    proposed: "đề xuất",
+    edited: "đã chỉnh",
+    rejected: "đã từ chối",
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -239,16 +255,31 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
               ))}
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-56">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) =>
+              setStatusFilter(value as StakeholderStatusFilter)
+            }
+          >
+            <SelectTrigger className="w-60" aria-label="Lọc theo trạng thái">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="accepted">Trạng thái: đã nhận</SelectItem>
-              <SelectItem value="proposed">Trạng thái: đề xuất</SelectItem>
-              <SelectItem value="edited">Trạng thái: đã chỉnh</SelectItem>
-              <SelectItem value="rejected">Trạng thái: đã từ chối</SelectItem>
-              <SelectItem value="all">Trạng thái: tất cả</SelectItem>
+              <SelectItem value="all">
+                Trạng thái: tất cả ({allItems.length})
+              </SelectItem>
+              <SelectItem value="accepted">
+                Trạng thái: đã nhận ({statusCounts.accepted ?? 0})
+              </SelectItem>
+              <SelectItem value="proposed">
+                Trạng thái: đề xuất ({statusCounts.proposed ?? 0})
+              </SelectItem>
+              <SelectItem value="edited">
+                Trạng thái: đã chỉnh ({statusCounts.edited ?? 0})
+              </SelectItem>
+              <SelectItem value="rejected">
+                Trạng thái: đã từ chối ({statusCounts.rejected ?? 0})
+              </SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -264,11 +295,10 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
             <button
               key={key}
               onClick={() => setDepartment(key)}
-              className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                department === key
-                  ? "bg-accent font-medium"
-                  : "hover:bg-accent/60"
-              }`}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                department === key ? "bg-accent font-medium" : "hover:bg-accent/60"
+              )}
             >
               {department === key ? (
                 <span aria-hidden>›</span>
@@ -316,27 +346,44 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
           <Empty className="border">
             <EmptyHeader>
               <EmptyTitle>
-                {emptyDepartment
-                  ? "No actions for this department"
-                  : "Nothing here"}
+                {allItems.length === 0
+                  ? "Kết luận này chưa có hành động"
+                  : hiddenByStatus > 0
+                    ? `Không có hành động ở trạng thái “${statusName[statusFilter]}”`
+                    : "Phòng ban này chưa có hành động"}
               </EmptyTitle>
               <EmptyDescription>
-                {emptyDepartment
-                  ? "Departments without relevant actions can still review proposed work."
-                  : "Adjust the filters or check another report."}
+                {allItems.length === 0
+                  ? "Hành động chỉ xuất hiện sau khi bạn tạo gợi ý và nhận việc từ kết luận đã duyệt."
+                  : hiddenByStatus > 0
+                    ? `Có ${hiddenByStatus} hành động ở trạng thái khác đang bị bộ lọc ẩn đi.`
+                    : "Chọn “Tất cả” ở cột phòng ban để xem hành động của các nhóm khác."}
               </EmptyDescription>
             </EmptyHeader>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setStatusFilter("proposed")}
-              >
-                Show proposed actions
-              </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              {allItems.length > 0 && hiddenByStatus > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setStatusFilter("all")}
+                >
+                  Xem tất cả trạng thái ({hiddenByStatus})
+                </Button>
+              ) : null}
+              {allItems.length > 0 && hiddenByStatus === 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDepartment("all")}
+                >
+                  Xem mọi phòng ban
+                </Button>
+              ) : null}
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/matrix?report=${effectiveReportId ?? ""}`}>
-                  Open Priority Matrix
+                  {allItems.length === 0
+                    ? "Tạo hành động ở Ma trận ưu tiên"
+                    : "Mở Ma trận ưu tiên"}
                 </Link>
               </Button>
             </div>
