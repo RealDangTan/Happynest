@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 2.10 Bằng chứng, nhận định, giả thuyết</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 540px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Bảng điều tra ba tầng: phản hồi nguồn ở dưới, bằng chứng từ công cụ ở giữa, nhận định ở trên; giả thuyết tách riêng bằng nét đứt vì còn cần kiểm chứng; sợi dây đỏ là đường truy vết từ nhận định về phản hồi gốc" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#93321f"></path>
+    </marker>
+  </defs>
+
+  <!-- nhãn tầng -->
+  <text x="24" y="152" font-size="20" font-weight="700">Nhận định</text>
+  <text x="24" y="308" font-size="20" font-weight="700">Bằng chứng</text>
+  <text x="24" y="332" font-size="18" fill="#3d4038">từ công cụ</text>
+  <text x="24" y="452" font-size="20" font-weight="700">Phản hồi</text>
+  <text x="24" y="476" font-size="20" font-weight="700">nguồn</text>
+  <path d="M176 128 L176 470" stroke="#93321f" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#ah)"></path>
+  <text x="24" y="384" font-size="18" font-weight="700" fill="#93321f">truy vết về</text>
+  <text x="24" y="406" font-size="18" font-weight="700" fill="#93321f">phản hồi gốc</text>
+
+  <!-- dây truy vết -->
+  <g fill="none" stroke="#93321f" stroke-width="2.6" stroke-dasharray="6 5">
+    <path d="M300 190 L314 260"></path>
+    <path d="M400 190 C460 210 560 220 596 260"></path>
+    <path d="M300 344 L240 412"></path>
+    <path d="M330 344 L340 412"></path>
+    <path d="M580 344 L440 412"></path>
+    <path d="M596 344 L540 412"></path>
+    <path d="M612 344 L640 412"></path>
+  </g>
+  <g fill="#FFFFFF" stroke="#93321f" stroke-width="2.5">
+    <circle cx="300" cy="190" r="5"></circle><circle cx="400" cy="190" r="5"></circle>
+    <circle cx="314" cy="262" r="5"></circle><circle cx="596" cy="262" r="5"></circle>
+    <circle cx="300" cy="344" r="5"></circle><circle cx="330" cy="344" r="5"></circle>
+    <circle cx="580" cy="344" r="5"></circle><circle cx="596" cy="344" r="5"></circle><circle cx="612" cy="344" r="5"></circle>
+  </g>
+
+  <!-- nhận định -->
+  <rect x="200" y="104" width="290" height="86" rx="12" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3.5"></rect>
+  <circle cx="234" cy="142" r="15" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  <rect x="228" y="156" width="12" height="9" rx="2" fill="#2E2E2B"></rect>
+  <text x="264" y="140" font-size="19" font-weight="700">Số phản hồi về</text>
+  <text x="264" y="164" font-size="19" font-weight="700">đăng nhập tăng</text>
+  <circle cx="488" cy="106" r="15" fill="#2e5e24" stroke="#FFFFFF" stroke-width="3"></circle>
+  <path d="M481 106 L486 111 L496 100" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+  <text x="345" y="88" text-anchor="middle" font-size="18" fill="#3d4038">đã quan sát, kiểm lại được</text>
+
+  <!-- giả thuyết -->
+  <path d="M490 147 L520 147" stroke="#2E2E2B" stroke-width="2" stroke-dasharray="3 4"></path>
+  <rect x="522" y="104" width="216" height="86" rx="43" fill="#FBF6EA" stroke="#2E2E2B" stroke-width="2.5" stroke-dasharray="8 6"></rect>
+  <text x="630" y="140" text-anchor="middle" font-size="19" font-weight="700">Giả thuyết</text>
+  <text x="630" y="164" text-anchor="middle" font-size="18" font-style="italic">do bản cập nhật mới?</text>
+  <text x="630" y="88" text-anchor="middle" font-size="18" fill="#3d4038">còn cần kiểm chứng</text>
+
+  <!-- bằng chứng -->
+  <rect x="200" y="262" width="236" height="82" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M216 324 L262 324 M216 324 L216 278" stroke="#2E2E2B" stroke-width="2.5" fill="none"></path>
+  <rect x="222" y="306" width="9" height="16" fill="#A7A996"></rect>
+  <rect x="235" y="298" width="9" height="24" fill="#A7A996"></rect>
+  <rect x="248" y="284" width="9" height="38" fill="#93321f"></rect>
+  <text x="276" y="296" font-size="19" font-weight="700">Phép đếm</text>
+  <text x="276" y="320" font-size="18" fill="#3d4038">theo tuần</text>
+
+  <rect x="470" y="262" width="252" height="82" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <g fill="#2E2E2B"><circle cx="490" cy="284" r="3.5"></circle><circle cx="490" cy="302" r="3.5"></circle><circle cx="490" cy="320" r="3.5"></circle></g>
+  <path d="M500 284 L528 284 M500 302 L524 302 M500 320 L530 320" stroke="#8f9286" stroke-width="3.5" stroke-linecap="round"></path>
+  <text x="544" y="296" font-size="19" font-weight="700">Phản hồi</text>
+  <text x="544" y="320" font-size="18" fill="#3d4038">tương tự</text>
+
+  <!-- phản hồi nguồn -->
+  <g transform="rotate(-4 240 446)"><rect x="200" y="412" width="80" height="66" rx="4" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.2"></rect><text x="214" y="440" font-size="18" font-weight="700">#12</text><path d="M214 456 L264 456 M214 466 L250 466" stroke="#8f9286" stroke-width="3" stroke-linecap="round"></path></g>
+  <g transform="rotate(3 340 446)"><rect x="300" y="412" width="80" height="66" rx="4" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.2"></rect><text x="314" y="440" font-size="18" font-weight="700">#31</text><path d="M314 456 L364 456 M314 466 L350 466" stroke="#8f9286" stroke-width="3" stroke-linecap="round"></path></g>
+  <g transform="rotate(-2 440 446)"><rect x="400" y="412" width="80" height="66" rx="4" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.2"></rect><text x="414" y="440" font-size="18" font-weight="700">#47</text><path d="M414 456 L464 456 M414 466 L450 466" stroke="#8f9286" stroke-width="3" stroke-linecap="round"></path></g>
+  <g transform="rotate(4 540 446)"><rect x="500" y="412" width="80" height="66" rx="4" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.2"></rect><text x="514" y="440" font-size="18" font-weight="700">#58</text><path d="M514 456 L564 456 M514 466 L550 466" stroke="#8f9286" stroke-width="3" stroke-linecap="round"></path></g>
+  <g transform="rotate(-3 640 446)"><rect x="600" y="412" width="80" height="66" rx="4" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.2"></rect><text x="614" y="440" font-size="18" font-weight="700">#90</text><path d="M614 456 L664 456 M614 466 L650 466" stroke="#8f9286" stroke-width="3" stroke-linecap="round"></path></g>
+  <g fill="#d4644f" stroke="#2E2E2B" stroke-width="2"><circle cx="240" cy="412" r="7"></circle><circle cx="340" cy="412" r="7"></circle><circle cx="440" cy="412" r="7"></circle><circle cx="540" cy="412" r="7"></circle><circle cx="640" cy="412" r="7"></circle></g>
+
+  <!-- câu hỏi kiểm tra -->
+  <path d="M752 40 L752 500" stroke="#B9B6AA" stroke-width="2" stroke-dasharray="6 6"></path>
+  <text x="772" y="64" font-size="19" font-weight="700">Người duyệt hỏi</text>
+  <g fill="none" stroke="#2E2E2B" stroke-linecap="round">
+    <circle cx="780" cy="128" r="10" stroke-width="2.5"></circle><path d="M787 135 L795 143" stroke-width="3.5"></path>
+    <circle cx="780" cy="256" r="10" stroke-width="2.5"></circle><path d="M787 263 L795 271" stroke-width="3.5"></path>
+  </g>
+  <text x="800" y="128" font-size="18">Nguồn có thật,</text>
+  <text x="800" y="152" font-size="18">đúng phạm vi?</text>
+  <text x="800" y="256" font-size="18">Nguồn có ủng</text>
+  <text x="800" y="280" font-size="18">hộ kết luận?</text>
+  <path d="M780 376 L792 398 L768 398 Z" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.2" stroke-linejoin="round"></path>
+  <path d="M780 384 L780 391" stroke="#2E2E2B" stroke-width="2.2" stroke-linecap="round"></path>
+  <text x="804" y="390" font-size="18">Đã ghi rõ</text>
+  <text x="804" y="414" font-size="18">giới hạn chưa?</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":540}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 2.6 Bản đồ ý nghĩa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 540px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Mỗi câu được mô hình biểu diễn đổi thành dãy số và cắm lên bản đồ ý nghĩa; ba câu về lỗi đăng nhập nằm gần nhau dù dùng từ khác nhau, các câu về giao hàng và thanh toán nằm xa; góc giữa hai véc-tơ càng nhỏ thì hai câu càng gần nghĩa" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <symbol id="bird" viewBox="0 0 120 104">
+      <path d="M14 64 C12 34 38 14 64 14 C92 14 110 36 108 62 C106 88 86 98 62 98 C36 98 16 88 14 64 Z" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3.5"></path>
+      <path d="M22 58 C34 48 56 52 62 70 C54 84 34 84 24 74 Z" fill="#C9C4B7" stroke="#2E2E2B" stroke-width="3"></path>
+      <path d="M58 16 C55 6 63 3 65 9 C67 3 74 5 71 14" fill="none" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+      <circle cx="82" cy="46" r="5" fill="#1A1A1A"></circle>
+      <circle cx="83.6" cy="44.4" r="1.6" fill="#FFFFFF"></circle>
+      <ellipse cx="90" cy="60" rx="5" ry="3.5" fill="#EFB9A6"></ellipse>
+      <path d="M102 50 L116 56 L102 62 Z" fill="#E09A3A" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+      <path d="M52 98 L50 103 M70 98 L72 103" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="pin" viewBox="-14 -42 28 44" overflow="visible">
+      <path d="M0 0 C-9 -13 -13 -20 -13 -27 A13 13 0 1 1 13 -27 C13 -20 9 -13 0 0 Z" fill="inherit" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+      <circle cx="0" cy="-27" r="5" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></circle>
+    </symbol>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#2E2E2B"></path>
+    </marker>
+  </defs>
+
+  <!-- ===== bên trái: câu thành dãy số ===== -->
+  <rect x="20" y="40" width="252" height="58" rx="14" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="146" y="75" text-anchor="middle" font-size="18" font-style="italic">“không vào được tài khoản”</text>
+  <path d="M146 102 L146 124" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <use href="#bird" x="92" y="128" width="100" height="87"></use>
+  <text x="200" y="166" font-size="18" fill="#3d4038">mô hình</text>
+  <text x="200" y="188" font-size="18" fill="#3d4038">biểu diễn</text>
+  <path d="M146 218 L146 240" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <rect x="20" y="244" width="252" height="44" rx="8" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M83 244 L83 288 M146 244 L146 288 M209 244 L209 288" stroke="#2E2E2B" stroke-width="1.8"></path>
+  <text x="51" y="272" text-anchor="middle" font-size="18" font-weight="600">0,12</text>
+  <text x="114" y="272" text-anchor="middle" font-size="18" font-weight="600">−0,40</text>
+  <text x="177" y="272" text-anchor="middle" font-size="18" font-weight="600">0,77</text>
+  <text x="240" y="272" text-anchor="middle" font-size="18" font-weight="600">…</text>
+  <text x="146" y="314" text-anchor="middle" font-size="18" fill="#3d4038">dãy số = véc-tơ</text>
+
+  <rect x="20" y="350" width="256" height="160" rx="12" fill="#FFFFFF" stroke="#8f9286" stroke-width="2"></rect>
+  <circle cx="42" cy="380" r="9" fill="none" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  <path d="M48 386 L56 394" stroke="#2E2E2B" stroke-width="3.5" stroke-linecap="round"></path>
+  <text x="66" y="388" font-size="18" font-weight="700">Từ khóa “đăng nhập”</text>
+  <text x="66" y="414" font-size="18" fill="#3d4038">thấy 1 trong 3 câu</text>
+  <use href="#pin" x="31" y="434" width="22" height="34" style="fill: #4f86a8"></use>
+  <text x="66" y="460" font-size="18" font-weight="700">Theo ý nghĩa</text>
+  <text x="66" y="486" font-size="18" fill="#3d4038">thấy cả 3 câu</text>
+
+  <!-- ===== bản đồ ===== -->
+  <rect x="296" y="24" width="648" height="500" rx="18" fill="#FBFAF6" stroke="#8f9286" stroke-width="2"></rect>
+  <path d="M336 24 V524 M376 24 V524 M416 24 V524 M456 24 V524 M496 24 V524 M536 24 V524 M576 24 V524 M616 24 V524 M656 24 V524 M696 24 V524 M736 24 V524 M776 24 V524 M816 24 V524 M856 24 V524 M896 24 V524 M296 64 H944 M296 104 H944 M296 144 H944 M296 184 H944 M296 224 H944 M296 264 H944 M296 304 H944 M296 344 H944 M296 384 H944 M296 424 H944 M296 464 H944 M296 504 H944" stroke="#ECE8DC" stroke-width="1"></path>
+  <text x="316" y="56" font-size="19" font-weight="700">Bản đồ ý nghĩa</text>
+
+  <ellipse cx="500" cy="210" rx="118" ry="78" fill="#EAF2F7" stroke="#2a5670" stroke-width="2.5" stroke-dasharray="7 5"></ellipse>
+  <!-- véc-tơ từ gốc -->
+  <circle cx="330" cy="490" r="6" fill="#2E2E2B"></circle>
+  <path d="M330 490 L476 178" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+  <path d="M330 490 L534 236" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+  <path d="M330 490 L792 392" stroke="#6b6e64" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#ah)"></path>
+  <path d="M359.7 426.6 A70 70 0 0 1 374 435.5" fill="none" stroke="#2a5670" stroke-width="3.5"></path>
+  <path d="M376.6 390.4 A110 110 0 0 1 437.6 467.1" fill="none" stroke="#93321f" stroke-width="3" stroke-dasharray="5 4"></path>
+  <text x="352" y="414" text-anchor="end" font-size="18" font-weight="700" fill="#2a5670">nhỏ</text>
+  <text x="446" y="424" font-size="18" font-weight="700" fill="#93321f">lớn</text>
+
+  <!-- nhóm gần nghĩa -->
+  <use href="#pin" x="465" y="132" width="30" height="47" style="fill: #DCC892"></use>
+  <text x="498" y="150" font-size="18" font-weight="700">không vào được tài khoản</text>
+  <use href="#pin" x="526" y="190" width="28" height="44" style="fill: #4f86a8"></use>
+  <text x="556" y="212" font-size="18">đăng nhập thất bại</text>
+  <use href="#pin" x="426" y="220" width="28" height="44" style="fill: #4f86a8"></use>
+  <text x="422" y="222" text-anchor="end" font-size="18" font-style="italic">login fail</text>
+  <text x="422" y="244" text-anchor="end" font-size="18" font-style="italic">sau update</text>
+
+  <!-- câu xa nghĩa -->
+  <use href="#pin" x="786" y="80" width="28" height="44" style="fill: #C9C4B7"></use>
+  <text x="800" y="144" text-anchor="middle" font-size="18" fill="#3d4038">bị trừ tiền 2 lần</text>
+  <use href="#pin" x="856" y="256" width="28" height="44" style="fill: #C9C4B7"></use>
+  <text x="870" y="320" text-anchor="middle" font-size="18" fill="#3d4038">shipper trễ hẹn</text>
+  <use href="#pin" x="786" y="350" width="28" height="44" style="fill: #C9C4B7"></use>
+  <text x="780" y="380" text-anchor="end" font-size="18" fill="#3d4038">giao hàng chậm</text>
+
+  <path d="M274 260 C290 150 380 118 458 156" fill="none" stroke="#2E2E2B" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#ah)"></path>
+
+  <text x="928" y="476" text-anchor="end" font-size="18" fill="#1a1a1a">Góc càng nhỏ, hai câu càng gần nghĩa</text>
+  <text x="928" y="500" text-anchor="end" font-size="18" fill="#3d4038">Gần nghĩa chưa chắc cùng nguyên nhân</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":540}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

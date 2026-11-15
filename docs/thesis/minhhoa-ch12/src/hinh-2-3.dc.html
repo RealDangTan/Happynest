@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 2.3 Chuẩn hóa và đơn vị phân tích</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 580px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="580" viewBox="0 0 960 580" role="img" aria-label="(a) Hai nguồn có tên cột và định dạng ngày khác nhau đi qua bước chuẩn hóa thành các bản ghi cùng khuôn, mỗi bản ghi gắn thẻ nguồn gốc. (b) Một người dùng gửi ba phản hồi, một phản hồi nhắc hai vấn đề, nên 100 phản hồi không bằng 100 người" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <symbol id="person" viewBox="0 0 80 150">
+      <path d="M12 74 C12 54 24 46 40 46 C56 46 68 54 68 74 L68 108 L12 108 Z" fill="currentColor" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+      <rect x="19" y="106" width="17" height="40" rx="6" fill="#4A4A45" stroke="#2E2E2B" stroke-width="3"></rect>
+      <rect x="44" y="106" width="17" height="40" rx="6" fill="#4A4A45" stroke="#2E2E2B" stroke-width="3"></rect>
+      <circle cx="40" cy="25" r="17" fill="#F3DCC8" stroke="#2E2E2B" stroke-width="3"></circle>
+      <path d="M22 26 C19 1 61 1 58 26 C52 15 29 15 22 26 Z" fill="#6B5A48"></path>
+      <circle cx="34" cy="28" r="2.2" fill="#2E2E2B"></circle>
+      <circle cx="46" cy="28" r="2.2" fill="#2E2E2B"></circle>
+    </symbol>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#2E2E2B"></path>
+    </marker>
+  </defs>
+
+  <!-- ===== (a) ===== -->
+  <text x="20" y="32" font-size="20" font-weight="700">a</text>
+  <text x="44" y="32" font-size="19" font-weight="700">Đưa nhiều nguồn về cùng một khuôn</text>
+
+  <!-- nguồn A: bảng khảo sát -->
+  <rect x="20" y="56" width="236" height="122" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <rect x="21.5" y="57.5" width="233" height="27" rx="9" fill="#F1EEE4"></rect>
+  <path d="M20 85 L256 85" stroke="#2E2E2B" stroke-width="2"></path>
+  <text x="34" y="77" font-size="18" font-weight="700">Khảo sát</text>
+  <path d="M146 85 L146 178 M20 116 L256 116 M20 147 L256 147" stroke="#8f9286" stroke-width="1.5"></path>
+  <text x="32" y="107" font-size="18" font-weight="700" fill="#93321f">nội dung</text>
+  <text x="156" y="107" font-size="18" font-weight="700" fill="#93321f">ngày gửi</text>
+  <path d="M32 132 L128 132 M32 163 L112 163" stroke="#A7A996" stroke-width="7" stroke-linecap="round"></path>
+  <text x="156" y="138" font-size="18">05/11/26</text>
+  <text x="156" y="169" font-size="18">06/11/26</text>
+
+  <!-- nguồn B: phiếu hỗ trợ -->
+  <rect x="20" y="196" width="236" height="104" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <rect x="21.5" y="197.5" width="233" height="27" rx="9" fill="#F1EEE4"></rect>
+  <path d="M20 225 L256 225" stroke="#2E2E2B" stroke-width="2"></path>
+  <text x="34" y="217" font-size="18" font-weight="700">Phiếu hỗ trợ</text>
+  <text x="32" y="252" font-size="18"><tspan font-weight="700" fill="#93321f">bình luận:</tspan> login fail</text>
+  <text x="32" y="283" font-size="18"><tspan font-weight="700" fill="#93321f">created_at:</tspan> 2026-11-05</text>
+
+  <!-- máy chuẩn hóa -->
+  <path d="M260 117 C296 117 300 150 326 158" fill="none" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <path d="M260 248 C296 248 300 206 326 196" fill="none" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <rect x="332" y="120" width="146" height="110" rx="16" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3"></rect>
+  <rect x="328" y="150" width="10" height="50" rx="3" fill="#2E2E2B"></rect>
+  <rect x="472" y="150" width="10" height="50" rx="3" fill="#2E2E2B"></rect>
+  <g transform="translate(386 168)">
+    <circle cx="0" cy="0" r="22" fill="none" stroke="#2E2E2B" stroke-width="9" stroke-dasharray="7.2 6.6"></circle>
+    <circle cx="0" cy="0" r="16" fill="#DCC892" stroke="#2E2E2B" stroke-width="3"></circle>
+    <circle cx="0" cy="0" r="5" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  </g>
+  <g transform="translate(436 194)">
+    <circle cx="0" cy="0" r="14" fill="none" stroke="#2E2E2B" stroke-width="7" stroke-dasharray="5.5 5.5"></circle>
+    <circle cx="0" cy="0" r="10" fill="#C9C4B7" stroke="#2E2E2B" stroke-width="2.5"></circle>
+    <circle cx="0" cy="0" r="3.5" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></circle>
+  </g>
+  <text x="405" y="262" text-anchor="middle" font-size="19" font-weight="700">Chuẩn hóa</text>
+  <text x="405" y="286" text-anchor="middle" font-size="18" fill="#3d4038">theo ánh xạ cột đã duyệt</text>
+
+  <path d="M486 160 C510 140 516 100 534 98" fill="none" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <path d="M486 175 L534 174" fill="none" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <path d="M486 190 C510 210 516 248 534 250" fill="none" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+
+  <!-- bản ghi chuẩn -->
+  <rect x="540" y="66" width="230" height="64" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="554" y="92" font-size="18" font-style="italic">không vào được app</text>
+  <circle cx="562" cy="113" r="7" fill="none" stroke="#2E2E2B" stroke-width="2"></circle>
+  <path d="M562 109 L562 113 L565 115" fill="none" stroke="#2E2E2B" stroke-width="2" stroke-linecap="round"></path>
+  <text x="576" y="119" font-size="18" fill="#3d4038">2026-11-05</text>
+
+  <rect x="540" y="142" width="230" height="64" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="554" y="168" font-size="18" font-style="italic">login fail</text>
+  <circle cx="562" cy="189" r="7" fill="none" stroke="#2E2E2B" stroke-width="2"></circle>
+  <path d="M562 185 L562 189 L565 191" fill="none" stroke="#2E2E2B" stroke-width="2" stroke-linecap="round"></path>
+  <text x="576" y="195" font-size="18" fill="#3d4038">2026-11-05</text>
+
+  <rect x="540" y="218" width="230" height="64" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M554 240 L700 240" stroke="#A7A996" stroke-width="7" stroke-linecap="round"></path>
+  <circle cx="562" cy="265" r="7" fill="none" stroke="#2E2E2B" stroke-width="2"></circle>
+  <path d="M562 261 L562 265 L565 267" fill="none" stroke="#2E2E2B" stroke-width="2" stroke-linecap="round"></path>
+  <text x="576" y="271" font-size="18" fill="#3d4038">2026-11-06</text>
+
+  <!-- thẻ nguồn gốc -->
+  <path d="M770 98 L798 98" stroke="#2E2E2B" stroke-width="2"></path>
+  <path d="M798 84 L918 84 L934 98 L918 112 L798 112 Z" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.2" stroke-linejoin="round"></path>
+  <text x="810" y="104" font-size="18" font-weight="600">A · dòng 12</text>
+  <path d="M770 174 L798 174" stroke="#2E2E2B" stroke-width="2"></path>
+  <path d="M798 160 L918 160 L934 174 L918 188 L798 188 Z" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.2" stroke-linejoin="round"></path>
+  <text x="810" y="180" font-size="18" font-weight="600">B · phiếu 812</text>
+  <path d="M770 250 L798 250" stroke="#2E2E2B" stroke-width="2"></path>
+  <path d="M798 236 L918 236 L934 250 L918 264 L798 264 Z" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.2" stroke-linejoin="round"></path>
+  <text x="810" y="256" font-size="18" font-weight="600">A · dòng 13</text>
+  <text x="737" y="310" text-anchor="middle" font-size="18" fill="#3d4038">cùng khuôn, vẫn giữ nguồn gốc</text>
+
+  <path d="M20 336 L940 336" stroke="#B9B6AA" stroke-width="1.5" stroke-dasharray="6 6"></path>
+
+  <!-- ===== (b) ===== -->
+  <text x="20" y="374" font-size="20" font-weight="700">b</text>
+  <text x="44" y="374" font-size="19" font-weight="700">Đơn vị đếm là một phản hồi, không phải một người</text>
+
+  <use href="#person" x="38" y="398" width="64" height="120" style="color: #A7A996"></use>
+  <text x="70" y="548" text-anchor="middle" font-size="18" fill="#3d4038">1 người</text>
+  <path d="M106 440 C130 430 140 416 162 414" fill="none" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+  <path d="M106 460 L162 466" fill="none" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+  <path d="M106 480 C130 492 140 516 162 518" fill="none" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+
+  <rect x="168" y="394" width="384" height="42" rx="14" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="360" y="421" text-anchor="middle" font-size="18" font-style="italic">“Đăng nhập chậm, không nhận được mã”</text>
+  <rect x="168" y="446" width="214" height="42" rx="14" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="275" y="473" text-anchor="middle" font-size="18" font-style="italic">“Giao diện mới đẹp”</text>
+  <rect x="168" y="498" width="250" height="42" rx="14" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="293" y="525" text-anchor="middle" font-size="18" font-style="italic">“Lại không nhận được mã!”</text>
+
+  <!-- một phản hồi, hai vấn đề -->
+  <path d="M556 410 C572 404 576 400 590 400" fill="none" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+  <path d="M556 422 C572 430 576 452 590 454" fill="none" stroke="#2E2E2B" stroke-width="2.2" marker-end="url(#ah)"></path>
+  <rect x="596" y="380" width="158" height="40" rx="20" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <circle cx="620" cy="400" r="10" fill="none" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  <path d="M620 394 L620 400 L625 403" fill="none" stroke="#2E2E2B" stroke-width="2.5" stroke-linecap="round"></path>
+  <text x="638" y="406" font-size="18" font-weight="600">Hiệu năng</text>
+  <rect x="596" y="434" width="190" height="40" rx="20" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <circle cx="616" cy="454" r="6.5" fill="none" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  <path d="M622 454 L636 454 M631 454 L631 460 M636 454 L636 459" fill="none" stroke="#2E2E2B" stroke-width="2.5" stroke-linecap="round"></path>
+  <text x="644" y="460" font-size="18" font-weight="600">Mã xác nhận</text>
+  <text x="808" y="430" font-size="18" fill="#3d4038">1 phản hồi,</text>
+  <text x="808" y="452" font-size="18" fill="#3d4038">2 vấn đề</text>
+
+  <text x="732" y="532" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="30" font-weight="700" fill="#2a5670">100 phản hồi ≠ 100 người</text>
+  <text x="732" y="560" text-anchor="middle" font-size="18" fill="#3d4038">cần kiểm tra trùng lặp trước khi suy ra số người</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":580}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 2.12 Lưới đánh cá</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 520px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="520" viewBox="0 0 960 520" role="img" aria-label="Ao có 10 con cá là nhãn đúng theo người chấm; lưới của hệ thống bắt được 8 thứ gồm 6 con cá và 2 chiếc ủng là nhãn sai; độ chuẩn xác 6 trên 8 bằng 75 phần trăm, độ bao phủ 6 trên 10 bằng 60 phần trăm, F1 khoảng 67 phần trăm" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <symbol id="fish" viewBox="0 0 50 26">
+      <path d="M36 13 L49 3 L49 23 Z" fill="#4f86a8" stroke="#2E2E2B" stroke-width="2" stroke-linejoin="round"></path>
+      <ellipse cx="20" cy="13" rx="18" ry="10" fill="#4f86a8" stroke="#2E2E2B" stroke-width="2"></ellipse>
+      <circle cx="10" cy="11" r="2.6" fill="#FFFFFF"></circle>
+      <path d="M24 6 C28 10 28 16 24 20" fill="none" stroke="#2E2E2B" stroke-width="1.6"></path>
+    </symbol>
+    <symbol id="boot" viewBox="0 0 34 36">
+      <path d="M8 2 L22 2 L22 20 L30 24 C33 26 33 33 29 33 L4 33 C3 33 3 32 3 31 L6 18 Z" fill="#8f9286" stroke="#2E2E2B" stroke-width="2" stroke-linejoin="round"></path>
+      <path d="M6 6 L22 6" stroke="#2E2E2B" stroke-width="2"></path>
+    </symbol>
+    <symbol id="bird" viewBox="0 0 120 104">
+      <path d="M14 64 C12 34 38 14 64 14 C92 14 110 36 108 62 C106 88 86 98 62 98 C36 98 16 88 14 64 Z" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3.5"></path>
+      <path d="M22 58 C34 48 56 52 62 70 C54 84 34 84 24 74 Z" fill="#C9C4B7" stroke="#2E2E2B" stroke-width="3"></path>
+      <path d="M58 16 C55 6 63 3 65 9 C67 3 74 5 71 14" fill="none" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+      <circle cx="82" cy="46" r="5" fill="#1A1A1A"></circle>
+      <circle cx="83.6" cy="44.4" r="1.6" fill="#FFFFFF"></circle>
+      <ellipse cx="90" cy="60" rx="5" ry="3.5" fill="#EFB9A6"></ellipse>
+      <path d="M102 50 L116 56 L102 62 Z" fill="#E09A3A" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+      <path d="M52 98 L50 103 M70 98 L72 103" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+    </symbol>
+    <pattern id="mesh" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M0 0 L0 16 M0 0 L16 0" stroke="#8f9286" stroke-width="1.4"></path>
+    </pattern>
+  </defs>
+
+  <!-- chú giải -->
+  <use href="#fish" x="20" y="22" width="40" height="21"></use>
+  <text x="66" y="40" font-size="18">nhãn đúng</text>
+  <use href="#boot" x="176" y="18" width="24" height="26"></use>
+  <text x="206" y="40" font-size="18">nhãn sai</text>
+  <ellipse cx="326" cy="33" rx="20" ry="13" fill="url(#mesh)" stroke="#2E2E2B" stroke-width="2.5"></ellipse>
+  <text x="352" y="40" font-size="18">nhãn hệ thống gán</text>
+
+  <!-- ao -->
+  <ellipse cx="280" cy="290" rx="262" ry="196" fill="#EEF4F8" stroke="#2a5670" stroke-width="2.5"></ellipse>
+  <path d="M60 300 Q80 294 100 300 M440 360 Q460 354 480 360 M150 440 Q170 434 190 440" fill="none" stroke="#2a5670" stroke-width="2" stroke-linecap="round"></path>
+
+  <!-- ngoài lưới: cá bị sót, ủng còn lại -->
+  <use href="#fish" x="66" y="206" width="50" height="26"></use>
+  <use href="#fish" x="96" y="372" width="50" height="26"></use>
+  <use href="#fish" x="410" y="420" width="50" height="26"></use>
+  <use href="#fish" x="466" y="190" width="50" height="26"></use>
+  <use href="#boot" x="124" y="294" width="34" height="36"></use>
+  <use href="#boot" x="452" y="292" width="34" height="36"></use>
+
+  <!-- cán lưới và chim -->
+  <path d="M410 206 L560 86" stroke="#2E2E2B" stroke-width="10" stroke-linecap="round"></path>
+  <path d="M410 206 L560 86" stroke="#B48E5C" stroke-width="5" stroke-linecap="round"></path>
+  <g transform="translate(640 40) scale(-1 1)"><use href="#bird" x="0" y="0" width="96" height="83"></use></g>
+
+  <!-- lưới -->
+  <ellipse cx="318" cy="276" rx="122" ry="108" fill="#FFFFFF"></ellipse>
+  <ellipse cx="318" cy="276" rx="122" ry="108" fill="url(#mesh)"></ellipse>
+  <use href="#fish" x="214" y="206" width="50" height="26"></use>
+  <use href="#fish" x="282" y="186" width="50" height="26"></use>
+  <use href="#fish" x="348" y="214" width="50" height="26"></use>
+  <use href="#fish" x="218" y="278" width="50" height="26"></use>
+  <use href="#fish" x="300" y="254" width="50" height="26"></use>
+  <use href="#fish" x="360" y="290" width="50" height="26"></use>
+  <use href="#boot" x="268" y="314" width="34" height="36"></use>
+  <use href="#boot" x="330" y="322" width="34" height="36"></use>
+  <ellipse cx="318" cy="276" rx="122" ry="108" fill="none" stroke="#2E2E2B" stroke-width="7"></ellipse>
+  <ellipse cx="318" cy="276" rx="122" ry="108" fill="none" stroke="#B48E5C" stroke-width="3"></ellipse>
+  <text x="318" y="410" text-anchor="middle" font-size="18" font-weight="700">lưới: 6 cá + 2 ủng</text>
+  <text x="280" y="470" text-anchor="middle" font-size="18" fill="#3d4038">cả ao có 10 cá, sót 4</text>
+
+  <!-- công thức -->
+  <path d="M600 132 L600 500" stroke="#B9B6AA" stroke-width="2" stroke-dasharray="6 6"></path>
+  <text x="624" y="130" font-size="20" font-weight="700">Độ chuẩn xác</text>
+  <text x="624" y="158" font-size="18" fill="#3d4038">cá trong lưới ÷ mọi thứ trong lưới</text>
+  <text x="624" y="196" font-family="Fraunces, Georgia, serif" font-size="30" font-weight="700" fill="#2a5670">6 ÷ 8 = 75%</text>
+
+  <text x="624" y="256" font-size="20" font-weight="700">Độ bao phủ</text>
+  <text x="624" y="284" font-size="18" fill="#3d4038">cá trong lưới ÷ toàn bộ cá trong ao</text>
+  <text x="624" y="322" font-family="Fraunces, Georgia, serif" font-size="30" font-weight="700" fill="#2a5670">6 ÷ 10 = 60%</text>
+
+  <text x="624" y="382" font-size="20" font-weight="700">Điểm F1</text>
+  <text x="624" y="410" font-size="18" fill="#3d4038">trung bình điều hòa của hai số trên</text>
+  <text x="624" y="436" font-size="18" fill="#3d4038">2 × 75% × 60% ÷ (75% + 60%)</text>
+  <text x="624" y="476" font-family="Fraunces, Georgia, serif" font-size="30" font-weight="700" fill="#2a5670">≈ 67%</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

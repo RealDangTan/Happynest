@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 2.2 Kim cương kép</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 500px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="500" viewBox="0 0 960 500" role="img" aria-label="Mô hình Kim cương kép: lời đề nghị thêm nút hướng dẫn đi vào không gian vấn đề để khám phá và xác định vấn đề thật, sau đó mới sang không gian giải pháp để phát triển nhiều phương án và thử nghiệm" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <symbol id="bust" viewBox="0 0 80 84">
+      <path d="M8 84 C8 60 22 50 40 50 C58 50 72 60 72 84 Z" fill="currentColor" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+      <circle cx="40" cy="27" r="18" fill="#F3DCC8" stroke="#2E2E2B" stroke-width="3"></circle>
+      <path d="M21 28 C18 2 62 2 59 28 C53 17 29 17 21 28 Z" fill="#6B5A48"></path>
+      <circle cx="47" cy="29" r="2.2" fill="#2E2E2B"></circle>
+    </symbol>
+    <symbol id="bulb" viewBox="-14 -16 28 34">
+      <circle cx="0" cy="-3" r="11" fill="inherit" stroke="#2E2E2B" stroke-width="2.5"></circle>
+      <rect x="-5" y="8" width="10" height="7" rx="2" fill="#2E2E2B"></rect>
+    </symbol>
+  </defs>
+
+  <!-- hai hình kim cương -->
+  <path d="M100 250 L290 95 L480 250 L290 405 Z" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+  <path d="M480 250 L670 95 L860 250 L670 405 Z" fill="#F8E0DA" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+  <path d="M290 100 L290 400 M670 100 L670 400" stroke="#8f9286" stroke-width="2" stroke-dasharray="6 6"></path>
+
+  <text x="290" y="44" text-anchor="middle" font-size="20" font-weight="700">Không gian vấn đề</text>
+  <text x="290" y="70" text-anchor="middle" font-size="18" font-style="italic" fill="#3d4038">Đang gặp vấn đề gì?</text>
+  <text x="670" y="44" text-anchor="middle" font-size="20" font-weight="700">Không gian giải pháp</text>
+  <text x="670" y="70" text-anchor="middle" font-size="18" font-style="italic" fill="#3d4038">Nên xây dựng gì?</text>
+
+  <!-- lời đề nghị của người dùng -->
+  <rect x="8" y="112" width="176" height="58" rx="16" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M38 170 L36 190 L56 170" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+  <text x="96" y="137" text-anchor="middle" font-size="18" font-style="italic">“Thêm nút</text>
+  <text x="96" y="159" text-anchor="middle" font-size="18" font-style="italic">hướng dẫn đi!”</text>
+  <use href="#bust" x="12" y="196" width="60" height="63" style="color: #A7A996"></use>
+  <path d="M74 250 L92 250" stroke="#2E2E2B" stroke-width="3"></path>
+  <path d="M90 243 L100 250 L90 257 Z" fill="#2E2E2B"></path>
+
+  <!-- khám phá: nhiều câu hỏi -->
+  <text x="160" y="238" text-anchor="middle" font-size="26" font-weight="700" fill="#6e5300">?</text>
+  <text x="204" y="190" text-anchor="middle" font-size="26" font-weight="700" fill="#6e5300">?</text>
+  <text x="214" y="312" text-anchor="middle" font-size="26" font-weight="700" fill="#6e5300">?</text>
+  <text x="252" y="148" text-anchor="middle" font-size="26" font-weight="700" fill="#6e5300">?</text>
+  <text x="244" y="258" text-anchor="middle" font-size="26" font-weight="700" fill="#6e5300">?</text>
+  <text x="256" y="364" text-anchor="middle" font-size="26" font-weight="700" fill="#6e5300">?</text>
+  <circle cx="186" cy="268" r="5" fill="#2E2E2B"></circle>
+  <circle cx="226" cy="222" r="5" fill="#2E2E2B"></circle>
+  <circle cx="232" cy="292" r="5" fill="#2E2E2B"></circle>
+
+  <!-- xác định: hội tụ về vấn đề thật -->
+  <path d="M306 150 L474 248 M314 205 L474 249 M314 295 L474 251 M306 350 L474 252" stroke="#6e5300" stroke-width="2.2" stroke-linecap="round"></path>
+  <circle cx="306" cy="150" r="5" fill="#6e5300"></circle>
+  <circle cx="314" cy="205" r="5" fill="#6e5300"></circle>
+  <circle cx="314" cy="295" r="5" fill="#6e5300"></circle>
+  <circle cx="306" cy="350" r="5" fill="#6e5300"></circle>
+
+  <!-- phát triển: nhiều phương án -->
+  <path d="M486 250 L600 170 M486 250 L625 215 M486 250 L625 285 M486 250 L600 330" stroke="#93321f" stroke-width="2.2" stroke-linecap="round"></path>
+  <use href="#bulb" x="586" y="152" width="28" height="34" style="fill: #FFFFFF"></use>
+  <use href="#bulb" x="611" y="197" width="28" height="34" style="fill: #DCC892"></use>
+  <use href="#bulb" x="611" y="267" width="28" height="34" style="fill: #FFFFFF"></use>
+  <use href="#bulb" x="586" y="312" width="28" height="34" style="fill: #FFFFFF"></use>
+  <text x="646" y="216" font-size="18" font-weight="600">nút hướng dẫn</text>
+
+  <!-- thử nghiệm: hội tụ về phương án đã thử -->
+  <path d="M616 166 L854 248 M772 234 L854 250 M616 325 L854 253" stroke="#6b6e64" stroke-width="2" stroke-dasharray="5 5"></path>
+  <path d="M641 280 L854 251" stroke="#93321f" stroke-width="4" stroke-linecap="round"></path>
+  <circle cx="896" cy="250" r="18" fill="#2e5e24"></circle>
+  <path d="M887 250 L894 257 L906 243" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+  <text x="896" y="296" text-anchor="middle" font-size="18" fill="#3d4038">thử nhỏ</text>
+  <text x="896" y="318" text-anchor="middle" font-size="18" fill="#3d4038">rồi chọn</text>
+
+  <!-- điểm xác định vấn đề -->
+  <circle cx="480" cy="250" r="13" fill="#2E2E2B" stroke="#FFFFFF" stroke-width="3"></circle>
+  <text x="480" y="257" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">!</text>
+  <path d="M480 268 L480 452" stroke="#2E2E2B" stroke-width="2" stroke-dasharray="4 4"></path>
+
+  <!-- bốn hoạt động -->
+  <text x="195" y="440" text-anchor="middle" font-size="18" font-weight="700" fill="#6e5300">Khám phá</text>
+  <text x="385" y="440" text-anchor="middle" font-size="18" font-weight="700" fill="#6e5300">Xác định</text>
+  <text x="575" y="440" text-anchor="middle" font-size="18" font-weight="700" fill="#93321f">Phát triển</text>
+  <text x="765" y="440" text-anchor="middle" font-size="18" font-weight="700" fill="#93321f">Thử nghiệm</text>
+  <text x="480" y="480" text-anchor="middle" font-size="19" font-weight="700">Vấn đề thật: người dùng mới chưa làm xong bước đầu</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

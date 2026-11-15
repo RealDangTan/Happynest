@@ -1,0 +1,39 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-07T13:30:00Z"},
+  "title": "Hình minh họa khóa luận",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 960, "h": 560, "title": "Hình 1.1 · Tảng băng phản hồi"},
+    "H1-2.dc.html": {"x": 1040, "y": 0, "w": 960, "h": 520, "title": "Hình 1.2 · Người xử lý giữa nhiều nguồn"},
+    "H1-3.dc.html": {"x": 2080, "y": 0, "w": 960, "h": 560, "title": "Hình 1.3 · Hành trình của một phản hồi trong HappyNest"},
+    "H2-1.dc.html": {"x": 0, "y": 940, "w": 960, "h": 580, "title": "Hình 2.1 · Vòng cải tiến sản phẩm"},
+    "H2-2.dc.html": {"x": 1040, "y": 940, "w": 960, "h": 500, "title": "Hình 2.2 · Kim cương kép"},
+    "H2-3.dc.html": {"x": 2080, "y": 940, "w": 960, "h": 580, "title": "Hình 2.3 · Chuẩn hóa và đơn vị phân tích"},
+    "H2-4.dc.html": {"x": 0, "y": 1640, "w": 960, "h": 560, "title": "Hình 2.4 · Cây chủ đề có phiên bản"},
+    "H2-5.dc.html": {"x": 1040, "y": 1640, "w": 960, "h": 520, "title": "Hình 2.5 · Phân loại đa nhãn"},
+    "H2-6.dc.html": {"x": 2080, "y": 1640, "w": 960, "h": 540, "title": "Hình 2.6 · Bản đồ ý nghĩa"},
+    "H2-7.dc.html": {"x": 0, "y": 2320, "w": 960, "h": 480, "title": "Hình 2.7 · Phân loại và phân cụm"},
+    "H2-8.dc.html": {"x": 1040, "y": 2320, "w": 960, "h": 500, "title": "Hình 2.8 · Hai hũ bi: số lượng và tỷ lệ"},
+    "H2-9.dc.html": {"x": 2080, "y": 2320, "w": 960, "h": 540, "title": "Hình 2.9 · Đường ray và khu vườn có rào"},
+    "H2-10.dc.html": {"x": 0, "y": 2980, "w": 960, "h": 540, "title": "Hình 2.10 · Bằng chứng, nhận định, giả thuyết"},
+    "H2-11.dc.html": {"x": 1040, "y": 2980, "w": 960, "h": 500, "title": "Hình 2.11 · Che thông tin định danh"},
+    "H2-12.dc.html": {"x": 2080, "y": 2980, "w": 960, "h": 520, "title": "Hình 2.12 · Lưới đánh cá: chuẩn xác và bao phủ"},
+    "H2-13.dc.html": {"x": 0, "y": 3640, "w": 960, "h": 540, "title": "Hình 2.13 · Ai làm gì trên đường Lắng nghe – Thấu hiểu – Hành động"}
+  },
+  "order": [
+    "Main.dc.html", "H1-2.dc.html", "H1-3.dc.html",
+    "H2-1.dc.html", "H2-2.dc.html", "H2-3.dc.html",
+    "H2-4.dc.html", "H2-5.dc.html", "H2-6.dc.html",
+    "H2-7.dc.html", "H2-8.dc.html", "H2-9.dc.html",
+    "H2-10.dc.html", "H2-11.dc.html", "H2-12.dc.html",
+    "H2-13.dc.html"
+  ],
+  "notes": {
+    "ch1": {"x": 0, "y": -300, "text": "Chương 1 — Tổng quan về đề tài", "kind": "title1", "maxW": 3040},
+    "ch2": {"x": 0, "y": 700, "text": "Chương 2 — Cơ sở lý thuyết và tổng quan nghiên cứu", "kind": "title1", "maxW": 3040},
+    "legend": {"x": 3120, "y": 0, "w": 440, "size": "m", "fill": "blue", "text": "Nhân vật và quy ước\n\n• Chú chim Happynest: phần AI của hệ thống (đọc hiểu, gợi ý, diễn giải).\n• Người áo xanh: người phụ trách — người ra quyết định.\n• Hộp máy/bánh răng: chương trình chạy theo quy tắc (đếm, lọc, kiểm tra).\n• Ba chặng: Lắng nghe (lá), Thấu hiểu (nắng), Hành động (san hô).\n\nNền trắng, nét than đậm: in đen trắng vẫn rõ. Chèn rộng 15 cm, chữ nhỏ nhất ≈ 8 pt."}
+  },
+  "designSystems": []
+}

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 1.2 Người xử lý giữa nhiều nguồn</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 520px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="520" viewBox="0 0 960 520" role="img" aria-label="Người xử lý ngồi giữa năm cửa sổ nguồn phản hồi, mỗi nguồn mô tả cùng lỗi đăng nhập theo một cách, phải chuyển qua lại và đếm thủ công" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <symbol id="bust" viewBox="0 0 80 84">
+      <path d="M8 84 C8 60 22 50 40 50 C58 50 72 60 72 84 Z" fill="currentColor" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+      <circle cx="40" cy="27" r="18" fill="#F3DCC8" stroke="#2E2E2B" stroke-width="3"></circle>
+      <path d="M21 28 C18 2 62 2 59 28 C53 17 29 17 21 28 Z" fill="#2E2E2B"></path>
+      <circle cx="33" cy="30" r="2.2" fill="#2E2E2B"></circle>
+      <circle cx="47" cy="30" r="2.2" fill="#2E2E2B"></circle>
+      <path d="M35 39 Q40 36 45 39" fill="none" stroke="#2E2E2B" stroke-width="2.2" stroke-linecap="round"></path>
+    </symbol>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#2E2E2B"></path>
+    </marker>
+  </defs>
+
+  <!-- đường chuyển qua lại giữa các cửa sổ -->
+  <path d="M284 96 C312 78 326 72 350 72" fill="none" stroke="#2E2E2B" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#ah)"></path>
+  <path d="M610 72 C636 72 652 80 676 96" fill="none" stroke="#2E2E2B" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#ah)"></path>
+  <path d="M812 168 C818 186 820 200 820 216" fill="none" stroke="#2E2E2B" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#ah)"></path>
+  <path d="M140 218 C140 200 144 186 150 170" fill="none" stroke="#2E2E2B" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#ah)"></path>
+
+  <!-- W1 khảo sát -->
+  <rect x="30" y="36" width="250" height="128" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M30 66 L280 66" stroke="#2E2E2B" stroke-width="2"></path>
+  <rect x="31.5" y="37.5" width="247" height="27" rx="9" fill="#F1EEE4"></rect>
+  <circle cx="46" cy="51" r="4" fill="#2E2E2B"></circle><circle cx="58" cy="51" r="4" fill="#2E2E2B"></circle>
+  <text x="72" y="57" font-size="18" font-weight="700">Khảo sát (CSV)</text>
+  <text x="44" y="90" font-size="18" font-weight="700" fill="#3d4038">Ý kiến</text>
+  <path d="M40 100 L270 100 M40 128 L270 128 M40 156 L270 156" stroke="#B9B6AA" stroke-width="1.5"></path>
+  <rect x="40" y="104" width="226" height="22" rx="4" fill="#F7EDC6"></rect>
+  <text x="46" y="121" font-size="18" font-style="italic">không vào được app</text>
+  <path d="M46 142 L190 142" stroke="#B9B6AA" stroke-width="6" stroke-linecap="round"></path>
+
+  <!-- W2 phiếu hỗ trợ -->
+  <rect x="355" y="20" width="250" height="112" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M355 50 L605 50" stroke="#2E2E2B" stroke-width="2"></path>
+  <rect x="356.5" y="21.5" width="247" height="27" rx="9" fill="#F1EEE4"></rect>
+  <circle cx="371" cy="35" r="4" fill="#2E2E2B"></circle><circle cx="383" cy="35" r="4" fill="#2E2E2B"></circle>
+  <text x="397" y="41" font-size="18" font-weight="700">Phiếu hỗ trợ</text>
+  <rect x="372" y="64" width="190" height="38" rx="14" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2"></rect>
+  <path d="M388 102 L384 116 L400 102" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2" stroke-linejoin="round"></path>
+  <text x="467" y="89" text-anchor="middle" font-size="18" font-style="italic">login fail hoài</text>
+
+  <!-- W3 đánh giá -->
+  <rect x="680" y="36" width="250" height="128" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M680 66 L930 66" stroke="#2E2E2B" stroke-width="2"></path>
+  <rect x="681.5" y="37.5" width="247" height="27" rx="9" fill="#F1EEE4"></rect>
+  <circle cx="696" cy="51" r="4" fill="#2E2E2B"></circle><circle cx="708" cy="51" r="4" fill="#2E2E2B"></circle>
+  <text x="722" y="57" font-size="18" font-weight="700">Đánh giá</text>
+  <text x="808" y="57" font-size="18" fill="#6e5300" letter-spacing="1">★★☆☆☆</text>
+  <rect x="698" y="82" width="170" height="38" rx="14" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2"></rect>
+  <path d="M714 120 L710 134 L726 120" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2" stroke-linejoin="round"></path>
+  <text x="783" y="107" text-anchor="middle" font-size="18" font-style="italic">Can't sign in</text>
+
+  <!-- W4 tin nhắn -->
+  <rect x="20" y="222" width="240" height="112" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M20 252 L260 252" stroke="#2E2E2B" stroke-width="2"></path>
+  <rect x="21.5" y="223.5" width="237" height="27" rx="9" fill="#F1EEE4"></rect>
+  <circle cx="36" cy="237" r="4" fill="#2E2E2B"></circle><circle cx="48" cy="237" r="4" fill="#2E2E2B"></circle>
+  <text x="62" y="243" font-size="18" font-weight="700">Tin nhắn</text>
+  <rect x="36" y="266" width="186" height="38" rx="14" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2"></rect>
+  <path d="M52 304 L48 318 L64 304" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2" stroke-linejoin="round"></path>
+  <text x="129" y="291" text-anchor="middle" font-size="18" font-style="italic">đăng nhập lỗi rồi</text>
+
+  <!-- W5 email -->
+  <rect x="700" y="222" width="240" height="112" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M700 252 L940 252" stroke="#2E2E2B" stroke-width="2"></path>
+  <rect x="701.5" y="223.5" width="237" height="27" rx="9" fill="#F1EEE4"></rect>
+  <circle cx="716" cy="237" r="4" fill="#2E2E2B"></circle><circle cx="728" cy="237" r="4" fill="#2E2E2B"></circle>
+  <text x="742" y="243" font-size="18" font-weight="700">Thư điện tử</text>
+  <rect x="716" y="266" width="176" height="38" rx="14" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2"></rect>
+  <path d="M732 304 L728 318 L744 304" fill="#F7EDC6" stroke="#2E2E2B" stroke-width="2" stroke-linejoin="round"></path>
+  <text x="804" y="291" text-anchor="middle" font-size="18" font-style="italic">Mã OTP không về</text>
+
+  <!-- ý nghĩ -->
+  <rect x="396" y="190" width="168" height="56" rx="28" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <circle cx="470" cy="262" r="7" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  <circle cx="476" cy="282" r="4" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></circle>
+  <text x="480" y="225" text-anchor="middle" font-size="19" font-weight="700">Cùng một lỗi?</text>
+
+  <!-- người xử lý -->
+  <use href="#bust" x="428" y="290" width="104" height="110" style="color: #4f86a8"></use>
+  <path d="M532 318 C527 326 527 332 532 334 C537 332 537 326 532 318 Z" fill="#4f86a8" stroke="#2E2E2B" stroke-width="1.8"></path>
+  <path d="M444 404 L452 366 L508 366 L516 404 Z" fill="#4A5A3F" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+  <path d="M480 378 C474 384 476 392 480 394 C484 392 486 384 480 378 Z" fill="#C9C4B7"></path>
+
+  <!-- bàn -->
+  <rect x="290" y="404" width="380" height="18" rx="4" fill="#B48E5C" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <rect x="312" y="422" width="14" height="58" fill="#8B6B43" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <rect x="634" y="422" width="14" height="58" fill="#8B6B43" stroke="#2E2E2B" stroke-width="2.5"></rect>
+
+  <!-- chồng giấy và giấy đếm tay -->
+  <rect x="318" y="384" width="84" height="20" rx="2" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect>
+  <rect x="322" y="372" width="84" height="14" rx="2" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect>
+  <rect x="316" y="360" width="84" height="14" rx="2" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect>
+  <g transform="rotate(-8 372 330)">
+    <rect x="340" y="300" width="66" height="58" rx="3" fill="#DCC892" stroke="#2E2E2B" stroke-width="2"></rect>
+    <path d="M352 314 L352 344 M360 314 L360 344 M368 314 L368 344 M376 314 L376 344 M346 338 L382 318" stroke="#2E2E2B" stroke-width="2.5" stroke-linecap="round"></path>
+    <path d="M390 314 L390 344 M398 314 L398 344" stroke="#2E2E2B" stroke-width="2.5" stroke-linecap="round"></path>
+  </g>
+
+  <!-- cốc -->
+  <rect x="580" y="374" width="34" height="30" rx="5" fill="#6B7A54" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <path d="M614 380 C626 380 626 396 614 396" fill="none" stroke="#2E2E2B" stroke-width="2.5"></path>
+
+  <text x="480" y="510" text-anchor="middle" font-size="19" font-weight="600">Nhiều nguồn · nhiều màn hình · đọc và đếm thủ công</text>
+
+  <!-- khay phản hồi chờ đọc -->
+  <g transform="rotate(-12 96 420)"><rect x="70" y="392" width="56" height="40" rx="3" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect><path d="M80 404 L116 404 M80 414 L108 414" stroke="#8f9286" stroke-width="2.5"></path></g>
+  <g transform="rotate(9 160 414)"><rect x="132" y="388" width="56" height="40" rx="3" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect><path d="M142 400 L178 400 M142 410 L170 410" stroke="#8f9286" stroke-width="2.5"></path></g>
+  <g transform="rotate(-3 128 400)"><rect x="100" y="374" width="56" height="40" rx="3" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect><path d="M110 386 L146 386 M110 396 L138 396" stroke="#8f9286" stroke-width="2.5"></path></g>
+  <g transform="rotate(20 220 440)"><rect x="196" y="424" width="50" height="36" rx="3" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2"></rect><path d="M205 435 L237 435 M205 445 L229 445" stroke="#8f9286" stroke-width="2.5"></path></g>
+  <path d="M40 420 L216 420 L204 470 L52 470 Z" fill="#C9C4B7" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+  <path d="M60 438 L198 438" stroke="#2E2E2B" stroke-width="2"></path>
+
+  <!-- số liệu -->
+  <rect x="690" y="360" width="254" height="128" rx="12" fill="#FFFFFF" stroke="#8f9286" stroke-width="1.8"></rect>
+  <text x="706" y="386" font-size="18" font-weight="700">Phải chuyển qua lại</text>
+  <text x="706" y="408" font-size="18" font-weight="700">nhiều màn hình [2]</text>
+  <text x="706" y="444" font-size="18" fill="#3d4038">Hiệu suất thấp</text>
+  <rect x="838" y="430" width="46" height="18" rx="3" fill="#2a5670"></rect>
+  <text x="890" y="445" font-size="18" font-weight="700">58%</text>
+  <text x="706" y="474" font-size="18" fill="#3d4038">Hiệu suất cao</text>
+  <rect x="838" y="460" width="29" height="18" rx="3" fill="#FFFFFF" stroke="#2a5670" stroke-width="2.5"></rect>
+  <text x="873" y="475" font-size="18" font-weight="700">36%</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

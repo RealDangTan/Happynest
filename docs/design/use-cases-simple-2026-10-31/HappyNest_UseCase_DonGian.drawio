@@ -1,0 +1,210 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" agent="Codex" version="24.7.17" type="device" pages="4">
+  <!-- Simplified user-goal model, inspected 2026-10-31. No role-based PM/Admin separation. Sources: backend/app/api/deps.py; backend/app/api/routes/{auth,products,imports,taxonomies,analysis,feedback,agent,actions}.py; backend/understand_agent/graph.py; frontend/lib/navigation.ts; frontend/hooks/use-{agent,actions,imports}.ts. Solid lines denote actor participation, not execution order. Each detail page refines the UC named in its title. -->
+  <diagram id="overview" name="01 - Tong quat">
+    <mxGraphModel dx="1040" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1040" pageHeight="850" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Use case tổng quát" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=31;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="21" width="960" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="HappyNest · Phạm vi chức năng chính" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=19;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="68" width="960" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="system" value="HỆ THỐNG HAPPYNEST" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.8;align=center;verticalAlign=top;spacingTop=15;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="285" y="112" width="705" height="625" as="geometry" />
+        </mxCell>
+        <mxCell id="actor" value="Người dùng" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=0;fillColor=#ffffff;strokeColor=#111827;strokeWidth=2;fontFamily=Arial;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="96" y="348" width="68" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="UC01" value="UC01&#10;Truy cập hệ thống" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="425" y="163" width="440" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC01" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC02" value="UC02&#10;Quản lý sản phẩm" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="425" y="270" width="440" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC02" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC03" value="UC03&#10;Tổng hợp và phân loại&#10;phản hồi" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="425" y="377" width="440" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC03" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC03">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC04" value="UC04&#10;Điều tra và duyệt&#10;kết luận" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="425" y="494" width="440" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC04" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC04">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC05" value="UC05&#10;Đề xuất và ưu tiên&#10;hành động" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="425" y="611" width="440" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC05" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC05">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note-0" value="UC01: đăng ký, đăng nhập, đăng xuất. UC02: tạo, chọn, sửa, xoá sản phẩm." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="778" width="970" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="note-1" value="UC03–UC05 được phân rã ở các trang sau; cần đăng nhập và chọn sản phẩm." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="807" width="970" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="listen" name="02 - Phan hoi">
+    <mxGraphModel dx="1040" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1040" pageHeight="760" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Phân rã UC03 · Phản hồi" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=31;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="21" width="960" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Tổng hợp và phân loại phản hồi" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=19;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="68" width="960" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="system" value="HAPPYNEST · PHẢN HỒI" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.8;align=center;verticalAlign=top;spacingTop=15;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="285" y="112" width="705" height="514" as="geometry" />
+        </mxCell>
+        <mxCell id="actor" value="Người dùng" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=0;fillColor=#ffffff;strokeColor=#111827;strokeWidth=2;fontFamily=Arial;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="96" y="276" width="68" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="UC03.1" value="UC03.1&#10;Nhập CSV và xác nhận&#10;ánh xạ cột" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="163" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC03.1" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC03.1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC03.2" value="UC03.2&#10;Quản lý bộ chủ đề&#10;phân loại" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="273" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC03.2" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC03.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC03.3" value="UC03.3&#10;Chạy phân loại phản hồi&#10;bằng AI" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="383" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC03.3" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC03.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC03.4" value="UC03.4&#10;Tra cứu, sửa và xoá&#10;phản hồi" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="493" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC03.4" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC03.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note-0" value="Xác nhận cột: người dùng kiểm tra và chốt ánh xạ trước khi nhập dữ liệu." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="670" width="970" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="note-1" value="Phân loại: chủ đề, cảm xúc và mức độ nghiêm trọng; có thể sửa kết quả." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="699" width="970" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="understand" name="03 - Dieu tra">
+    <mxGraphModel dx="1040" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1040" pageHeight="760" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Phân rã UC04 · Điều tra" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=31;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="21" width="960" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Điều tra vấn đề và duyệt kết luận dựa trên bằng chứng" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=19;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="68" width="960" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="system" value="HAPPYNEST · ĐIỀU TRA" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.8;align=center;verticalAlign=top;spacingTop=15;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="285" y="112" width="705" height="514" as="geometry" />
+        </mxCell>
+        <mxCell id="actor" value="Người dùng" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=0;fillColor=#ffffff;strokeColor=#111827;strokeWidth=2;fontFamily=Arial;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="96" y="276" width="68" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="UC04.1" value="UC04.1&#10;Xem chủ đề và&#10;cụm phản hồi" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="163" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC04.1" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC04.1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC04.2" value="UC04.2&#10;Đặt câu hỏi điều tra" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="273" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC04.2" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC04.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC04.3" value="UC04.3&#10;Xem bằng chứng và&#10;duyệt kết luận" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="383" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC04.3" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC04.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC04.4" value="UC04.4&#10;Xem báo cáo" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="493" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC04.4" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC04.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note-0" value="Duyệt kết luận: chấp nhận, chỉnh sửa, yêu cầu điều tra thêm hoặc từ chối." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="670" width="970" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="note-1" value="Báo cáo hiển thị kết luận đã lưu cùng bằng chứng và trạng thái xét duyệt." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="699" width="970" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="act" name="04 - Hanh dong">
+    <mxGraphModel dx="1040" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1040" pageHeight="760" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Phân rã UC05 · Hành động" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=31;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="21" width="960" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Đề xuất, xét duyệt và xác định ưu tiên" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=19;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="68" width="960" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="system" value="HAPPYNEST · HÀNH ĐỘNG" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.8;align=center;verticalAlign=top;spacingTop=15;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="285" y="112" width="705" height="514" as="geometry" />
+        </mxCell>
+        <mxCell id="actor" value="Người dùng" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=0;fillColor=#ffffff;strokeColor=#111827;strokeWidth=2;fontFamily=Arial;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="96" y="276" width="68" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="UC05.1" value="UC05.1&#10;Yêu cầu AI gợi ý&#10;hành động" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="163" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC05.1" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC05.1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC05.2" value="UC05.2&#10;Thêm hành động&#10;thủ công" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="273" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC05.2" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC05.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC05.3" value="UC05.3&#10;Duyệt và chỉnh sửa&#10;hành động" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="383" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC05.3" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC05.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UC05.4" value="UC05.4&#10;Xem ma trận ưu tiên" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.7;fontFamily=Arial;fontSize=23;fontColor=#111827;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="405" y="493" width="480" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-UC05.4" value="" style="endArrow=none;startArrow=none;html=0;rounded=0;strokeColor=#4b5563;strokeWidth=1.5;exitX=1;exitY=0.45;entryX=0;entryY=0.5;exitPerimeter=0;entryPerimeter=0;" edge="1" parent="1" source="actor" target="UC05.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note-0" value="AI chỉ sinh gợi ý từ kết luận đã duyệt. Người dùng quyết định nhận hoặc từ chối." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="670" width="970" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="note-1" value="Có thể sửa nội dung và điểm tác động, công sức, khẩn cấp để cập nhật ưu tiên." style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=18;fontColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="699" width="970" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

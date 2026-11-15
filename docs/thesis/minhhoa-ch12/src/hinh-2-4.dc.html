@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hình 2.4 Cây chủ đề có phiên bản</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#2a5670}a:hover{color:#22251f}
+</style>
+</helmet>
+<div style="width: 960px; height: 560px; background: #ffffff; color: #1a1a1a; font-family: 'Inter', system-ui, sans-serif">
+<svg width="960" height="560" viewBox="0 0 960 560" role="img" aria-label="Bộ chủ đề vẽ thành cây: nhánh là chủ đề khái quát, lá là chủ đề cụ thể; AI gợi ý một lá mới, người phụ trách duyệt để tạo phiên bản v2; mỗi phản hồi ghi lại phiên bản đã dùng khi phân loại" style="display: block; font-family: Inter, system-ui, sans-serif">
+  <defs>
+    <symbol id="bird" viewBox="0 0 120 104">
+      <path d="M14 64 C12 34 38 14 64 14 C92 14 110 36 108 62 C106 88 86 98 62 98 C36 98 16 88 14 64 Z" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3.5"></path>
+      <path d="M22 58 C34 48 56 52 62 70 C54 84 34 84 24 74 Z" fill="#C9C4B7" stroke="#2E2E2B" stroke-width="3"></path>
+      <path d="M58 16 C55 6 63 3 65 9 C67 3 74 5 71 14" fill="none" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+      <circle cx="82" cy="46" r="5" fill="#1A1A1A"></circle>
+      <circle cx="83.6" cy="44.4" r="1.6" fill="#FFFFFF"></circle>
+      <ellipse cx="90" cy="60" rx="5" ry="3.5" fill="#EFB9A6"></ellipse>
+      <path d="M102 50 L116 56 L102 62 Z" fill="#E09A3A" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+      <path d="M52 98 L50 103 M70 98 L72 103" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="leaf" viewBox="0 0 40 24">
+      <path d="M2 12 C10 1 30 1 38 12 C30 23 10 23 2 12 Z" fill="#6B7A54" stroke="#2E2E2B" stroke-width="2"></path>
+      <path d="M4 12 L34 12" stroke="#2E2E2B" stroke-width="1.5"></path>
+    </symbol>
+    <symbol id="person" viewBox="0 0 80 150">
+      <path d="M12 74 C12 54 24 46 40 46 C56 46 68 54 68 74 L68 108 L12 108 Z" fill="currentColor" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+      <rect x="19" y="106" width="17" height="40" rx="6" fill="#4A4A45" stroke="#2E2E2B" stroke-width="3"></rect>
+      <rect x="44" y="106" width="17" height="40" rx="6" fill="#4A4A45" stroke="#2E2E2B" stroke-width="3"></rect>
+      <circle cx="40" cy="25" r="17" fill="#F3DCC8" stroke="#2E2E2B" stroke-width="3"></circle>
+      <path d="M22 26 C19 1 61 1 58 26 C52 15 29 15 22 26 Z" fill="#2E2E2B"></path>
+      <circle cx="34" cy="28" r="2.2" fill="#2E2E2B"></circle>
+      <circle cx="46" cy="28" r="2.2" fill="#2E2E2B"></circle>
+      <path d="M35 35 Q40 39 45 35" fill="none" stroke="#2E2E2B" stroke-width="2.2" stroke-linecap="round"></path>
+    </symbol>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#2E2E2B"></path>
+    </marker>
+  </defs>
+
+  <!-- tán cây -->
+  <g fill="#EDF5E6">
+    <circle cx="150" cy="300" r="118"></circle>
+    <circle cx="320" cy="170" r="128"></circle>
+    <circle cx="486" cy="290" r="118"></circle>
+    <circle cx="320" cy="300" r="120"></circle>
+    <circle cx="210" cy="200" r="90"></circle>
+    <circle cx="430" cy="200" r="90"></circle>
+  </g>
+  <!-- mặt đất -->
+  <path d="M30 520 L600 520" stroke="#2E2E2B" stroke-width="3" stroke-linecap="round"></path>
+  <path d="M80 520 l6 -12 l4 12 M120 520 l5 -10 l5 10 M470 520 l6 -12 l4 12 M540 520 l5 -10 l5 10" fill="none" stroke="#6B7A54" stroke-width="2.5" stroke-linejoin="round"></path>
+
+  <!-- nhánh -->
+  <path d="M320 336 C270 304 206 270 162 234" fill="none" stroke="#2E2E2B" stroke-width="18" stroke-linecap="round"></path>
+  <path d="M320 336 C370 304 434 270 478 234" fill="none" stroke="#2E2E2B" stroke-width="18" stroke-linecap="round"></path>
+  <path d="M320 320 L320 128" fill="none" stroke="#2E2E2B" stroke-width="18" stroke-linecap="round"></path>
+  <path d="M320 336 C270 304 206 270 162 234" fill="none" stroke="#B48E5C" stroke-width="12" stroke-linecap="round"></path>
+  <path d="M320 336 C370 304 434 270 478 234" fill="none" stroke="#B48E5C" stroke-width="12" stroke-linecap="round"></path>
+  <path d="M320 320 L320 128" fill="none" stroke="#B48E5C" stroke-width="12" stroke-linecap="round"></path>
+  <!-- thân -->
+  <path d="M294 520 C304 470 306 400 308 316 L332 316 C334 400 336 470 346 520 Z" fill="#B48E5C" stroke="#2E2E2B" stroke-width="3" stroke-linejoin="round"></path>
+  <path d="M314 360 C318 390 316 420 320 450 M326 400 C328 430 330 470 334 500" fill="none" stroke="#7A5A33" stroke-width="2.2" stroke-linecap="round"></path>
+  <rect x="290" y="420" width="60" height="34" rx="6" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="320" y="444" text-anchor="middle" font-size="20" font-weight="700">v2</text>
+
+  <!-- cành nhỏ tới lá -->
+  <path d="M108 232 C76 248 58 268 58 300 L58 360" fill="none" stroke="#7A5A33" stroke-width="3" stroke-linecap="round"></path>
+  <path d="M58 360 L58 418" fill="none" stroke="#7A5A33" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 5"></path>
+  <path d="M382 110 C400 116 410 132 414 144" fill="none" stroke="#7A5A33" stroke-width="3" stroke-linecap="round"></path>
+  <path d="M548 232 C560 248 564 262 564 290 L564 352" fill="none" stroke="#7A5A33" stroke-width="3" stroke-linecap="round"></path>
+
+  <!-- nhãn chủ đề khái quát -->
+  <rect x="86" y="196" width="128" height="38" rx="19" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3"></rect>
+  <text x="150" y="221" text-anchor="middle" font-size="19" font-weight="700">Tài khoản</text>
+  <rect x="256" y="92" width="128" height="38" rx="19" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3"></rect>
+  <text x="320" y="117" text-anchor="middle" font-size="19" font-weight="700">Hiệu năng</text>
+  <rect x="430" y="196" width="140" height="38" rx="19" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="3"></rect>
+  <text x="500" y="221" text-anchor="middle" font-size="19" font-weight="700">Thanh toán</text>
+
+  <!-- lá: chủ đề cụ thể -->
+  <use href="#leaf" x="58" y="288" width="40" height="24"></use>
+  <text x="104" y="306" font-size="18">Đăng nhập</text>
+  <use href="#leaf" x="58" y="348" width="40" height="24"></use>
+  <text x="104" y="366" font-size="18">Khôi phục mật khẩu</text>
+  <path d="M60 420 C68 409 88 409 96 420 C88 431 68 431 60 420 Z" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.2" stroke-dasharray="5 4"></path>
+  <text x="104" y="427" font-size="18" font-weight="700" fill="#2e5e24">+ Mã xác nhận</text>
+  <use href="#leaf" x="408" y="140" width="40" height="24"></use>
+  <text x="454" y="158" font-size="18">Tốc độ tải</text>
+  <g transform="translate(564 288) scale(-1 1)"><use href="#leaf" x="0" y="0" width="40" height="24"></use></g>
+  <text x="516" y="306" text-anchor="end" font-size="18">Hoàn tiền</text>
+  <g transform="translate(564 340) scale(-1 1)"><use href="#leaf" x="0" y="0" width="40" height="24"></use></g>
+  <text x="516" y="358" text-anchor="end" font-size="18">Mã giảm giá</text>
+
+  <!-- chim AI gợi ý lá mới -->
+  <use href="#bird" x="52" y="442" width="80" height="69"></use>
+  <path d="M100 446 C104 440 98 436 90 434" fill="none" stroke="#2E2E2B" stroke-width="2.2" stroke-dasharray="4 4" marker-end="url(#ah)"></path>
+  <text x="140" y="490" font-size="18" font-weight="700">AI gợi ý</text>
+  <text x="140" y="512" font-size="18" fill="#3d4038">lá mới</text>
+
+  <!-- ===== bên phải: phiên bản và người duyệt ===== -->
+  <text x="790" y="40" text-anchor="middle" font-size="19" font-weight="700">Bộ chủ đề có phiên bản</text>
+  <path d="M650 64 L720 64 L736 82 L720 100 L650 100 Z" fill="#E9E9E4" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+  <text x="686" y="89" text-anchor="middle" font-size="20" font-weight="700" fill="#4b4e45">v1</text>
+  <path d="M744 82 L830 82" stroke="#2E2E2B" stroke-width="2.5" marker-end="url(#ah)"></path>
+  <text x="788" y="72" text-anchor="middle" font-size="18" fill="#3d4038">duyệt</text>
+  <path d="M842 64 L912 64 L928 82 L912 100 L842 100 Z" fill="#DCC892" stroke="#2E2E2B" stroke-width="2.5" stroke-linejoin="round"></path>
+  <text x="878" y="89" text-anchor="middle" font-size="20" font-weight="700">v2</text>
+
+  <use href="#person" x="644" y="150" width="80" height="150" style="color: #4f86a8"></use>
+  <rect x="702" y="214" width="46" height="60" rx="5" fill="#B48E5C" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <rect x="708" y="224" width="34" height="44" rx="2" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="1.6"></rect>
+  <rect x="716" y="208" width="18" height="10" rx="3" fill="#6B7A54" stroke="#2E2E2B" stroke-width="1.8"></rect>
+  <path d="M713 238 L717 242 L723 234 M713 254 L717 258 L723 250" fill="none" stroke="#2e5e24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+  <text x="684" y="330" text-anchor="middle" font-size="18" font-weight="700">Người phụ trách</text>
+  <text x="684" y="352" text-anchor="middle" font-size="18" fill="#3d4038">xem tên, phạm vi,</text>
+  <text x="684" y="374" text-anchor="middle" font-size="18" fill="#3d4038">chỗ chồng lấn</text>
+
+  <rect x="770" y="150" width="172" height="80" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="784" y="176" font-size="18" fill="#3d4038">phản hồi #1024</text>
+  <rect x="780" y="188" width="154" height="30" rx="15" fill="#E9E9E4" stroke="#2E2E2B" stroke-width="2"></rect>
+  <text x="857" y="209" text-anchor="middle" font-size="18" font-weight="600">Đăng nhập · v1</text>
+
+  <rect x="770" y="246" width="172" height="80" rx="10" fill="#FFFFFF" stroke="#2E2E2B" stroke-width="2.5"></rect>
+  <text x="784" y="272" font-size="18" fill="#3d4038">phản hồi #2050</text>
+  <rect x="780" y="284" width="154" height="30" rx="15" fill="#DCC892" stroke="#2E2E2B" stroke-width="2"></rect>
+  <text x="857" y="305" text-anchor="middle" font-size="18" font-weight="600">Mã xác nhận · v2</text>
+  <text x="860" y="356" text-anchor="middle" font-size="18" fill="#3d4038">kết quả ghi lại</text>
+  <text x="860" y="378" text-anchor="middle" font-size="18" fill="#3d4038">phiên bản đã dùng</text>
+
+  <text x="780" y="470" text-anchor="middle" font-size="18" fill="#3d4038">Nhánh: chủ đề khái quát</text>
+  <text x="780" y="494" text-anchor="middle" font-size="18" fill="#3d4038">Lá: chủ đề cụ thể</text>
+</svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
