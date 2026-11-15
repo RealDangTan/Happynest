@@ -2,6 +2,17 @@
 
 Standing context for AI coding agents (Claude Code, Cursor, Codex, …) working in this repository. Read this file FIRST, then `docs/README.md`, then the active mission plan referenced below.
 
+## Mandatory rule — all validation is run by the user
+
+- **Agents must never run tests, test cases, or lint.** The user runs all validation personally. This applies to individual cases, full suites, type checks, verification builds, smoke checks, manual UI/API checks, and validation or benchmark scripts.
+- Do not trigger these checks indirectly through wrapper scripts, package commands, hooks, CI, or another agent. This rule takes precedence over any validation steps in plans, skills, checklists, and other repository instructions.
+- Complete the requested changes and hand them back to the user for validation. Leave verification pending until the user supplies results. Reading source files and reviewing the diff are allowed.
+
+## Git workflow — work directly on main
+
+- Use `main` for routine work. Switch to the existing `main` checkout before editing and integrate any new changes from `origin/main` while preserving local work.
+- Create a branch, worktree, or pull request only when the user explicitly asks for one. When the user asks for a commit or push, commit on `main` and push to `origin/main` as requested.
+
 ## Project identity
 
 - **Thesis (VI):** "AI Agent tổng hợp, phân loại và phát hiện vấn đề từ phản hồi người dùng về sản phẩm AI"
@@ -9,47 +20,6 @@ Standing context for AI coding agents (Claude Code, Cursor, Codex, …) working 
 - **Pipeline (target architecture):** PII sanitize → LLM classify → embed → cluster → trend/emerging/spike detection → evidence-backed insight → HITL review via LangGraph interrupt
 - **Dataset:** mixed Vietnamese–English (code-switching). All NLP choices assume this.
 - **Constraints:** 8 GB RAM dev machine · cheap VPS deploy target · deadline < 2 months from 2026-08-23.
-
-## ⚠️ CURRENT PHASE — Delivery: Frontend + Pipeline Completion (khai báo 2026-08-25)
-
-Backend Foundation đã đóng 12/12 phase ✅ (bằng chứng: [tóm tắt kế hoạch](docs/plan_report.md), [backend-foundation-report.md](docs/backend-foundation-report.md)). Owner khai báo giai đoạn tiếp theo cùng ngày — các mục từng out-of-scope sau đây CHÍNH THỨC IN SCOPE:
-
-- **Frontend** Next.js trong `frontend/` (shadcn/ui, preset `b4IdeDqtkJ`) — plan series mới trong `docs/plans/`
-- **4 nhóm route stub → production**: `GET /api/clusters`, `GET /api/insights`, `POST /api/reviews/{id}` + `POST /api/corrections/{id}` (HITL), `GET /api/reports/summary`
-- **Production LangGraph HITL graph + correction→few-shot loop** (spike S5 đã PASS làm bằng chứng khả thi)
-- **Agent module — series 17–20** (khai báo 2026-08-26, xem [decisions](docs/decisions.md) cùng ngày): LangGraph graph fully LLM-routed (router node + budget cap + critic + risk gate) + toolbox + closed-loop KPIs — lịch sử plans [17–20](docs/plan_report.md), đăng ký là pha P6 của delivery; runner phase 09 KHÔNG bị thay thế
-
-Vẫn OUT OF SCOPE (không đổi):
-
-- **Docker of any kind — permanently banned** (dev = FastAPI native on Windows + **Supabase** managed PostgreSQL; prod = native Ubuntu VPS with systemd)
-
-Phạm vi chi tiết + phasing theo design spec & plan series đang soạn trong `docs/plans/`; lệch kế hoạch mới → entry dated vào `docs/decisions.md` như cũ.
-
-## Locked stack
-
-Do NOT substitute any of these without a dated entry in `docs/decisions.md`.
-
-| Concern | Choice |
-|---|---|
-| Runtime | Python **3.12** via `uv` (`backend/.python-version` committed) |
-| Database | **Supabase** managed PostgreSQL 17 qua session pooler (`aws-0-<region>.pooler.supabase.com:5432`); extension `vector` trong schema `extensions`; NO ANN index (dataset ≤ 1500 rows) — *v1.1, xem decisions.md* |
-| Vectors | `VECTOR(1536)`; OpenAI-compatible `/v1/embeddings`; store `embedding_model` + `embedding_dim` per row |
-| LLM | `openai` SDK with `base_url` override; env-driven provider; `temperature=0` |
-| Structured output | try `response_format json_schema` → fallback prompt-JSON + Pydantic validate + ONE retry |
-| PII | Presidio + `StanzaNlpEngine("vi")` + regex recognizers (email/url/ip/VN-phone/CCCD); `<TYPE>` placeholders; analyzer instantiated once at startup |
-| HITL trigger rule | `requires_human_review = severity=="critical" OR safety_issue OR pii_detected OR confidence<0.60` (compute now, graph later) |
-| Auth | FastAPI OAuth2 password flow; `pwdlib[argon2]`; JWT in httpOnly SameSite=Lax cookie; shared authenticated access; user identity = `{id, email}` |
-| Tracing | Langfuse Cloud Hobby EU + permanent `llm_call_logs` Postgres table (vendor-independent evidence) |
-| Migrations | Alembic with `include_object` filter excluding the 4 langgraph checkpoint tables from day one |
-
-## Per-account workspace isolation contract (2026-10-22 — đảo shared-workspace của 2026-10-14)
-
-- Mỗi product thuộc sở hữu MỘT account (`products.owner_id`, migration 0020). Account mới đăng ký có workspace TRỐNG — không bao giờ thấy dữ liệu của account khác.
-- Mọi endpoint theo product chỉ đụng product của chính tài khoản; product của người khác → 404 (không tiết lộ sự tồn tại). List toàn cục (feedbacks, imports, insights, analysis runs, clusters, reports/summary) mặc định scope theo các product của tài khoản.
-- Account identity records login and reviewer attribution; mọi create/edit/delete/HITL decision chỉ tác động workspace của mình.
-- Residual đã ghi nhận (xem [decisions.md](docs/decisions.md) 2026-10-22): `POST /api/clusters/run` và `GET /api/reports/kpis` vẫn toàn cục (batch job / KPI hệ thống).
-- Treat `docs/README.md`, `docs/api-checklist.md` and current code as the implementation contract. Historical plans, screenshots and Git snapshots do not add requirements.
-
 ## Repository map
 
 ```text
@@ -92,10 +62,6 @@ uv sync                          # install pinned deps
 uv run alembic upgrade head      # migrations (creates vector extension too)
 uv run python scripts/seed_users.py
 uv run uvicorn app.main:app --reload    # run ALONE in its own terminal (Windows quirk)
-
-# tests
-uv run pytest                    # unit suite (LLM mocked)
-uv run pytest -m integration     # requires real PG reachable
 ```
 
 ## Hard rules
@@ -106,13 +72,11 @@ uv run pytest -m integration     # requires real PG reachable
 4. **Every deviation** (package conflict, missing apt package, provider quirk) → fix forward AND append dated entry to `docs/decisions.md`: context → decision → alternatives rejected → consequence.
 5. **Commits:** small, conventional (`feat(auth): …`). Never commit `.env`, real keys, or raw feedback containing PII.
 6. **Windows quirks:** run `uvicorn --reload` alone in its own terminal; never spawn subprocesses under reload; all shell/SQL files LF-only (enforced by `.gitattributes`).
-7. **Scope discipline:** if a milestone's acceptance fails after honest effort, STOP that milestone, record the blocker in `docs/decisions.md`, continue independent milestones, report at the end. Do not silently expand scope.
-8. Spikes S1–S6 are validation evidence for the thesis — keep their scripts and record outcomes even when a fallback gets activated.
+7. **Scope discipline:** if the user reports that a milestone failed acceptance after honest effort, STOP that milestone, record the blocker in `docs/decisions.md`, continue independent milestones, and report at the end. Do not silently expand scope.
+8. Spikes S1–S6 are validation evidence for the thesis. Keep their scripts and record outcomes supplied by the user, including when a fallback gets activated.
 9. **UI/FE work REQUIRES FE skills:** any task touching UI / frontend design — component, page, layout, styling, design tokens, Figma→code — MUST invoke the relevant FE skill FIRST (`frontend-design`, `shadcn`, `figma:figma-design-to-code`, …) before writing any code. Never hand-roll UI without loading a skill.
 10. **API checklist sync:** adding/changing/removing any endpoint, request/response schema, or auth guard → update [`docs/api-checklist.md`](docs/api-checklist.md) in the SAME commit (endpoint + method + auth + trạng thái + tác dụng). Wiring/renaming an API call on the FRONTEND → update its "Trên FE" / "Vị trí trên FE" columns too. The agent making the change updates the checklist itself — no reminder needed.
 
 ## Skills & multi-agent handoff
-
-- **Handoff protocol (binding for every agent):** before starting AND before ending any session, follow [`.agents/skills/agent-handoff/SKILL.md`](.agents/skills/agent-handoff/SKILL.md) — check/leave append-only records in [`docs/handoffs/`](docs/handoffs/), sign commits with `Assisted-by: <agent-name>`, verify incoming claims (`git log`, tests) before trusting them.
 - **In-repo skills:** single source of truth is [`.agents/skills/`](.agents/skills/) (universal — Codex/Cursor/Gemini/Antigravity). `.claude/skills/` is a local NTFS junction pointing there so Claude Code still auto-loads them; it is gitignored — recreate after a fresh clone: `New-Item -ItemType Junction -Path .claude/skills -Target .agents/skills`. Add new skills ONLY under `.agents/skills/`; never keep copies in both places.
 - Plan execution is **inline** in one session — no subagent fan-out (LLM API credit is limited, see `docs/plans/00-index.md` §1).
