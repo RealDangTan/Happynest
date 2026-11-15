@@ -128,48 +128,49 @@ export function StepFile({
   const { productId, loading } = useProduct()
 
   // Chọn hoặc thả file là tải lên ngay — không cần thêm một nút xác nhận.
-  const upload = async (picked: File | null) => {
-    setFile(picked)
+  const upload = (picked: File | null) => {
     if (!picked || !productId || createImport.isPending) return
-    try {
-      const created = await createImport.mutateAsync({ file: picked, productId })
-      toast.success(t.file.uploaded)
-      onUploaded(created.id)
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : t.file.uploadFailed)
-    }
+    setFile(picked)
+    createImport.mutate({ file: picked, productId }, {
+      onSuccess: (created) => {
+        toast.success(t.file.uploaded)
+        onUploaded(created.id)
+      },
+    })
   }
 
   return (
     <section
       className={
-        embedded ? "flex flex-col" : "mx-auto flex max-w-xl flex-col gap-6 py-10"
+        embedded ? "flex min-w-0 flex-col" : "mx-auto flex max-w-xl flex-col gap-6 py-10"
       }
     >
-      <Card>
+      <Card className={embedded ? "flex-1" : undefined}>
         <CardHeader>
           <CardTitle>{t.file.title}</CardTitle>
           <CardDescription>{t.file.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className={embedded ? "flex-1" : undefined}>
           <div
-            className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-signal/60"
+            className="flex min-h-48 flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-leaf-line bg-background/65 px-4 py-6 text-center transition-colors hover:border-leaf hover:bg-leaf-soft/35"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault()
               const dropped = e.dataTransfer.files?.[0]
-              if (dropped && productReady) void upload(dropped)
+              if (productReady) upload(dropped ?? null)
             }}
           >
             {createImport.isPending && file ? (
-              <p className="flex items-center gap-2 text-sm font-medium" role="status">
-                <Spinner /> {t.file.uploading(file.name)}
+              <p className="flex min-w-0 items-center gap-2 text-sm font-medium" role="status">
+                <Spinner className="shrink-0" />
+                <span className="wrap-anywhere">{t.file.uploading(file.name)}</span>
               </p>
             ) : (
               <>
-                <Upload className="size-8 text-muted-foreground" />
-                <p className="text-sm">{t.file.drop}</p>
-                <p className="text-xs text-muted-foreground">{t.file.or}</p>
+                <span className="grid size-12 place-items-center rounded-xl bg-leaf-soft text-leaf-ink">
+                  <Upload className="size-5" aria-hidden />
+                </span>
+                <p className="font-heading text-base">{t.file.drop}</p>
                 <Button
                   disabled={!productReady}
                   onClick={() => inputRef.current?.click()}
@@ -185,7 +186,7 @@ export function StepFile({
               accept=".csv,text/csv"
               className="hidden"
               onChange={(e) => {
-                void upload(e.target.files?.[0] ?? null)
+                upload(e.target.files?.[0] ?? null)
                 e.target.value = ""
               }}
             />
@@ -193,7 +194,13 @@ export function StepFile({
               <p className="text-sm text-destructive">{t.file.needProduct}</p>
             ) : null}
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">{t.file.errorsHint}</p>
+          {createImport.isError ? (
+            <Alert variant="destructive">
+              <TriangleAlert className="size-4" />
+              <AlertTitle>{t.file.uploadFailed}</AlertTitle>
+              <AlertDescription>{createImport.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
         </CardContent>
         {embedded ? null : (
           <CardFooter>
@@ -270,7 +277,9 @@ export function StepPreview({
       ) : preview.data ? (
         <Card>
           <CardHeader>
-            <CardTitle>{preview.data.original_filename ?? "CSV"}</CardTitle>
+            <CardTitle className="wrap-anywhere">
+              {preview.data.original_filename ?? "CSV"}
+            </CardTitle>
             <CardDescription className="font-mono text-xs">
               {t.preview.rowsCols(
                 preview.data.source_row_count,

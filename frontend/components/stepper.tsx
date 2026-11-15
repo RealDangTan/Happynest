@@ -11,7 +11,7 @@ export function Stepper({
 }) {
   const index = steps.indexOf(current);
   return (
-    <ol className="flex items-center gap-2 text-sm" aria-label={label}>
+    <ol className="flex flex-wrap items-center gap-2 text-sm" aria-label={label}>
       {steps.map((step, i) => (
         <li key={step} className="flex items-center gap-2">
           <span

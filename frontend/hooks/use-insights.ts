@@ -3,10 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type { InsightItem, InsightsListResponse } from "@/lib/types";
 
-export function useInsights() {
+export function useInsights(productId?: string | null) {
   return useQuery({
-    queryKey: ["insights"],
-    queryFn: () => apiFetch<InsightsListResponse>("/api/insights"),
+    queryKey: productId === undefined ? ["insights"] : ["insights", "product", productId],
+    queryFn: () =>
+      apiFetch<InsightsListResponse>(
+        productId ? "/api/insights?product_id=" + encodeURIComponent(productId) : "/api/insights",
+      ),
+    enabled: productId !== null,
     staleTime: 0,
   });
 }

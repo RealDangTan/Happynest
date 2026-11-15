@@ -1,8 +1,9 @@
 """Authentication schemas; users expose identity only."""
 
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 
 # RFC-lite: đủ chặn "khong-phai-email" mà không cần thêm dependency email-validator.
@@ -28,3 +29,16 @@ class UserOut(BaseModel):
 
     id: uuid.UUID
     email: str
+
+
+class UserProfileOut(UserOut):
+    username: str | None = None
+
+
+class UpdateProfileIn(BaseModel):
+    username: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True, max_length=48, pattern=r"^[^\x00-\x1f\x7f]*$"
+        ),
+    ] | None

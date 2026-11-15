@@ -48,6 +48,7 @@ import { apiFetch } from "@/lib/api"
 import type { Feedback, FeedbackListResponse, ImportRecord, Severity } from "@/lib/types"
 import { useCreateAgentRun } from "@/hooks/use-agent"
 import { InvestigationCard } from "@/components/ai/investigation-card"
+import { FeedbackTrends, feedbackDay, type TrendRange } from "@/components/feedback-trends"
 import { useInvestigationSession } from "@/hooks/use-investigation-session"
 import { useProduct } from "@/hooks/use-product"
 import { useTaxonomy } from "@/hooks/use-taxonomy"
@@ -55,7 +56,7 @@ import {
   multiSelectFilterFn,
   severitySortFn,
 } from "@/lib/table-sorts"
-import { scopeLine, shortDate, topTopics, topicLabeler, trendByDate } from "@/lib/graph"
+import { scopeLine, shortDate, topTopics, topicLabeler } from "@/lib/graph"
 import { PageHeader } from "@/components/page-header"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import { useT } from "@/lib/i18n"
@@ -65,7 +66,7 @@ import { cn } from "@/lib/utils"
 
 function useImportFeedbacks(importIds: string[]) {
   return useQuery({
-    queryKey: ["data-graph", "feedbacks", importIds],
+    queryKey: ["data-graph", "feedbacks", "scope", importIds],
     queryFn: async () => {
       const results = await Promise.all(
         importIds.map((id) =>
@@ -74,7 +75,10 @@ function useImportFeedbacks(importIds: string[]) {
           )
         )
       )
-      return results.flatMap((r) => r.items)
+      return {
+        items: results.flatMap((r) => r.items),
+        partial: results.some((r) => r.total > r.items.length),
+      }
     },
     enabled: importIds.length > 0,
     staleTime: 30_000,
@@ -309,34 +313,6 @@ function WordCloud({
   )
 }
 
-function Trends({ points }: { points: { date: string; count: number }[] }) {
-  const max = Math.max(...points.map((p) => p.count), 1)
-  return (
-    <div className="flex h-56 items-end gap-2 p-6">
-      {points.map((p) => (
-        <div key={p.date} className="flex flex-1 flex-col items-center gap-1">
-          <span className="font-mono text-xs text-muted-foreground">
-            {p.count}
-          </span>
-          <div
-            className="w-full rounded-t bg-chart-2/80"
-            style={{ height: `${(p.count / max) * 160}px` }}
-            title={`${p.date}: ${p.count}`}
-          />
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {shortDate(p.date)}
-          </span>
-        </div>
-      ))}
-      {points.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No dated feedback in this scope.
-        </p>
-      ) : null}
-    </div>
-  )
-}
-
 /** Vì sao biểu đồ chủ đề trống: chưa phân loại gì, hay đã phân loại nhưng mọi
  * mục đều UNCATEGORIZED (chưa có bộ chủ đề lúc chạy). Hai tình huống cần hai
  * việc khác nhau — trước đây cùng hiện một dòng "chưa có chủ đề" (HN-007). */
@@ -390,6 +366,7 @@ function DataGraph({
   const { productId } = useProduct()
   const router = useRouter()
   const askRef = useRef<HTMLInputElement>(null)
+  const submitting = useRef(false)
   const taxonomyQuery = useTaxonomy(productId)
   const topicLabel = useMemo(
     () => topicLabeler(taxonomyQuery.data?.items ?? []),
@@ -414,6 +391,7 @@ function DataGraph({
   const effectiveChecked = checked ?? new Set(scope ?? imports.map((i) => i.id))
   const effectiveScope = scope ?? imports.map((i) => i.id)
   const [tab, setTab] = useInvestigationSession("view", productId, "cloud")
+  const [trendRange, setTrendRange] = useState<TrendRange | null>(null)
   const [selectedTopic, setSelectedTopic] = useInvestigationSession<string>("topic", productId, initialTopic)
   const [question, setQuestion] = useInvestigationSession("question", productId, "")
   const [savedRunId, setRunId] = useInvestigationSession<string | null>("run", productId, null)
@@ -422,14 +400,20 @@ function DataGraph({
 
   const feedbacks = useImportFeedbacks(effectiveScope)
   const items = useMemo(
-    () => (feedbacks.data ?? []).filter((f) => Boolean(f.ai_analysis)),
+    () => (feedbacks.data?.items ?? []).filter((f) => Boolean(f.ai_analysis)),
     [feedbacks.data]
   )
-  const pendingExcluded = (feedbacks.data ?? []).length - items.length
+  const pendingExcluded = (feedbacks.data?.items.length ?? 0) - items.length
   const dates = items.map((f) => f.occurred_at.slice(0, 10)).sort()
 
   const words = topTopics(items)
-  const trends = trendByDate(items)
+  const tableItems = useMemo(() => {
+    if (!trendRange) return items
+    return items.filter((item) => {
+      const day = feedbackDay(item)
+      return day >= trendRange.start && day < trendRange.end
+    })
+  }, [items, trendRange])
   const matched = selectedTopic
     ? items.filter((f) => f.ai_analysis?.topics?.includes(selectedTopic))
     : []
@@ -438,7 +422,8 @@ function DataGraph({
 
   const askAI = async (text: string = question) => {
     const asked = text.trim()
-    if (!productId || asked.length < 3 || createRun.isPending) return
+    if (!productId || asked.length < 3 || submitting.current) return
+    submitting.current = true
     setQuestion(asked)
     try {
       const { run_id } = await createRun.mutateAsync({
@@ -451,6 +436,8 @@ function DataGraph({
       toast.success(t.graph.started)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t.graph.startFailed)
+    } finally {
+      submitting.current = false
     }
   }
 
@@ -463,13 +450,15 @@ function DataGraph({
 
   // Chưa có gì được phân loại thì AI không có bằng chứng để tìm — chặn sớm và
   // chỉ đường về bước 2 thay vì để cuộc điều tra chạy rồi trả kết luận rỗng.
-  const noAnalyzed = !feedbacks.isPending && items.length === 0
   // Số liệu ở header chỉ đúng khi cả danh sách file lẫn phản hồi đã về; trước
   // đó `items` rỗng sẽ bị đọc nhầm thành "0 đã phân loại" (QA HN-006).
   const scopeLoading =
     productId == null ||
     importsQuery.isPending ||
     (effectiveScope.length > 0 && feedbacks.isPending)
+  const noAnalyzed = !scopeLoading && !feedbacks.isError && items.length === 0
+  const canAsk = !scopeLoading && !feedbacks.isError && items.length > 0
+  const retryQuestion = runId === savedRunId ? runQuestion : ""
 
   return (
     <div className="flex flex-col gap-6">
@@ -511,13 +500,21 @@ function DataGraph({
             setChecked(new Set(effectiveChecked))
             setScope([...effectiveChecked])
             setSelectedTopic("")
+            setTrendRange(null)
           }}
         />
 
         <div className="flex min-w-0 flex-col gap-4">
           {/* Cuộc điều tra đang mở (đang chạy / chờ duyệt) là việc chính của
               màn — đặt trên ô hỏi để không phải cuộn mới thấy phần duyệt. */}
-          {runId ? <InvestigationCard key={runId} runId={runId} question={savedRunId === runId ? runQuestion : null} onRetry={() => void askAI()} /> : null}
+          {runId ? (
+            <InvestigationCard
+              key={runId}
+              runId={runId}
+              question={retryQuestion || null}
+              onRetry={retryQuestion ? () => void askAI(retryQuestion) : undefined}
+            />
+          ) : null}
           <Card>
             <CardHeader>
               <CardTitle>{t.graph.askTitle}</CardTitle>
@@ -525,20 +522,25 @@ function DataGraph({
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex flex-wrap gap-2">
-                <InputGroup className="flex-1">
+                <InputGroup className="min-w-44 flex-1">
                   <InputGroupInput
                     ref={askRef}
                     placeholder={t.graph.placeholder}
                     value={question}
                     disabled={noAnalyzed}
                     onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && void askAI()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing && !e.repeat) {
+                        e.preventDefault()
+                        if (canAsk) void askAI()
+                      }
+                    }}
                   />
                 </InputGroup>
                 <Button
                   onClick={() => void askAI()}
                   disabled={
-                    noAnalyzed || question.trim().length < 3 || createRun.isPending
+                    !canAsk || question.trim().length < 3 || createRun.isPending
                   }
                 >
                   {createRun.isPending ? (
@@ -556,7 +558,7 @@ function DataGraph({
                     <Link href="/vault">{t.graph.goClassify}</Link>
                   </Button>
                 </div>
-              ) : (
+              ) : canAsk ? (
                 <div
                   className="flex flex-wrap gap-2"
                   role="group"
@@ -568,21 +570,25 @@ function DataGraph({
                       size="sm"
                       variant="outline"
                       disabled={createRun.isPending}
-                      onClick={() => void askAI(suggestion)}
+                      onClick={() => {
+                        setQuestion(suggestion)
+                        askRef.current?.focus()
+                      }}
+                      className="h-auto min-h-8 max-w-full whitespace-normal text-left"
                     >
                       <Sparkles data-icon="inline-start" />
                       {suggestion}
                     </Button>
                   ))}
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
 
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList>
+            <TabsList className="max-w-full flex-wrap group-data-horizontal/tabs:h-auto">
               <TabsTrigger value="cloud">Đám mây chủ đề</TabsTrigger>
-              <TabsTrigger value="trends">Xu hướng</TabsTrigger>
+              <TabsTrigger value="trends">{t.graph.trends.tab}</TabsTrigger>
               <TabsTrigger value="topics">Chủ đề</TabsTrigger>
               <TabsTrigger value="table">Bảng</TabsTrigger>
             </TabsList>
@@ -611,11 +617,25 @@ function DataGraph({
               </Card>
             </TabsContent>
             <TabsContent value="trends">
-              <Card>
-                <CardContent className="p-0">
-                  <Trends points={trends} />
-                </CardContent>
-              </Card>
+              {scopeLoading ? (
+                <Card><CardContent className="items-center p-8"><Spinner /></CardContent></Card>
+              ) : feedbacks.isError ? (
+                <Card>
+                  <CardContent className="items-start">
+                    <p className="text-sm text-muted-foreground">{t.graph.trends.loadFailed}</p>
+                    <Button size="sm" variant="outline" onClick={() => void feedbacks.refetch()}>{t.graph.trends.retry}</Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <FeedbackTrends
+                  items={items}
+                  partial={feedbacks.data?.partial ?? false}
+                  onViewFeedback={(range) => {
+                    setTrendRange(range)
+                    setTab("table")
+                  }}
+                />
+              )}
             </TabsContent>
             <TabsContent value="topics">
               <Card>
@@ -655,14 +675,22 @@ function DataGraph({
               </Card>
             </TabsContent>
             <TabsContent value="table">
-              {feedbacks.isPending ? (
+              {trendRange ? (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2">
+                  <p className="text-sm">{trendRange.label} · {t.graph.trends.count(tableItems.length)}</p>
+                  <Button size="sm" variant="ghost" onClick={() => setTrendRange(null)}>{t.graph.trends.clear}</Button>
+                </div>
+              ) : null}
+              {scopeLoading ? (
                 <Card>
                   <CardContent className="flex justify-center p-8">
                     <Spinner />
                   </CardContent>
                 </Card>
-              ) : items.length ? (
-                <ScopeTable items={items} topicLabel={topicLabel} />
+              ) : tableItems.length ? (
+                <ScopeTable key={trendRange?.start} items={tableItems} topicLabel={topicLabel} />
+              ) : trendRange ? (
+                <Card><CardContent>{t.graph.trends.emptyTitle}</CardContent></Card>
               ) : (
                 <Card>
                   <CardContent className="p-0">

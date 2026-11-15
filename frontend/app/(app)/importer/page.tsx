@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, FileSpreadsheet } from "lucide-react"
+import { ArrowLeft, ArrowRight, FileSpreadsheet } from "lucide-react"
 import {
   Badge,
 } from "@/components/ui/badge"
@@ -178,113 +178,123 @@ export default function ImporterPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <NextStepBar />
-
+    <div className="@container mx-auto flex max-w-7xl flex-col gap-6">
       <PageHeader title={t.title} description={t.description} />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
-        <div className="flex min-w-0 flex-col gap-8">
-          <StepFile
-            productReady={Boolean(productId)}
-            onUploaded={(id) => {
-              setImportId(id)
-              setPhase("preview")
-            }}
-            onCancel={() => setPhase("idle")}
-            embedded
-          />
+      <div className="grid items-stretch gap-4 @xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <StepFile
+          productReady={Boolean(productId)}
+          onUploaded={(id) => {
+            setImportId(id)
+            setPhase("preview")
+          }}
+          onCancel={() => setPhase("idle")}
+          embedded
+        />
 
-          {waiting.length ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.queueTitle}</CardTitle>
-                <CardDescription>{t.queueDescription}</CardDescription>
-              </CardHeader>
-              <CardContent className="gap-2">
-                {waiting.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4 rounded-lg bg-secondary/30 px-4 py-3"
-                  >
-                    <FileSpreadsheet className="size-4 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {item.original_filename ?? item.id}
-                      </p>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {item.source_row_count ?? item.row_count ?? 0}
-                      </p>
-                    </div>
-                    <StatusBadge status={item.status} />
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setImportId(item.id)
-                        setPhase("preview")
-                      }}
-                    >
-                      {t.continue}
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {history.length ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.historyTitle}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t.colFile}</TableHead>
-                      <TableHead>{t.colRows}</TableHead>
-                      <TableHead>{t.colStatus}</TableHead>
-                      <TableHead />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {history.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          {item.original_filename ?? item.id}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {item.row_count ?? item.source_row_count ?? "—"}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={item.status} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link href={`/vault?import=${item.id}`}>{t.open}</Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
-
-        <Card size="sm" className="self-start">
+        <Card className="border border-leaf-line/60 bg-leaf-soft/35 shadow-none ring-0">
           <CardHeader>
             <CardTitle>{t.howTitle}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
-              {t.how.map((line) => (
-                <li key={line}>{line}</li>
+            <ol className="flex flex-col gap-3">
+              {t.how.map((line, index) => (
+                <li key={line} className="flex items-start gap-3">
+                  <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-leaf-soft font-mono text-xs font-medium text-leaf-ink">
+                    {index + 1}
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <p className="text-sm font-medium">{t.steps[index]}</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{line}</p>
+                  </div>
+                </li>
               ))}
             </ol>
           </CardContent>
         </Card>
+      </div>
+
+      <NextStepBar />
+
+      <div className="flex min-w-0 flex-col gap-6">
+        {waiting.length ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.queueTitle}</CardTitle>
+              <CardDescription>{t.queueDescription}</CardDescription>
+            </CardHeader>
+            <CardContent className="gap-2">
+              {waiting.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-secondary/30 px-4 py-3"
+                >
+                  <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1 basis-32">
+                    <p className="truncate text-sm font-medium">
+                      {item.original_filename ?? item.id}
+                    </p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {item.source_row_count ?? item.row_count ?? 0}
+                    </p>
+                  </div>
+                  <StatusBadge status={item.status} />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setImportId(item.id)
+                      setPhase("preview")
+                    }}
+                  >
+                    {t.continue}
+                    <ArrowRight data-icon="inline-end" />
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {history.length ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.historyTitle}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.colFile}</TableHead>
+                    <TableHead>{t.colRows}</TableHead>
+                    <TableHead>{t.colStatus}</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        {item.original_filename ?? item.id}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {item.row_count ?? item.source_row_count ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={item.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" asChild>
+                          <Link href={`/vault?import=${item.id}`}>{t.open}</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </div>
   )

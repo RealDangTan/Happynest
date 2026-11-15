@@ -6,6 +6,8 @@ import {
 } from "@/components/ui/popover";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 const NOTES = [
   {
@@ -25,26 +27,36 @@ const NOTES = [
   },
 ];
 
-export function WhatsNew({ tone = "navbar" }: { tone?: "panel" | "navbar" }) {
+export function WhatsNew({
+  tone = "navbar",
+  compact = false,
+}: {
+  tone?: "panel" | "navbar";
+  compact?: boolean;
+}) {
+  const label = useT().panel.whatsNew;
+  const showLabel = tone === "panel" && !compact;
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className={
+          size={showLabel ? "default" : "icon"}
+          className={cn(
             tone === "panel"
-              ? "size-8 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              : "size-8 text-muted-foreground hover:bg-accent hover:text-foreground"
-          }
-          aria-label="What's new"
-          title="What's new"
+              ? "h-9 text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-sidebar-ring"
+              : "size-8 text-muted-foreground hover:bg-accent hover:text-foreground",
+            tone === "panel" && (showLabel ? "justify-start px-3" : "w-9"),
+          )}
+          aria-label={label}
+          title={showLabel ? undefined : label}
         >
-          <Sparkles className="size-4" />
+          <Sparkles data-icon="inline-start" />
+          {showLabel && label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="end" className="w-80">
-        <p className="text-sm font-semibold">What&apos;s new</p>
+      <PopoverContent side={tone === "panel" && compact ? "right" : "top"} align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+        <p className="text-sm font-semibold">{label}</p>
         <ul className="mt-3 space-y-3">
           {NOTES.map((n) => (
             <li key={n.title} className="space-y-0.5">

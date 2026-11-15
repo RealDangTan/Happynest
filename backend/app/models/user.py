@@ -14,6 +14,7 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
+    username: Mapped[str | None] = mapped_column(String(48), nullable=True)
     # NULL = account Google-only (đăng nhập qua Google OAuth, không có mật
     # khẩu) — migration 0022 nới NOT NULL; login password chặn NULL ở route.
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)

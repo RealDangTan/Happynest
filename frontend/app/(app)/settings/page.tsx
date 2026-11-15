@@ -34,9 +34,11 @@ function PrefRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 truncate text-muted-foreground">{label}</span>
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm">
+      <div className="flex min-w-0 items-center gap-3">
+        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="text-muted-foreground">{label}</span>
+      </div>
       <div className="ml-auto shrink-0">{children}</div>
     </div>
   );
@@ -48,23 +50,27 @@ export default function SettingsPage() {
   const shortcuts = UTILITY_SCREENS.filter((s) => s.href !== "/settings");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="@container flex flex-col gap-6">
       <PageHeader title={t.settings.title} description={t.settings.description} />
 
-      {/* Lối vào nhanh các màn ngoại lai còn lại */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 @2xl:grid-cols-2">
         {shortcuts.map((s) => (
           <Link
             key={s.href}
             href={s.href}
-            className="group outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+            className="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Card size="sm" className="transition-colors group-hover:bg-accent/50">
-              <CardContent className="flex items-center gap-3">
-                <s.icon className="size-4 shrink-0 text-muted-foreground" />
+            <Card
+              size="sm"
+              className="h-full justify-center transition-colors group-hover:bg-accent/50"
+            >
+              <CardContent className="flex-row items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted">
+                  <s.icon className="size-4 text-muted-foreground" aria-hidden />
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">{t.nav.utility[s.key].label}</p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {t.nav.utility[s.key].description}
                   </p>
                 </div>
@@ -119,9 +125,9 @@ export default function SettingsPage() {
           <CardTitle>{t.settings.privacyTitle}</CardTitle>
           <CardDescription>{t.settings.privacyDescription}</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-start gap-3 text-sm">
+        <CardContent className="flex-row items-start gap-3 text-sm">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-lichen" />
-          <p className="max-w-prose text-muted-foreground">
+          <p className="min-w-0 max-w-prose text-muted-foreground">
             {t.settings.privacyBodyBefore}
             <code className="font-mono text-xs">&lt;TYPE&gt;</code>
             {t.settings.privacyBodyAfter}{" "}

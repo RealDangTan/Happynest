@@ -3,6 +3,7 @@ import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
+  Download,
   FileText,
   Pencil,
   Trash2,
@@ -25,6 +26,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AiBadge } from "@/components/ai/ai-badge"
@@ -32,6 +34,7 @@ import { PageHeader } from "@/components/page-header"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Card,
   CardAction,
@@ -62,19 +65,12 @@ import { EvidenceCard } from "@/components/ai/evidence-card"
 import { agentItemText, dedupeEvidence, humanizeAgentText } from "@/lib/evidence"
 import type { InsightItem } from "@/lib/types"
 import { INSIGHT_STATUS_TONE } from "@/lib/tone"
+import { buildReportMarkdown, REPORT_STATUS_LABEL } from "@/lib/report-markdown"
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Chờ duyệt",
-  investigating: "Đang điều tra",
-  approved: "Đã duyệt",
-  edited: "Đã duyệt (có sửa)",
-  rejected: "Đã từ chối",
-}
-
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status: InsightItem["status"] }) {
   return (
     <Badge variant={INSIGHT_STATUS_TONE[status] ?? "secondary"}>
-      {STATUS_LABEL[status] ?? status}
+      {REPORT_STATUS_LABEL[status] ?? status}
     </Badge>
   )
 }
@@ -93,7 +89,7 @@ function ReportBody({
   runId,
 }: {
   title: string
-  status: string
+  status: InsightItem["status"]
   finding: string
   findingConfidence: number | null
   hypothesis: { statement: string | null; confidence: number | null } | null
@@ -280,6 +276,124 @@ function ReportEditDialog({
   )
 }
 
+function ReportExportDialog({
+  reports,
+  productName,
+  selectedId,
+  total,
+}: {
+  reports: InsightItem[]
+  productName?: string
+  selectedId?: string
+  total: number
+}) {
+  const defaultTitle = "Báo cáo vấn đề"
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState(defaultTitle)
+  const [search, setSearch] = useState("")
+  const [pickedIds, setPickedIds] = useState<Set<string>>(new Set())
+  const options = reports.filter((report) =>
+    report.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
+  )
+  const picked = reports.filter((report) => pickedIds.has(report.id))
+
+  function setDialogOpen(next: boolean) {
+    if (next) {
+      setTitle(defaultTitle)
+      setSearch("")
+      setPickedIds(new Set(selectedId ? [selectedId] : []))
+    }
+    setOpen(next)
+  }
+
+  function download() {
+    if (!picked.length) return
+    const now = new Date()
+    const markdown = buildReportMarkdown(title.trim() || defaultTitle, productName, picked, now)
+    const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "happynest-bao-cao-" + now.toISOString().slice(0, 10) + ".md"
+    document.body.append(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setDialogOpen(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" disabled={reports.length === 0}>
+          <Download data-icon="inline-start" />
+          Xuất Markdown
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-y-auto sm:max-w-xl">
+        <DialogHeader className="pr-8">
+          <DialogTitle>Tạo báo cáo Markdown</DialogTitle>
+          <DialogDescription>
+            Chọn một hoặc nhiều vấn đề của sản phẩm để gộp kết luận và bằng chứng vào một file .md.
+          </DialogDescription>
+        </DialogHeader>
+        <FieldGroup className="gap-3">
+          <Field>
+            <FieldLabel htmlFor="report-export-title">Tên báo cáo</FieldLabel>
+            <Input
+              id="report-export-title"
+              value={title}
+              maxLength={120}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="report-export-search">Tìm vấn đề</FieldLabel>
+            <Input
+              id="report-export-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tìm theo tiêu đề…"
+            />
+          </Field>
+        </FieldGroup>
+        <div className="flex max-h-64 min-h-20 flex-col gap-1 overflow-y-auto rounded-lg border p-2">
+          {options.map((report) => (
+            <label key={report.id} className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-accent/60">
+              <Checkbox
+                checked={pickedIds.has(report.id)}
+                onCheckedChange={(checked) => {
+                  setPickedIds((previous) => {
+                    const next = new Set(previous)
+                    if (checked === true) next.add(report.id)
+                    else next.delete(report.id)
+                    return next
+                  })
+                }}
+              />
+              <span className="min-w-0 flex-1 wrap-anywhere text-sm">{report.title}</span>
+              <StatusBadge status={report.status} />
+            </label>
+          ))}
+          {!options.length && (
+            <p className="p-2 text-sm text-muted-foreground">Không có vấn đề khớp với từ khoá.</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+          <p aria-live="polite">Đã chọn {picked.length} vấn đề</p>
+          {total > reports.length && <p>Danh sách gồm {reports.length} vấn đề được lưu gần nhất.</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDialogOpen(false)}>Huỷ</Button>
+          <Button disabled={picked.length === 0} onClick={download}>
+            <Download data-icon="inline-start" />
+            Tải file .md
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function Reports({
   initialRunId,
   initialReportId,
@@ -287,21 +401,21 @@ function Reports({
   initialRunId: string | null
   initialReportId: string | null
 }) {
-  const { productId } = useProduct()
-  const insights = useInsights()
+  const { product, productId } = useProduct()
+  const insights = useInsights(productId)
+  const reports = insights.data?.items
   const [selectedId, setSelectedId] = useState<string | null>(initialReportId)
   const [statusFilter, setStatusFilter] = useState("all")
   const [search, setSearch] = useState("")
 
   const items = useMemo(
     () =>
-      (insights.data?.items ?? []).filter(
+      (reports ?? []).filter(
         (i) =>
-          (!productId || i.product_id === productId) &&
           (statusFilter === "all" || i.status === statusFilter) &&
           (!search || i.title.toLowerCase().includes(search.toLowerCase()))
       ),
-    [insights.data, productId, statusFilter, search]
+    [reports, statusFilter, search]
   )
 
   const selected: InsightItem | undefined = useMemo(
@@ -321,6 +435,14 @@ function Reports({
       <PageHeader
         title="Báo cáo"
         description="Kết quả điều tra và bằng chứng. Duyệt kết luận ngay trong cuộc điều tra hoặc Chat."
+        actions={
+          <ReportExportDialog
+            reports={reports ?? []}
+            productName={product?.name}
+            selectedId={selected?.id}
+            total={insights.data?.total ?? 0}
+          />
+        }
       />
 
       {initialRunId ? <Alert><AlertTitle>Cuộc điều tra được duyệt tại chỗ</AlertTitle><AlertDescription>Tiếp tục trong màn điều tra để giữ nguyên câu hỏi và bằng chứng.</AlertDescription><Button size="sm" variant="outline" asChild><Link href={`/data-graph?run=${initialRunId}`}>Mở cuộc điều tra</Link></Button></Alert> : null}
@@ -540,8 +662,10 @@ export default function ReportsPage() {
 
 function ReportsWithParams() {
   const params = useSearchParams()
+  const { productId } = useProduct()
   return (
     <Reports
+      key={productId}
       initialRunId={params.get("run")}
       initialReportId={params.get("report")}
     />

@@ -23,7 +23,13 @@ from app.core.security import (
     verify_password,
 )
 from app.models.user import User
-from app.schemas.auth import RegisterIn, TokenOut, UserOut
+from app.schemas.auth import (
+    RegisterIn,
+    TokenOut,
+    UpdateProfileIn,
+    UserOut,
+    UserProfileOut,
+)
 from app.services import google_oauth
 
 logger = get_logger(__name__)
@@ -122,10 +128,22 @@ def logout(response: Response) -> None:
     response.delete_cookie(key=COOKIE_NAME, path="/")
 
 
-@router.get("/me", response_model=UserOut)
-def read_current_user(user: User = Depends(get_current_user)) -> UserOut:
+@router.get("/me", response_model=UserProfileOut, response_model_exclude_none=True)
+def read_current_user(user: User = Depends(get_current_user)) -> UserProfileOut:
     """Thông tin user hiện tại — cần cookie hoặc Bearer header hợp lệ."""
-    return UserOut.model_validate(user)
+    return UserProfileOut.model_validate(user)
+
+
+@router.patch("/me", response_model=UserProfileOut)
+def update_current_user(
+    payload: UpdateProfileIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserProfileOut:
+    """Cập nhật tên hiển thị của tài khoản đã xác thực."""
+    user.username = payload.username or None
+    db.commit()
+    return UserProfileOut.model_validate(user)
 
 
 def _google_error_redirect(reason: str) -> RedirectResponse:

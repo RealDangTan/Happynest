@@ -16,7 +16,7 @@ Mã nguồn hiện tại và API checklist quyết định hợp đồng triển
 
 - Đăng ký/đăng nhập bằng email và mật khẩu; mật khẩu lưu bằng Argon2.
 - JWT trong cookie httpOnly SameSite=Lax, hoặc Bearer cho CLI/Swagger.
-- `UserOut = {id, email}`; JWT có `sub`, `iat`, `exp`.
+- Đăng ký trả `UserOut = {id, email}`. Hồ sơ tài khoản có thêm tên hiển thị `username` nếu đã đặt. JWT có `sub`, `iat`, `exp`.
 - Mọi tài khoản đã xác thực sử dụng cùng danh sách products và cùng thao tác.
 - `product_id`, `import_id`, `run_id` và các bộ lọc chỉ xác định dữ liệu nghiệp vụ được chọn.
 - `reviewer_id` ghi nhận người đưa ra quyết định để đối chiếu lịch sử.

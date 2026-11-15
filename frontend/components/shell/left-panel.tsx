@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LifeBuoy, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
+import { House, LifeBuoy, MessageCircle, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGES, STAGE_TONE, TONE_CLASSES, type StageTone } from "@/lib/navigation";
 import { useT } from "@/lib/i18n";
 import { useJourney } from "@/hooks/use-journey";
 import { BrandMark } from "@/components/brand-mark";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { usePanel } from "./panel-provider";
 import { useChat } from "./chat-provider";
 import { ChatThread } from "./chat-thread";
@@ -44,12 +46,13 @@ function NavItem({
       href={href}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
+      aria-label={collapsed ? [label, badgeTitle].filter(Boolean).join(" — ") : undefined}
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         "before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:opacity-0 before:transition-opacity",
         toneClass.bar,
-        collapsed && "justify-center px-0",
+        collapsed && "mx-auto size-9 justify-center rounded-lg p-0",
         active
           ? "bg-sidebar-accent font-medium text-sidebar-foreground before:opacity-100"
           : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
@@ -63,7 +66,7 @@ function NavItem({
           className={cn(
             "rounded-full px-1.5 py-px font-mono text-[10px] font-semibold leading-4",
             toneClass.chip,
-            collapsed && "absolute top-0.5 right-0.5 px-1",
+            collapsed && "absolute -top-0.5 -right-0.5 px-1 leading-3.5",
           )}
         >
           {badge > 99 ? "99+" : badge}
@@ -75,7 +78,7 @@ function NavItem({
           className={cn(
             "size-1.5 shrink-0 rounded-full",
             toneClass.dot,
-            collapsed && "absolute top-1.5 right-1.5",
+            collapsed && "absolute top-1 right-1",
           )}
         />
       ) : null}
@@ -98,13 +101,14 @@ function SegmentButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       title={label}
+      aria-label={label}
+      aria-pressed={active}
       className={cn(
         "flex min-w-0 items-center justify-center gap-1.5 rounded-md py-1 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-        collapsed && "px-0",
-        // px-2 (không px-3) để nhãn VI dài ("Trang chủ") vừa một dòng ở w-64
-        !collapsed && "px-2",
+        collapsed ? "size-8 p-0" : "px-2",
         active
           ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
           : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
@@ -117,7 +121,7 @@ function SegmentButton({
 }
 
 export function LeftPanel() {
-  const { collapsed, toggle, setCollapsed, mobileOpen, setMobileOpen } = usePanel();
+  const { collapsed, toggle, mobileOpen, setMobileOpen } = usePanel();
   const { chatOpen, openChat, closeChat } = useChat();
   const pathname = usePathname();
   const t = useT();
@@ -142,6 +146,11 @@ export function LeftPanel() {
     : {};
   // Fully separate tabs: Chat replaces the dock content, Home brings it back.
   const tab: "home" | "chat" = chatOpen ? "chat" : "home";
+  const compact = tab === "home" && collapsed && !mobileOpen;
+  const utilities = [
+    { href: "/help", label: t.panel.helpContact, icon: LifeBuoy },
+    { href: "/settings", label: t.profile.settings, icon: Settings },
+  ];
 
   return (
     <>
@@ -156,8 +165,8 @@ export function LeftPanel() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200",
-          tab === "chat" ? "w-80" : collapsed ? "w-14" : "w-64",
+          "fixed inset-y-0 left-0 z-50 flex max-w-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 motion-reduce:transition-none",
+          tab === "chat" ? "w-80" : compact ? "w-14" : "w-64",
           // mobile: slide in/out
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
@@ -166,7 +175,7 @@ export function LeftPanel() {
         <div
           className={cn(
             "flex h-14 shrink-0 items-center gap-2 px-4",
-            collapsed && tab === "home" && "justify-center px-0",
+            compact && "justify-center px-0",
           )}
         >
           <Link
@@ -178,14 +187,14 @@ export function LeftPanel() {
             }}
           >
             <BrandMark />
-            {!(collapsed && tab === "home") ? (
+            {!compact ? (
               <span className="truncate font-heading text-base">Happynest</span>
             ) : null}
           </Link>
-          {tab === "home" && !collapsed ? (
+          {tab === "home" && !compact ? (
             <button
               onClick={toggle}
-              className="ml-auto rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              className="ml-auto hidden rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring md:block"
               aria-label={t.panel.collapse}
               title={t.panel.collapse}
             >
@@ -193,69 +202,48 @@ export function LeftPanel() {
             </button>
           ) : null}
         </div>
-        {tab === "home" && collapsed ? (
-          <button
+        {compact ? (
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggle}
-            className="mx-auto mb-2 rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            className="mx-auto mb-2 size-9 shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-sidebar-ring"
             aria-label={t.panel.expand}
             title={t.panel.expand}
           >
             <PanelLeftOpen className="size-4" />
-          </button>
+          </Button>
         ) : null}
 
         {/* segmented control */}
         <div
           className={cn(
             "shrink-0 px-4 pb-4",
-            collapsed && tab === "home" && "flex flex-col items-center gap-1 px-0",
+            compact && "flex justify-center px-0 pb-3",
           )}
         >
           <div
             className={cn(
               "grid gap-1 rounded-lg bg-sidebar-accent/60 p-1",
-              collapsed && tab === "home" ? "grid-cols-1" : "grid-cols-2",
+              compact ? "grid-cols-1" : "grid-cols-2",
             )}
-            role="tablist"
+            role="group"
             aria-label={t.panel.sections}
           >
             <SegmentButton
               active={tab === "home"}
-              collapsed={collapsed && tab === "home"}
+              collapsed={compact}
               label={t.panel.home}
-              icon={() => (
-                <svg viewBox="0 0 24 24" fill="none" className="size-4">
-                  <path
-                    d="M3 10.5 12 3l9 7.5M5 9.5V21h5v-6h4v6h5V9.5"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
+              icon={House}
               onClick={() => closeChat()}
             />
             <SegmentButton
               active={tab === "chat"}
-              collapsed={false}
+              collapsed={compact}
               label={t.panel.chat}
-              icon={({ className }) => (
-                <svg viewBox="0 0 24 24" fill="none" className={className ?? "size-4"}>
-                  <path
-                    d="M21 12a8 8 0 0 1-8 8H4l2.2-3.1A8 8 0 1 1 21 12Z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-              // Re-opening an active chat keeps its thread — only a closed tab starts fresh.
+              icon={MessageCircle}
               onClick={() => {
                 if (!chatOpen) openChat();
-                setCollapsed(false);
-                setMobileOpen(false);
               }}
             />
           </div>
@@ -266,15 +254,18 @@ export function LeftPanel() {
           <ScrollArea className="min-h-0 flex-1">
             <nav
               className={cn(
-                "px-4 pb-4",
-                collapsed && "flex flex-col items-center",
+                "pb-4",
+                compact ? "px-1" : "px-4",
               )}
               aria-label="Panel"
             >
-              <div className="w-full space-y-5">
-                {STAGES.map((stage) => (
-                  <div key={stage.group}>
-                    {!collapsed ? (
+              <div className={cn("flex w-full flex-col", compact ? "gap-2" : "gap-5")}>
+                {STAGES.map((stage, index) => (
+                  <div key={stage.group} role="group" aria-label={t.nav.groups[stage.group]}>
+                    {compact && index > 0 ? (
+                      <Separator className="mx-auto mb-2 bg-sidebar-foreground/15 data-horizontal:w-6" />
+                    ) : null}
+                    {!compact ? (
                       <p className="flex items-center gap-2 px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/55">
                         <span
                           aria-hidden
@@ -286,7 +277,7 @@ export function LeftPanel() {
                         {t.nav.groups[stage.group]}
                       </p>
                     ) : null}
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       {stage.items.map((item) => (
                         <NavItem
                           key={item.href}
@@ -294,7 +285,7 @@ export function LeftPanel() {
                           label={t.nav.items[item.key]}
                           icon={item.icon}
                           active={pathname === item.href}
-                          collapsed={collapsed}
+                          collapsed={compact}
                           tone={STAGE_TONE[stage.group]}
                           badge={badges[item.href]?.count ?? 0}
                           badgeTitle={badges[item.href]?.title}
@@ -309,37 +300,42 @@ export function LeftPanel() {
             </nav>
           </ScrollArea>
 
-          <div
+          <nav
+            aria-label={t.panel.utilities}
             className={cn(
-              "shrink-0 border-t border-sidebar-border/60 px-4 py-3",
-              collapsed && "flex flex-col items-center gap-1 px-0",
+              "flex shrink-0 flex-col gap-1 border-t border-sidebar-foreground/10 py-2.5",
+              compact ? "items-center px-1" : "px-3",
             )}
           >
-            <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-end")}>
-              <Link
-                href="/settings"
-                title={t.profile.settings}
-                aria-label={t.profile.settings}
-                className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              >
-                <Settings className="size-4" />
-              </Link>
-              <Link
-                href="/help"
-                title={t.panel.helpContact}
-                aria-label={t.panel.helpContact}
-                className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              >
-                <LifeBuoy className="size-4" />
-              </Link>
-              <WhatsNew tone="panel" />
-            </div>
-            {!collapsed ? (
-              <p className="pb-1 pr-1 font-mono text-[10px] text-sidebar-foreground/40">
-                Happynest VoC OS
-              </p>
-            ) : null}
-          </div>
+            <WhatsNew tone="panel" compact={compact} />
+            {utilities.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <Button
+                  key={href}
+                  variant="ghost"
+                  size={compact ? "icon" : "default"}
+                  className={cn(
+                    "h-9 text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-sidebar-ring",
+                    compact ? "w-9" : "justify-start px-3",
+                    active && "bg-sidebar-accent text-sidebar-foreground",
+                  )}
+                  asChild
+                >
+                  <Link
+                    href={href}
+                    title={compact ? label : undefined}
+                    aria-label={label}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon data-icon="inline-start" />
+                    {!compact && label}
+                  </Link>
+                </Button>
+              );
+            })}
+          </nav>
         </div>
 
         {/* Chat tab: the dock becomes the chat — no utilities footer */}

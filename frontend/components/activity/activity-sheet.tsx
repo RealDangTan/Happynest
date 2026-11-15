@@ -41,6 +41,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCancelImport, useImport } from "@/hooks/use-imports";
 import { useAnalysisPreview, useCancelRun, useRunProgress, useTriggerRun } from "@/hooks/use-analysis";
 import { apiFetch, ApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import type { AnalysisScope, FeedbackListResponse, ImportRecord, RunProgress } from "@/lib/types";
 import {
   IMPORT_STEPS,
@@ -163,7 +164,7 @@ function ActivityQueue() {
   );
 
   return (
-    <Tabs defaultValue={attention.length || awaitingReview ? "attention" : runningImports.length + runningRuns.length || investigating ? "running" : "recent"} className="mt-4">
+    <Tabs defaultValue={attention.length || awaitingReview ? "attention" : runningImports.length + runningRuns.length || investigating ? "running" : "recent"}>
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="attention">Cần xử lý ({attention.length + (awaitingReview ? 1 : 0)})</TabsTrigger>
         <TabsTrigger value="running">Đang chạy ({runningImports.length + runningRuns.length + (investigating ? 1 : 0)})</TabsTrigger>
@@ -234,17 +235,25 @@ function ImportDetail({ id }: { id: string }) {
   const step = item ? stepForImport(item) : null;
   const cancellable = Boolean(item && ["profile_ready", "failed"].includes(item.status));
   return (
-    <div className="mt-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>
-      {detail.isPending ? <Spinner /> : null}
-      {item ? (
+    <div className="flex min-w-0 flex-col gap-4">
+      <Button variant="ghost" size="sm" className="self-start" onClick={openQueue}>
+        <ArrowLeft data-icon="inline-start" />
+        Hàng chờ
+      </Button>
+      {detail.isPending ? (
+        <Spinner />
+      ) : item ? (
         <>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="font-heading text-xl">{item.original_filename ?? "CSV import"}</h2>
-              <p className="truncate text-sm text-muted-foreground">{item.id}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border bg-card p-4">
+            <div className="min-w-0 flex-1 basis-52">
+              <h2 className="wrap-anywhere font-heading text-lg">
+                {item.original_filename ?? "CSV import"}
+              </h2>
+              <p className="mt-1 wrap-anywhere font-mono text-xs text-muted-foreground">
+                {item.id}
+              </p>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
               {statusBadge(item.status)}
               <OpenFullPageButton href={`/importer?import=${item.id}`} />
               {cancellable ? (
@@ -279,12 +288,26 @@ function RunDetail({ id }: { id: string }) {
 export function ActivitySheet() {
   const activity = useActivity();
   const param = activity.activityParam;
-  const detail = param?.startsWith("import:") ? <ImportDetail id={param.slice(7)} /> : param?.startsWith("run:") ? <RunDetail id={param.slice(4)} /> : <ActivityQueue />;
+  const importId = param?.startsWith("import:") ? param.slice(7) : null;
+  const detail = importId ? <ImportDetail id={importId} /> : param?.startsWith("run:") ? <RunDetail id={param.slice(4)} /> : <ActivityQueue />;
   return (
     <Sheet open={Boolean(param)} onOpenChange={(open) => { if (!open) activity.closeActivity(); }}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-4xl">
-        <SheetHeader><SheetTitle>Activity Center</SheetTitle><SheetDescription>Duyệt mapping, import và chạy AI có budget guard — task lớn mở toàn màn hình để xử lý.</SheetDescription></SheetHeader>
-        <div className="px-4 pb-6">{detail}</div>
+      <SheetContent
+        side="right"
+        className={cn(
+          "gap-0 data-[side=right]:w-full",
+          importId && "data-[side=right]:sm:max-w-4xl",
+        )}
+      >
+        <SheetHeader className="shrink-0 border-b pr-14 sm:pl-6">
+          <SheetTitle>Activity Center</SheetTitle>
+          <SheetDescription>
+            Theo dõi lô nhập, duyệt mapping và chạy phân tích AI.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          {detail}
+        </div>
       </SheetContent>
     </Sheet>
   );

@@ -23,7 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LangToggle } from "@/components/lang-toggle";
-import { useMe } from "@/hooks/use-me";
+import { getDisplayUsername, useMe } from "@/hooks/use-me";
 import { useProduct } from "@/hooks/use-product";
 import { apiFetch } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -35,7 +35,8 @@ export function ProfilePanel() {
   const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const initials = (me.data?.email ?? "?").slice(0, 2).toUpperCase();
+  const username = getDisplayUsername(me.data);
+  const initials = (username || "?").slice(0, 2).toUpperCase();
 
   const logout = useMutation({
     mutationFn: () => apiFetch("/api/auth/logout", { method: "POST" }),
@@ -50,22 +51,33 @@ export function ProfilePanel() {
       <PopoverTrigger asChild>
         <button
           className="flex h-8 items-center gap-1.5 rounded-full border border-border/80 bg-card pl-1 pr-2.5 shadow-sm outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Profile menu"
+          aria-label={t.profile.menu}
+          title={username || undefined}
         >
           <Avatar className="size-6">
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
+          {username && (
+            <span className="max-w-28 truncate text-sm font-medium lg:max-w-40">
+              {username}
+            </span>
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 gap-1 p-2">
         <div className="flex items-center gap-3 px-2 py-1.5">
-          <Avatar className="size-9">
+          <Avatar className="size-9 shrink-0">
             <AvatarFallback className="text-sm">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">
-              {me.data?.email ?? "…"}
+            <p className="wrap-anywhere text-sm font-medium">
+              {username || "…"}
             </p>
+            {me.data && (
+              <p className="wrap-anywhere text-xs text-muted-foreground">
+                {me.data.email}
+              </p>
+            )}
           </div>
         </div>
         <Separator />
