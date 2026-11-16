@@ -109,6 +109,19 @@ function DashboardInner() {
         </Alert>
       ) : (
         <>
+          {/* Cửa sổ đang xem không có phản hồi nào (dữ liệu cũ hơn) — nói rõ và
+              đưa nút mở cửa sổ rộng hơn, thay vì để các ô 0 trông như lỗi. */}
+          {summary.data.totals.feedback_count === 0 && days < 90 ? (
+            <Alert>
+              <AlertTitle>Không có phản hồi nào trong {days} ngày gần nhất</AlertTitle>
+              <AlertDescription className="flex flex-col items-start gap-3">
+                <span>Dữ liệu đã nhập có thể cũ hơn khoảng này. Mở rộng cửa sổ để xem.</span>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/dashboard?days=90">Xem 90 ngày</Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <ReportTiles totals={summary.data.totals} />
 
           <div className="grid items-start gap-4 md:grid-cols-2">

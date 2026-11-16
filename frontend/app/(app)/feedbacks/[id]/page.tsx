@@ -164,7 +164,9 @@ export default function FeedbackDetailPage() {
               </Empty>
             ) : (
               <ul className="flex flex-col gap-2">
-                {similar.data!.map((s) => (
+                {similar.data!
+                  .filter((s, i, all) => all.findIndex((o) => o.snippet === s.snippet) === i)
+                  .map((s) => (
                   <li key={s.id}>
                     <Link
                       href={`/feedbacks/${s.id}`}

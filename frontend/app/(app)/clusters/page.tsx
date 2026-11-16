@@ -113,7 +113,9 @@ function DictionaryPopover() {
 /** Cạm bẫy sentinel 9.99: emerging hiển thị chữ "Mới", không hiện số. */
 function GrowthCell({ c }: { c: ClusterItem }) {
   if (c.is_emerging) return <Badge variant="default">Mới</Badge>
-  const ratio = c.growth_ratio >= 10 ? null : `${c.growth_ratio.toFixed(1)}×`
+  // Kỳ trước 0 thì không có cơ sở so sánh — "0.0×" sẽ đọc như đang lắng.
+  const ratio =
+    c.previous_count === 0 || c.growth_ratio >= 10 ? null : `${c.growth_ratio.toFixed(1)}×`
   return (
     <span title={`${c.current_count} so với ${c.previous_count} kỳ trước`}>
       {ratio ?? "—"}
@@ -123,7 +125,8 @@ function GrowthCell({ c }: { c: ClusterItem }) {
 
 /** Kỳ trước → kỳ này dưới dạng hai thanh, đọc được xu hướng mà không cần số. */
 function PeriodBars({ c, max }: { c: ClusterItem; max: number }) {
-  const pct = (n: number) => `${Math.max(3, (n / Math.max(max, 1)) * 100)}%`
+  // 0 phản hồi = không vẽ thanh, để không đọc nhầm thành "có một ít".
+  const pct = (n: number) => (n <= 0 ? "0%" : `${Math.max(3, (n / Math.max(max, 1)) * 100)}%`)
   return (
     <div className="flex flex-col gap-1" aria-label={`Kỳ trước ${c.previous_count}, kỳ này ${c.current_count}`}>
       <span className="flex items-center gap-2">
@@ -391,7 +394,10 @@ function ClustersInner() {
               </CardAction>
             </CardHeader>
             <CardContent>
-              <ul className="flex flex-col gap-1">
+              {/* Danh sách cuộn trong khung để panel cụm đang chọn luôn nằm
+                  cạnh, kể cả khi có vài chục cụm. */}
+              <ul className="-mx-1 flex max-h-[calc(100dvh-14rem)] flex-col gap-1 overflow-y-auto px-1">
+
                 {clusters.data.items.map((c) => (
                   <ClusterRow
                     key={c.id}

@@ -440,7 +440,7 @@ function FeedbackDetailView({
   const navigator = (
     <div className="flex items-center gap-1">
       {position ? (
-        <span className="mr-1 font-mono text-xs text-muted-foreground">{position}</span>
+        <span className="mr-1 font-mono text-xs whitespace-nowrap text-muted-foreground">{position}</span>
       ) : null}
       <Button type="button" variant="ghost" size="icon-sm" aria-label="Phản hồi trước (phím ↑)" disabled={!onPrev} onClick={() => onPrev?.()}>
         <ChevronUp />
@@ -522,7 +522,11 @@ function FeedbackDetailView({
           <Spinner />
         ) : similar.data && similar.data.length ? (
           <ul className="flex flex-col gap-1.5">
-            {similar.data.map((s) => (
+            {/* Dữ liệu nhập lặp lại cùng một câu ở nhiều file — chỉ hiện mỗi
+                nội dung một lần, giữ bản giống nhất. */}
+            {similar.data
+              .filter((s, i, all) => all.findIndex((o) => (o.snippet ?? o.id) === (s.snippet ?? s.id)) === i)
+              .map((s) => (
               <li key={s.id}>
                 <button
                   type="button"
@@ -580,17 +584,21 @@ function FeedbackDetailView({
         aria-label="Chi tiết phản hồi"
         className="sticky top-20 flex max-h-[calc(100dvh-6rem)] min-w-0 flex-col self-start overflow-hidden rounded-xl border bg-card"
       >
-        <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
-          <div className="min-w-0">
-            <h2 className="text-sm font-medium">Chi tiết phản hồi</h2>
-            <p className="font-mono text-xs text-signal">{detailLabel}</p>
-          </div>
-          <div className="flex items-center">
-            {navigator}
-            {editActions}
+        {/* Hai hàng: tên + đóng ở trên, điều hướng + sửa/xoá ở dưới — một hàng
+            ở panel 22rem làm tiêu đề và "1 / 20" bị gãy dòng. */}
+        <header className="flex flex-col gap-1 border-b px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="flex min-w-0 items-baseline gap-2 text-sm font-medium">
+              <span className="truncate">Chi tiết phản hồi</span>
+              <span className="shrink-0 font-mono text-xs font-normal text-signal">{detailLabel}</span>
+            </h2>
             <Button type="button" variant="ghost" size="icon-sm" aria-label="Đóng chi tiết phản hồi" onClick={onClose}>
               <X />
             </Button>
+          </div>
+          <div className="-ml-1 flex items-center justify-between">
+            {navigator}
+            <div className="flex items-center">{editActions}</div>
           </div>
         </header>
         <div className="min-h-0 overflow-y-auto pt-4">{content}</div>
@@ -1236,6 +1244,7 @@ function Vault({
     getRowId: (f) => f.id,
     manualPagination: true,
     pageCount,
+    rowCount: total,
     manualSorting: true,
     manualFiltering: true,
     enableMultiSort: false,

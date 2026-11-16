@@ -253,12 +253,14 @@ export default function InsightsPage() {
                     {quotes.map((q, i) => (
                       <li key={i} className="flex flex-col gap-1 border-l-2 border-sky-line pl-3">
                         <p className="text-sm leading-relaxed">“{q.text}”</p>
+                        {q.meta ? (
+                          <p className="text-[11px] text-muted-foreground">{q.meta}</p>
+                        ) : null}
                         <Link
                           href={`/reports?report=${q.insight.id}`}
-                          className="inline-flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                          className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
                         >
-                          {q.meta ? `${q.meta} · ` : ""}
-                          <span className="truncate">{q.insight.title}</span>
+                          <span className="min-w-0 truncate">Từ: {q.insight.title}</span>
                           <ArrowRight className="size-3 shrink-0" aria-hidden />
                         </Link>
                       </li>

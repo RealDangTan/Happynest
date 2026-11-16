@@ -11,7 +11,6 @@ import {
   Reveal,
   SignalField,
 } from "./motion"
-import { HeroProductShot } from "./product-visuals"
 
 export const metadata: Metadata = {
   title: "Happynest — Where feedback finds a home",
@@ -756,7 +755,7 @@ export default function LandingPage() {
           <HeroVideo src="/assets/landing-hero.webm" />
           <div className="hn-hero-shade" aria-hidden />
           <SignalField />
-          <div className="hn-hero-content relative mx-auto grid max-w-6xl items-end gap-10 px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+          <div className="hn-hero-content relative mx-auto flex max-w-6xl items-end px-4">
             <div className="max-w-2xl pt-28 pb-24 md:pb-32">
               <p
                 className="hn-eyebrow hn-enter"
@@ -795,14 +794,6 @@ export default function LandingPage() {
               >
                 PII SANITIZED · EVIDENCE LINKED · HUMAN APPROVED
               </p>
-            </div>
-            {/* Ảnh giao diện minh hoạ lời hứa ngay ở hero (mẫu Sprig): một kết
-                luận có độ tin cậy, nguồn và ba nút duyệt. */}
-            <div
-              className="hn-enter hidden pb-32 lg:block"
-              style={{ "--d": "0.5s" } as React.CSSProperties}
-            >
-              <HeroProductShot />
             </div>
           </div>
         </section>

@@ -299,6 +299,9 @@ function FeedbacksTable() {
     columns,
     manualPagination: true,
     pageCount,
+    // Phân trang phía server: không có rowCount thì footer đếm theo số dòng của
+    // trang hiện tại ("1–20 trên 20" dù có 19 trang).
+    rowCount: total,
     manualSorting: true,
     manualFiltering: true,
     enableMultiSort: false,

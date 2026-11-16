@@ -81,8 +81,9 @@ function ActVisual() {
       <div className="relative aspect-[4/3] border border-[var(--hn-olive)] bg-[var(--hn-deep)]">
         <span className="absolute top-0 left-1/2 h-full w-px bg-[var(--hn-olive)]" />
         <span className="absolute top-1/2 left-0 h-px w-full bg-[var(--hn-olive)]" />
-        <span className="hn-pixel absolute top-2 left-2 text-[8px] tracking-widest text-[var(--hn-soft)] uppercase">Làm ngay</span>
-        <span className="hn-pixel absolute top-2 right-2 text-[8px] tracking-widest text-[var(--hn-stone)] uppercase">Chiến lược</span>
+        {/* Font pixel không có dấu tiếng Việt — nhãn tiếng Việt dùng font chữ thường. */}
+        <span className="absolute top-2 left-2 text-[10px] font-semibold tracking-wide text-[var(--hn-soft)] uppercase">Làm ngay</span>
+        <span className="absolute top-2 right-2 text-[10px] font-semibold tracking-wide text-[var(--hn-stone)] uppercase">Chiến lược</span>
         {dots.map((d, i) => (
           <span
             key={i}
@@ -94,11 +95,6 @@ function ActVisual() {
       <p className="mt-3 text-[11px] text-[var(--hn-stone)]">Kỹ thuật · Thêm giờ mở cửa theo chi nhánh — chờ bạn nhận</p>
     </Window>
   )
-}
-
-/** Bản dùng ở hero landing: cùng khung "Finding · Gate 2". */
-export function HeroProductShot() {
-  return <UnderstandVisual />
 }
 
 export const PRODUCT_VISUALS: Record<string, () => React.ReactNode> = {
