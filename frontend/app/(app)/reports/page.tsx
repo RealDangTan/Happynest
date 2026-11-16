@@ -95,7 +95,7 @@ function StatusBadge({ status }: { status: InsightItem["status"] }) {
   )
 }
 
-/// ------------------------------------------------------------------ Report body
+// ------------------------------------------------------------------ Report body
 
 function shortReportDate(iso: string): string {
   const d = new Date(iso)

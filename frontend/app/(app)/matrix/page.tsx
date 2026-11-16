@@ -131,7 +131,7 @@ const ACTION_STATUS_VI: Record<string, string> = {
   rejected: "Đã từ chối",
 }
 
-/// ------------------------------------------------------------------ Quadrant preview
+// ------------------------------------------------------------------ Quadrant preview
 
 const QUADRANT_TINT: Record<Quadrant, string> = {
   quick_wins: "bg-leaf-soft/70",
@@ -593,7 +593,7 @@ function QueueItem({
   )
 }
 
-/ ------------------------------------------------------------------ Add action dialog
+// ------------------------------------------------------------------ Add action dialog
 
 function AddActionDialog({
   insightId,
@@ -715,7 +715,7 @@ function AddActionDialog({
   )
 }
 
-/// ------------------------------------------------------------------ Screen
+// ------------------------------------------------------------------ Screen
 
 const QUADRANT_LAYOUT = [
   ["quick_wins", "left-0 top-0", "text-leaf-ink", "left-3 top-3"],
