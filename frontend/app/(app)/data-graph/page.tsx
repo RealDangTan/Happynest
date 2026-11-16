@@ -283,10 +283,12 @@ const CLOUD_INK = [
 function WordCloud({
   words,
   label,
+  selected,
   onSelect,
 }: {
   words: { topic: string; count: number }[]
   label: (topic: string) => string
+  selected: string
   onSelect: (topic: string) => void
 }) {
   const max = Math.max(...words.map((w) => w.count), 1)
@@ -297,12 +299,15 @@ function WordCloud({
         return (
           <button
             key={topic}
-            onClick={() => onSelect(topic)}
-            title={label(topic) !== topic ? topic : undefined}
+            onClick={() => onSelect(topic === selected ? "" : topic)}
+            aria-pressed={topic === selected}
+            title={`${label(topic)} · ${count} phản hồi`}
             style={{ fontSize: `${scale}rem` }}
             className={cn(
-              "rounded-md px-1 font-heading underline-offset-4 transition-colors hover:underline",
+              "rounded-md px-1 font-heading underline-offset-4 transition-[color,opacity,background-color] hover:underline focus-visible:outline-2 focus-visible:outline-ring",
               CLOUD_INK[i % CLOUD_INK.length],
+              selected && topic !== selected && "opacity-40",
+              topic === selected && "bg-accent underline",
             )}
           >
             {label(topic)}
@@ -310,6 +315,78 @@ function WordCloud({
         )
       })}
     </div>
+  )
+}
+
+/** Chủ đề đang chọn + phản hồi gốc trong cùng màn (mẫu Dovetail "Themes"):
+ * người dùng đọc được lời người dùng thật trước khi hỏi AI, và mở chi tiết từng
+ * phản hồi mà không mất phạm vi/chủ đề đang xem. */
+function TopicPanel({
+  topic,
+  label,
+  items,
+  onClear,
+  onAsk,
+}: {
+  topic: string
+  label: string
+  items: Feedback[]
+  onClear: () => void
+  onAsk: () => void
+}) {
+  const negative = items.filter((f) => f.ai_analysis?.sentiment === "negative").length
+  return (
+    <Card size="sm" className="self-start xl:sticky xl:top-20">
+      <CardHeader>
+        <p className="text-xs text-muted-foreground">Chủ đề đang xem</p>
+        <CardTitle className="font-heading text-lg text-signal" title={label !== topic ? topic : undefined}>
+          {label}
+        </CardTitle>
+        <CardAction>
+          <Button size="sm" variant="ghost" onClick={onClear}>
+            Bỏ chọn
+          </Button>
+        </CardAction>
+        <CardDescription className="font-mono text-xs">
+          {items.length} phản hồi · {negative} tiêu cực
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <Button size="sm" onClick={onAsk}>
+          <Sparkles data-icon="inline-start" />
+          Hỏi AI về chủ đề này
+        </Button>
+        <ul className="flex max-h-[28rem] flex-col gap-2 overflow-y-auto pr-1" aria-label={`Phản hồi về ${label}`}>
+          {items.slice(0, 30).map((f) => {
+            const severity = f.ai_analysis?.severity
+            return (
+              <li key={f.id}>
+                <Link
+                  href={`/feedbacks/${f.id}`}
+                  className="flex flex-col gap-1.5 rounded-lg border bg-card p-2.5 text-sm transition-colors hover:bg-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  <span className="line-clamp-3 leading-relaxed">“{f.feedback_text}”</span>
+                  <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <SentimentIndicator value={f.ai_analysis?.sentiment} />
+                    {severity ? (
+                      <Badge variant={SEVERITY_TONE[severity] ?? "secondary"}>
+                        {SEVERITY_LABEL.vi[severity as Severity] ?? severity}
+                      </Badge>
+                    ) : null}
+                    <span className="ml-auto font-mono">{shortDate(f.occurred_at)}</span>
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+        {items.length > 30 ? (
+          <p className="text-xs text-muted-foreground">
+            Đang hiện 30/{items.length} phản hồi mới nhất. Mở tab Bảng để xem toàn bộ.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -414,9 +491,15 @@ function DataGraph({
       return day >= trendRange.start && day < trendRange.end
     })
   }, [items, trendRange])
-  const matched = selectedTopic
-    ? items.filter((f) => f.ai_analysis?.topics?.includes(selectedTopic))
-    : []
+  const matched = useMemo(
+    () =>
+      selectedTopic
+        ? items
+            .filter((f) => f.ai_analysis?.topics?.includes(selectedTopic))
+            .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
+        : [],
+    [items, selectedTopic]
+  )
 
   const createRun = useCreateAgentRun()
 
@@ -585,7 +668,13 @@ function DataGraph({
             </CardContent>
           </Card>
 
-          <Tabs value={tab} onValueChange={setTab}>
+          <div
+            className={cn(
+              "grid min-w-0 items-start gap-4",
+              selectedTopic && "xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]"
+            )}
+          >
+          <Tabs value={tab} onValueChange={setTab} className="min-w-0">
             <TabsList className="max-w-full flex-wrap group-data-horizontal/tabs:h-auto">
               <TabsTrigger value="cloud">Đám mây chủ đề</TabsTrigger>
               <TabsTrigger value="trends">{t.graph.trends.tab}</TabsTrigger>
@@ -604,10 +693,11 @@ function DataGraph({
                       <WordCloud
                         words={words}
                         label={topicLabel}
+                        selected={selectedTopic}
                         onSelect={setSelectedTopic}
                       />
                       <p className="pb-4 text-center text-xs text-muted-foreground">
-                        Cỡ chữ = số phản hồi nhắc tới chủ đề trong phạm vi này.
+                        Cỡ chữ = số phản hồi nhắc tới chủ đề. Bấm một chủ đề để đọc phản hồi gốc.
                       </p>
                     </>
                   ) : (
@@ -651,8 +741,12 @@ function DataGraph({
                       {words.map(({ topic, count }) => (
                         <li key={topic} className="flex items-center gap-3">
                           <button
-                            className="w-32 text-left text-sm font-medium hover:text-signal"
-                            onClick={() => setSelectedTopic(topic)}
+                            aria-pressed={topic === selectedTopic}
+                            className={cn(
+                              "w-32 truncate text-left text-sm font-medium hover:text-signal",
+                              topic === selectedTopic && "text-signal underline underline-offset-4"
+                            )}
+                            onClick={() => setSelectedTopic(topic === selectedTopic ? "" : topic)}
                           >
                             {topicLabel(topic)}
                           </button>
@@ -702,41 +796,19 @@ function DataGraph({
           </Tabs>
 
           {selectedTopic ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  Đang xem:{" "}
-                  <span className="text-signal">{topicLabel(selectedTopic)}</span>
-
-                </CardTitle>
-                <CardAction>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedTopic("")}
-                  >
-                    Clear
-                  </Button>
-                </CardAction>
-                <CardDescription className="font-mono text-xs">
-                  {matched.length} phản hồi
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="flex max-h-60 flex-col gap-2 overflow-y-auto">
-                  {matched.slice(0, 20).map((f) => (
-                    <li
-                      key={f.id}
-                      className="rounded-lg border bg-secondary/30 p-2 text-sm"
-                    >
-                      {f.feedback_text}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <TopicPanel
+              topic={selectedTopic}
+              label={topicLabel(selectedTopic)}
+              items={matched}
+              onClear={() => setSelectedTopic("")}
+              onAsk={() => {
+                setQuestion(`Vì sao người dùng phản hồi về “${topicLabel(selectedTopic)}”?`)
+                askRef.current?.focus()
+                askRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
+              }}
+            />
           ) : null}
-
+          </div>
 
         </div>
 
