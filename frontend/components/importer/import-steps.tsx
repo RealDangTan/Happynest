@@ -444,6 +444,13 @@ export function StepMapping({
   const { mapping: t, preview: previewCopy } = useT().importer
   const proposingLabel = previewCopy.proposing
   const mapping = useGetMapping(importId)
+  const preview = useImportPreview(importId)
+  const sampleByField = new Map<string, string | undefined>(
+    preview.data?.column_profiles.map((column) => [
+      column.name,
+      column.sample_values?.join(" · "),
+    ] as const)
+  )
   const decide = useDecideMapping()
   const { productId } = useProduct()
   const schema = useActiveSchema(productId)
@@ -550,10 +557,11 @@ export function StepMapping({
     <section className="flex flex-col gap-6">
       <Card className="py-0">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+          <Table className="min-w-[52rem] table-fixed">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-40">{t.colCsv}</TableHead>
+                <TableHead className="w-[24%]">{previewCopy.colSample}</TableHead>
                 <TableHead className="w-44">{t.colSuggest}</TableHead>
                 <TableHead>{t.colExplain}</TableHead>
                 <TableHead className="w-56">{t.colAction}</TableHead>
@@ -562,7 +570,7 @@ export function StepMapping({
             <TableBody>
               {mapping.isPending ? (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={5}>
                     <p className="flex items-center gap-2 py-4 text-sm text-muted-foreground" role="status">
                       <Spinner /> {proposingLabel}
                     </p>
@@ -576,10 +584,13 @@ export function StepMapping({
                   const typedKey = (override?.targetKey ?? "").trim()
                   return (
                     <TableRow key={entry.source_field}>
-                      <TableCell className="font-mono text-xs font-medium break-words">
+                      <TableCell className="align-top font-mono text-xs font-medium whitespace-normal wrap-anywhere">
                         {entry.source_field}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top text-xs whitespace-normal wrap-anywhere text-muted-foreground">
+                        {sampleByField.get(entry.source_field) || "—"}
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal">
                         {suggest.key ? (
                           <span className="block font-mono text-xs font-medium break-words">
                             {suggest.key}
@@ -591,7 +602,7 @@ export function StepMapping({
                           </span>
                         ) : null}
                       </TableCell>
-                      <TableCell className="max-w-sm text-sm text-muted-foreground break-words">
+                      <TableCell className="align-top text-sm whitespace-normal wrap-anywhere text-muted-foreground">
                         {entry.reason || entry.candidate?.description || "—"}
                       </TableCell>
                       <TableCell>

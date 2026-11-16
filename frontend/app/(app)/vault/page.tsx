@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -99,6 +100,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
 import { useT } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 import { IMPORT_STATUS_TONE, RUN_STATUS_TONE, SEVERITY_TONE } from "@/lib/tone"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import type {
@@ -371,187 +373,222 @@ function FeedbackEditDialog({
   )
 }
 
-function FeedbackDetailDrawer({
+const WIDE_VAULT_QUERY = "(min-width: 90rem)"
+
+function subscribeToVaultWidth(onChange: () => void) {
+  const media = window.matchMedia(WIDE_VAULT_QUERY)
+  media.addEventListener("change", onChange)
+  return () => media.removeEventListener("change", onChange)
+}
+
+function FeedbackDetailView({
   feedbackId,
+  inline,
   labelTopic,
   onClose,
   onEdit,
   onDelete,
 }: {
-  feedbackId: string | null
+  feedbackId: string
+  inline: boolean
   labelTopic: (topic: string) => string
   onClose: () => void
   onEdit: (item: Feedback) => void
   onDelete: (id: string) => void
 }) {
-  const detail = useFeedbackDetail(feedbackId ?? "")
-  const similar = useSimilarFeedbacks(feedbackId ?? "")
+  const detail = useFeedbackDetail(feedbackId)
+  const similar = useSimilarFeedbacks(feedbackId)
   const router = useRouter()
   const item = detail.data
   const analysis = item?.ai_analysis ?? null
 
-  return (
-    <Sheet
-      open={feedbackId != null}
-      onOpenChange={(open) => !open && onClose()}
-    >
-      <SheetContent className="overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <span className="font-mono text-signal">
-              F-{item ? item.id.slice(0, 8) : "…"}
-            </span>
-          </SheetTitle>
-          <SheetDescription>Feedback detail</SheetDescription>
-        </SheetHeader>
-        {item ? (
-          <div className="flex flex-col gap-6 px-4 pb-8">
-            <p className="text-sm leading-relaxed">
-              {item.feedback_text ?? "—"}
-            </p>
-            <Card size="sm">
-              <CardContent className="gap-2 text-sm">
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Import</span>
-                  <span className="font-mono text-xs">
-                    {item.import_id ?? "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Occurred</span>
-                  <span className="font-mono text-xs">
-                    {shortDate(item.occurred_at)}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="shrink-0 text-muted-foreground">Topic</span>
-                  <span className="flex min-w-0 flex-wrap justify-end gap-1">
-                    {analysis?.uncategorized ? (
-                      <Badge variant="outline">UNCATEGORIZED</Badge>
-                    ) : null}
-                    {(analysis?.topics ?? []).length > 0
-                      ? (analysis?.topics ?? []).map((t) => (
-                          <code
-                            key={t}
-                            title={t}
-                            className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
-                          >
-                            {labelTopic(t)}
-                          </code>
-                        ))
-                      : analysis?.uncategorized
-                        ? null
+  const detailLabel = `F-${item?.id.slice(0, 8) ?? "…"}`
+  const content = (
+    <>
+      {item ? (
+        <div className="flex min-w-0 flex-col gap-4 px-4 pb-4">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-anywhere">
+            {item.feedback_text ?? "—"}
+          </p>
+          <Card size="sm">
+            <CardContent className="gap-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Import</span>
+                <span className="break-all text-right font-mono text-xs">
+                  {item.import_id ?? "—"}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Occurred</span>
+                <span className="font-mono text-xs">
+                  {shortDate(item.occurred_at)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="shrink-0 text-muted-foreground">Topic</span>
+                <span className="flex min-w-0 flex-wrap justify-end gap-1">
+                  {analysis?.uncategorized ? (
+                    <Badge variant="outline">UNCATEGORIZED</Badge>
+                  ) : null}
+                  {(analysis?.topics ?? []).length > 0
+                    ? (analysis?.topics ?? []).map((t) => (
+                        <code
+                          key={t}
+                          title={t}
+                          className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+                        >
+                          {labelTopic(t)}
+                        </code>
+                      ))
+                    : analysis?.uncategorized
+                      ? null
+                      : "—"}
+                </span>
+              </div>
+              {(analysis?.emotions ?? []).length > 0 || analysis?.intent ? (
+                <>
+                  <div className="flex justify-between gap-4">
+                    <span className="shrink-0 text-muted-foreground">
+                      Emotions
+                    </span>
+                    <span className="flex flex-wrap justify-end gap-1">
+                      {(analysis?.emotions ?? []).length > 0
+                        ? analysis!.emotions!.map((e) => (
+                            <Badge key={e} variant="secondary">
+                              {e}
+                            </Badge>
+                          ))
                         : "—"}
-                  </span>
-                </div>
-                {(analysis?.emotions ?? []).length > 0 || analysis?.intent ? (
-                  <>
-                    <div className="flex justify-between gap-4">
-                      <span className="shrink-0 text-muted-foreground">
-                        Emotions
-                      </span>
-                      <span className="flex flex-wrap justify-end gap-1">
-                        {(analysis?.emotions ?? []).length > 0
-                          ? analysis!.emotions!.map((e) => (
-                              <Badge key={e} variant="secondary">
-                                {e}
-                              </Badge>
-                            ))
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-muted-foreground">Intent</span>
-                      <span>{analysis?.intent ?? "—"}</span>
-                    </div>
-                  </>
-                ) : null}
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Sentiment</span>
-                  <SentimentIndicator value={analysis?.sentiment} />
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Analysis</span>
-                  <span>
-                    <Badge variant={analysis ? "success" : "warning"}>
-                      {analysis ? "Ready" : "Pending"}
-                    </Badge>
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Intent</span>
+                    <span>{analysis?.intent ?? "—"}</span>
+                  </div>
+                </>
+              ) : null}
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Sentiment</span>
+                <SentimentIndicator value={analysis?.sentiment} />
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Analysis</span>
+                <span>
+                  <Badge variant={analysis ? "success" : "warning"}>
+                    {analysis ? "Ready" : "Pending"}
+                  </Badge>
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                router.push(
+                  `/data-graph?import=${item.import_id ?? ""}${
+                    analysis?.topics?.[0]
+                      ? `&topic=${encodeURIComponent(analysis.topics[0])}`
+                      : ""
+                  }`
+                )
+              }
+            >
+              Explore this topic
+            </Button>
+            <>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() =>
-                  router.push(
-                    `/data-graph?import=${item.import_id ?? ""}${
-                      analysis?.topics?.[0]
-                        ? `&topic=${encodeURIComponent(analysis.topics[0])}`
-                        : ""
-                    }`
-                  )
-                }
+                onClick={() => onEdit(item)}
               >
-                Explore this topic
+                <Pencil data-icon="inline-start" />
+                Edit
               </Button>
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onEdit(item)}
-                >
-                  <Pencil data-icon="inline-start" />
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => onDelete(item.id)}
-                >
-                  <Trash2 data-icon="inline-start" />
-                  Delete
-                </Button>
-              </>
-            </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => onDelete(item.id)}
+              >
+                <Trash2 data-icon="inline-start" />
+                Delete
+              </Button>
+            </>
+          </div>
 
-            <section className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold">Similar feedback</h3>
-              {similar.isPending ? (
-                <Spinner />
-              ) : similar.data && similar.data.length ? (
-                <div className="flex flex-col gap-2">
-                  {similar.data.map((s) => (
-                    <Card key={s.id} size="sm">
-                      <CardContent className="gap-1 text-sm">
-                        <p className="line-clamp-2">{s.snippet ?? "—"}</p>
-                        <p className="font-mono text-xs text-signal">
-                          F-{s.id.slice(0, 8)} · similarity {s.score.toFixed(2)}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Similarity needs analysis first — this item has no embedding
-                  yet.
-                </p>
-              )}
-            </section>
-
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Back to originating view
+          <section className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold">Similar feedback</h3>
+            {similar.isPending ? (
+              <Spinner />
+            ) : similar.data && similar.data.length ? (
+              <div className="flex flex-col gap-2">
+                {similar.data.map((s) => (
+                  <Card key={s.id} size="sm">
+                    <CardContent className="gap-1 text-sm">
+                      <p className="line-clamp-2">{s.snippet ?? "—"}</p>
+                      <p className="font-mono text-xs text-signal">
+                        F-{s.id.slice(0, 8)} · similarity {s.score.toFixed(2)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Similarity needs analysis first — this item has no embedding
+                yet.
+              </p>
+            )}
+          </section>
+        </div>
+      ) : detail.isError ? (
+        <div className="px-4 pb-4">
+          <Alert variant="destructive">
+            <AlertTitle>Could not load feedback</AlertTitle>
+            <Button variant="outline" size="sm" onClick={() => void detail.refetch()}>
+              Try again
             </Button>
+          </Alert>
+        </div>
+      ) : (
+        <div className="px-4 pb-4">
+          <Spinner />
+        </div>
+      )}
+    </>
+  )
+
+  if (inline) {
+    return (
+      <aside
+        aria-label="Feedback detail"
+        className="sticky top-20 max-h-[calc(100dvh-6rem)] min-w-0 self-start overflow-y-auto rounded-xl border bg-card"
+      >
+        <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+          <div>
+            <h2 className="text-sm font-medium">Feedback detail</h2>
+            <p className="font-mono text-xs text-signal">{detailLabel}</p>
           </div>
-        ) : (
-          <div className="px-4">
-            <Spinner />
-          </div>
-        )}
+          <Button type="button" variant="ghost" size="icon-sm" aria-label="Close feedback detail" onClick={onClose}>
+            <X />
+          </Button>
+        </header>
+        <div className="pt-4">{content}</div>
+      </aside>
+    )
+  }
+
+  return (
+    <Sheet open onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle className="font-mono text-signal">{detailLabel}</SheetTitle>
+          <SheetDescription>Feedback detail</SheetDescription>
+        </SheetHeader>
+        {content}
       </SheetContent>
     </Sheet>
   )
@@ -694,6 +731,12 @@ function Vault({
   const [topic, setTopic] = useState<string>("")
   const [analysisState, setAnalysisState] = useState<string>("")
   const [detailId, setDetailId] = useState<string | null>(null)
+  const supportsInlineDetails = useSyncExternalStore(
+    subscribeToVaultWidth,
+    () => window.matchMedia(WIDE_VAULT_QUERY).matches,
+    () => false
+  )
+  const showInlineDetails = supportsInlineDetails && detailId != null
   const [receiptScope, setReceiptScope] = useState<Scope | null>(null)
   const [startedRunId, setStartedRunId] = useState<string | null>(null)
 
@@ -1052,9 +1095,16 @@ function Vault({
         header: "Phản hồi",
         cell: ({ row }) => (
           <>
-            <span className="line-clamp-2 max-w-xl text-sm">
+            <button
+              type="button"
+              className="line-clamp-2 max-w-xl rounded-sm text-left text-sm hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+              onClick={(event) => {
+                event.stopPropagation()
+                setDetailId(row.original.id)
+              }}
+            >
               {row.original.feedback_text ?? "—"}
-            </span>
+            </button>
             {row.original.pii_detected ? (
               <Badge variant="outline" className="ml-2">
                 Đã ẩn PII
@@ -1186,6 +1236,17 @@ function Vault({
     },
   })
 
+  const feedbackDetail = detailId ? (
+    <FeedbackDetailView
+      feedbackId={detailId}
+      inline={showInlineDetails}
+      labelTopic={labelTopic}
+      onClose={() => setDetailId(null)}
+      onEdit={setEditing}
+      onDelete={setConfirmDeleteId}
+    />
+  ) : null
+
   return (
     <div className="flex flex-col gap-6">
       <NextStepBar />
@@ -1199,7 +1260,10 @@ function Vault({
         }
       />
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[248px_minmax(0,1fr)]">
+      <div className={cn(
+        "grid min-w-0 gap-6 lg:grid-cols-[248px_minmax(0,1fr)]",
+        showInlineDetails && "lg:grid-cols-[12rem_minmax(0,1fr)_20rem]"
+      )}>
         <aside className="flex flex-col gap-2">
           <h2 className="px-2 pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             File đã nhập
@@ -1412,6 +1476,7 @@ function Vault({
                 isLoading={feedbacks.isFetching && !feedbacks.data}
                 maxHeightClass="max-h-[65vh]"
                 onRowClick={(row) => setDetailId(row.id)}
+                rowClassName={(row) => row.id === detailId ? "bg-accent hover:bg-accent" : undefined}
                 emptyContent={
                   <Empty>
                     <EmptyHeader>
@@ -1442,6 +1507,7 @@ function Vault({
             </CardFooter>
           </Card>
         </div>
+        {showInlineDetails ? feedbackDetail : null}
       </div>
 
       {/* L05 — analysis receipt */}
@@ -1713,13 +1779,7 @@ function Vault({
         </AlertDialogContent>
       </AlertDialog>
 
-      <FeedbackDetailDrawer
-        feedbackId={detailId}
-        labelTopic={labelTopic}
-        onClose={() => setDetailId(null)}
-        onEdit={(item) => setEditing(item)}
-        onDelete={(id) => setConfirmDeleteId(id)}
-      />
+      {showInlineDetails ? null : feedbackDetail}
     </div>
   )
 }

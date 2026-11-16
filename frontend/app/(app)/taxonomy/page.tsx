@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  ChevronRight,
   ArrowRight,
   Copy,
   ListTree,
@@ -173,6 +174,7 @@ export default function TaxonomyPage() {
     description: "",
   })
   const [deleteTarget, setDeleteTarget] = useState<TaxonomyNode | null>(null)
+  const [collapsedTopics, setCollapsedTopics] = useState<Set<string>>(() => new Set())
 
   function onAddNode() {
     if (!productId) return
@@ -657,11 +659,23 @@ export default function TaxonomyPage() {
                       <TaxonomyRow
                         node={node}
                         depth={0}
+                        childCount={children.length}
+                        collapsed={collapsedTopics.has(node.id)}
+                        onToggle={() => setCollapsedTopics((previous) => {
+                          const next = new Set(previous)
+                          if (next.has(node.id)) next.delete(node.id)
+                          else next.add(node.id)
+                          return next
+                        })}
                         onEdit={onOpenEdit}
                         onDelete={setDeleteTarget}
                       />
                       {children.length > 0 ? (
-                        <div className="ml-6 flex flex-col gap-1.5 border-l pl-4">
+                        <div
+                          id={`topic-children-${node.id}`}
+                          hidden={collapsedTopics.has(node.id)}
+                          className="ml-6 flex flex-col gap-1.5 border-l pl-4"
+                        >
                           {children.map((child) => (
                             <TaxonomyRow
                               key={child.id}
@@ -1245,11 +1259,17 @@ function ProposalRow({
 function TaxonomyRow({
   node,
   depth,
+  childCount = 0,
+  collapsed = false,
+  onToggle,
   onEdit,
   onDelete,
 }: {
   node: TaxonomyNode
   depth: number
+  childCount?: number
+  collapsed?: boolean
+  onToggle?: () => void
   onEdit: (node: TaxonomyNode) => void
   onDelete: (node: TaxonomyNode) => void
 }) {
@@ -1260,6 +1280,19 @@ function TaxonomyRow({
         depth > 0 ? "text-sm" : "font-medium"
       )}
     >
+      {childCount > 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Chủ đề con của ${node.name_vi ?? node.name}`}
+          aria-expanded={!collapsed}
+          aria-controls={`topic-children-${node.id}`}
+          onClick={onToggle}
+        >
+          <ChevronRight className={cn("transition-transform", !collapsed && "rotate-90")} />
+        </Button>
+      ) : depth === 0 ? <span aria-hidden="true" className="size-8" /> : null}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -1278,6 +1311,7 @@ function TaxonomyRow({
           {node.name}
         </span>
       ) : null}
+      {childCount > 0 ? <span className="text-xs text-muted-foreground">{childCount} chủ đề con</span> : null}
       {node.description ? (
         <span className="hidden max-w-64 truncate text-xs text-muted-foreground lg:block">
           {node.description}

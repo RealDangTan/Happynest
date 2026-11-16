@@ -116,9 +116,11 @@ export function InvestigationCard({runId, question, onRetry}: {
   const draft = pending?.insight;
   const evidence = dedupeEvidence(pending?.evidence ?? report?.evidence ?? []);
   const [showEvidence, setShowEvidence] = useState(false);
+  const evidenceId = useId();
+  const findingConfidence = draft?.finding_confidence ?? report?.finding_confidence;
   const [showDiagnostics, setShowDiagnostics] = useState(false);
 
-  return <Card className="min-w-0 w-full">
+  return <Card className="@container w-full min-w-0">
     <CardHeader>
       <CardTitle className="text-base">{question || pending?.question || report?.title || "Điều tra phản hồi"}</CardTitle>
       <CardDescription className="flex flex-wrap items-center gap-2" aria-live="polite">
@@ -135,18 +137,20 @@ export function InvestigationCard({runId, question, onRetry}: {
         collected={data.progress?.evidence_count ?? 0}
         onRetry={onRetry}
       /> : null}
-      {draft || report ? <>
-        <h3 className="font-heading text-lg leading-snug">{draft?.title ?? report?.title}</h3>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{humanizeAgentText(draft?.finding ?? report?.finding ?? "")}</p>
-        <p className="text-xs text-muted-foreground">Độ tin cậy ước lượng: {Math.round((draft?.finding_confidence ?? report?.finding_confidence ?? 0) * 100)}%</p>
-        {draft?.hypothesis_statement || report?.hypothesis?.statement ? <p className="border-l-2 pl-3 text-sm text-muted-foreground">Giả thuyết cần kiểm chứng: {humanizeAgentText(draft?.hypothesis_statement ?? report?.hypothesis?.statement ?? "")}</p> : null}
-        {(draft?.limitations ?? report?.limitations ?? []).length ? <ul className="flex list-disc flex-col gap-1 pl-5 text-xs text-muted-foreground">{(draft?.limitations ?? report?.limitations ?? []).map((text, i) => <li key={i}>{agentItemText(text)}</li>)}</ul> : null}
-        {evidence.length ? <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Bằng chứng ({evidence.length})</p>
+      {draft || report ? <div className="grid min-w-0 items-start gap-4 @min-[36rem]:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+        <div className="flex min-w-0 flex-col gap-3">
+          <h3 className="font-heading text-lg leading-snug">{draft?.title ?? report?.title}</h3>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{humanizeAgentText(draft?.finding ?? report?.finding ?? "")}</p>
+          {findingConfidence != null ? <p className="text-xs text-muted-foreground">Độ tin cậy ước lượng: {Math.round(findingConfidence * 100)}%</p> : null}
+          {draft?.hypothesis_statement || report?.hypothesis?.statement ? <p className="border-l-2 pl-3 text-sm text-muted-foreground">Giả thuyết cần kiểm chứng: {humanizeAgentText(draft?.hypothesis_statement ?? report?.hypothesis?.statement ?? "")}</p> : null}
+          {(draft?.limitations ?? report?.limitations ?? []).length ? <ul className="flex list-disc flex-col gap-1 pl-5 text-xs text-muted-foreground">{(draft?.limitations ?? report?.limitations ?? []).map((text, i) => <li key={i}>{agentItemText(text)}</li>)}</ul> : null}
+        </div>
+        {evidence.length ? <section aria-labelledby={evidenceId} className="flex min-w-0 flex-col gap-2 rounded-lg border border-sky-line bg-sky-soft/30 p-3">
+          <h4 id={evidenceId} className="text-sm font-medium">Bằng chứng ({evidence.length})</h4>
           {(showEvidence ? evidence : evidence.slice(0, 2)).map(({ item, repeats }, i) => <EvidenceCard key={item.evidence_id ?? i} statement={item.statement} index={i + 1} repeats={repeats} compact={!showEvidence} />)}
-          {evidence.length > 2 || evidence.some(({ item }) => item.statement.length > 400) ? <Button size="sm" variant="ghost" onClick={() => setShowEvidence(!showEvidence)}>{showEvidence ? "Thu gọn bằng chứng" : `Xem toàn bộ ${evidence.length} bằng chứng`}</Button> : null}
-        </div> : <p className="text-sm text-muted-foreground">Chưa có bằng chứng để xác nhận kết luận này.</p>}
-      </> : null}
+          {evidence.length > 2 || evidence.some(({ item }) => item.statement.length > 400) ? <Button size="sm" variant="ghost" aria-expanded={showEvidence} onClick={() => setShowEvidence(!showEvidence)}>{showEvidence ? "Thu gọn bằng chứng" : `Xem toàn bộ ${evidence.length} bằng chứng`}</Button> : null}
+        </section> : <p className="text-sm text-muted-foreground">Chưa có bằng chứng để xác nhận kết luận này.</p>}
+      </div> : null}
       {data?.error ? <Alert variant="destructive"><AlertTitle>{data.status === "failed" ? "Điều tra chưa hoàn tất" : "Chưa lưu được quyết định"}</AlertTitle><AlertDescription>Phiên và dữ liệu vẫn được giữ. Hãy kiểm tra kết nối rồi thử lại.</AlertDescription></Alert> : null}
       {pending && !running ? <FindingReview key={pending.insight_id ?? runId} pending={pending} busy={processing} onSubmit={(action, editedInsight, reason) => {
         decision.mutate({runId, action, editedInsight, reason}, {

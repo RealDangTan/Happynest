@@ -40,7 +40,6 @@ import {
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -126,6 +125,25 @@ function ReportBody({
           ) : null}
         </section>
 
+        <section className="flex flex-col gap-3 border-t pt-5">
+          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Bằng chứng
+          </h3>
+          {evidence.length ? (
+            <ul className="flex flex-col gap-2">
+              {dedupeEvidence(evidence).map(({ item: e, repeats }, index) => (
+                <li key={e.evidence_id}>
+                  <EvidenceCard statement={e.statement} index={index + 1} repeats={repeats} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Chưa ghi nhận bằng chứng nào.
+            </p>
+          )}
+        </section>
+
         {hypothesis?.statement ? (
           <section className="flex flex-col gap-2 border-l-2 border-pollen pl-4">
             <h3 className="text-xs font-semibold tracking-wide text-warning uppercase">
@@ -170,24 +188,6 @@ function ReportBody({
           </section>
         ) : null}
 
-        <section className="flex flex-col gap-2">
-          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Bằng chứng
-          </h3>
-          {evidence.length ? (
-            <ul className="flex flex-col gap-2">
-              {dedupeEvidence(evidence).map(({ item: e, repeats }, index) => (
-                <li key={e.evidence_id}>
-                  <EvidenceCard statement={e.statement} index={index + 1} repeats={repeats} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Chưa ghi nhận bằng chứng nào.
-            </p>
-          )}
-        </section>
       </CardContent>
     </Card>
   )
@@ -446,15 +446,16 @@ function Reports({
       />
 
       {initialRunId ? <Alert><AlertTitle>Cuộc điều tra được duyệt tại chỗ</AlertTitle><AlertDescription>Tiếp tục trong màn điều tra để giữ nguyên câu hỏi và bằng chứng.</AlertDescription><Button size="sm" variant="outline" asChild><Link href={`/data-graph?run=${initialRunId}`}>Mở cuộc điều tra</Link></Button></Alert> : null}
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(14rem,17rem)_minmax(0,1fr)]">
         {/* Reports list */}
-        <Card size="sm" className="self-start">
+        <Card size="sm" className="self-start lg:sticky lg:top-20">
           <CardHeader>
             <CardTitle>Danh sách báo cáo</CardTitle>
             <CardDescription>{insights.isPending ? "Đang tải báo cáo…" : `${items.length} trong sản phẩm này`}</CardDescription>
           </CardHeader>
           <CardContent className="gap-3">
             <Input
+              aria-label="Tìm báo cáo"
               placeholder="Tìm báo cáo…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -472,10 +473,12 @@ function Reports({
                 <SelectItem value="rejected">Đã từ chối</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex flex-col gap-1">
+            <div className="flex max-h-[45vh] flex-col gap-1 overflow-y-auto pr-1">
               {items.map((i) => (
                 <button
                   key={i.id}
+                  type="button"
+                  aria-current={selected?.id === i.id ? "true" : undefined}
                   onClick={() => setSelectedId(i.id)}
                   className={`w-full rounded-lg border p-3 text-left transition-colors ${
                     selected?.id === i.id
@@ -515,6 +518,11 @@ function Reports({
                 evidence={selected.evidence ?? []}
                 runId={selected.run_id}
               />
+              {selected.status === "approved" || selected.status === "edited" ? (
+                <Button className="self-start" asChild>
+                  <Link href={`/matrix?report=${selected.id}`}>Xem hành động</Link>
+                </Button>
+              ) : null}
               {(selected.status === "pending" || selected.status === "investigating") && selected.run_id ? (
                 <Button variant="outline" asChild><Link href={`/data-graph?run=${selected.run_id}`}>Tiếp tục và duyệt trong cuộc điều tra</Link></Button>
               ) : null}
@@ -565,42 +573,33 @@ function Reports({
               </CardContent>
             </Card>
           )}
+          {/* Recent report statuses */}
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Trạng thái báo cáo gần đây</CardTitle>
+            </CardHeader>
+            <CardContent className="gap-3 text-sm">
+              {items.length === 0 ? (
+                <p className="text-muted-foreground">Chưa có báo cáo.</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {items.slice(0, 8).map((i) => (
+                    <li
+                      key={i.id}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span className="min-w-0 flex-1 truncate">{i.title}</span>
+                      <StatusBadge status={i.status} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Mọi lần duyệt, sửa và từ chối đều được ghi lại kèm người duyệt.
+              </p>
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Review history rail */}
-        <Card size="sm" className="self-start">
-          <CardHeader>
-            <CardTitle>Lịch sử duyệt</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-3 text-sm">
-            {items.length === 0 ? (
-              <p className="text-muted-foreground">Chưa có quyết định nào.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {items.slice(0, 8).map((i) => (
-                  <li
-                    key={i.id}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <span className="min-w-0 flex-1 truncate">{i.title}</span>
-                    <StatusBadge status={i.status} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Mọi lần duyệt, sửa và từ chối đều được ghi lại kèm người duyệt.
-            </p>
-          </CardContent>
-          {selected &&
-          (selected.status === "approved" || selected.status === "edited") ? (
-            <CardFooter>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href={`/matrix?report=${selected.id}`}>Xem hành động</Link>
-              </Button>
-            </CardFooter>
-          ) : null}
-        </Card>
       </div>
 
       <ReportEditDialog

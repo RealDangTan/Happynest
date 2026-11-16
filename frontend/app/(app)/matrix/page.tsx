@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -57,6 +58,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AiBadge } from "@/components/ai/ai-badge"
 import { ActionDecisionSupport } from "@/components/actions/action-decision-support"
 import { PageHeader } from "@/components/page-header"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useInsights } from "@/hooks/use-insights"
@@ -565,6 +568,7 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
   const [reportId, setReportId] = useState<string | null>(initialReportId)
   const [department, setDepartment] = useState("all")
   const [statusFilter, setStatusFilter] = useState("active")
+  const [view, setView] = useState("matrix")
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [dropPreview, setDropPreview] = useState<{
     actionId: string
@@ -616,7 +620,6 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
   }, [allItems, department, statusFilter])
 
   const openAction = items.find((a) => a.id === openActionId) ?? null
-  const matrix = actions.data?.matrix
   const undecided = allItems.filter(
     (a) => a.status === "proposed" || a.status === "edited"
   )
@@ -769,98 +772,156 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Ma trận ưu tiên</CardTitle>
+            <CardTitle>{lang === "vi" ? "Ưu tiên hành động" : "Action priorities"}</CardTitle>
+            {undecided.length > 0 ? (
+              <CardAction>
+                <Button variant="outline" size="sm" asChild>
+                  <a href="#pending-action-review">
+                    {lang === "vi" ? `Chờ duyệt (${undecided.length})` : `Awaiting review (${undecided.length})`}
+                  </a>
+                </Button>
+              </CardAction>
+            ) : null}
             <CardDescription>
-              {lang === "vi"
+              {view === "matrix" && (lang === "vi"
                 ? "Mỗi chấm là một hành động; màu thể hiện phòng ban. Rê chuột để xem nội dung, bấm để mở chi tiết hoặc kéo thả để điều chỉnh ưu tiên."
-                : "Each dot is an action; its color shows the department. Hover to read, click for details, or drag to adjust priority."}
+                : "Each dot is an action; its color shows the department. Hover to read, click for details, or drag to adjust priority.")}
+              {view === "table" && (lang === "vi" ? "Chọn hành động để xem chi tiết và điều chỉnh điểm." : "Select an action to review its details and scores.")}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex justify-between px-1 text-xs text-muted-foreground">
-              <span>↑ Tác động tới khách hàng</span>
-              <span>Nỗ lực →</span>
-            </div>
-            <div
-              className="relative h-[480px] overflow-hidden rounded-lg border bg-card"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                const id = e.dataTransfer.getData("text/action-id")
-                const dropped = allItems.find((a) => a.id === id)
-                if (!dropped || !e.currentTarget) return
-                const rect = e.currentTarget.getBoundingClientRect()
-                const x = (e.clientX - rect.left) / rect.width
-                const y = (e.clientY - rect.top) / rect.height
-                const effort = Math.min(10, Math.max(1, Math.round(x * 10)))
-                const impact = Math.min(
-                  10,
-                  Math.max(1, Math.round((1 - y) * 10))
-                )
-                setDropPreview({
-                  actionId: id,
-                  draft: {
-                    impact,
-                    effort,
-                    urgency: effectiveScores(dropped).urgency,
-                    reason: "",
-                  },
-                })
-                setOpenActionId(id)
-              }}
-            >
-              {/* quadrant tints + labels */}
-              {(
-                [
-                  ["Làm ngay", "left-0 top-0", "bg-leaf-soft/70", "text-leaf-ink", "left-3 top-3"],
-                  ["Đầu tư chiến lược", "right-0 top-0", "bg-sky-soft/70", "text-sky-ink", "right-3 top-3"],
-                  ["Ưu tiên thấp", "left-0 bottom-0", "bg-muted/60", "text-muted-foreground", "left-3 bottom-3"],
-                  ["Cân nhắc lại", "right-0 bottom-0", "bg-coral-soft/60", "text-coral-ink", "right-3 bottom-3"],
-                ] as const
-              ).map(([label, area, tint, ink, pos]) => (
-                <div key={label} className={cn("absolute h-1/2 w-1/2", area, tint)}>
-                  <span
-                    className={cn(
-                      "absolute text-xs font-semibold tracking-wide uppercase",
-                      pos,
-                      ink,
-                    )}
-                  >
-                    {label}
-                  </span>
+            <Tabs value={view} onValueChange={setView} className="min-w-0 gap-4">
+              <TabsList aria-label={lang === "vi" ? "Chế độ xem ưu tiên" : "Priority view"}>
+                <TabsTrigger value="matrix">{lang === "vi" ? "Ma trận" : "Matrix"}</TabsTrigger>
+                <TabsTrigger value="table">{lang === "vi" ? "Bảng" : "Table"}</TabsTrigger>
+              </TabsList>
+              <TabsContent value="matrix" className="flex min-w-0 flex-col gap-4">
+                <div className="flex justify-between px-1 text-xs text-muted-foreground">
+                  <span>↑ Tác động tới khách hàng</span>
+                  <span>Nỗ lực →</span>
                 </div>
-              ))}
-              <div className="absolute top-0 left-1/2 h-full w-px bg-border" />
-              <div className="absolute top-1/2 left-0 h-px w-full bg-border" />
-              {items.map((a) => (
-                <MatrixPoint
-                  key={a.id}
-                  action={a}
-                  onOpen={() => setOpenActionId(a.id)}
-                />
-              ))}
-              {matrix ? null : null}
-            </div>
-            <div className="flex justify-between px-1 text-xs text-muted-foreground">
-              <span>Nỗ lực thấp</span>
-              <span>Nỗ lực cao</span>
-            </div>
-            <ul
-              aria-label={lang === "vi" ? "Chú giải phòng ban" : "Department legend"}
-              className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
-            >
-              {BUSINESS_FUNCTIONS.filter((f) => items.some((a) => a.function === f.value)).map((f) => (
-                <li key={f.value} className="flex items-center gap-1.5">
-                  <span aria-hidden="true" className={cn("size-2.5 shrink-0 rounded-full bg-current", DEPARTMENT_COLOR[f.value])} />
-                  {f.label}
-                </li>
-              ))}
-            </ul>
+                <div
+                  className="relative h-[480px] overflow-hidden rounded-lg border bg-card"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const id = e.dataTransfer.getData("text/action-id")
+                    const dropped = allItems.find((a) => a.id === id)
+                    if (!dropped || !e.currentTarget) return
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    const x = (e.clientX - rect.left) / rect.width
+                    const y = (e.clientY - rect.top) / rect.height
+                    const effort = Math.min(10, Math.max(1, Math.round(x * 10)))
+                    const impact = Math.min(
+                      10,
+                      Math.max(1, Math.round((1 - y) * 10))
+                    )
+                    setDropPreview({
+                      actionId: id,
+                      draft: {
+                        impact,
+                        effort,
+                        urgency: effectiveScores(dropped).urgency,
+                        reason: "",
+                      },
+                    })
+                    setOpenActionId(id)
+                  }}
+                >
+                  {/* quadrant tints + labels */}
+                  {(
+                    [
+                      ["Làm ngay", "left-0 top-0", "bg-leaf-soft/70", "text-leaf-ink", "left-3 top-3"],
+                      ["Đầu tư chiến lược", "right-0 top-0", "bg-sky-soft/70", "text-sky-ink", "right-3 top-3"],
+                      ["Ưu tiên thấp", "left-0 bottom-0", "bg-muted/60", "text-muted-foreground", "left-3 bottom-3"],
+                      ["Cân nhắc lại", "right-0 bottom-0", "bg-coral-soft/60", "text-coral-ink", "right-3 bottom-3"],
+                    ] as const
+                  ).map(([label, area, tint, ink, pos]) => (
+                    <div key={label} className={cn("absolute h-1/2 w-1/2", area, tint)}>
+                      <span
+                        className={cn(
+                          "absolute text-xs font-semibold tracking-wide uppercase",
+                          pos,
+                          ink,
+                        )}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="absolute top-0 left-1/2 h-full w-px bg-border" />
+                  <div className="absolute top-1/2 left-0 h-px w-full bg-border" />
+                  {items.map((a) => (
+                    <MatrixPoint
+                      key={a.id}
+                      action={a}
+                      onOpen={() => setOpenActionId(a.id)}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-between px-1 text-xs text-muted-foreground">
+                  <span>Nỗ lực thấp</span>
+                  <span>Nỗ lực cao</span>
+                </div>
+                <ul
+                  aria-label={lang === "vi" ? "Chú giải phòng ban" : "Department legend"}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+                >
+                  {BUSINESS_FUNCTIONS.filter((f) => items.some((a) => a.function === f.value)).map((f) => (
+                    <li key={f.value} className="flex items-center gap-1.5">
+                      <span aria-hidden="true" className={cn("size-2.5 shrink-0 rounded-full bg-current", DEPARTMENT_COLOR[f.value])} />
+                      {f.label}
+                    </li>
+                  ))}
+                </ul>
+              </TabsContent>
+              <TabsContent value="table" className="min-w-0 rounded-lg border">
+                <Table className="min-w-[35rem]">
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead>{lang === "vi" ? "Hành động" : "Action"}</TableHead>
+                      <TableHead>{lang === "vi" ? "Trạng thái" : "Status"}</TableHead>
+                      <TableHead className="text-right">{lang === "vi" ? "Tác động" : "Impact"}</TableHead>
+                      <TableHead className="text-right">{lang === "vi" ? "Nỗ lực" : "Effort"}</TableHead>
+                      <TableHead className="text-right">{lang === "vi" ? "Ưu tiên" : "Priority"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...items]
+                      .sort((a, b) => b.priority_score - a.priority_score)
+                      .map((action) => {
+                        const scores = effectiveScores(action)
+                        return (
+                          <TableRow key={action.id}>
+                            <TableCell className="max-w-sm whitespace-normal wrap-anywhere">
+                              <button
+                                type="button"
+                                className="rounded-sm text-left font-medium hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                                onClick={() => setOpenActionId(action.id)}
+                              >
+                                {action.recommendation}
+                              </button>
+                              <span className="block text-xs text-muted-foreground">
+                                {departmentLabel(action.function)}
+                              </span>
+                            </TableCell>
+                            <TableCell>{lang === "vi" ? ACTION_STATUS_VI[action.status] ?? action.status : action.status}</TableCell>
+                            <TableCell className="text-right tabular-nums">{scores.impact}</TableCell>
+                            <TableCell className="text-right tabular-nums">{scores.effort}</TableCell>
+                            <TableCell className="text-right font-medium tabular-nums">{action.priority_score.toFixed(1)}</TableCell>
+                          </TableRow>
+                        )
+                      })}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            </Tabs>
           </CardContent>
           <CardFooter className="flex-wrap justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              Mỗi chấm là một hành động. Điểm ưu tiên còn tính cả độ khẩn
-              cấp và độ tin cậy.
+              {lang === "vi"
+                ? "Điểm ưu tiên còn tính cả độ khẩn cấp và độ tin cậy."
+                : "Priority also accounts for urgency and confidence."}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" asChild>
@@ -879,7 +940,7 @@ function Matrix({ initialReportId }: { initialReportId: string | null }) {
       )}
 
       {reportApproved && undecided.length > 0 ? (
-        <Card>
+        <Card id="pending-action-review" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>{t.matrixPage.decideTitle(undecided.length)}</CardTitle>
             <CardDescription>{t.matrixPage.decideBody}</CardDescription>

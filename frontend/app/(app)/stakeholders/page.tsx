@@ -285,18 +285,20 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         </CardContent>
       </Card>
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[200px_minmax(0,1fr)_minmax(300px,380px)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[11rem_minmax(0,1fr)_minmax(16rem,22rem)]">
         {/* By department */}
-        <aside className="flex flex-col gap-1">
-          <h2 className="px-2 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <aside aria-labelledby="stakeholder-departments" className="flex flex-wrap items-center gap-1 self-start rounded-xl border bg-card p-2 xl:flex-col xl:items-stretch">
+          <h2 id="stakeholder-departments" className="w-full px-2 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Theo phòng ban
           </h2>
           {["all", ...DEPARTMENTS.map((d) => d.toLowerCase())].map((key) => (
             <button
               key={key}
+              type="button"
+              aria-pressed={department === key}
               onClick={() => setDepartment(key)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring xl:w-full",
                 department === key ? "bg-accent font-medium" : "hover:bg-accent/60"
               )}
             >
