@@ -6,7 +6,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import type { Feedback, FeedbackListResponse } from "@/lib/types";
+import type {
+  Feedback,
+  FeedbackFacets,
+  FeedbackListResponse,
+} from "@/lib/types";
 import type { FeedbackServerSort } from "@/lib/table-sorts";
 
 export type FeedbackListParams = {
@@ -16,12 +20,15 @@ export type FeedbackListParams = {
   /** Faceted multi-select: ['high','critical'] → severity=high,critical */
   severity?: string[];
   sentiment?: string[];
-  topic?: string;
+  /** Một slug hoặc nhiều (khớp BẤT KỲ — feedback mang tới 3 chủ đề). */
+  topic?: string | string[];
   source?: string;
   /** Search text toàn cục (backend: feedback_text + source, ILIKE) */
   q?: string;
   sort?: FeedbackServerSort;
   importId?: string;
+  /** Giới hạn trong một product; bỏ trống = mọi product của tài khoản. */
+  productId?: string;
   analysisState?: "pending" | "completed" | "uncategorized";
 };
 
@@ -33,11 +40,13 @@ function toQuery(p: FeedbackListParams): string {
   q.set("offset", String((p.page - 1) * (p.pageSize ?? DEFAULT_PAGE_SIZE)));
   if (p.severity?.length) q.set("severity", p.severity.join(","));
   if (p.sentiment?.length) q.set("sentiment", p.sentiment.join(","));
-  if (p.topic) q.set("topic", p.topic);
+  const topics = Array.isArray(p.topic) ? p.topic : p.topic ? [p.topic] : [];
+  if (topics.length) q.set("topic", topics.join(","));
   if (p.source) q.set("source", p.source);
   if (p.q) q.set("q", p.q);
   if (p.sort) q.set("sort", p.sort);
   if (p.importId) q.set("import_id", p.importId);
+  if (p.productId) q.set("product_id", p.productId);
   if (p.analysisState) q.set("analysis_state", p.analysisState);
   return q.toString();
 }
@@ -49,6 +58,30 @@ export function useFeedbacks(params: FeedbackListParams) {
       apiFetch<FeedbackListResponse>(`/api/feedbacks?${toQuery(params)}`),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+}
+
+/**
+ * Chủ đề và khoá metadata THỰC SỰ có trong phạm vi (product + tuỳ chọn một lô
+ * nhập) — dựng bộ lọc chủ đề và menu cột metadata của vault. Nằm dưới khoá
+ * ["feedbacks", …] nên mọi thao tác sửa/xoá/phân loại làm mới nó theo.
+ */
+export function useFeedbackFacets(params: {
+  productId: string | null | undefined;
+  importId?: string | null;
+}) {
+  return useQuery({
+    queryKey: ["feedbacks", "facets", params.productId, params.importId ?? null],
+    queryFn: () => {
+      const q = new URLSearchParams();
+      if (params.productId) q.set("product_id", params.productId);
+      if (params.importId) q.set("import_id", params.importId);
+      return apiFetch<FeedbackFacets>(`/api/feedbacks/facets?${q.toString()}`);
+    },
+    enabled: params.productId != null,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+    retry: false,
   });
 }
 

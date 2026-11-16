@@ -58,6 +58,7 @@ import {
 } from "@/lib/table-sorts"
 import { scopeLine, shortDate, topTopics, topicLabeler } from "@/lib/graph"
 import { PageHeader } from "@/components/page-header"
+import { TopicPills } from "@/components/topic-pills"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import { useT } from "@/lib/i18n"
 import { SEVERITY_TONE } from "@/lib/tone"
@@ -115,16 +116,13 @@ function ScopeTable({
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Topic" />
         ),
-        cell: ({ row }) => {
-          const first = row.original.ai_analysis?.topics?.[0]
-          return first ? (
-            <span className="block max-w-40 truncate text-sm" title={first}>
-              {topicLabel(first)}
-            </span>
-          ) : (
-            "—"
-          )
-        },
+        cell: ({ row }) => (
+          <TopicPills
+            topics={row.original.ai_analysis?.topics}
+            uncategorized={Boolean(row.original.ai_analysis?.uncategorized)}
+            label={topicLabel}
+          />
+        ),
       },
       {
         id: "sentiment",

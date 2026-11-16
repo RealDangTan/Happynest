@@ -57,6 +57,13 @@ export type Feedback = {
   created_at: string;
 };
 
+/** GET /api/feedbacks/facets — chủ đề và khoá metadata có thật trong phạm vi đang xem. */
+export type FeedbackFacets = {
+  total: number;
+  topics: { value: string; count: number }[];
+  metadata: { zone: "data" | "source_meta"; key: string; count: number }[];
+};
+
 export type FeedbackListResponse = {
   total: number;
   limit: number;

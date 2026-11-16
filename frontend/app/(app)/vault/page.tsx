@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type {
   ColumnFiltersState,
+  ColumnVisibilityState,
   RowSelectionState,
   SortingState,
 } from "@tanstack/react-table"
@@ -28,7 +29,6 @@ import {
   Ban,
   ChevronDown,
   ChevronUp,
-  FileSpreadsheet,
   Pencil,
   Play,
   Trash2,
@@ -103,7 +103,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { apiFetch } from "@/lib/api"
 import { useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
-import { IMPORT_STATUS_TONE, RUN_STATUS_TONE, SEVERITY_TONE } from "@/lib/tone"
+import { RUN_STATUS_TONE, SEVERITY_TONE } from "@/lib/tone"
+import { ImportFileList } from "@/components/vault/import-file-list"
+import { TopicPills } from "@/components/topic-pills"
 import { NextStepBar } from "@/components/journey/next-step-bar"
 import type {
   Feedback,
@@ -117,6 +119,7 @@ import {
   useBulkDeleteFeedbacks,
   useDeleteFeedback,
   useDeleteImport,
+  useFeedbackFacets,
   useFeedbacks,
   useUpdateFeedback,
 } from "@/hooks/use-feedbacks"
@@ -145,59 +148,22 @@ type Scope =
   | { mode: "selected"; import_id: string; feedback_ids: string[] }
   | { mode: "batch"; import_id: string }
 
-function ImportRowButton({
-  item,
-  active,
-  onSelect,
-  onDelete,
-}: {
-  item: ImportRecord
-  active: boolean
-  onSelect: () => void
-  onDelete?: () => void
-}) {
-  return (
-    <div
-      className={`group flex w-full items-center rounded-md pr-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        active ? "bg-accent font-medium" : "hover:bg-accent/60"
-      }`}
-    >
-      <button
-        onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none"
-      >
-        {active ? (
-          <span aria-hidden>›</span>
-        ) : (
-          <span className="w-2" aria-hidden />
-        )}
-        <FileSpreadsheet className="size-3.5 shrink-0 text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate">
-          {item.original_filename ?? item.id.slice(0, 8)}
-        </span>
-        {item.status === "imported" ? null : (
-          <Badge variant={IMPORT_STATUS_TONE[item.status] ?? "secondary"}>
-            {item.status === "mapping_review" || item.status === "profile_ready"
-              ? "mapping"
-              : item.status}
-          </Badge>
-        )}
-      </button>
-      {onDelete ? (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete()
-          }}
-          className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity outline-none group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Delete import"
-          title="Delete import"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
-      ) : null}
-    </div>
-  )
+// ── Cột metadata: khoá thật có trong file nhập (`data` / `source_meta`), mặc
+// định ẩn, người dùng bật qua menu "Cột hiển thị" và lựa chọn được nhớ lại. ──
+const METADATA_GROUP = {
+  data: "Dữ liệu sản phẩm",
+  source_meta: "Thông tin nguồn",
+} as const
+const metaColumnId = (zone: string, key: string) => `meta:${zone}:${key}`
+function metaLabel(key: string): string {
+  const spaced = key.replace(/[_-]+/g, " ").trim()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+function parseColumnVisibility(raw: string): ColumnVisibilityState | null {
+  const parsed: unknown = JSON.parse(raw)
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? (parsed as ColumnVisibilityState)
+    : null
 }
 
 const SEVERITIES = ["low", "medium", "high", "critical"] as const
@@ -760,7 +726,11 @@ function Vault({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [qInput, setQInput] = useState("")
   const debouncedQ = useDebouncedValue(qInput, 300)
-  const [topic, setTopic] = useState<string>("")
+  // Bộ lọc chủ đề là bộ lọc cột (đa chọn, khớp bất kỳ — feedback mang tới 3 chủ đề).
+  const topicFilter = useMemo(
+    () => (columnFilters.find((f) => f.id === "topics")?.value as string[] | undefined) ?? [],
+    [columnFilters],
+  )
   const [analysisState, setAnalysisState] = useState<string>("")
   const detailId = initialItemId
   const setDetailId = (id: string | null) => {
@@ -831,9 +801,52 @@ function Vault({
       .sort((a, b) => (a.name_vi ?? a.name).localeCompare(b.name_vi ?? b.name, "vi"))
   }, [taxonomy.data])
 
+  // Chủ đề và khoá metadata có THẬT trong phạm vi đang xem (product + lô nhập).
+  // Trước đây bộ lọc chủ đề lấy cả taxonomy của product, nên liệt kê cả chủ đề
+  // không hề có trong lô này. Lỗi (vd. backend chưa cập nhật) → rơi về taxonomy.
+  const facets = useFeedbackFacets({ productId, importId: activeImportId })
+  const facetTopics = facets.data?.topics
+  const metadataFacets = facets.data?.metadata
+  const topicFilterOptions = useMemo(() => {
+    const options: { value: string; label: string; count?: number }[] =
+      facetTopics
+        ? facetTopics.map((f) => ({
+            value: f.value,
+            label: labelTopic(f.value),
+            count: f.count,
+          }))
+        : topicOptions.map((n) => ({
+            value: n.slug ?? n.name,
+            label: n.name_vi ?? n.name,
+          }))
+    // Chủ đề đang chọn mà phạm vi mới không còn: vẫn hiện để bỏ chọn được.
+    for (const slug of topicFilter)
+      if (!options.some((o) => o.value === slug))
+        options.unshift({ value: slug, label: labelTopic(slug), count: 0 })
+    return options
+  }, [facetTopics, topicOptions, labelTopic, topicFilter])
+
+  // Cột hiển thị được nhớ trên máy; cột metadata chưa từng chọn thì mặc định ẩn.
+  const [storedVisibility, setStoredVisibility] =
+    useStoredState<ColumnVisibilityState>(
+      "vault.columns.v1",
+      {},
+      parseColumnVisibility,
+    )
+  const columnVisibility = useMemo(() => {
+    // "Nguồn" mặc định ẩn: nó hiện ở dòng phụ của cột "Phản hồi", nhường chỗ
+    // cho bảng vừa khít khung. Bật lại ở menu "Chọn cột hiển thị".
+    const base: ColumnVisibilityState = { source: false }
+    for (const m of metadataFacets ?? []) base[metaColumnId(m.zone, m.key)] = false
+    return { ...base, ...storedVisibility }
+  }, [metadataFacets, storedVisibility])
+
   const filters = {
     page,
     pageSize,
+    // Luôn giới hạn trong product đang mở: không có product_id, "Tất cả file"
+    // trước đây trả cả feedback của product khác (tổng số và chủ đề bị lẫn).
+    productId: productId ?? undefined,
     importId: activeImportId ?? undefined,
     analysisState: (analysisState || undefined) as
       | "pending"
@@ -843,7 +856,7 @@ function Vault({
     sentiment:
       (columnFilters.find((f) => f.id === "sentiment")?.value as string[]) ??
       undefined,
-    topic: topic || undefined,
+    topic: topicFilter.length ? topicFilter : undefined,
     q: debouncedQ.trim() || undefined,
     sort: sortingToServerSort(sorting),
   }
@@ -851,12 +864,12 @@ function Vault({
   const rows = useMemo(() => feedbacks.data?.items ?? [], [feedbacks.data])
 
   const pendingCount = useQuery({
-    queryKey: ["feedbacks", "pending-count", activeImportId],
+    queryKey: ["feedbacks", "pending-count", productId, activeImportId],
     queryFn: () =>
       apiFetch<FeedbackListResponse>(
         `/api/feedbacks?limit=1&analysis_state=pending${
-          activeImportId ? `&import_id=${activeImportId}` : ""
-        }`
+          productId ? `&product_id=${productId}` : ""
+        }${activeImportId ? `&import_id=${activeImportId}` : ""}`
       ),
     staleTime: 15_000,
   })
@@ -866,12 +879,12 @@ function Vault({
   // chạy tiếp ở "All imports" từng chọn nhầm file đang chạy → biên nhận 0 mục
   // → server từ chối 422 (QA HN-013, 2026-11-11).
   const eligibleCount = useQuery({
-    queryKey: ["feedbacks", "eligible-count", activeImportId],
+    queryKey: ["feedbacks", "eligible-count", productId, activeImportId],
     queryFn: () =>
       apiFetch<FeedbackListResponse>(
         `/api/feedbacks?limit=1&analysis_state=eligible${
-          activeImportId ? `&import_id=${activeImportId}` : ""
-        }`
+          productId ? `&product_id=${productId}` : ""
+        }${activeImportId ? `&import_id=${activeImportId}` : ""}`
       ),
     staleTime: 5_000,
   })
@@ -1072,11 +1085,10 @@ function Vault({
   }
 
   const hasActiveFilters =
-    columnFilters.length > 0 || debouncedQ.trim() !== "" || topic !== "" || analysisState !== ""
+    columnFilters.length > 0 || debouncedQ.trim() !== "" || analysisState !== ""
   function clearAllFilters() {
     setQInput("")
     setColumnFilters([])
-    setTopic("")
     setAnalysisState("")
     setSorting([{ id: "occurred_at", desc: true }])
     setPage(1)
@@ -1093,7 +1105,12 @@ function Vault({
         id: "select",
         enableSorting: false,
         enableHiding: false,
-        meta: { thClassName: "w-10", tdClassName: "w-10" },
+        // Cố định ở mép trái cùng cột "Phản hồi" khi cuộn ngang.
+        meta: {
+          thClassName: "w-10 min-w-10 max-w-10",
+          tdClassName: "w-10 min-w-10 max-w-10",
+          stickyLeft: "0px",
+        },
         header: ({ table }) => (
           <Checkbox
             checked={
@@ -1130,9 +1147,11 @@ function Vault({
           label: "Phản hồi",
           thClassName: "w-[40%] min-w-56",
           tdClassName: "min-w-56 whitespace-normal",
+          stickyLeft: "2.5rem", // = độ rộng cột chọn dòng (w-10)
+          stickyEdge: true,
         },
         header: "Phản hồi",
-        cell: ({ row }) => (
+        cell: ({ row, table }) => (
           <>
             <button
               type="button"
@@ -1149,6 +1168,12 @@ function Vault({
                 Đã ẩn PII
               </Badge>
             ) : null}
+            {/* Cột "Nguồn" đang ẩn → nguồn hiện ngay dưới nội dung. */}
+            {table.getColumn("source")?.getIsVisible() ? null : (
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                {row.original.source}
+              </span>
+            )}
           </>
         ),
       },
@@ -1199,23 +1224,21 @@ function Vault({
       },
       {
         id: "topics",
+        // accessorFn để cột lọc được (bộ lọc "Chủ đề" ở toolbar); lọc chạy ở server.
+        accessorFn: (f: Feedback) => f.ai_analysis?.topics ?? [],
         enableSorting: false,
-        meta: { label: "Chủ đề" },
+        meta: { label: "Chủ đề", tdClassName: "min-w-40 max-w-72 whitespace-normal" },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Chủ đề" />
         ),
-        cell: ({ row }) => {
-          if (row.original.ai_analysis?.uncategorized)
-            return <Badge variant="outline">Chưa có chủ đề</Badge>
-          const first = row.original.ai_analysis?.topics?.[0]
-          return first ? (
-            <span title={first} className="block max-w-36 truncate text-sm">
-              {labelTopic(first)}
-            </span>
-          ) : (
-            "—"
-          )
-        },
+        // Mỗi phản hồi mang tới 3 chủ đề → hiện đủ dạng tag pill.
+        cell: ({ row }) => (
+          <TopicPills
+            topics={row.original.ai_analysis?.topics}
+            uncategorized={Boolean(row.original.ai_analysis?.uncategorized)}
+            label={labelTopic}
+          />
+        ),
       },
       {
         id: "state",
@@ -1234,8 +1257,32 @@ function Vault({
           )
         },
       },
+      ...(metadataFacets ?? []).map(
+        (m): LegacyColumnDef<Feedback> => ({
+          id: metaColumnId(m.zone, m.key),
+          accessorFn: (f: Feedback) => f[m.zone]?.[m.key] ?? "",
+          enableSorting: false,
+          meta: { label: metaLabel(m.key), group: METADATA_GROUP[m.zone] },
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={metaLabel(m.key)} />
+          ),
+          cell: ({ row }) => {
+            const value = row.original[m.zone]?.[m.key]
+            return value ? (
+              <span
+                title={String(value)}
+                className="block max-w-48 truncate text-sm text-muted-foreground"
+              >
+                {String(value)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )
+          },
+        }),
+      ),
     ],
-    [labelTopic],
+    [labelTopic, metadataFacets],
   )
 
   const table = useLegacyTable({
@@ -1251,7 +1298,11 @@ function Vault({
     getCoreRowModel: getCoreRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    state: { sorting, columnFilters, rowSelection, pagination },
+    state: { sorting, columnFilters, rowSelection, pagination, columnVisibility },
+    onColumnVisibilityChange: (updater) =>
+      setStoredVisibility(
+        typeof updater === "function" ? updater(columnVisibility) : updater,
+      ),
     onSortingChange: (updater) => {
       setSorting((old) =>
         typeof updater === "function" ? updater(old) : updater,
@@ -1311,50 +1362,29 @@ function Vault({
         "grid min-w-0 gap-6 lg:grid-cols-[248px_minmax(0,1fr)]",
         showInlineDetails && "lg:grid-cols-[12rem_minmax(0,1fr)_22rem]"
       )}>
-        <aside className="flex flex-col gap-2">
-          <h2 className="px-2 pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            File đã nhập
-          </h2>
-          <ImportRowButton
-            item={
-              {
-                id: "all",
-                status: "imported",
-                original_filename: "Tất cả file",
-              } as ImportRecord
-            }
-            active={!activeImportId}
-            onSelect={() => {
-              setActiveImportId(null)
-              clearSelection()
-              setPage(1)
-            }}
-          />
-          {imports.map((item) => (
-            <ImportRowButton
-              key={item.id}
-              item={item}
-              active={activeImportId === item.id}
-              onSelect={() => {
-                setActiveImportId(item.id)
-                clearSelection()
-                setPage(1)
-              }}
-              onDelete={() => setConfirmImport(item)}
-            />
-          ))}
-          {importsQuery.isPending ? (
-            <Skeleton className="mx-2 h-8" />
-          ) : imports.length === 0 ? (
-            <p className="px-2 text-sm text-muted-foreground">
-              Chưa có file nào được nhập.
-            </p>
-          ) : null}
-        </aside>
+        <ImportFileList
+          imports={imports}
+          activeId={activeImportId}
+          loading={importsQuery.isPending}
+          onSelectAll={() => {
+            setActiveImportId(null)
+            clearSelection()
+            setColumnFilters((old) => old.filter((f) => f.id !== "topics"))
+            setPage(1)
+          }}
+          onSelect={(item) => {
+            setActiveImportId(item.id)
+            clearSelection()
+            setColumnFilters((old) => old.filter((f) => f.id !== "topics"))
+            setPage(1)
+          }}
+          onDelete={setConfirmImport}
+        />
 
         <div className="flex min-w-0 flex-col gap-4">
           <DataTableToolbar
             table={table}
+            onResetColumns={() => setStoredVisibility({})}
             search={{
               value: qInput,
               onChange: (v) => {
@@ -1373,27 +1403,14 @@ function Vault({
                   { value: "mixed", label: "Mixed" },
                 ],
               },
+              {
+                // Đa chọn, khớp bất kỳ; số lượng theo phạm vi đang xem (facets).
+                columnId: "topics",
+                title: "Chủ đề",
+                options: topicFilterOptions,
+              },
             ]}
           >
-            <Select
-              value={topic}
-              onValueChange={(v) => {
-                setTopic(v === "all" ? "" : v)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger size="sm" className="w-48">
-                <SelectValue placeholder="Chủ đề" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Topic: any</SelectItem>
-                {topicOptions.map((n) => (
-                  <SelectItem key={n.id} value={n.slug ?? n.name}>
-                    {n.name_vi ?? n.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select
               value={analysisState}
               onValueChange={(v) => {
@@ -1454,7 +1471,7 @@ function Vault({
             </div>
           ) : null}
 
-          <Card className="py-0">
+          <Card className="gap-0 py-0">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b px-(--card-spacing) py-(--card-spacing)">
               <div className="text-sm text-muted-foreground">
                 {selected.size > 0 ? (
@@ -1523,7 +1540,7 @@ function Vault({
                 isLoading={feedbacks.isFetching && !feedbacks.data}
                 maxHeightClass="max-h-[65vh]"
                 onRowClick={(row) => setDetailId(row.id)}
-                rowClassName={(row) => row.id === detailId ? "bg-accent hover:bg-accent" : undefined}
+                isRowActive={(row) => row.id === detailId}
                 emptyContent={
                   <Empty>
                     <EmptyHeader>
@@ -1549,7 +1566,7 @@ function Vault({
                 }
               />
             </CardContent>
-            <CardFooter className="flex-col items-stretch border-t">
+            <CardFooter className="flex-col items-stretch border-t pb-(--card-spacing)">
               <DataTablePagination table={table} />
             </CardFooter>
           </Card>

@@ -31,6 +31,9 @@ type DataTableToolbarProps<TData extends RowData> = {
   filters?: FacetedFilterConfig[]
   /** Ẩn menu chọn cột (mặc định hiện) */
   hideColumnToggle?: boolean
+  /** Nút "Mặc định" của menu cột. Bỏ trống → bật hiện mọi cột (hành vi cũ);
+   * trang có cột mặc định ẩn (vd. metadata) truyền hàm để quay về đúng mặc định. */
+  onResetColumns?: () => void
   /** Slot controls riêng của trang (select import, actions…) */
   children?: ReactNode
 }
@@ -45,6 +48,7 @@ export function DataTableToolbar<TData extends RowData>({
   search,
   filters,
   hideColumnToggle,
+  onResetColumns,
   children,
 }: DataTableToolbarProps<TData>) {
   const t = useT()
@@ -66,6 +70,27 @@ export function DataTableToolbar<TData extends RowData>({
   const toggleableColumns = table
     .getAllLeafColumns()
     .filter((c) => c.getCanHide())
+  // Cột có `meta.group` (vd. metadata của file nhập) gom thành nhóm riêng dưới
+  // các cột chính, mỗi nhóm một nhãn có số cột đang bật/tổng.
+  const mainColumns = toggleableColumns.filter((c) => !c.columnDef.meta?.group)
+  const columnGroups = [
+    ...new Set(
+      toggleableColumns
+        .map((c) => c.columnDef.meta?.group)
+        .filter((g): g is string => Boolean(g)),
+    ),
+  ]
+
+  const renderColumnItem = (column: (typeof toggleableColumns)[number]) => (
+    <DropdownMenuCheckboxItem
+      key={column.id}
+      checked={column.getIsVisible()}
+      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+      onSelect={(e) => e.preventDefault()}
+    >
+      {column.columnDef.meta?.label ?? column.id}
+    </DropdownMenuCheckboxItem>
+  )
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -137,25 +162,36 @@ export function DataTableToolbar<TData extends RowData>({
               </TooltipTrigger>
               <TooltipContent>{t.table.columnsLabel}</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>{t.table.columns}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {toggleableColumns.map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  {column.columnDef.meta?.label ?? column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
+              {mainColumns.map(renderColumnItem)}
+              {columnGroups.map((group) => {
+                const inGroup = toggleableColumns.filter(
+                  (c) => c.columnDef.meta?.group === group,
+                )
+                const shown = inGroup.filter((c) => c.getIsVisible()).length
+                return (
+                  <div key={group}>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground">
+                      {group}
+                      <span className="font-mono">
+                        {shown}/{inGroup.length}
+                      </span>
+                    </DropdownMenuLabel>
+                    {inGroup.map(renderColumnItem)}
+                  </div>
+                )
+              })}
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={false}
                 onCheckedChange={() => {
-                  for (const column of toggleableColumns)
-                    column.toggleVisibility(true)
+                  if (onResetColumns) onResetColumns()
+                  else
+                    for (const column of toggleableColumns)
+                      column.toggleVisibility(true)
                 }}
                 onSelect={(e) => e.preventDefault()}
               >

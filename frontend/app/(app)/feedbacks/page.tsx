@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/empty"
 import { DataEntryDialog } from "./data-entry-dialog"
 import { PageHeader } from "@/components/page-header"
+import { TopicPills } from "@/components/topic-pills"
 
 /** Cột bật/tắt được; "content" luôn hiển thị (enableHiding: false). */
 const DEFAULT_VISIBILITY: ColumnVisibilityState = {
@@ -243,20 +244,13 @@ function FeedbacksTable() {
         enableSorting: false,
         meta: { label: "Chủ đề", tdClassName: "max-w-48" },
         header: ({ column }) => <DataTableColumnHeader column={column} title="Chủ đề" />,
-        cell: ({ row }) => {
-          const topics = row.original.ai_analysis?.topics
-          return topics?.length ? (
-            <div className="flex flex-wrap gap-1">
-              {topics.slice(0, 3).map((t) => (
-                <Badge key={t} variant="outline" title={t}>
-                  {labelTopic(t)}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )
-        },
+        cell: ({ row }) => (
+          <TopicPills
+            topics={row.original.ai_analysis?.topics}
+            uncategorized={Boolean(row.original.ai_analysis?.uncategorized)}
+            label={labelTopic}
+          />
+        ),
       },
       {
         id: "confidence",
