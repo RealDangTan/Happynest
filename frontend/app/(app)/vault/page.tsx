@@ -26,6 +26,8 @@ import {
 import {
   ArrowRight,
   Ban,
+  ChevronDown,
+  ChevronUp,
   FileSpreadsheet,
   Pencil,
   Play,
@@ -385,208 +387,227 @@ function FeedbackDetailView({
   feedbackId,
   inline,
   labelTopic,
+  position,
   onClose,
   onEdit,
   onDelete,
+  onSelect,
+  onPrev,
+  onNext,
 }: {
   feedbackId: string
   inline: boolean
   labelTopic: (topic: string) => string
+  /** "3 / 20" trên trang hiện tại, null khi mục không nằm trong trang. */
+  position: string | null
   onClose: () => void
   onEdit: (item: Feedback) => void
   onDelete: (id: string) => void
+  onSelect: (id: string) => void
+  onPrev: (() => void) | null
+  onNext: (() => void) | null
 }) {
   const detail = useFeedbackDetail(feedbackId)
   const similar = useSimilarFeedbacks(feedbackId)
-  const router = useRouter()
   const item = detail.data
   const analysis = item?.ai_analysis ?? null
+  const severity = analysis?.severity
 
-  const detailLabel = `F-${item?.id.slice(0, 8) ?? "…"}`
-  const content = (
-    <>
-      {item ? (
-        <div className="flex min-w-0 flex-col gap-4 px-4 pb-4">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-anywhere">
-            {item.feedback_text ?? "—"}
-          </p>
-          <Card size="sm">
-            <CardContent className="gap-2 text-sm">
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Import</span>
-                <span className="break-all text-right font-mono text-xs">
-                  {item.import_id ?? "—"}
-                </span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Occurred</span>
-                <span className="font-mono text-xs">
-                  {shortDate(item.occurred_at)}
-                </span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="shrink-0 text-muted-foreground">Topic</span>
-                <span className="flex min-w-0 flex-wrap justify-end gap-1">
-                  {analysis?.uncategorized ? (
-                    <Badge variant="outline">UNCATEGORIZED</Badge>
-                  ) : null}
-                  {(analysis?.topics ?? []).length > 0
-                    ? (analysis?.topics ?? []).map((t) => (
-                        <code
-                          key={t}
-                          title={t}
-                          className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
-                        >
-                          {labelTopic(t)}
-                        </code>
-                      ))
-                    : analysis?.uncategorized
-                      ? null
-                      : "—"}
-                </span>
-              </div>
-              {(analysis?.emotions ?? []).length > 0 || analysis?.intent ? (
-                <>
-                  <div className="flex justify-between gap-4">
-                    <span className="shrink-0 text-muted-foreground">
-                      Emotions
-                    </span>
-                    <span className="flex flex-wrap justify-end gap-1">
-                      {(analysis?.emotions ?? []).length > 0
-                        ? analysis!.emotions!.map((e) => (
-                            <Badge key={e} variant="secondary">
-                              {e}
-                            </Badge>
-                          ))
-                        : "—"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">Intent</span>
-                    <span>{analysis?.intent ?? "—"}</span>
-                  </div>
-                </>
-              ) : null}
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Sentiment</span>
-                <SentimentIndicator value={analysis?.sentiment} />
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Analysis</span>
-                <span>
-                  <Badge variant={analysis ? "success" : "warning"}>
-                    {analysis ? "Ready" : "Pending"}
-                  </Badge>
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+  // Phím ↑/↓ (hoặc k/j) đi qua từng phản hồi khi panel đang mở, trừ khi đang gõ.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest("input, textarea, select, [contenteditable=true], [role=dialog]")) return
+      if ((event.key === "ArrowDown" || event.key === "j") && onNext) {
+        event.preventDefault()
+        onNext()
+      } else if ((event.key === "ArrowUp" || event.key === "k") && onPrev) {
+        event.preventDefault()
+        onPrev()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [onNext, onPrev])
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                router.push(
-                  `/data-graph?import=${item.import_id ?? ""}${
-                    analysis?.topics?.[0]
-                      ? `&topic=${encodeURIComponent(analysis.topics[0])}`
-                      : ""
-                  }`
-                )
-              }
-            >
-              Explore this topic
-            </Button>
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onEdit(item)}
-              >
-                <Pencil data-icon="inline-start" />
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={() => onDelete(item.id)}
-              >
-                <Trash2 data-icon="inline-start" />
-                Delete
-              </Button>
-            </>
-          </div>
+  const detailLabel = `F-${item?.id.slice(0, 8) ?? feedbackId.slice(0, 8)}`
+  const exploreHref = item
+    ? `/data-graph?import=${item.import_id ?? ""}${
+        analysis?.topics?.[0] ? `&topic=${encodeURIComponent(analysis.topics[0])}` : ""
+      }`
+    : "/data-graph"
 
-          <section className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">Similar feedback</h3>
-            {similar.isPending ? (
-              <Spinner />
-            ) : similar.data && similar.data.length ? (
-              <div className="flex flex-col gap-2">
-                {similar.data.map((s) => (
-                  <Card key={s.id} size="sm">
-                    <CardContent className="gap-1 text-sm">
-                      <p className="line-clamp-2">{s.snippet ?? "—"}</p>
-                      <p className="font-mono text-xs text-signal">
-                        F-{s.id.slice(0, 8)} · similarity {s.score.toFixed(2)}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Similarity needs analysis first — this item has no embedding
-                yet.
-              </p>
-            )}
-          </section>
-        </div>
-      ) : detail.isError ? (
-        <div className="px-4 pb-4">
-          <Alert variant="destructive">
-            <AlertTitle>Could not load feedback</AlertTitle>
-            <Button variant="outline" size="sm" onClick={() => void detail.refetch()}>
-              Try again
-            </Button>
-          </Alert>
-        </div>
-      ) : (
-        <div className="px-4 pb-4">
-          <Spinner />
-        </div>
-      )}
-    </>
+  const navigator = (
+    <div className="flex items-center gap-1">
+      {position ? (
+        <span className="mr-1 font-mono text-xs text-muted-foreground">{position}</span>
+      ) : null}
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Phản hồi trước (phím ↑)" disabled={!onPrev} onClick={() => onPrev?.()}>
+        <ChevronUp />
+      </Button>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Phản hồi sau (phím ↓)" disabled={!onNext} onClick={() => onNext?.()}>
+        <ChevronDown />
+      </Button>
+    </div>
   )
+
+  const content = item ? (
+    <div className="flex min-w-0 flex-col gap-5 px-4 pb-4">
+      <blockquote className="border-l-2 border-signal/60 pl-3 text-sm leading-relaxed whitespace-pre-wrap wrap-anywhere">
+        {item.feedback_text ?? "—"}
+      </blockquote>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <SentimentIndicator value={analysis?.sentiment} />
+        {severity ? (
+          <Badge variant={SEVERITY_TONE[severity] ?? "secondary"}>
+            {SEVERITY_LABEL.vi[severity as Severity] ?? severity}
+          </Badge>
+        ) : null}
+        <Badge variant={analysis ? "success" : "warning"}>
+          {analysis ? "Đã phân loại" : "Chờ phân loại"}
+        </Badge>
+      </div>
+
+      <section className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Nhãn</h3>
+        <div className="flex min-w-0 flex-wrap gap-1">
+          {analysis?.uncategorized ? <Badge variant="outline">Chưa có chủ đề phù hợp</Badge> : null}
+          {(analysis?.topics ?? []).map((t) => (
+            <Badge key={t} variant="secondary" title={t}>
+              {labelTopic(t)}
+            </Badge>
+          ))}
+          {(analysis?.emotions ?? []).map((e) => (
+            <Badge key={e} variant="outline">
+              {e}
+            </Badge>
+          ))}
+          {!analysis ? <span className="text-sm text-muted-foreground">Phân loại để AI gắn chủ đề và cảm xúc.</span> : null}
+        </div>
+      </section>
+
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">Nguồn</dt>
+        <dd className="truncate">{item.source || "—"}</dd>
+        <dt className="text-muted-foreground">Ngày</dt>
+        <dd className="font-mono text-xs leading-5">{shortDate(item.occurred_at)}</dd>
+        {analysis?.intent ? (
+          <>
+            <dt className="text-muted-foreground">Ý định</dt>
+            <dd>{analysis.intent}</dd>
+          </>
+        ) : null}
+        <dt className="text-muted-foreground">Lô nhập</dt>
+        <dd className="truncate font-mono text-xs leading-5" title={item.import_id ?? undefined}>
+          {item.import_id ? item.import_id.slice(0, 8) : "—"}
+        </dd>
+      </dl>
+
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" asChild>
+          <Link href={exploreHref}>
+            Điều tra chủ đề này
+            <ArrowRight data-icon="inline-end" />
+          </Link>
+        </Button>
+        <Button size="sm" variant="ghost" asChild>
+          <Link href={`/feedbacks/${item.id}`}>Mở trang đầy đủ</Link>
+        </Button>
+      </div>
+
+      <section className="flex flex-col gap-2 border-t pt-4">
+        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Phản hồi tương tự</h3>
+        {similar.isPending ? (
+          <Spinner />
+        ) : similar.data && similar.data.length ? (
+          <ul className="flex flex-col gap-1.5">
+            {similar.data.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(s.id)}
+                  className="flex w-full flex-col gap-1 rounded-lg border bg-card p-2.5 text-left text-sm transition-colors hover:bg-accent/60 focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <span className="line-clamp-2">{s.snippet ?? "—"}</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    Giống {Math.round(s.score * 100)}%
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Cần phân loại phản hồi này trước thì mới tìm được phản hồi tương tự.
+          </p>
+        )}
+      </section>
+    </div>
+  ) : detail.isError ? (
+    <div className="px-4 pb-4">
+      <Alert variant="destructive">
+        <AlertTitle>Chưa tải được phản hồi</AlertTitle>
+        <AlertDescription>
+          <Button variant="outline" size="sm" onClick={() => void detail.refetch()}>
+            Thử lại
+          </Button>
+        </AlertDescription>
+      </Alert>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-3 px-4 pb-4">
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-5 w-40" />
+      <Skeleton className="h-16 w-full" />
+    </div>
+  )
+
+  const editActions = item ? (
+    <>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Sửa phản hồi" onClick={() => onEdit(item)}>
+        <Pencil />
+      </Button>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Xoá phản hồi" onClick={() => onDelete(item.id)}>
+        <Trash2 />
+      </Button>
+    </>
+  ) : null
 
   if (inline) {
     return (
       <aside
-        aria-label="Feedback detail"
-        className="sticky top-20 max-h-[calc(100dvh-6rem)] min-w-0 self-start overflow-y-auto rounded-xl border bg-card"
+        aria-label="Chi tiết phản hồi"
+        className="sticky top-20 flex max-h-[calc(100dvh-6rem)] min-w-0 flex-col self-start overflow-hidden rounded-xl border bg-card"
       >
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <div>
-            <h2 className="text-sm font-medium">Feedback detail</h2>
+        <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-medium">Chi tiết phản hồi</h2>
             <p className="font-mono text-xs text-signal">{detailLabel}</p>
           </div>
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Close feedback detail" onClick={onClose}>
-            <X />
-          </Button>
+          <div className="flex items-center">
+            {navigator}
+            {editActions}
+            <Button type="button" variant="ghost" size="icon-sm" aria-label="Đóng chi tiết phản hồi" onClick={onClose}>
+              <X />
+            </Button>
+          </div>
         </header>
-        <div className="pt-4">{content}</div>
+        <div className="min-h-0 overflow-y-auto pt-4">{content}</div>
       </aside>
     )
   }
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="overflow-y-auto sm:max-w-lg">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="font-mono text-signal">{detailLabel}</SheetTitle>
-          <SheetDescription>Feedback detail</SheetDescription>
+          <SheetDescription>Chi tiết phản hồi</SheetDescription>
+          <div className="flex items-center gap-1 pt-1">
+            {navigator}
+            {editActions}
+          </div>
         </SheetHeader>
         {content}
       </SheetContent>
@@ -692,10 +713,13 @@ function RunningAnalysisCard({
 
 function Vault({
   initialImportId,
+  initialItemId,
   analyzeIntent,
   reclassifyIntent,
 }: {
   initialImportId: string | null
+  /** ?item= — phản hồi đang mở trong panel chi tiết; giữ qua refresh/back. */
+  initialItemId: string | null
   /** ?analyze=1 từ lộ trình / kết quả import: mở biên nhận phân loại ngay. */
   analyzeIntent: boolean
   /** ?reclassify=1: mở khoá mục UNCATEGORIZED rồi mở biên nhận. */
@@ -730,7 +754,14 @@ function Vault({
   const debouncedQ = useDebouncedValue(qInput, 300)
   const [topic, setTopic] = useState<string>("")
   const [analysisState, setAnalysisState] = useState<string>("")
-  const [detailId, setDetailId] = useState<string | null>(null)
+  const detailId = initialItemId
+  const setDetailId = (id: string | null) => {
+    const qs = new URLSearchParams()
+    if (activeImportId) qs.set("import", activeImportId)
+    if (id) qs.set("item", id)
+    const query = qs.toString()
+    router.replace(query ? `/vault?${query}` : "/vault", { scroll: false })
+  }
   const supportsInlineDetails = useSyncExternalStore(
     subscribeToVaultWidth,
     () => window.matchMedia(WIDE_VAULT_QUERY).matches,
@@ -951,7 +982,7 @@ function Vault({
       () => setReceiptScope(scope),
       (err) =>
         toast.error(
-          err instanceof Error ? err.message : "Could not preview analysis"
+          err instanceof Error ? err.message : "Chưa ước tính được lượt phân loại."
         )
     )
 
@@ -1236,14 +1267,21 @@ function Vault({
     },
   })
 
+  const detailIndex = detailId ? rows.findIndex((r) => r.id === detailId) : -1
+  const prevRow = detailIndex > 0 ? rows[detailIndex - 1] : null
+  const nextRow = detailIndex >= 0 && detailIndex < rows.length - 1 ? rows[detailIndex + 1] : null
   const feedbackDetail = detailId ? (
     <FeedbackDetailView
       feedbackId={detailId}
       inline={showInlineDetails}
       labelTopic={labelTopic}
+      position={detailIndex >= 0 ? `${detailIndex + 1} / ${rows.length}` : null}
       onClose={() => setDetailId(null)}
       onEdit={setEditing}
       onDelete={setConfirmDeleteId}
+      onSelect={setDetailId}
+      onPrev={prevRow ? () => setDetailId(prevRow.id) : null}
+      onNext={nextRow ? () => setDetailId(nextRow.id) : null}
     />
   ) : null
 
@@ -1262,7 +1300,7 @@ function Vault({
 
       <div className={cn(
         "grid min-w-0 gap-6 lg:grid-cols-[248px_minmax(0,1fr)]",
-        showInlineDetails && "lg:grid-cols-[12rem_minmax(0,1fr)_20rem]"
+        showInlineDetails && "lg:grid-cols-[12rem_minmax(0,1fr)_22rem]"
       )}>
         <aside className="flex flex-col gap-2">
           <h2 className="px-2 pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -1300,7 +1338,7 @@ function Vault({
             <Skeleton className="mx-2 h-8" />
           ) : imports.length === 0 ? (
             <p className="px-2 text-sm text-muted-foreground">
-              No imported files yet.
+              Chưa có file nào được nhập.
             </p>
           ) : null}
         </aside>
@@ -1797,6 +1835,7 @@ function VaultWithParams() {
   return (
     <Vault
       initialImportId={params.get("import")}
+      initialItemId={params.get("item")}
       analyzeIntent={params.get("analyze") === "1"}
       reclassifyIntent={params.get("reclassify") === "1"}
     />

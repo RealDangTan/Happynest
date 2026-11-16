@@ -14,11 +14,14 @@ import {
   useLegacyTable,
   type LegacyColumnDef,
 } from "@tanstack/react-table/legacy"
-import { useRunProgress, useRunResults } from "@/hooks/use-analysis"
+import { useRunProgress, useRunResults, useRuns } from "@/hooks/use-analysis"
 import type { Feedback } from "@/lib/types"
 import { SEVERITY_LABEL } from "@/lib/labels"
 import { useAppLang } from "@/lib/i18n"
-import { formatDate } from "@/lib/format"
+import { formatDate, formatRelative } from "@/lib/format"
+import { runDuration, runScopeLabel } from "@/lib/run-format"
+import { RUN_STATUS_TONE, SEVERITY_TONE } from "@/lib/tone"
+import { cn } from "@/lib/utils"
 import {
   multiSelectFilterFn,
   severitySortFn,
@@ -49,6 +52,14 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { PageHeader } from "@/components/page-header"
 import { useActivity } from "@/components/activity/activity-provider"
 
@@ -56,6 +67,7 @@ const STATUS_LABEL: Record<string, string> = {
   running: "Đang chạy",
   completed: "Hoàn tất",
   failed: "Thất bại",
+  cancelled: "Đã dừng",
 }
 
 function RunResults({ runId }: { runId: string }) {
@@ -103,13 +115,7 @@ function RunResults({ runId }: { runId: string }) {
         cell: ({ row }) => {
           const severity = row.original.ai_analysis?.severity
           return severity ? (
-            <Badge
-              variant={
-                severity === "critical" || severity === "high"
-                  ? "destructive"
-                  : "secondary"
-              }
-            >
+            <Badge variant={SEVERITY_TONE[severity] ?? "secondary"}>
               {SEVERITY_LABEL[lang][severity]}
             </Badge>
           ) : (
@@ -139,9 +145,9 @@ function RunResults({ runId }: { runId: string }) {
         id: "confidence",
         accessorFn: (f: Feedback) => f.ai_analysis?.confidence ?? -1,
         sortDescFirst: true,
-        meta: { label: "Confidence", thClassName: "text-right", tdClassName: "text-right" },
+        meta: { label: "Độ tin cậy", thClassName: "text-right", tdClassName: "text-right" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Confidence" className="justify-end" />
+          <DataTableColumnHeader column={column} title="Độ tin cậy" className="justify-end" />
         ),
         cell: ({ row }) => {
           const confidence = row.original.ai_analysis?.confidence
@@ -217,6 +223,103 @@ function RunResults({ runId }: { runId: string }) {
   )
 }
 
+/** Lịch sử lượt chạy (mẫu Databricks "Job runs"): trạng thái, thời lượng và
+ * kết quả trên từng dòng; bấm dòng để mở chi tiết lượt đó ngay bên cạnh. */
+function RunHistory({
+  selectedId,
+  compact,
+  onSelect,
+}: {
+  selectedId: string | null
+  compact: boolean
+  onSelect: (id: string) => void
+}) {
+  const runs = useRuns()
+  const items = (runs.data?.items ?? []).filter((r) => r.import_id != null)
+  return (
+    <Card size="sm" className={cn("min-w-0", compact && "self-start xl:sticky xl:top-20")}>
+      <CardHeader>
+        <CardTitle>Lịch sử lượt chạy</CardTitle>
+        <CardDescription>
+          {runs.isPending ? "Đang tải…" : `${items.length} lượt phân loại gần nhất`}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        {runs.isPending ? (
+          <div className="flex flex-col gap-2 px-(--card-spacing)">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <p className="px-(--card-spacing) text-sm text-muted-foreground">
+            Chưa có lượt phân loại nào. Mở Kho phản hồi để chạy lượt đầu tiên.
+          </p>
+        ) : (
+          <div className={cn("overflow-auto", compact && "max-h-[65vh]")}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-(--card-spacing)">Lượt</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  {compact ? null : <TableHead>Bắt đầu</TableHead>}
+                  <TableHead className="text-right">Thời lượng</TableHead>
+                  {compact ? null : <TableHead className="pr-(--card-spacing) text-right">Kết quả</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((run) => (
+                  <TableRow
+                    key={run.id}
+                    data-state={run.id === selectedId ? "selected" : undefined}
+                    className="cursor-pointer"
+                    onClick={() => onSelect(run.id)}
+                  >
+                    <TableCell className="pl-(--card-spacing)">
+                      <button
+                        type="button"
+                        className="flex flex-col text-left focus-visible:outline-2 focus-visible:outline-ring"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSelect(run.id)
+                        }}
+                      >
+                        <span className="font-mono text-xs">{run.id.slice(0, 8)}</span>
+                        <span className="text-xs text-muted-foreground">{runScopeLabel(run)}</span>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={RUN_STATUS_TONE[run.status] ?? "secondary"}>
+                        {STATUS_LABEL[run.status] ?? run.status}
+                      </Badge>
+                    </TableCell>
+                    {compact ? null : (
+                      <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                        {formatRelative(run.started_at)}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-right font-mono text-xs whitespace-nowrap">
+                      {runDuration(run)}
+                    </TableCell>
+                    {compact ? null : (
+                      <TableCell className="pr-(--card-spacing) text-right font-mono text-xs whitespace-nowrap">
+                        {run.processed_count}/{run.total_count}
+                        {run.failed_count > 0 ? (
+                          <span className="ml-1 text-destructive">· {run.failed_count} lỗi</span>
+                        ) : null}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 function AnalysisInner() {
   const router = useRouter()
   const sp = useSearchParams()
@@ -246,27 +349,23 @@ function AnalysisInner() {
         )
       : 0
 
+  const selectRun = (id: string) => router.replace(`/analysis?run=${id}`, { scroll: false })
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Phân tích"
-        description="Trang này giữ vai trò xem kết quả chi tiết — tạo run có scope và xem cost receipt trong Activity Center trên navbar."
+        description="Lịch sử các lượt phân loại và nhãn AI gán cho từng phản hồi."
         actions={
-          <Button onClick={activity.openQueue}>Mở Activity Center</Button>
+          <Button variant="outline" onClick={activity.openQueue}>Mở Trung tâm hoạt động</Button>
         }
       />
 
-      {!runId ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyTitle>Chưa có lượt phân tích nào đang theo dõi</EmptyTitle>
-            <EmptyDescription>
-              Tạo run có scope trong Activity Center trên navbar, rồi mở kết quả
-              chi tiết tại đây.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : null}
+      <div className={cn("grid min-w-0 items-start gap-6", runId && "xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]")}>
+      <RunHistory selectedId={runId} compact={Boolean(runId)} onSelect={selectRun} />
+
+      {runId ? (
+      <div className="flex min-w-0 flex-col gap-6">
 
       {runId && progress.isPending ? (
         <Card>
@@ -289,32 +388,27 @@ function AnalysisInner() {
       {runId && progress.data ? (
         <Card>
           <CardHeader>
-            <CardTitle>Tiến độ run</CardTitle>
+            <CardTitle>Lượt {progress.data.id.slice(0, 8)}</CardTitle>
             <CardDescription>
-              {progress.data.id.slice(0, 8)} · bắt đầu{" "}
-              {formatDate(progress.data.started_at)}
+              {runScopeLabel(progress.data)} · bắt đầu {formatDate(progress.data.started_at)} · {runDuration(progress.data)}
             </CardDescription>
             <CardAction>
-              <Badge
-                variant={
-                  progress.data.status === "failed"
-                    ? "destructive"
-                    : "secondary"
-                }
-              >
+              <Badge variant={RUN_STATUS_TONE[progress.data.status] ?? "secondary"}>
                 {STATUS_LABEL[progress.data.status]}
               </Badge>
             </CardAction>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Progress value={pct} />
-            <p className="text-sm text-muted-foreground">
-              {progress.data.processed_count}/{progress.data.total_count} đã xử
-              lý
-            </p>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+              <div><dt className="text-xs text-muted-foreground">Đã xử lý</dt><dd className="font-mono">{progress.data.processed_count}/{progress.data.total_count}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Lỗi</dt><dd className="font-mono">{progress.data.failed_count}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Mô hình</dt><dd className="truncate font-mono text-xs leading-5" title={progress.data.llm_model}>{progress.data.llm_model}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Phiên bản prompt</dt><dd className="truncate font-mono text-xs leading-5">{progress.data.prompt_version}</dd></div>
+            </dl>
             {progress.data.status === "failed" ? (
               <Alert variant="destructive">
-                <AlertTitle>Run thất bại</AlertTitle>
+                <AlertTitle>Lượt chạy thất bại</AlertTitle>
                 <AlertDescription className="flex flex-col gap-3">
                   <span>
                     {progress.data.error ?? "Không rõ nguyên nhân."} Chạy lại sẽ
@@ -327,7 +421,7 @@ function AnalysisInner() {
                       variant="outline"
                       onClick={activity.openQueue}
                     >
-                      Chọn lại scope trong Activity Center
+                      Chọn lại phạm vi trong Trung tâm hoạt động
                     </Button>
                   </div>
                 </AlertDescription>
@@ -338,7 +432,7 @@ function AnalysisInner() {
               <Alert>
                 <AlertTitle>Không có gì mới</AlertTitle>
                 <AlertDescription>
-                  Không có feedback nào cần xử lý trong run này.
+                  Không có phản hồi nào cần xử lý trong lượt này.
                 </AlertDescription>
               </Alert>
             ) : null}
@@ -349,15 +443,17 @@ function AnalysisInner() {
       {runId ? (
         <Card>
           <CardHeader>
-            <CardTitle>Kết quả của run</CardTitle>
+            <CardTitle>Kết quả của lượt</CardTitle>
             <CardDescription>
-              Nhãn do LLM gán cho từng phản hồi — bấm vào nội dung để mở chi
-              tiết.
+              Nhãn AI gán cho từng phản hồi — bấm vào nội dung để mở chi tiết.
             </CardDescription>
           </CardHeader>
           <RunResults runId={runId} />
         </Card>
       ) : null}
+      </div>
+      ) : null}
+      </div>
     </div>
   )
 }

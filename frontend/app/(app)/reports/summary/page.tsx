@@ -1,10 +1,16 @@
 "use client"
 import { Suspense } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 import { ReportTiles } from "@/components/report-tiles"
 import { SeverityBars } from "@/components/severity-bars"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TimeRangeToggle, useDaysParam } from "@/components/time-range-toggle"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -12,31 +18,14 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { useReportSummary, type SummaryDays } from "@/hooks/use-reports"
+import { useReportSummary } from "@/hooks/use-reports"
 import { PageHeader } from "@/components/page-header"
 import type { EmergingClusterItem } from "@/lib/types"
 import { formatDate } from "@/lib/format"
 import { SENTIMENT_LABEL } from "@/lib/labels"
 import { useAppLang, useT } from "@/lib/i18n"
 import type { Sentiment } from "@/lib/types"
-
-const DAY_OPTIONS: SummaryDays[] = [7, 30, 90]
 
 /** Cảm xúc render THEO KEY THỰC TRẢ VỀ của server (4 key gồm mixed) —
  * không hardcode danh sách ô. Một hue duy nhất: phân bố, không phải thứ bậc. */
@@ -81,55 +70,81 @@ function SentimentBars({
   )
 }
 
+/** Top chủ đề dạng thanh ngang + tỉ trọng: đọc được thứ hạng lẫn độ chênh. */
+function CategoryBars({
+  items,
+  total,
+}: {
+  items: { category: string; count: number }[]
+  total: number
+}) {
+  const max = Math.max(...items.map((i) => i.count), 1)
+  return (
+    <ol className="flex flex-col gap-2.5">
+      {items.map((tc, i) => (
+        <li
+          key={tc.category}
+          className="grid grid-cols-[1.5rem_minmax(0,12rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
+        >
+          <span className="font-mono text-xs text-muted-foreground">{i + 1}</span>
+          <span className="truncate font-medium" title={tc.category}>
+            {tc.category}
+          </span>
+          <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
+            <span
+              className="block h-full rounded-full bg-chart-1"
+              style={{ width: `${Math.max(3, (tc.count / max) * 100)}%` }}
+            />
+          </span>
+          <span className="text-right font-mono text-xs tabular-nums">
+            {tc.count}
+            {total > 0 ? (
+              <span className="ml-1 text-muted-foreground">
+                ({Math.round((tc.count / total) * 100)}%)
+              </span>
+            ) : null}
+          </span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 /** ≤5 cụm mới nổi — mảng rỗng thì ẨN CẢ KHỐI (spec UF-05 edge case). */
 function EmergingSection({ items }: { items: EmergingClusterItem[] }) {
   if (items.length === 0) return null
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="font-heading text-lg">Đang mới nổi</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.slice(0, 5).map((c) => (
-          <Card key={c.id} className="transition-colors hover:bg-muted/50">
-            <Link href="/clusters" aria-label={c.name}>
-              <CardContent className="flex flex-col gap-1">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm leading-snug font-medium">
-                    {c.name}
-                  </span>
-                  <span className="flex shrink-0 gap-1">
-                    {c.is_emerging ? (
-                      <Badge variant="default">Mới nổi</Badge>
-                    ) : null}
-                    {c.is_spike ? (
-                      <Badge variant="destructive">Tăng đột biến</Badge>
-                    ) : null}
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {c.feedback_count} phản hồi ·{" "}
-                  {c.is_emerging ? "Mới" : `${c.growth_ratio.toFixed(1)}×`}
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Đang mới nổi</CardTitle>
+        <CardDescription>Vấn đề mới xuất hiện hoặc tăng đột biến trong cửa sổ này.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col divide-y">
+          {items.slice(0, 5).map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/clusters?cluster=${c.id}`}
+                className="flex flex-wrap items-center gap-2 py-2.5 text-sm transition-colors hover:text-signal"
+              >
+                <span className="min-w-0 flex-1 font-medium">{c.name}</span>
+                {c.is_emerging ? <Badge variant="default">Mới nổi</Badge> : null}
+                {c.is_spike ? <Badge variant="destructive">Tăng đột biến</Badge> : null}
+                <span className="font-mono text-xs text-muted-foreground">
+                  {c.feedback_count} phản hồi · {c.is_emerging ? "mới" : `${c.growth_ratio.toFixed(1)}×`}
                 </span>
-              </CardContent>
-            </Link>
-          </Card>
-        ))}
-      </div>
-    </section>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   )
 }
 
 function ReportsInner() {
-  const router = useRouter()
-  const sp = useSearchParams()
-  const rawDays = Number(sp.get("days"))
-  const days: SummaryDays = DAY_OPTIONS.includes(rawDays as SummaryDays)
-    ? (rawDays as SummaryDays)
-    : 30
+  const days = useDaysParam()
   const summary = useReportSummary(days)
-
-  function setDays(v: string) {
-    router.replace(`/reports?days=${v}`)
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -137,30 +152,17 @@ function ReportsInner() {
         title="Báo cáo tổng hợp"
         description={
           summary.data
-            ? `Thống kê trên ${summary.data.window_days} ngày gần nhất · Cập nhật lúc ${formatDate(summary.data.generated_at)}`
-            : `Thống kê trên ${days} ngày gần nhất`
+            ? `Thống kê ${summary.data.window_days} ngày gần nhất · cập nhật ${formatDate(summary.data.generated_at)}`
+            : `Thống kê ${days} ngày gần nhất`
         }
-        actions={
-          <Select value={String(days)} onValueChange={setDays}>
-            <SelectTrigger className="w-44" aria-label="Cửa sổ thời gian">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DAY_OPTIONS.map((d) => (
-                <SelectItem key={d} value={String(d)}>
-                  {d} ngày gần nhất
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        }
+        actions={<TimeRangeToggle />}
       />
 
-      {/* Từng vùng skeleton độc lập — lỗi một vùng không che phần còn lại */}
+      {/* Đọc theo một mạch: tổng → phân rã theo mức độ/cảm xúc → chủ đề → cụm mới nổi. */}
       {summary.isPending ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
               <Skeleton key={i} className="h-24 w-full" />
             ))}
           </div>
@@ -170,9 +172,9 @@ function ReportsInner() {
           </div>
         </>
       ) : summary.isError ? (
-        <Empty>
+        <Empty className="border">
           <EmptyHeader>
-            <EmptyTitle>Không tải được báo cáo</EmptyTitle>
+            <EmptyTitle>Chưa tải được báo cáo</EmptyTitle>
             <EmptyDescription>{summary.error.message}</EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -199,55 +201,39 @@ function ReportsInner() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Top chủ đề</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {summary.data.top_categories.length === 0 ? (
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyTitle>Chưa có chủ đề nào</EmptyTitle>
-                    <EmptyDescription>
-                      Chạy phân loại để gắn nhãn chủ đề cho phản hồi.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Chủ đề</TableHead>
-                      <TableHead className="w-24 text-right">
-                        Số lượng
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {summary.data.top_categories.slice(0, 10).map((tc) => (
-                      <TableRow key={tc.category}>
-                        <TableCell className="font-medium">
-                          {tc.category}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {tc.count}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          <EmergingSection items={summary.data.emerging} />
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Chủ đề được nhắc nhiều nhất</CardTitle>
+                <CardDescription>Top 10 · tỉ trọng trên tổng phản hồi</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {summary.data.top_categories.length === 0 ? (
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyTitle>Chưa có chủ đề nào</EmptyTitle>
+                      <EmptyDescription>
+                        Chạy phân loại để gắn nhãn chủ đề cho phản hồi.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                ) : (
+                  <CategoryBars
+                    items={summary.data.top_categories.slice(0, 10)}
+                    total={summary.data.totals.feedback_count}
+                  />
+                )}
+              </CardContent>
+            </Card>
+            <EmergingSection items={summary.data.emerging} />
+          </div>
         </>
       )}
     </div>
   )
 }
 
-export default function ReportsPage() {
+export default function ReportsSummaryPage() {
   return (
     <Suspense fallback={<Skeleton className="h-64 w-full" />}>
       <ReportsInner />

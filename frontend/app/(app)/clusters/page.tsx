@@ -2,7 +2,7 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { CircleHelp, RefreshCw, TrendingUp } from "lucide-react"
+import { CircleHelp, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import {
   useClusters,
@@ -10,6 +10,8 @@ import {
   type ClusterSort,
 } from "@/hooks/use-clusters"
 import type { ClusterItem } from "@/lib/types"
+import { useFeedbackDetail } from "@/hooks/use-feedback-detail"
+import { cn } from "@/lib/utils"
 import { formatRelative } from "@/lib/format"
 import { priorityLabel } from "@/lib/labels"
 import { useAppLang } from "@/lib/i18n"
@@ -119,65 +121,144 @@ function GrowthCell({ c }: { c: ClusterItem }) {
   )
 }
 
-function ClusterCard({ c }: { c: ClusterItem }) {
+/** Kỳ trước → kỳ này dưới dạng hai thanh, đọc được xu hướng mà không cần số. */
+function PeriodBars({ c, max }: { c: ClusterItem; max: number }) {
+  const pct = (n: number) => `${Math.max(3, (n / Math.max(max, 1)) * 100)}%`
+  return (
+    <div className="flex flex-col gap-1" aria-label={`Kỳ trước ${c.previous_count}, kỳ này ${c.current_count}`}>
+      <span className="flex items-center gap-2">
+        <span className="w-14 shrink-0 text-[11px] text-muted-foreground">Kỳ trước</span>
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <span className="block h-full rounded-full bg-muted-foreground/40" style={{ width: pct(c.previous_count) }} />
+        </span>
+        <span className="w-8 text-right font-mono text-[11px] text-muted-foreground">{c.previous_count}</span>
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="w-14 shrink-0 text-[11px] text-muted-foreground">Kỳ này</span>
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <span
+            className={cn("block h-full rounded-full", c.is_spike || c.is_emerging ? "bg-coral" : "bg-sky")}
+            style={{ width: pct(c.current_count) }}
+          />
+        </span>
+        <span className="w-8 text-right font-mono text-[11px]">{c.current_count}</span>
+      </span>
+    </div>
+  )
+}
+
+function ClusterRow({
+  c,
+  max,
+  active,
+  onSelect,
+}: {
+  c: ClusterItem
+  max: number
+  active: boolean
+  onSelect: () => void
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        aria-current={active ? "true" : undefined}
+        onClick={onSelect}
+        className={cn(
+          "flex w-full flex-col gap-2 rounded-lg border-l-2 px-3 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+          active ? "border-l-signal bg-accent" : "border-l-transparent hover:bg-accent/50"
+        )}
+      >
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="min-w-0 flex-1 font-heading text-sm leading-snug">{c.name}</span>
+          {c.is_emerging ? <Badge variant="default">Mới nổi</Badge> : null}
+          {c.is_spike ? <Badge variant="destructive">Tăng đột biến</Badge> : null}
+          <span className="font-mono text-xs text-muted-foreground">{c.feedback_count}</span>
+        </span>
+        <PeriodBars c={c} max={max} />
+      </button>
+    </li>
+  )
+}
+
+function SampleFeedback({ id }: { id: string }) {
+  const fb = useFeedbackDetail(id)
+  return (
+    <li>
+      <Link
+        href={`/feedbacks/${id}`}
+        className="flex flex-col gap-1 rounded-lg border bg-card p-2.5 text-sm transition-colors hover:bg-accent/60 focus-visible:outline-2 focus-visible:outline-ring"
+      >
+        {fb.isPending ? (
+          <Skeleton className="h-10 w-full" />
+        ) : (
+          <span className="line-clamp-3 leading-relaxed">
+            “{fb.data?.feedback_text ?? "Chưa đọc được phản hồi này."}”
+          </span>
+        )}
+        <span className="font-mono text-[11px] text-muted-foreground">F-{id.slice(0, 8)}</span>
+      </Link>
+    </li>
+  )
+}
+
+/** Panel cụm đang chọn (mẫu Dovetail Themes): xu hướng + phản hồi mẫu cùng màn. */
+function ClusterPanel({ c, max }: { c: ClusterItem; max: number }) {
   const lang = useAppLang()
   return (
-    <Card className="flex flex-col">
+    <Card size="sm" className="self-start lg:sticky lg:top-20">
       <CardHeader>
-        <CardTitle className="text-base leading-snug">{c.name}</CardTitle>
+        <p className="text-xs text-muted-foreground">Cụm đang xem · cập nhật {formatRelative(c.last_seen)}</p>
+        <CardTitle className="font-heading text-lg leading-snug">{c.name}</CardTitle>
         <CardAction className="flex gap-1">
           {c.is_emerging ? <Badge variant="default">Mới nổi</Badge> : null}
-          {c.is_spike ? (
-            <Badge variant="destructive">Tăng đột biến</Badge>
-          ) : null}
+          {c.is_spike ? <Badge variant="destructive">Tăng đột biến</Badge> : null}
         </CardAction>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-3">
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {c.summary}
-        </p>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-muted-foreground">Tổng phản hồi</dt>
-          <dd className="font-medium">{c.feedback_count}</dd>
-          <dt className="text-muted-foreground">Kỳ này / kỳ trước</dt>
-          <dd>
-            {c.current_count} / {c.previous_count}
-          </dd>
-          <dt className="text-muted-foreground">Tỷ lệ tăng</dt>
-          <dd>
-            <GrowthCell c={c} />
-          </dd>
-          {c.suggested_priority != null ? (
-            <>
-              <dt className="text-muted-foreground">Ưu tiên đề xuất</dt>
-              <dd>
-                <Badge
-                  variant={
-                    c.suggested_priority >= 0.66 ? "destructive" : "secondary"
-                  }
-                >
+      <CardContent className="flex flex-col gap-4">
+        {c.summary ? <p className="text-sm leading-relaxed text-foreground/85">{c.summary}</p> : null}
+        <dl className="grid grid-cols-3 gap-3 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs text-muted-foreground">Tổng phản hồi</dt>
+            <dd className="font-mono text-base">{c.feedback_count}</dd>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs text-muted-foreground">Tỷ lệ tăng</dt>
+            <dd className="font-mono text-base"><GrowthCell c={c} /></dd>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs text-muted-foreground">Ưu tiên</dt>
+            <dd>
+              {c.suggested_priority != null ? (
+                <Badge variant={c.suggested_priority >= 0.66 ? "destructive" : "secondary"}>
                   {priorityLabel(c.suggested_priority, lang)}
                 </Badge>
-              </dd>
-            </>
-          ) : null}
+              ) : (
+                "—"
+              )}
+            </dd>
+          </div>
         </dl>
+        <PeriodBars c={c} max={max} />
+        <section className="flex flex-col gap-2">
+          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Phản hồi mẫu ({Math.min(5, c.sample_feedback_ids.length)})
+          </h3>
+          {c.sample_feedback_ids.length ? (
+            <ul className="flex flex-col gap-2">
+              {c.sample_feedback_ids.slice(0, 5).map((id) => (
+                <SampleFeedback key={id} id={id} />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">Cụm này chưa có phản hồi mẫu.</p>
+          )}
+        </section>
       </CardContent>
-      <CardFooter className="flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span className="flex flex-wrap gap-x-2">
-          {c.sample_feedback_ids.slice(0, 5).map((id, i) => (
-            <span key={id}>
-              {i > 0 ? "· " : ""}
-              <Link
-                href={`/feedbacks/${id}`}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                mẫu {i + 1}
-              </Link>
-            </span>
-          ))}
-        </span>
-        <span>{formatRelative(c.last_seen)}</span>
+      <CardFooter>
+        <Button size="sm" variant="outline" asChild>
+          <Link href="/data-graph?ask=1">Hỏi AI về vấn đề này</Link>
+        </Button>
       </CardFooter>
     </Card>
   )
@@ -238,6 +319,15 @@ function ClustersInner() {
     next.set("sort", v)
     router.replace(`/clusters?${next.toString()}`)
   }
+  // ?cluster= giữ cụm đang mở qua refresh/back; mặc định là cụm đầu danh sách.
+  const items = clusters.data?.items ?? []
+  const selected = items.find((c) => c.id === sp.get("cluster")) ?? items[0] ?? null
+  const maxCount = Math.max(1, ...items.flatMap((c) => [c.current_count, c.previous_count]))
+  function selectCluster(id: string) {
+    const next = new URLSearchParams(sp.toString())
+    next.set("cluster", id)
+    router.replace(`/clusters?${next.toString()}`, { scroll: false })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -248,7 +338,7 @@ function ClustersInner() {
           <>
             <DictionaryPopover />
             <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="w-52">
+              <SelectTrigger className="w-52" aria-label="Sắp xếp cụm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -265,10 +355,9 @@ function ClustersInner() {
       />
 
       {clusters.isPending ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-56 w-full" />
-          ))}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
+          <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-96 w-full" />
         </div>
       ) : clusters.isError ? (
         <Empty>
@@ -291,18 +380,32 @@ function ClustersInner() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <>
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <TrendingUp className="size-4" />
-            {clusters.data.items.length} cụm · sắp theo{" "}
-            {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {clusters.data.items.map((c) => (
-              <ClusterCard key={c.id} c={c} />
-            ))}
-          </div>
-        </>
+        <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
+          <Card size="sm" className="min-w-0">
+            <CardHeader>
+              <CardTitle>{clusters.data.items.length} cụm</CardTitle>
+              <CardAction>
+                <span className="text-xs text-muted-foreground">
+                  Sắp theo {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
+                </span>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <ul className="flex flex-col gap-1">
+                {clusters.data.items.map((c) => (
+                  <ClusterRow
+                    key={c.id}
+                    c={c}
+                    max={maxCount}
+                    active={selected?.id === c.id}
+                    onSelect={() => selectCluster(c.id)}
+                  />
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          {selected ? <ClusterPanel key={selected.id} c={selected} max={maxCount} /> : null}
+        </div>
       )}
     </div>
   )

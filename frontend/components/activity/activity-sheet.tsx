@@ -42,6 +42,8 @@ import { useCancelImport, useImport } from "@/hooks/use-imports";
 import { useAnalysisPreview, useCancelRun, useRunProgress, useTriggerRun } from "@/hooks/use-analysis";
 import { apiFetch, ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatRelative } from "@/lib/format";
+import { runDuration, runScopeLabel } from "@/lib/run-format";
 import type { AnalysisScope, FeedbackListResponse, ImportRecord, RunProgress } from "@/lib/types";
 import {
   IMPORT_STEPS,
@@ -113,10 +115,16 @@ function RunActivityRow({ run }: { run: RunProgress }) {
     <button className="flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent" onClick={() => openRun(run.id)}>
       <Play className="size-4 text-muted-foreground" />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">Phân tích {run.mode === "batch" ? "toàn bộ import" : "feedback đã chọn"}</span>
-        <span className="text-xs text-muted-foreground">{run.processed_count}/{run.total_count} feedback</span>
+        <span className="block text-sm font-medium">Phân loại · {runScopeLabel(run).toLowerCase()}</span>
+        <span className="text-xs text-muted-foreground">
+          {run.processed_count}/{run.total_count} phản hồi
+          {run.failed_count > 0 ? ` · ${run.failed_count} lỗi` : ""} · {formatRelative(run.started_at)}
+        </span>
       </span>
-      {statusBadge(run.status)}
+      <span className="flex shrink-0 flex-col items-end gap-1">
+        {statusBadge(run.status)}
+        <span className="font-mono text-[11px] text-muted-foreground">{runDuration(run)}</span>
+      </span>
     </button>
   );
 }
@@ -282,7 +290,7 @@ function RunDetail({ id }: { id: string }) {
   const cancel = useCancelRun();
   const data = run.data;
   const pct = data?.total_count ? Math.round((data.processed_count / data.total_count) * 100) : 0;
-  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{data ? <><div className="flex flex-wrap items-start justify-between gap-3"><h2 className="font-heading text-xl">Analysis run</h2><div className="flex shrink-0 items-center gap-2">{statusBadge(data.status)}<OpenFullPageButton href={`/analysis?run=${id}`} /></div></div><section className="space-y-3 rounded-xl border p-4"><Progress value={pct} /><p className="text-sm">{data.processed_count}/{data.total_count} hoàn tất · {data.failed_count} lỗi</p><p className="text-xs text-muted-foreground">Phân loại từng mục (JEV per-item) · Dừng có hiệu lực sau mục hiện tại.</p><div className="flex flex-wrap gap-2">{data.status === "running" ? <Button variant="outline" disabled={cancel.isPending || Boolean(data.cancel_requested_at)} onClick={() => cancel.mutate(id)}><Ban data-icon="inline-start" />{data.cancel_requested_at ? "Đang chờ dừng" : "Dừng run"}</Button> : null}<Button variant="outline" asChild><Link href={`/analysis?run=${id}`}>Xem kết quả chi tiết</Link></Button></div>{data.error ? <Alert variant="destructive"><TriangleAlert className="size-4" /><AlertTitle>Có lỗi</AlertTitle><AlertDescription>{readableError(data.error)}</AlertDescription></Alert> : null}</section></> : <Spinner />}</div>;
+  return <div className="mt-4 space-y-4"><Button variant="ghost" size="sm" onClick={openQueue}><ArrowLeft data-icon="inline-start" />Hàng chờ</Button>{data ? <><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-heading text-xl">Lượt phân loại {data.id.slice(0, 8)}</h2><p className="text-xs text-muted-foreground">{runScopeLabel(data)} · bắt đầu {formatRelative(data.started_at)} · {runDuration(data)}</p></div><div className="flex shrink-0 items-center gap-2">{statusBadge(data.status)}<OpenFullPageButton href={`/analysis?run=${id}`} /></div></div><section className="space-y-3 rounded-xl border p-4"><Progress value={pct} /><p className="text-sm">{data.processed_count}/{data.total_count} hoàn tất · {data.failed_count} lỗi</p><p className="text-xs text-muted-foreground">Phân loại từng mục (JEV per-item) · Dừng có hiệu lực sau mục hiện tại.</p><div className="flex flex-wrap gap-2">{data.status === "running" ? <Button variant="outline" disabled={cancel.isPending || Boolean(data.cancel_requested_at)} onClick={() => cancel.mutate(id)}><Ban data-icon="inline-start" />{data.cancel_requested_at ? "Đang chờ dừng" : "Dừng run"}</Button> : null}<Button variant="outline" asChild><Link href={`/analysis?run=${id}`}>Xem kết quả chi tiết</Link></Button></div>{data.error ? <Alert variant="destructive"><TriangleAlert className="size-4" /><AlertTitle>Có lỗi</AlertTitle><AlertDescription>{readableError(data.error)}</AlertDescription></Alert> : null}</section></> : <Spinner />}</div>;
 }
 
 export function ActivitySheet() {
@@ -300,7 +308,7 @@ export function ActivitySheet() {
         )}
       >
         <SheetHeader className="shrink-0 border-b pr-14 sm:pl-6">
-          <SheetTitle>Activity Center</SheetTitle>
+          <SheetTitle>Trung tâm hoạt động</SheetTitle>
           <SheetDescription>
             Theo dõi lô nhập, duyệt mapping và chạy phân tích AI.
           </SheetDescription>

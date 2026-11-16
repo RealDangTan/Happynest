@@ -29,6 +29,7 @@ import {
 } from "@/lib/table-sorts"
 import { SENTIMENT_LABEL, SEVERITY_LABEL } from "@/lib/labels"
 import { useAppLang } from "@/lib/i18n"
+import { SEVERITY_TONE } from "@/lib/tone"
 import {
   DataTable,
   DataTableColumnHeader,
@@ -58,15 +59,15 @@ import { PageHeader } from "@/components/page-header"
 
 /** Cột bật/tắt được; "content" luôn hiển thị (enableHiding: false). */
 const DEFAULT_VISIBILITY: ColumnVisibilityState = {
-  source: true,
-  occurred_at: true,
+  source: false,
+  occurred_at: false,
   severity: true,
   sentiment: false,
   topics: true,
   confidence: false,
   pii: false,
 }
-const STORAGE_KEY = "feedbacks.columns.v2"
+const STORAGE_KEY = "feedbacks.columns.v3"
 
 function FeedbacksTable() {
   const router = useRouter()
@@ -167,10 +168,20 @@ function FeedbacksTable() {
         enableSorting: false,
         meta: { label: "Nội dung", thClassName: "w-[42%]" },
         header: "Nội dung",
+        // Dòng gọn để quét (mẫu Featurebase): nội dung 2 dòng + một dòng phụ
+        // nguồn · ngày, để cột Nguồn/Thời điểm có thể tắt mà không mất ngữ cảnh.
         cell: ({ row }) => (
-          <Link href={`/feedbacks/${row.original.id}`} className="block max-w-md">
+          <Link
+            href={`/feedbacks/${row.original.id}`}
+            onClick={(event) => event.stopPropagation()}
+            className="flex max-w-xl flex-col gap-0.5 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+          >
             <span className="line-clamp-2 break-words">
               {row.original.feedback_text ?? "(chưa phân tích)"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {row.original.source || "—"} · {formatDate(row.original.occurred_at)}
+              {row.original.ai_analysis ? null : " · chờ phân loại"}
             </span>
           </Link>
         ),
@@ -203,9 +214,7 @@ function FeedbacksTable() {
         cell: ({ row }) => {
           const severity = row.original.ai_analysis?.severity
           return severity ? (
-            <Badge
-              variant={severity === "critical" || severity === "high" ? "destructive" : "secondary"}
-            >
+            <Badge variant={SEVERITY_TONE[severity] ?? "secondary"}>
               {SEVERITY_LABEL[lang][severity]}
             </Badge>
           ) : (
@@ -253,9 +262,9 @@ function FeedbacksTable() {
         id: "confidence",
         accessorFn: (f: Feedback) => f.ai_analysis?.confidence ?? -1,
         sortDescFirst: true,
-        meta: { label: "Confidence", thClassName: "text-right", tdClassName: "text-right" },
+        meta: { label: "Độ tin cậy", thClassName: "text-right", tdClassName: "text-right" },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Confidence" className="justify-end" />
+          <DataTableColumnHeader column={column} title="Độ tin cậy" className="justify-end" />
         ),
         cell: ({ row }) => {
           const confidence = row.original.ai_analysis?.confidence
@@ -391,14 +400,15 @@ function FeedbacksTable() {
           <DataTable
             table={table}
             isLoading={isFetching && !data}
+            maxHeightClass="max-h-[70vh]"
+            onRowClick={(row) => router.push(`/feedbacks/${row.id}`)}
             emptyContent={
               total === 0 && !hasActiveFilters ? (
                 <Empty>
                   <EmptyHeader>
                     <EmptyTitle>Chưa có phản hồi nào</EmptyTitle>
                     <EmptyDescription>
-                      Nhập dữ liệu bằng nút bên trên (thủ công hoặc import CSV qua
-                      LISTEN).
+                      Thêm phản hồi bằng nút bên trên, hoặc nhập cả file CSV ở màn Nhập dữ liệu.
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>

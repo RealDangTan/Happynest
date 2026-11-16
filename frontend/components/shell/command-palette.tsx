@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   CornerDownLeft,
   FileText,
+  History,
   Inbox,
   MessageSquarePlus,
   Search,
@@ -16,6 +17,30 @@ import { STAGES, UTILITY_SCREENS } from "@/lib/navigation";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { FeedbackListResponse, InsightsListResponse } from "@/lib/types";
+import { REPORT_STATUS_LABEL } from "@/lib/report-markdown";
+
+/** Mục đã mở gần đây (mẫu Vapi): chỉ là tiện ích riêng mỗi trình duyệt. */
+type RecentEntry = { href: string; label: string };
+const RECENT_KEY = "palette.recent.v1";
+
+function readRecent(): RecentEntry[] {
+  try {
+    const raw = window.localStorage.getItem(RECENT_KEY);
+    const parsed = raw ? (JSON.parse(raw) as RecentEntry[]) : [];
+    return Array.isArray(parsed) ? parsed.filter((r) => r && typeof r.href === "string" && typeof r.label === "string").slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecent(entry: RecentEntry) {
+  try {
+    const next = [entry, ...readRecent().filter((r) => r.href !== entry.href)].slice(0, 5);
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* private mode / storage blocked — recent list is optional */
+  }
+}
 
 type PaletteItem = {
   key: string;
@@ -44,7 +69,14 @@ export function CommandPalette({
   const [feedbacks, setFeedbacks] = useState<FeedbackListResponse | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const go = (href: string) => {
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- đọc localStorage khi mở hộp tìm
+    if (open) setRecent(readRecent());
+  }, [open]);
+
+  const go = (href: string, label?: string) => {
+    if (label) writeRecent({ href, label });
     onOpenChange(false);
     router.push(href);
   };
@@ -90,7 +122,7 @@ export function CommandPalette({
       group: t.palette.groupActions,
       label: t.palette.importCsv,
       icon: Upload,
-      run: () => go("/importer"),
+      run: () => go("/importer?new=1"),
     });
     list.push({
       key: "cmd-chat",
@@ -103,6 +135,18 @@ export function CommandPalette({
       },
     });
 
+    if (!q) {
+      for (const r of recent) {
+        list.push({
+          key: `recent-${r.href}`,
+          group: "Gần đây",
+          label: r.label,
+          icon: History,
+          run: () => go(r.href, r.label),
+        });
+      }
+    }
+
     for (const stage of STAGES) {
       for (const item of stage.items) {
         const label = t.nav.items[item.key];
@@ -113,7 +157,7 @@ export function CommandPalette({
           label,
           hint: t.nav.groups[stage.group],
           icon: item.icon,
-          run: () => go(item.href),
+          run: () => go(item.href, label),
         });
       }
     }
@@ -132,7 +176,7 @@ export function CommandPalette({
         group: t.palette.groupApp,
         label,
         icon: item.icon,
-        run: () => go(item.href),
+        run: () => go(item.href, label),
       });
     }
 
@@ -141,9 +185,9 @@ export function CommandPalette({
         key: `report-${r.id}`,
         group: t.palette.groupReports,
         label: r.title,
-        hint: r.status,
+        hint: REPORT_STATUS_LABEL[r.status] ?? r.status,
         icon: FileText,
-        run: () => go(`/reports?report=${r.id}`),
+        run: () => go(`/reports?report=${r.id}`, r.title),
       });
     }
 
@@ -152,15 +196,19 @@ export function CommandPalette({
         key: `fb-${f.id}`,
         group: t.palette.groupFeedback,
         label: f.feedback_text?.slice(0, 90) ?? f.id,
-        hint: f.import_id ? `import ${f.import_id.slice(0, 8)}` : undefined,
+        hint: f.source || undefined,
         icon: Inbox,
-        run: () => go(f.import_id ? `/vault?import=${f.import_id}` : "/vault"),
+        run: () =>
+          go(
+            f.import_id ? `/vault?import=${f.import_id}&item=${f.id}` : `/vault?item=${f.id}`,
+            f.feedback_text?.slice(0, 60) ?? `F-${f.id.slice(0, 8)}`,
+          ),
       });
     }
 
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t, query, reports, feedbacks, productId]);
+  }, [t, query, reports, feedbacks, productId, recent]);
 
   // Derived so the selection stays valid while the item list shrinks/grows.
   const active = Math.min(index, Math.max(items.length - 1, 0));
@@ -189,7 +237,7 @@ export function CommandPalette({
       }}
     >
       <DialogContent className="top-20 translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
-        <DialogTitle className="sr-only">Search</DialogTitle>
+        <DialogTitle className="sr-only">Tìm nhanh</DialogTitle>
         <div className="flex items-center gap-2 border-b px-3">
           <Search className="size-4 shrink-0 text-muted-foreground" />
           <input
@@ -210,13 +258,17 @@ export function CommandPalette({
             }}
             placeholder={t.palette.placeholder}
             className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            aria-label="Search"
+            aria-label="Tìm nhanh"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="palette-list"
+            aria-activedescendant={items[active] ? `palette-opt-${active}` : undefined}
           />
           <kbd className="rounded border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             Esc
           </kbd>
         </div>
-        <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
+        <div ref={listRef} id="palette-list" role="listbox" aria-label="Kết quả" className="max-h-80 overflow-y-auto p-2">
           {items.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
               {t.palette.empty(query)}
@@ -230,6 +282,9 @@ export function CommandPalette({
                 {groupItems.map(({ item, idx }) => (
                   <button
                     key={item.key}
+                    id={`palette-opt-${idx}`}
+                    role="option"
+                    aria-selected={idx === active}
                     data-idx={idx}
                     onClick={item.run}
                     onMouseEnter={() => setIndex(idx)}
@@ -255,6 +310,22 @@ export function CommandPalette({
               </div>
             ))
           )}
+        </div>
+        <div className="flex items-center gap-4 border-t bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground" aria-hidden="true">
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border bg-background px-1 font-mono">↑</kbd>
+            <kbd className="rounded border bg-background px-1 font-mono">↓</kbd>
+            chọn
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border bg-background px-1 font-mono">↵</kbd>
+            mở
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border bg-background px-1 font-mono">Esc</kbd>
+            đóng
+          </span>
+          <span className="ml-auto">Gõ từ 2 ký tự để tìm báo cáo và phản hồi</span>
         </div>
       </DialogContent>
     </Dialog>

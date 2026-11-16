@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -67,6 +68,7 @@ import {
 import { ApiError } from "@/lib/api"
 import { useT } from "@/lib/i18n"
 import { readableError } from "@/lib/evidence"
+import { cn } from "@/lib/utils"
 
 export const IMPORT_STEPS = ["File", "Preview", "Mapping", "Result"] as const
 
@@ -553,141 +555,67 @@ export function StepMapping({
     )
   }
 
-  return (
-    <section className="flex flex-col gap-6">
-      <Card className="py-0">
-        <CardContent className="p-0">
-          <Table className="min-w-[52rem] table-fixed">
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="w-40">{t.colCsv}</TableHead>
-                <TableHead className="w-[24%]">{previewCopy.colSample}</TableHead>
-                <TableHead className="w-44">{t.colSuggest}</TableHead>
-                <TableHead>{t.colExplain}</TableHead>
-                <TableHead className="w-56">{t.colAction}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mapping.isPending ? (
-                <TableRow>
-                  <TableCell colSpan={5}>
-                    <p className="flex items-center gap-2 py-4 text-sm text-muted-foreground" role="status">
-                      <Spinner /> {proposingLabel}
-                    </p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                mappings.map((entry) => {
-                  const override = actions[entry.source_field]
-                  const current = override?.action ?? defaultAction(entry)
-                  const suggest = suggestView(entry, t)
-                  const typedKey = (override?.targetKey ?? "").trim()
-                  return (
-                    <TableRow key={entry.source_field}>
-                      <TableCell className="align-top font-mono text-xs font-medium whitespace-normal wrap-anywhere">
-                        {entry.source_field}
-                      </TableCell>
-                      <TableCell className="align-top text-xs whitespace-normal wrap-anywhere text-muted-foreground">
-                        {sampleByField.get(entry.source_field) || "—"}
-                      </TableCell>
-                      <TableCell className="align-top whitespace-normal">
-                        {suggest.key ? (
-                          <span className="block font-mono text-xs font-medium break-words">
-                            {suggest.key}
-                          </span>
-                        ) : null}
-                        {suggest.note ? (
-                          <span className="text-xs text-muted-foreground">
-                            {suggest.note}
-                          </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="align-top text-sm whitespace-normal wrap-anywhere text-muted-foreground">
-                        {entry.reason || entry.candidate?.description || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={current}
-                          onValueChange={(value) =>
-                            setActions((old) => ({
-                              ...old,
-                              [entry.source_field]: {
-                                action: value as RowAction,
-                                targetKey: old[entry.source_field]?.targetKey,
-                              },
-                            }))
-                          }
-                        >
-                          <SelectTrigger
-                            className="w-40"
-                            aria-label={t.decisionFor(entry.source_field)}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem
-                              value="approve"
-                              disabled={entry.decision === "AMBIGUOUS"}
-                            >
-                              {t.approve}
-                            </SelectItem>
-                            <SelectItem value="change">{t.change}</SelectItem>
-                            <SelectItem value="ignore">{t.ignore}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {current === "ignore" &&
-                        autoIgnored.has(entry.source_field) ? (
-                          <p className="mt-1 max-w-48 text-xs text-muted-foreground">
-                            {t.duplicateAuto(autoIgnored.get(entry.source_field) ?? "")}
-                          </p>
-                        ) : null}
-                        {conflictWith(entry.source_field) ? (
-                          <p className="mt-1 max-w-48 text-xs text-destructive" role="alert">
-                            {t.duplicateConflict(conflictWith(entry.source_field) ?? "")}
-                          </p>
-                        ) : null}
-                        {current === "change" ? (
-                          <div className="mt-2">
-                            <Input
-                              placeholder={t.targetPlaceholder}
-                              value={override?.targetKey ?? ""}
-                              aria-invalid={typedKey === ""}
-                              onChange={(event) =>
-                                setActions((old) => ({
-                                  ...old,
-                                  [entry.source_field]: {
-                                    action: "change",
-                                    targetKey: event.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                            {typedKey !== "" && !knownKeys.has(typedKey) ? (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {t.willCreate(humanizeKey(typedKey))}
-                              </p>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+  // Đếm theo quyết định hiện tại cho thanh tóm tắt dính đầu bảng.
+  const tally = { approve: 0, change: 0, ignore: 0 }
+  for (const entry of mappings) {
+    tally[actions[entry.source_field]?.action ?? defaultAction(entry)] += 1
+  }
+  const blocked =
+    decide.isPending ||
+    mappings.length === 0 ||
+    pendingChanges.length > 0 ||
+    conflictCount > 0
 
-      <Alert>
-        <AlertTitle>{t.gateTitle}</AlertTitle>
-        <AlertDescription>
-          {t.gateBody}
-          {changed.length > 0 ? t.changed(changed.length) : ""}
-          {pendingChanges.length > 0 ? t.pendingChange(pendingChanges.length) : ""}
-          {conflictCount > 0 ? t.conflicts(conflictCount) : ""}
-        </AlertDescription>
-      </Alert>
+  // Mỗi dòng đọc như một phép nối (mẫu Unify "Map fields"): cột trong file kèm
+  // giá trị mẫu → trường đích; quyết định nằm ngay trên trường đích.
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="sticky top-16 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-background/95 px-4 py-3 shadow-xs backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex min-w-0 flex-col">
+          <p className="text-sm font-medium">{t.gateTitle}</p>
+          <p className="text-xs text-muted-foreground">
+            {t.gateBody}
+            {changed.length > 0 ? t.changed(changed.length) : ""}
+          </p>
+        </div>
+        <ul className="flex flex-wrap items-center gap-1.5 text-xs" aria-label="Tóm tắt quyết định">
+          <li><Badge variant="success">{t.approve} · {tally.approve}</Badge></li>
+          <li><Badge variant="info">{t.change.replace("…", "")} · {tally.change}</Badge></li>
+          <li><Badge variant="outline">{t.ignore} · {tally.ignore}</Badge></li>
+        </ul>
+        <div className="flex items-center gap-2 sm:ml-auto">
+          {onBack ? (
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft data-icon="inline-start" />
+              {t.backToPreview}
+            </Button>
+          ) : null}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" disabled={blocked}>
+                {decide.isPending ? <Spinner data-icon="inline-start" /> : null}
+                {t.confirm}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t.confirmTitle}</AlertDialogTitle>
+                <AlertDialogDescription>{t.confirmBody}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t.checkAgain}</AlertDialogCancel>
+                <AlertDialogAction onClick={submit}>{t.go}</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        {pendingChanges.length > 0 || conflictCount > 0 ? (
+          <p className="w-full text-xs text-destructive" role="alert">
+            {pendingChanges.length > 0 ? t.pendingChange(pendingChanges.length).trim() : ""}
+            {conflictCount > 0 ? t.conflicts(conflictCount) : ""}
+          </p>
+        ) : null}
+      </div>
 
       {/* Server từ chối mapping (4xx/5xx): giữ lỗi NGAY TRÊN MÀN cho tới khi
           người dùng sửa và gửi lại — toast tự tắt từng khiến người dùng tưởng
@@ -703,41 +631,151 @@ export function StepMapping({
         </Alert>
       ) : null}
 
-      <div className="flex items-center justify-between">
-        {onBack ? (
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft data-icon="inline-start" />
-            {t.backToPreview}
-          </Button>
-        ) : (
-          <span />
-        )}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              disabled={
-                decide.isPending ||
-                mappings.length === 0 ||
-                pendingChanges.length > 0 ||
-                conflictCount > 0
-              }
-            >
-              {decide.isPending ? <Spinner data-icon="inline-start" /> : null}
-              {t.confirm}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t.confirmTitle}</AlertDialogTitle>
-              <AlertDialogDescription>{t.confirmBody}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t.checkAgain}</AlertDialogCancel>
-              <AlertDialogAction onClick={submit}>{t.go}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      <Card className="py-0">
+        <CardContent className="overflow-x-auto p-0">
+          <Table className="min-w-[48rem] table-fixed">
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="w-[30%]">{t.colCsv}</TableHead>
+                <TableHead className="w-8" aria-hidden="true" />
+                <TableHead className="w-[34%]">{t.colSuggest} · {t.colAction}</TableHead>
+                <TableHead>{t.colExplain}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mapping.isPending ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <p className="flex items-center gap-2 py-4 text-sm text-muted-foreground" role="status">
+                      <Spinner /> {proposingLabel}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                mappings.map((entry) => {
+                  const override = actions[entry.source_field]
+                  const current = override?.action ?? defaultAction(entry)
+                  const suggest = suggestView(entry, t)
+                  const typedKey = (override?.targetKey ?? "").trim()
+                  const conflict = conflictWith(entry.source_field)
+                  const sample = sampleByField.get(entry.source_field)
+                  return (
+                    <TableRow
+                      key={entry.source_field}
+                      className={cn(
+                        conflict && "bg-destructive/5",
+                        current === "ignore" && !conflict && "text-muted-foreground"
+                      )}
+                    >
+                      <TableCell className="align-top whitespace-normal">
+                        <span className="block font-mono text-xs font-medium wrap-anywhere">
+                          {entry.source_field}
+                        </span>
+                        <span
+                          className="mt-1 line-clamp-2 text-xs wrap-anywhere text-muted-foreground"
+                          title={sample || undefined}
+                        >
+                          {sample ? `vd: ${sample}` : "Không có giá trị mẫu"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-0 pt-3 align-top text-muted-foreground">
+                        <ArrowRight className={cn("size-4", current === "ignore" && "opacity-30")} aria-hidden="true" />
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal">
+                        <div className="flex flex-col gap-2">
+                          {current === "ignore" ? (
+                            <span className="text-xs">Không nhập cột này</span>
+                          ) : current === "change" ? null : (
+                            <span className="flex flex-col">
+                              {suggest.key ? (
+                                <span className="font-mono text-xs font-medium break-words text-foreground">
+                                  {suggest.key}
+                                </span>
+                              ) : null}
+                              {suggest.note ? (
+                                <span className="text-xs text-muted-foreground">{suggest.note}</span>
+                              ) : null}
+                            </span>
+                          )}
+                          <Select
+                            value={current}
+                            onValueChange={(value) =>
+                              setActions((old) => ({
+                                ...old,
+                                [entry.source_field]: {
+                                  action: value as RowAction,
+                                  targetKey: old[entry.source_field]?.targetKey,
+                                },
+                              }))
+                            }
+                          >
+                            <SelectTrigger
+                              size="sm"
+                              className="w-40"
+                              aria-label={t.decisionFor(entry.source_field)}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectItem
+                                  value="approve"
+                                  disabled={entry.decision === "AMBIGUOUS"}
+                                >
+                                  {t.approve}
+                                </SelectItem>
+                                <SelectItem value="change">{t.change}</SelectItem>
+                                <SelectItem value="ignore">{t.ignore}</SelectItem>
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                          {current === "change" ? (
+                            <div>
+                              <Input
+                                placeholder={t.targetPlaceholder}
+                                value={override?.targetKey ?? ""}
+                                aria-invalid={typedKey === ""}
+                                aria-label={t.targetPlaceholder}
+                                onChange={(event) =>
+                                  setActions((old) => ({
+                                    ...old,
+                                    [entry.source_field]: {
+                                      action: "change",
+                                      targetKey: event.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                              {typedKey !== "" && !knownKeys.has(typedKey) ? (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {t.willCreate(humanizeKey(typedKey))}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {current === "ignore" && autoIgnored.has(entry.source_field) ? (
+                            <p className="text-xs text-muted-foreground">
+                              {t.duplicateAuto(autoIgnored.get(entry.source_field) ?? "")}
+                            </p>
+                          ) : null}
+                          {conflict ? (
+                            <p className="text-xs text-destructive" role="alert">
+                              {t.duplicateConflict(conflict)}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top text-sm whitespace-normal wrap-anywhere text-muted-foreground">
+                        {entry.reason || entry.candidate?.description || "—"}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </section>
   )
 }

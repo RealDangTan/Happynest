@@ -455,6 +455,34 @@ export default function TaxonomyPage() {
                 <CardAction>
                   <Badge variant="secondary">bản nháp</Badge>
                 </CardAction>
+                {/* Duyệt đề xuất theo lô (mẫu Searchable): chọn/bỏ cả nhóm
+                    trước, rồi sửa từng dòng nếu cần. */}
+                <div className="col-span-full flex flex-wrap items-center gap-2 pt-2 text-xs text-muted-foreground">
+                  <span aria-live="polite">
+                    Đã chọn {selectedCount}/{proposal.length}
+                  </span>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    disabled={selectedCount === proposal.length}
+                    onClick={() =>
+                      setProposal((prev) => (prev ?? []).map((t) => ({ ...t, selected: true })))
+                    }
+                  >
+                    Chọn tất cả
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    disabled={selectedCount === 0}
+                    onClick={() =>
+                      setProposal((prev) => (prev ?? []).map((t) => ({ ...t, selected: false })))
+                    }
+                  >
+                    Bỏ chọn tất cả
+                  </Button>
+                  <span className="hidden sm:inline">· Bấm vào tên để sửa ngay tại dòng.</span>
+                </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 {groupProposalTree(proposal).map(
@@ -520,7 +548,7 @@ export default function TaxonomyPage() {
                   )
                 )}
               </CardContent>
-              <CardFooter className="justify-end gap-2">
+              <CardFooter className="sticky bottom-0 z-10 justify-end gap-2 rounded-b-xl border-t bg-card/95 backdrop-blur">
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -1234,7 +1262,7 @@ function ProposalRow({
       />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <Input
-          className="h-7 border-transparent bg-transparent px-2 text-sm font-medium shadow-none hover:border-input focus-visible:bg-background"
+          className="h-7 border-dashed border-transparent bg-transparent px-2 text-sm font-medium shadow-none hover:border-input focus-visible:border-solid focus-visible:bg-background"
           value={topic.name_vi ?? ""}
           placeholder={topic.name}
           onChange={(e) => onRenameVi(e.target.value)}
@@ -1246,12 +1274,12 @@ function ProposalRow({
           onChange={(e) => onRename(e.target.value)}
           aria-label={`Tên tiếng Anh canonical (cấp ${depth + 1})`}
         />
+        {topic.description ? (
+          <span className="line-clamp-2 px-2 text-xs text-muted-foreground">
+            {topic.description}
+          </span>
+        ) : null}
       </div>
-      {topic.description ? (
-        <span className="hidden max-w-48 truncate text-xs text-muted-foreground md:block">
-          {topic.description}
-        </span>
-      ) : null}
     </div>
   )
 }

@@ -2,12 +2,7 @@
 import { Suspense, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import {
-  getCoreRowModel,
-  getSortedRowModel,
-  useLegacyTable,
-  type LegacyColumnDef,
-} from "@tanstack/react-table/legacy"
+import { ChevronRight } from "lucide-react"
 import {
   Empty,
   EmptyDescription,
@@ -32,11 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  DataTable,
-  DataTableColumnHeader,
-  DataTableToolbar,
-} from "@/components/data-table"
 import { AiBadge } from "@/components/ai/ai-badge"
 import { PageHeader } from "@/components/page-header"
 import { NextStepBar } from "@/components/journey/next-step-bar"
@@ -74,7 +64,22 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: "Từ chối",
 }
 
-function ActionsTable({
+function priorityBadge(score: number) {
+  const [label, tone] =
+    score >= 7
+      ? (["Cao", "danger"] as const)
+      : score >= 4
+        ? (["Vừa", "warning"] as const)
+        : (["Thấp", "info"] as const)
+  return <Badge variant={tone}>Ưu tiên {label.toLowerCase()}</Badge>
+}
+
+/**
+ * Hành động nhóm theo phòng ban (mẫu Motion "grouped list"): mỗi nhóm một
+ * tiêu đề có chấm màu + số việc, mỗi dòng giữ ưu tiên và trạng thái để quét
+ * nhanh ai đang có việc gì.
+ */
+function GroupedActions({
   items,
   selectedId,
   onSelect,
@@ -83,92 +88,76 @@ function ActionsTable({
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  const columns = useMemo<LegacyColumnDef<ActionItem>[]>(
-    () => [
-      {
-        id: "recommendation",
-        enableSorting: false,
-        enableHiding: false,
-        meta: { thClassName: "w-[58%]" },
-        header: "Hành động",
-        cell: ({ row }) => (
-          <>
-            <span className="flex items-start gap-2">
-              {selectedId === row.original.id ? (
-                <span aria-hidden className="mt-0.5">
-                  ›
-                </span>
-              ) : (
-                <span className="w-2" aria-hidden />
-              )}
-              <span className="min-w-0 text-sm break-words">
-                {row.original.recommendation}
-              </span>
-            </span>
-            <span className="mt-1 block pl-4 font-mono text-xs text-muted-foreground">
-              {departmentLabel(row.original.function)}
-            </span>
-          </>
-        ),
-      },
-      {
-        id: "priority",
-        accessorFn: (a: ActionItem) => a.priority_score,
-        sortDescFirst: true,
-        meta: { label: "Ưu tiên", thClassName: "w-24", tdClassName: "w-24" },
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Ưu tiên" />
-        ),
-        cell: ({ row }) => {
-          const score = row.original.priority_score
-          const [label, tone] =
-            score >= 7
-              ? (["Cao", "danger"] as const)
-              : score >= 4
-                ? (["Vừa", "warning"] as const)
-                : (["Thấp", "info"] as const)
-          return <Badge variant={tone}>{label}</Badge>
-        },
-      },
-      {
-        id: "status",
-        accessorFn: (a: ActionItem) => a.status,
-        meta: { label: "Trạng thái", thClassName: "w-28", tdClassName: "w-28" },
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Trạng thái" />
-        ),
-        cell: ({ row }) => (
-          <Badge variant={ACTION_STATUS_TONE[row.original.status] ?? "secondary"}>
-            {STATUS_LABEL[row.original.status] ?? row.original.status}
-          </Badge>
-        ),
-      },
-    ],
-    [selectedId],
-  )
-
-  const table = useLegacyTable({
-    data: items,
-    columns,
-    enableMultiSort: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    globalFilterFn: "includesString",
-    initialState: { sorting: [{ id: "priority", desc: true }] },
-  })
+  const groups = useMemo(() => {
+    const byDept = new Map<string, ActionItem[]>()
+    for (const a of items) {
+      const key = toDepartment(a.function)
+      byDept.set(key, [...(byDept.get(key) ?? []), a])
+    }
+    return DEPARTMENTS.map((d) => d.toLowerCase())
+      .filter((key) => byDept.has(key))
+      .map((key) => ({
+        key,
+        label: departmentLabel(byDept.get(key)![0].function),
+        items: [...byDept.get(key)!].sort((a, b) => b.priority_score - a.priority_score),
+      }))
+  }, [items])
 
   return (
-    <div className="flex min-w-0 flex-col gap-3">
-      <DataTableToolbar table={table} hideColumnToggle />
-      <Card className="py-0">
-        <CardContent className="p-0">
-          <DataTable
-            table={table}
-            onRowClick={(row) => onSelect(row.id)}
-            rowClassName={(row) => (row.id === selectedId ? "bg-accent" : undefined)}
-          />
-        </CardContent>
-      </Card>
+    <div className="flex min-w-0 flex-col gap-4">
+      {groups.map((group) => (
+        <section
+          key={group.key}
+          aria-labelledby={`dept-${group.key}`}
+          className="overflow-hidden rounded-xl border bg-card"
+        >
+          <header className="flex items-center gap-2 border-b bg-muted/40 px-4 py-2">
+            <span
+              aria-hidden
+              className={cn("size-2.5 shrink-0 rounded-full bg-current", DEPARTMENT_DOT[group.key])}
+            />
+            <h2 id={`dept-${group.key}`} className="text-sm font-medium">
+              {group.label}
+            </h2>
+            <span className="font-mono text-xs text-muted-foreground">{group.items.length}</span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {group.items.filter((a) => a.status === "accepted").length} đã nhận
+            </span>
+          </header>
+          <ul className="divide-y">
+            {group.items.map((action) => {
+              const active = action.id === selectedId
+              return (
+                <li key={action.id}>
+                  <button
+                    type="button"
+                    aria-current={active ? "true" : undefined}
+                    onClick={() => onSelect(action.id)}
+                    className={cn(
+                      "flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                      active ? "bg-accent" : "hover:bg-accent/50"
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 basis-64 text-sm break-words">
+                      {action.recommendation}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      {priorityBadge(action.priority_score)}
+                      <Badge variant={ACTION_STATUS_TONE[action.status] ?? "secondary"}>
+                        {STATUS_LABEL[action.status] ?? action.status}
+                      </Badge>
+                      <ChevronRight
+                        aria-hidden
+                        className={cn("size-4 text-muted-foreground transition-transform", active && "translate-x-0.5 text-foreground")}
+                      />
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ))}
     </div>
   )
 }
@@ -238,13 +227,13 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
       <NextStepBar />
       <PageHeader
         title={t.nav.items.stakeholders}
-        description="Gói insight thành bản tin cho từng phòng ban — ai cần biết gì, vì sao."
+        description="Hành động đã nhận, nhóm theo phòng ban — ai cần làm gì, ưu tiên ra sao, vì sao."
       />
 
       <Card size="sm">
         <CardContent className="flex-row flex-wrap items-center gap-2">
           <Select value={effectiveReportId ?? ""} onValueChange={setReportId}>
-            <SelectTrigger className="w-72">
+            <SelectTrigger className="w-full sm:w-80" aria-label="Kết luận nguồn">
               <SelectValue placeholder="Chọn kết luận" />
             </SelectTrigger>
             <SelectContent>
@@ -328,7 +317,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         {/* Actions table */}
         {actions.isError ? (
           <Alert variant="destructive">
-            <AlertTitle>Không tải được actions</AlertTitle>
+            <AlertTitle>Chưa tải được hành động</AlertTitle>
             <AlertDescription className="flex flex-col gap-3">
               <span>{actions.error.message}</span>
               <div>
@@ -391,7 +380,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
             </div>
           </Empty>
         ) : (
-          <ActionsTable
+          <GroupedActions
             items={filtered}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -399,7 +388,7 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
         )}
 
         {/* WHAT panel */}
-        <Card size="sm" className="self-start">
+        <Card size="sm" className="self-start xl:sticky xl:top-20">
           <CardHeader>
             <CardTitle>Việc cần làm</CardTitle>
             <CardDescription>
