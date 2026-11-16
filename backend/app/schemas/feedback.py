@@ -6,7 +6,7 @@ cần text → `feedback_text` đã sanitize là dữ liệu phân tích hợp l
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -53,6 +53,32 @@ class FeedbackListOut(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class TopicFacet(BaseModel):
+    """Một chủ đề thực sự xuất hiện trong phạm vi + số feedback mang nhãn đó."""
+
+    value: str
+    count: int
+
+
+class MetadataFacet(BaseModel):
+    """Một khoá metadata thực sự có giá trị trong phạm vi (zone JSONB `data`
+    hoặc `source_meta`) + số feedback có giá trị cho khoá đó."""
+
+    zone: Literal["data", "source_meta"]
+    key: str
+    count: int
+
+
+class FeedbackFacetsOut(BaseModel):
+    """Response GET /api/feedbacks/facets — dữ liệu để dựng bộ lọc chủ đề và
+    menu chọn cột metadata THEO PHẠM VI đang xem (product / lô nhập), không phải
+    toàn bộ taxonomy của product."""
+
+    total: int
+    topics: list[TopicFacet]
+    metadata: list[MetadataFacet]
 
 
 class FeedbackUpdate(BaseModel):

@@ -3,14 +3,15 @@
 LLM chỉ gửi SEMANTIC tool request (field key + giá trị); compiler resolve
 thành JSONB path và TỪ CHỐI field lạ — LLM không bao giờ viết SQL (guardrail
 §68). Filter hỗ trợ:
-- `topic`: containment trong `feedback.ai_analysis->'topics'` JSONB array.
+- `topic`: containment trong `feedback.ai_analysis->'topics'` JSONB array;
+  multi-label nên nhận comma-list và khớp bất kỳ slug nào (OR).
 - product field key (đã validate): `feedback.data->>'key' == value`.
 - `source` / `severity` / `sentiment` / `intent` / `ai_issue`: cột/ai_analysis chuẩn.
 """
 
 import uuid
 
-from sqlalchemy import Select, and_, select
+from sqlalchemy import Select, and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.feedback import Feedback
@@ -33,7 +34,12 @@ def resolve_filters(
 
     for key, value in filters.items():
         if key == "topic":
-            conditions.append(Feedback.ai_analysis["topics"].contains([str(value)]))
+            # Multi-label (≤3 chủ đề/feedback): `topic="a,b"` khớp BẤT KỲ slug nào.
+            slugs = [s.strip() for s in str(value).split(",") if s.strip()]
+            if slugs:
+                conditions.append(
+                    or_(*(Feedback.ai_analysis["topics"].contains([s]) for s in slugs))
+                )
         elif key == "severity":
             conditions.append(Feedback.ai_analysis["severity"].astext == str(value))
         elif key in ("sentiment", "intent", "ai_issue"):

@@ -436,9 +436,11 @@ def planner(state: UnderstandState) -> dict[str, Any]:
         "cần cluster_id lấy từ product_context.clusters[].id; profile_field chỉ nhận "
         "field trong product_context.schema_fields; aggregate_feedback.group_by và "
         "segment_feedback.dimensions nhận field schema HOẶC chiều nhãn AI: sentiment, "
-        "severity, intent, ai_issue, topic, source (topic là multi-label). "
+        "severity, intent, ai_issue, topic, source (topic là multi-label: mỗi phản hồi "
+        "mang tối đa 3 chủ đề nên số đếm theo chủ đề có thể cộng quá tổng số phản hồi). "
         "Khi action='synthesize': tool=null, params={}. 'filters' chỉ dùng khóa trong "
-        "product_context.filter_keys hoặc schema_fields; lọc chủ đề bằng topic=<slug>. "
+        "product_context.filter_keys hoặc schema_fields; lọc chủ đề bằng topic=<slug>, "
+        "nhiều chủ đề bằng topic='slug1,slug2' (khớp bất kỳ). "
         "Aggregate first, drill down sau (§69): khi chưa biết phân bố, aggregate theo "
         "ai_issue hoặc topic TRƯỚC rồi mới lọc; KHÔNG AND nhiều nhãn AI hẹp khi chưa "
         "thấy phân bố (vd. 'độ chính xác' gồm cả ai_issue=inaccuracy lẫn hallucination "
@@ -456,7 +458,7 @@ def planner(state: UnderstandState) -> dict[str, Any]:
             user_payload,
             PlannerOut,
             call_type=LlmCallType.plan,
-            prompt_version="understand-v2",
+            prompt_version="understand-v3",
             analysis_run_id=uuid.UUID(state["run_id"]),
         )
         next_action = out.model_dump()
@@ -749,6 +751,10 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
                 "kèm hypothesis_confidence — là giả thuyết, không phải nguyên nhân đã xác nhận.",
                 "Phạm vi đếm phụ thuộc filters đã dùng: nêu rõ filters trong finding hoặc "
                 "limitations; câu hỏi mở còn lại của evaluator (new_questions) đưa vào limitations.",
+                "Chủ đề (topic) là multi-label: một phản hồi có thể thuộc tới 3 chủ đề, nên "
+                "số đếm/tỉ lệ theo chủ đề KHÔNG cộng dồn thành tổng và KHÔNG được diễn đạt "
+                "như các nhóm loại trừ nhau (vd. 'X% phản hồi chỉ nói về chủ đề A'); nói "
+                "'X% phản hồi có nhắc tới chủ đề A'.",
             ],
         },
         ensure_ascii=False,
@@ -764,7 +770,7 @@ def synthesizer(state: UnderstandState) -> dict[str, Any]:
             user_payload,
             InsightDraft,
             call_type=LlmCallType.synthesize,
-            prompt_version="understand-v2",
+            prompt_version="understand-v3",
             analysis_run_id=uuid.UUID(state["run_id"]),
         )
         draft = out.model_dump()

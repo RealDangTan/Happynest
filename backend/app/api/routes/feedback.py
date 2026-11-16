@@ -11,6 +11,7 @@ Tất cả endpoint yêu cầu đăng nhập và CHỈ đụng product của ch�
 """
 
 import uuid
+from collections import Counter
 
 from fastapi import (
     APIRouter,
@@ -19,7 +20,7 @@ from fastapi import (
     Query,
     status,
 )
-from sqlalchemy import Float, case, func, select, text
+from sqlalchemy import Float, case, func, or_, select, text
 from sqlalchemy.orm import Session, defer
 
 from app.api.deps import (
@@ -34,10 +35,13 @@ from app.models.user import User
 from app.schemas.feedback import (
     BulkDeleteOut,
     FeedbackBulkDeleteIn,
+    FeedbackFacetsOut,
     FeedbackIn,
     FeedbackListOut,
     FeedbackOut,
     FeedbackUpdate,
+    MetadataFacet,
+    TopicFacet,
 )
 from app.services.ingest_service import get_default_product, ingest_one
 from app.services.presidio_service import sanitize
@@ -60,6 +64,25 @@ def _get_feedback_or_404(
         raise HTTPException(status_code=404, detail="Feedback không tồn tại.")
     product_or_404(session, feedback.product_id, user)
     return feedback
+
+
+def _scope_conditions(
+    session: Session,
+    user: User,
+    product_id: uuid.UUID | None,
+    import_id: uuid.UUID | None,
+) -> list:
+    """Điều kiện phạm vi dùng chung cho list và facets: một product của `user`
+    (hoặc mọi product của họ nếu không chỉ định) và tuỳ chọn một lô nhập."""
+    conditions: list = []
+    if product_id is not None:
+        product_or_404(session, product_id, user)
+        conditions.append(Feedback.product_id == product_id)
+    else:
+        conditions.append(Feedback.product_id.in_(owned_product_ids(session, user)))
+    if import_id is not None:
+        conditions.append(Feedback.import_id == import_id)
+    return conditions
 
 
 @router.post("/feedbacks", status_code=status.HTTP_201_CREATED)
@@ -149,16 +172,7 @@ def list_feedbacks(
     khi taxonomy đổi. Perf: 1 query duy nhất (count() OVER() kèm page) + defer
     cột `embedding` (vector 1536-d ~19KB/row không bao giờ nằm trong response —
     kéo nó qua WAN chỉ để vứt là nguồn chậm chính của vault trước đây)."""
-    conditions = []
-    if product_id is not None:
-        product_or_404(session, product_id, current_user)
-        conditions.append(Feedback.product_id == product_id)
-    else:
-        conditions.append(
-            Feedback.product_id.in_(owned_product_ids(session, current_user))
-        )
-    if import_id is not None:
-        conditions.append(Feedback.import_id == import_id)
+    conditions = _scope_conditions(session, current_user, product_id, import_id)
     if analysis_state == "pending":
         conditions.append(Feedback.ai_analysis.is_(None))
     elif analysis_state == "eligible":
@@ -183,7 +197,14 @@ def list_feedbacks(
             Feedback.ai_analysis["sentiment"].astext.in_(_sentiments)
         )
     if topic is not None:
-        conditions.append(Feedback.ai_analysis["topics"].contains([topic]))
+        # Mỗi feedback mang tới 3 chủ đề (multi-label) nên `topic` nhận
+        # comma-list và khớp BẤT KỲ chủ đề nào trong danh sách (OR) — giống
+        # cách `severity`/`sentiment` nhận comma-list.
+        _topics = [t.strip() for t in topic.split(",") if t.strip()]
+        if _topics:
+            conditions.append(
+                or_(*(Feedback.ai_analysis["topics"].contains([t]) for t in _topics))
+            )
     if source is not None:
         conditions.append(Feedback.source == source)
     if q is not None:
@@ -211,6 +232,55 @@ def list_feedbacks(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/feedbacks/facets")
+def feedback_facets(
+    product_id: uuid.UUID | None = Query(default=None),
+    import_id: uuid.UUID | None = Query(default=None),
+    session: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FeedbackFacetsOut:
+    """Chủ đề và khoá metadata THỰC SỰ có trong phạm vi (product, tuỳ chọn một
+    lô nhập). FE dùng để dựng bộ lọc "Chủ đề" và menu chọn cột metadata của
+    vault — trước đây bộ lọc chủ đề lấy cả taxonomy của product nên liệt kê cả
+    chủ đề không có trong lô đang xem.
+
+    Phải khai báo TRƯỚC `/feedbacks/{feedback_id}` để "facets" không bị đọc như
+    một UUID. Dataset ≤1500 nên đếm bằng Python, không cần SQL lateral."""
+    conditions = _scope_conditions(session, current_user, product_id, import_id)
+    rows = session.execute(
+        select(Feedback.ai_analysis, Feedback.data, Feedback.source_meta).where(
+            *conditions
+        )
+    ).all()
+
+    topic_counts: Counter[str] = Counter()
+    meta_counts: Counter[tuple[str, str]] = Counter()
+    for analysis, data, source_meta in rows:
+        topics = (analysis or {}).get("topics") or []
+        for topic in {t for t in topics if isinstance(t, str) and t}:
+            topic_counts[topic] += 1
+        for zone, values in (("data", data), ("source_meta", source_meta)):
+            for key, value in (values or {}).items():
+                if value not in (None, ""):
+                    meta_counts[(zone, key)] += 1
+
+    return FeedbackFacetsOut(
+        total=len(rows),
+        topics=[
+            TopicFacet(value=value, count=count)
+            for value, count in sorted(
+                topic_counts.items(), key=lambda item: (-item[1], item[0])
+            )
+        ],
+        metadata=[
+            MetadataFacet(zone=zone, key=key, count=count)  # type: ignore[arg-type]
+            for (zone, key), count in sorted(
+                meta_counts.items(), key=lambda item: (-item[1], item[0])
+            )[:60]
+        ],
     )
 
 
