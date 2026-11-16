@@ -42,6 +42,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { PageHeader } from "@/components/page-header";
+import { DangerRow, SettingsShell } from "@/components/settings/settings-shell";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useProduct } from "@/hooks/use-product";
 import {
@@ -52,7 +53,7 @@ import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 
 export default function WorkspaceSettingsPage() {
-  usePageTitle("Workspace settings");
+  usePageTitle("Cài đặt workspace");
   const router = useRouter();
   const { products, product, productId, setProductId, createProduct, loading } =
     useProduct();
@@ -139,10 +140,10 @@ export default function WorkspaceSettingsPage() {
 
   if (!loading && products.length === 0) {
     return (
-      <div className="flex flex-col gap-6">
+      <SettingsShell>
         <PageHeader
-          title="Workspace settings"
-          description="Danh tính product dùng chung toàn workspace."
+          title="Cài đặt workspace"
+          description="Tên, mô tả và dữ liệu của workspace dùng chung."
         />
         <Empty className="border">
           <EmptyHeader>
@@ -155,15 +156,15 @@ export default function WorkspaceSettingsPage() {
             <Link href="/onboarding">Tạo workspace đầu tiên</Link>
           </Button>
         </Empty>
-      </div>
+      </SettingsShell>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsShell>
       <PageHeader
-        title="Workspace settings"
-        description="Danh tính product dùng chung toàn workspace — đổi ở đây là đổi mọi màn hình."
+        title="Cài đặt workspace"
+        description="Đổi ở đây là đổi trên mọi màn hình của workspace."
         actions={
           product ? (
             <Button variant="outline" onClick={() => setCreateOpen(true)}>
@@ -209,7 +210,7 @@ export default function WorkspaceSettingsPage() {
                     placeholder="Sản phẩm này làm gì (tuỳ chọn)"
                   />
                   <FieldDescription>
-                    Trùng tên workspace đã có sẽ bị từ chối (409).
+                    Tên workspace không được trùng với workspace đã có.
                   </FieldDescription>
                 </Field>
               </FieldGroup>
@@ -241,8 +242,7 @@ export default function WorkspaceSettingsPage() {
             <CardHeader>
               <CardTitle>Chuyển workspace</CardTitle>
               <CardDescription>
-                Workspace đang mở là {product.name}. Danh sách chỉ gồm workspace
-                bạn owns.
+                Đang mở “{product.name}”. Bấm một workspace khác để chuyển.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-1">
@@ -292,7 +292,7 @@ export default function WorkspaceSettingsPage() {
             <CardContent className="flex flex-col gap-2 text-sm">
               <div className="flex items-center gap-3">
                 <span className="w-32 shrink-0 text-muted-foreground">
-                  Product ID
+                  Mã workspace
                 </span>
                 <code className="truncate font-mono text-xs">{product.id}</code>
               </div>
@@ -318,23 +318,28 @@ export default function WorkspaceSettingsPage() {
 
           <Card className="border-destructive/40">
             <CardHeader>
-              <CardTitle className="text-destructive">Danger zone</CardTitle>
+              <CardTitle className="text-destructive">Vùng nguy hiểm</CardTitle>
               <CardDescription>
-                Xoá workspace xoá cứng toàn bộ feedback, import, insight và
-                taxonomy của nó khỏi database — không có undo.
+                Thao tác ở đây không hoàn tác được.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setDeleteConfirmText("");
-                  setDeleteOpen(true);
-                }}
-              >
-                <Trash2 data-icon="inline-start" />
-                Xoá “{product.name}”…
-              </Button>
+              <DangerRow
+                title="Xoá workspace"
+                description={<>Xoá vĩnh viễn “{product.name}” cùng toàn bộ phản hồi, lô nhập, insight và bộ chủ đề của nó.</>}
+                action={
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setDeleteConfirmText("");
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 data-icon="inline-start" />
+                    Xoá workspace…
+                  </Button>
+                }
+              />
             </CardContent>
           </Card>
         </>
@@ -432,6 +437,6 @@ export default function WorkspaceSettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SettingsShell>
   );
 }

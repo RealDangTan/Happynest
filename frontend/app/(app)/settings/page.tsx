@@ -1,8 +1,6 @@
 "use client";
-import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
-  ChevronRight,
   Languages,
   Moon,
   ShieldCheck,
@@ -20,7 +18,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LangToggle } from "@/components/lang-toggle";
 import { PageHeader } from "@/components/page-header";
 import { useT } from "@/lib/i18n";
-import { UTILITY_SCREENS } from "@/lib/navigation";
+import { SettingsShell } from "@/components/settings/settings-shell";
 
 /** Hàng tuỳ chọn: icon + nhãn bên trái, control đẩy sang phải — cùng nhịp
  * với profile popover để hai chỗ nhìn là biết cùng một thiết lập. */
@@ -47,39 +45,9 @@ function PrefRow({
 export default function SettingsPage() {
   const { resolvedTheme, setTheme } = useTheme();
   const t = useT();
-  const shortcuts = UTILITY_SCREENS.filter((s) => s.href !== "/settings");
-
   return (
-    <div className="@container flex flex-col gap-6">
+    <SettingsShell>
       <PageHeader title={t.settings.title} description={t.settings.description} />
-
-      <div className="grid gap-3 @2xl:grid-cols-2">
-        {shortcuts.map((s) => (
-          <Link
-            key={s.href}
-            href={s.href}
-            className="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Card
-              size="sm"
-              className="h-full justify-center transition-colors group-hover:bg-accent/50"
-            >
-              <CardContent className="flex-row items-center gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted">
-                  <s.icon className="size-4 text-muted-foreground" aria-hidden />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{t.nav.utility[s.key].label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.nav.utility[s.key].description}
-                  </p>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
 
       <Card>
         <CardHeader>
@@ -137,6 +105,6 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </SettingsShell>
   );
 }

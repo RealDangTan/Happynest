@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Info, Send } from "lucide-react";
+import Link from "next/link";
+import { Bug, Info, LifeBuoy, Lightbulb, Send, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,6 +31,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/page-header";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { useMe } from "@/hooks/use-me";
 
 const TOPICS = [
@@ -79,13 +81,16 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsShell>
       <PageHeader
-        title="Contact"
-        description="Gửi phản hồi cho nhóm phát triển Happynest — bug, đề xuất hay câu hỏi đều tiếp."
+        title="Liên hệ"
+        description="Gửi lỗi, đề xuất hay câu hỏi cho nhóm phát triển Happynest."
       />
 
-      <Card className="max-w-xl">
+      {/* Form cạnh cột thông tin (mẫu Aave contact): người gửi biết chọn chủ
+          đề nào và điều gì xảy ra sau khi gửi. */}
+      <div className="grid min-w-0 items-start gap-6 md:grid-cols-[minmax(0,1fr)_16rem]">
+      <Card>
         <CardHeader>
           <CardTitle>Form liên hệ</CardTitle>
           <CardDescription>
@@ -163,6 +168,28 @@ export default function ContactPage() {
           </p>
         </CardFooter>
       </Card>
-    </div>
+
+      <aside className="flex flex-col gap-4 text-sm">
+        <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+          <h2 className="font-medium">Nên chọn chủ đề nào?</h2>
+          <ul className="flex flex-col gap-2.5 text-muted-foreground">
+            <li className="flex gap-2"><Bug className="mt-0.5 size-4 shrink-0 text-coral-ink" />Báo lỗi: ghi màn hình, thao tác vừa làm và điều bạn thấy.</li>
+            <li className="flex gap-2"><Lightbulb className="mt-0.5 size-4 shrink-0 text-sun-ink" />Đề xuất: việc bạn muốn làm được nhưng chưa làm được.</li>
+            <li className="flex gap-2"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-leaf-ink" />Quyền riêng tư: câu hỏi về dữ liệu và cách ẩn thông tin cá nhân.</li>
+          </ul>
+        </section>
+        <section className="flex flex-col gap-2 rounded-xl border bg-secondary/40 p-4">
+          <h2 className="flex items-center gap-2 font-medium">
+            <LifeBuoy className="size-4 text-signal" />
+            Cần câu trả lời ngay?
+          </h2>
+          <p className="text-muted-foreground">Phần lớn câu hỏi về nhập file, phân loại và duyệt kết luận đã có trong Trợ giúp.</p>
+          <Button asChild size="sm" variant="outline" className="self-start">
+            <Link href="/help">Mở Trợ giúp</Link>
+          </Button>
+        </section>
+      </aside>
+      </div>
+    </SettingsShell>
   );
 }

@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 }
 
 export default function BlogPage() {
-  return <PublicPageShell page={page} />
+  return <PublicPageShell page={page} layout="notes" />
 }

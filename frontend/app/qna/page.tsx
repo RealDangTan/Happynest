@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 }
 
 export default function QnaPage() {
-  return <PublicPageShell page={page} />
+  return <PublicPageShell page={page} layout="faq" />
 }

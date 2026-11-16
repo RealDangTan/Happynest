@@ -1,16 +1,8 @@
 "use client"
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
 import { CircleAlert, TriangleAlert } from "lucide-react"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Field,
   FieldDescription,
@@ -19,19 +11,12 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 import { ApiError } from "@/lib/api"
 import { mapAuthError, type AuthAlert } from "@/lib/auth-errors"
-import {
-  GOOGLE_LOGIN_URL,
-  googleErrorAlert,
-  useGoogleErrorParam,
-} from "@/lib/google-auth"
-import { GoogleIcon } from "@/components/google-icon"
-import { AuthVideoBackground } from "@/components/auth-video-background"
-import { LangToggle } from "@/components/lang-toggle"
+import { googleErrorAlert, useGoogleErrorParam } from "@/lib/google-auth"
+import { AuthShell, AuthSwitchLink, PasswordInput } from "@/components/auth-shell"
 import { usePageTitle } from "@/hooks/use-page-title"
 import { useAppLang, useT } from "@/lib/i18n"
 
@@ -109,111 +94,66 @@ export default function RegisterPage() {
       ? mapAuthError(register.error, lang)
       : googleErrorAlert(googleError, lang)
 
+  const passwordInvalid = formError != null || Boolean(register.error)
+
   return (
-    <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
-      <AuthVideoBackground />
-      <div className="fixed right-4 top-4 z-10">
-        <LangToggle className="rounded-lg border bg-background/70 p-1 backdrop-blur" />
-      </div>
-      <Card className="dark w-full max-w-sm bg-black/90 backdrop-blur-md">
-        <CardHeader className="justify-items-center gap-1 text-center">
-          <div className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/Logo-white.png" alt="" className="size-6" />
-            <CardTitle>Happynest</CardTitle>
-          </div>
-          <CardDescription>{t.auth.registerTitle}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Google OAuth cũng là đăng ký: account chưa có → tạo mới,
-              email đã tồn tại → backend tự link/reuse. */}
-          <Button
-            variant="ghost"
-            type="button"
-            className="w-full"
-            onClick={() => {
-              window.location.href = GOOGLE_LOGIN_URL
-            }}
-          >
-            <GoogleIcon data-icon="inline-start" />
-            {t.auth.google}
-          </Button>
-          <div className="my-4 flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">
-              {t.auth.orEmail}
-            </span>
-            <Separator className="flex-1" />
-          </div>
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <FieldGroup>
-              <Field data-invalid={registerAlert ? true : undefined}>
-                <FieldLabel htmlFor="email">{t.auth.email}</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  aria-invalid={registerAlert ? true : undefined}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </Field>
-              <Field data-invalid={registerAlert ? true : undefined}>
-                <FieldLabel htmlFor="password">{t.auth.password}</FieldLabel>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  aria-invalid={registerAlert ? true : undefined}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <FieldDescription>{t.auth.passwordHint}</FieldDescription>
-              </Field>
-              <Field data-invalid={registerAlert ? true : undefined}>
-                <FieldLabel htmlFor="confirm-password">
-                  {t.auth.confirmPassword}
-                </FieldLabel>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  aria-invalid={registerAlert ? true : undefined}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </Field>
-            </FieldGroup>
-            {registerAlert ? (
-              <Alert variant={registerAlert.variant}>
-                {registerAlert.variant === "destructive" ? (
-                  <CircleAlert />
-                ) : (
-                  <TriangleAlert />
-                )}
-                <AlertTitle>{registerAlert.title}</AlertTitle>
-                <AlertDescription>{registerAlert.description}</AlertDescription>
-              </Alert>
-            ) : null}
-            <Button type="submit" disabled={register.isPending}>
-              {register.isPending ? <Spinner data-icon="inline-start" /> : null}
-              {t.auth.signUp}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            {t.auth.haveAccount}{" "}
-            <Link
-              href="/login"
-              className="text-foreground underline underline-offset-4"
-            >
-              {t.auth.signIn}
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </main>
+    // Google OAuth cũng là đăng ký: account chưa có → tạo mới, email đã tồn
+    // tại → backend tự link/reuse.
+    <AuthShell
+      title={t.auth.registerTitle}
+      description={lang === "vi" ? "Miễn phí. Bạn tạo workspace ở bước tiếp theo." : "Free. You create your workspace next."}
+      googleLabel={t.auth.google}
+      dividerLabel={t.auth.orEmail}
+      footer={<AuthSwitchLink prompt={t.auth.haveAccount} href="/login" label={t.auth.signIn} />}
+    >
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <FieldGroup>
+          <Field data-invalid={register.error ? true : undefined}>
+            <FieldLabel htmlFor="email">{t.auth.email}</FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              aria-invalid={register.error ? true : undefined}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field data-invalid={passwordInvalid ? true : undefined}>
+            <FieldLabel htmlFor="password">{t.auth.password}</FieldLabel>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              invalid={formError === "password_too_short"}
+              value={password}
+              onChange={setPassword}
+            />
+            <FieldDescription>{t.auth.passwordHint}</FieldDescription>
+          </Field>
+          <Field data-invalid={formError === "password_mismatch" ? true : undefined}>
+            <FieldLabel htmlFor="confirm-password">{t.auth.confirmPassword}</FieldLabel>
+            <PasswordInput
+              id="confirm-password"
+              autoComplete="new-password"
+              invalid={formError === "password_mismatch"}
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+            />
+          </Field>
+        </FieldGroup>
+        {registerAlert ? (
+          <Alert variant={registerAlert.variant}>
+            {registerAlert.variant === "destructive" ? <CircleAlert /> : <TriangleAlert />}
+            <AlertTitle>{registerAlert.title}</AlertTitle>
+            <AlertDescription>{registerAlert.description}</AlertDescription>
+          </Alert>
+        ) : null}
+        <Button type="submit" className="h-10" disabled={register.isPending}>
+          {register.isPending ? <Spinner data-icon="inline-start" /> : null}
+          {t.auth.signUp}
+        </Button>
+      </form>
+    </AuthShell>
   )
 }

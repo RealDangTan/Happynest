@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { PageHeader } from "@/components/page-header";
+import { DangerRow, SettingsShell } from "@/components/settings/settings-shell";
 import { getDisplayUsername, useMe, useUpdateUsername } from "@/hooks/use-me";
 import { apiFetch } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -65,8 +66,8 @@ export default function ProfilePage() {
 
   if (me.isError || !me.data) {
     return (
-      <div className="flex flex-col gap-6">
-        <PageHeader title="Profile" />
+      <SettingsShell>
+        <PageHeader title="Hồ sơ" />
         <Alert variant="destructive">
           <AlertTitle>Không tải được thông tin tài khoản</AlertTitle>
           <AlertDescription>
@@ -75,7 +76,7 @@ export default function ProfilePage() {
               : "Phiên đăng nhập có thể đã hết."}
           </AlertDescription>
         </Alert>
-      </div>
+      </SettingsShell>
     );
   }
 
@@ -85,10 +86,10 @@ export default function ProfilePage() {
   const usernameChanged = username.trim() !== (me.data.username ?? "");
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsShell>
       <PageHeader
-        title="Profile"
-        description="Thông tin tài khoản và phiên đăng nhập của bạn trên Happynest."
+        title="Hồ sơ"
+        description="Tên hiển thị, email và phiên đăng nhập của bạn."
       />
 
       {/* Dải nhận diện */}
@@ -104,9 +105,7 @@ export default function ProfilePage() {
             <p className="wrap-anywhere text-sm text-muted-foreground">
               {me.data.email}
             </p>
-            <code className="mt-1 block wrap-anywhere font-mono text-xs text-muted-foreground">
-              id {me.data.id}
-            </code>
+
           </div>
         </CardContent>
       </Card>
@@ -183,32 +182,33 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>Phiên đăng nhập</CardTitle>
-          <CardDescription>
-            Phiếu đăng nhập (JWT) nằm trong cookie httpOnly. Hết phiên, mọi lời
-            gọi API tự đưa bạn về trang đăng nhập.
+          <CardDescription className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-lichen" />
+            Hết phiên, hệ thống tự đưa bạn về trang đăng nhập. Đăng xuất chỉ xoá phiên trên trình duyệt này — dữ liệu workspace vẫn giữ nguyên.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p className="flex items-start gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-lichen" />
-            Đăng xuất trên trình duyệt này chỉ xoá cookie — dữ liệu workspace
-            vẫn nguyên trên server.
-          </p>
-          <Button
-            variant="outline"
-            className="self-start text-destructive hover:text-destructive"
-            disabled={logout.isPending}
-            onClick={() => logout.mutate()}
-          >
-            {logout.isPending ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <LogOut data-icon="inline-start" />
-            )}
-            Sign out
-          </Button>
+        <CardContent>
+          <DangerRow
+            title="Đăng xuất"
+            description="Kết thúc phiên trên trình duyệt này."
+            action={
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                disabled={logout.isPending}
+                onClick={() => logout.mutate()}
+              >
+                {logout.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <LogOut data-icon="inline-start" />
+                )}
+                Đăng xuất
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
-    </div>
+    </SettingsShell>
   );
 }

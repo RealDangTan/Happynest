@@ -31,7 +31,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
-import { STAGE_TONE, TONE_CLASSES } from "@/lib/navigation";
+import { STAGES, STAGE_TONE, TONE_CLASSES } from "@/lib/navigation";
 
 /** Ba chặng của pipeline — mỗi chặng mang màu cánh logo như trên sidebar;
  * tạo workspace là bước đầu của chặng Lắng nghe. */
@@ -66,6 +66,54 @@ function StageStrip({ active }: { active: number }) {
   );
 }
 
+/** Xem trước workspace sẽ trông thế nào (mẫu Attio "Create workspace"): tên
+ * gõ tới đâu hiện tới đó trên một sidebar thu nhỏ với ba chặng thật của app. */
+function WorkspacePreview({ name, description }: { name: string; description: string }) {
+  const t = useT();
+  const label = name.trim() || "Workspace của bạn";
+  return (
+    <div aria-hidden className="pointer-events-none flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm select-none">
+      <div className="flex items-center gap-2 border-b px-3 py-2.5">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-leaf-soft font-heading text-sm text-leaf-ink">
+          {label.charAt(0).toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={cn("block truncate text-sm font-medium", !name.trim() && "text-muted-foreground")}>{label}</span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {description.trim() || "Mô tả ngắn sẽ hiện ở đây"}
+          </span>
+        </span>
+      </div>
+      <div className="flex flex-1 gap-0">
+        <nav className="flex w-40 shrink-0 flex-col gap-3 border-r p-3">
+          {STAGES.map((stage) => (
+            <div key={stage.group} className="flex flex-col gap-1">
+              <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                <span className={cn("size-1.5 rounded-full", TONE_CLASSES[STAGE_TONE[stage.group]].dot)} />
+                {t.nav.groups[stage.group]}
+              </span>
+              {stage.items.map((item) => (
+                <span key={item.href} className="flex items-center gap-1.5 truncate rounded px-1 py-0.5 text-[11px] text-foreground/80">
+                  <item.icon className="size-3 shrink-0 text-muted-foreground" />
+                  {t.nav.items[item.key]}
+                </span>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="flex flex-1 flex-col gap-2 p-3">
+          <span className="h-3 w-2/3 rounded bg-muted" />
+          <span className="h-2 w-1/2 rounded bg-muted/70" />
+          <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-3 text-center">
+            <FileSpreadsheet className="size-5 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground">Bước kế tiếp: nhập file phản hồi đầu tiên</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Màn onboarding khi tạo workspace đầu tiên — MỘT trang duy nhất: xong bước
  * tạo là chuyển sang trạng thái "next steps" ngay tại chỗ, không wizard nhiều
@@ -73,7 +121,7 @@ function StageStrip({ active }: { active: number }) {
  * xoá hết workspace từ Workspace settings.
  */
 export default function OnboardingPage() {
-  usePageTitle("Onboarding");
+  usePageTitle("Tạo workspace");
   const { products, loading, createProduct } = useProduct();
   const router = useRouter();
   const [justCreated, setJustCreated] = useState<string | null>(null);
@@ -133,8 +181,10 @@ export default function OnboardingPage() {
     </FieldGroup>
   );
 
+  const creating = !loading && !(done && !showForm);
+
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-lg flex-col justify-center gap-6 py-6">
+    <div className={cn("mx-auto flex min-h-[70vh] w-full flex-col justify-center gap-6 py-6", creating ? "max-w-4xl" : "max-w-lg")}>
       <header className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <BrandMark />
@@ -198,6 +248,7 @@ export default function OnboardingPage() {
           </CardContent>
         </Card>
       ) : (
+        <div className="grid items-stretch gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <Card>
           <CardHeader>
             <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -212,19 +263,27 @@ export default function OnboardingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void handleCreate()
+              }}
+            >
             {form}
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                onClick={() => void handleCreate()}
+                type="submit"
                 disabled={name.trim().length < 2 || pending}
               >
                 {pending ? <Spinner data-icon="inline-start" /> : null}
                 Tạo workspace
               </Button>
               <Button variant="ghost" asChild>
-                <Link href="/importer">Để sau — vào thẳng Importer</Link>
+                <Link href="/importer">Để sau</Link>
               </Button>
             </div>
+            </form>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <LifeBuoy className="size-3.5 shrink-0" />
               Chưa rõ bắt đầu từ đâu?{" "}
@@ -234,6 +293,10 @@ export default function OnboardingPage() {
             </p>
           </CardContent>
         </Card>
+        <div className="hidden min-h-80 md:block">
+          <WorkspacePreview name={name} description={description} />
+        </div>
+        </div>
       )}
     </div>
   );

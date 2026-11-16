@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 }
 
 export default function LegalPage() {
-  return <PublicPageShell page={page} />
+  return <PublicPageShell page={page} layout="guide" />
 }

@@ -29,3 +29,8 @@ Tài liệu triển khai đã đồng bộ ngày 2026-10-14; coding agent bắt 
 | Plan | Trạng thái | Phạm vi |
 |---|---|---|
 | [39-inline-investigation-review.md](39-inline-investigation-review.md) | Hoàn tất | HITL + ACT review trong màn điều tra/chat, giữ phiên, trace gọn, chặn vòng lặp và bằng chứng sai phạm vi/rỗng; sentiment icon. FE 71 tests + BE 48 focused tests pass; xem handoff 2026-10-24. |
+
+## Kế hoạch 2026-11-16
+| Plan | Trạng thái | Phạm vi |
+|---|---|---|
+| [42-mobbin-layout-refresh.md](42-mobbin-layout-refresh.md) | Đợt 1–3 xong, chờ owner kiểm tra | Bố cục theo tham chiếu Mobbin: Điều tra (duyệt cạnh kết luận, ngăn Nguồn/Hoạt động, phản hồi gốc theo chủ đề), Báo cáo (kết luận + nguồn lên đầu), Ma trận (toggle Bảng/Ma trận, hàng chờ cạnh ma trận, xem trước ô). |

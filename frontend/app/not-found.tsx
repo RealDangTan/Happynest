@@ -56,9 +56,20 @@ export default function NotFound() {
             The page you&apos;re after drifted out of the canopy. The signal
             dots are already searching for it.
           </p>
-          <Link href="/" className="hn-btn mt-8 inline-flex">
-            Back to the nest
-          </Link>
+          {/* Một nút quay về rõ ràng + vài lối đi thường dùng (mẫu Coinbase 404). */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/" className="hn-btn inline-flex">
+              Back to the nest
+            </Link>
+            <Link href="/importer" className="hn-btn-ghost inline-flex">
+              Open my workspace
+            </Link>
+          </div>
+          <nav aria-label="Helpful links" className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-[var(--hn-stone)]">
+            <Link href="/docs" className="underline-offset-4 hover:text-[var(--hn-ivory)] hover:underline">Docs</Link>
+            <Link href="/qna" className="underline-offset-4 hover:text-[var(--hn-ivory)] hover:underline">Q&amp;A</Link>
+            <Link href="/help" className="underline-offset-4 hover:text-[var(--hn-ivory)] hover:underline">Help center</Link>
+          </nav>
         </div>
       </main>
     </div>

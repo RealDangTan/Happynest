@@ -1,6 +1,7 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, LifeBuoy } from "lucide-react";
+import { ChevronDown, ChevronRight, LifeBuoy, Mail, Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,12 +11,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
+import { SettingsShell } from "@/components/settings/settings-shell";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { STAGES } from "@/lib/navigation";
 import { useT } from "@/lib/i18n";
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a, open }: { q: string; a: string; open?: boolean }) {
   return (
-    <details className="group rounded-lg border bg-card open:bg-secondary/40">
+    <details open={open} className="group rounded-lg border bg-card open:bg-secondary/40">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
         <span className="min-w-0 flex-1">{q}</span>
         <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
@@ -29,18 +32,61 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function HelpPage() {
   const t = useT();
+  // Tìm theo chủ đề (mẫu Slack Help): một ô lọc cả câu hỏi thường gặp lẫn màn hình.
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const faqs = t.help.faqs.filter((f) => !q || `${f.q} ${f.a}`.toLowerCase().includes(q));
+  const stages = STAGES.map((stage) => ({
+    ...stage,
+    items: stage.items.filter(
+      (item) =>
+        !q ||
+        t.nav.items[item.key].toLowerCase().includes(q) ||
+        t.help.stageDescriptions[stage.group].toLowerCase().includes(q),
+    ),
+  })).filter((stage) => stage.items.length > 0);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title={t.help.title} description={t.help.description} />
+    <SettingsShell>
+      <PageHeader
+        title={t.help.title}
+        description={t.help.description}
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/contact">
+              <Mail data-icon="inline-start" />
+              {t.help.openContactForm}
+            </Link>
+          </Button>
+        }
+      />
+
+      <InputGroup className="h-11">
+        <InputGroupAddon>
+          <Search />
+        </InputGroupAddon>
+        <InputGroupInput
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Tìm hướng dẫn: nhập file, phân loại, duyệt kết luận…"
+          aria-label="Tìm trong trợ giúp"
+        />
+      </InputGroup>
+
+      {q && faqs.length === 0 && stages.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Không có hướng dẫn khớp “{query.trim()}”. Thử từ khác hoặc gửi câu hỏi qua form liên hệ.
+        </p>
+      ) : null}
 
       {/* Ba chặng của pipeline */}
       <div className="grid gap-4 md:grid-cols-3">
-        {STAGES.map((stage, i) => (
+        {stages.map((stage) => (
           <Card key={stage.group} className="gap-3">
             <CardHeader>
               <p className="font-mono text-[11px] uppercase tracking-wider text-signal">
-                {String(i + 1).padStart(2, "0")} · {t.nav.groups[stage.group]}
+                {String(STAGES.findIndex((s) => s.group === stage.group) + 1).padStart(2, "0")} · {t.nav.groups[stage.group]}
               </p>
               <CardDescription>
                 {t.help.stageDescriptions[stage.group]}
@@ -70,8 +116,8 @@ export default function HelpPage() {
             <CardDescription>{t.help.faqDescription}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {t.help.faqs.map((f) => (
-              <FaqItem key={f.q} q={f.q} a={f.a} />
+            {faqs.map((f) => (
+              <FaqItem key={f.q} q={f.q} a={f.a} open={Boolean(q)} />
             ))}
           </CardContent>
         </Card>
@@ -122,6 +168,6 @@ export default function HelpPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </SettingsShell>
   );
 }
