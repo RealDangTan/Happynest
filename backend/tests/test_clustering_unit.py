@@ -106,6 +106,30 @@ def test_branch_stale_cluster() -> None:
     assert t["is_emerging"] is False
 
 
+def test_normalized_growth_not_spike_when_total_grows_too() -> None:
+    """Cụm 4→11 (×2,75 thô) nhưng tổng product 40→120 (×3) → tỷ trọng giảm,
+    không còn là tăng đột biến (khóa luận Mục 2.4.2.3)."""
+    members = [_member(45) for _ in range(4)] + [_member(5) for _ in range(11)]
+    t = compute_trend(members, NOW, SETTINGS_STUB, totals=(120, 40))
+    assert t["current_count"] == 11
+    assert t["previous_count"] == 4
+    assert t["growth_ratio"] == 0.92  # (11/120)/(4/40)
+    assert t["is_spike"] is False
+
+
+def test_normalized_growth_spike_when_share_doubles() -> None:
+    """Tổng product đứng yên 50→50, cụm 4→11 → tỷ trọng ×2,75 → spike."""
+    members = [_member(45) for _ in range(4)] + [_member(5) for _ in range(11)]
+    t = compute_trend(members, NOW, SETTINGS_STUB, totals=(50, 50))
+    assert t["growth_ratio"] == 2.75
+    assert t["is_spike"] is True
+
+
+def test_window_counts_matches_trend_windows() -> None:
+    times = [m.occurred_at for m in [_member(5), _member(29), _member(31), _member(59), _member(61)]]
+    assert clustering.window_counts(times, NOW, SETTINGS_STUB) == (2, 2)
+
+
 # ------------------------------------------------------- Task 3 — engine thuần
 
 _DIM = 8

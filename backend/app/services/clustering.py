@@ -228,6 +228,9 @@ def run_clustering(
 
     assigned = sum(len(g.members) for g in groups)
     unassigned = len(feedbacks) - assigned
+    # Mẫu số tỷ trọng: MỌI phản hồi của product trong từng kỳ (kể cả chưa có
+    # embedding) — cụm được so với tổng lượng phản hồi cùng kỳ.
+    totals = window_counts([r.occurred_at for r in rows], now, settings)
 
     total_members = 0
     try:
@@ -245,7 +248,7 @@ def run_clustering(
             cluster = Cluster(
                 name=group.name,
                 summary=group.summary,
-                **compute_trend(group.members, now, settings),
+                **compute_trend(group.members, now, settings, totals),
             )
             db.add(cluster)
             db.flush()                    # cần cluster.id trước khi gán member
@@ -299,34 +302,53 @@ def _reconcile_old_clusters(
             db.execute(delete(Cluster).where(Cluster.id == cluster_id))
 
 
+def window_counts(
+    occurred: Sequence[datetime], now: datetime, settings: Settings
+) -> tuple[int, int]:
+    """Đếm (kỳ hiện tại, kỳ trước) theo cùng hai cửa sổ của `compute_trend`."""
+    window = timedelta(days=settings.CLUSTER_WINDOW_DAYS)
+    current_cut = now - window          # [now−W, now]
+    previous_cut = now - 2 * window     # [now−2W, now−W)
+    current = sum(1 for t in occurred if current_cut <= t <= now)
+    previous = sum(1 for t in occurred if previous_cut <= t < current_cut)
+    return current, previous
+
+
 def compute_trend(
-    members: Sequence, now: datetime, settings: Settings
+    members: Sequence,
+    now: datetime,
+    settings: Settings,
+    totals: tuple[int, int] | None = None,
 ) -> dict:
     """Tính trend fields cho 1 cụm từ members (duck-typed: occurred_at,
     ai_analysis.severity). Công thức chuẩn plan 14 §3 Task 2 — xem header
     module trước khi sửa.
-    """
-    window = timedelta(days=settings.CLUSTER_WINDOW_DAYS)
-    current_cut = now - window          # [now−W, now]
-    previous_cut = now - 2 * window     # [now−2W, now−W)
 
-    in_current = [m for m in members if current_cut <= m.occurred_at <= now]
-    in_previous = [
-        m for m in members if previous_cut <= m.occurred_at < current_cut
-    ]
-    current = len(in_current)
-    previous = len(in_previous)
+    `totals` = (tổng phản hồi của product kỳ hiện tại, kỳ trước). Khi có,
+    `growth_ratio` so sánh TỶ TRỌNG của cụm trong tổng phản hồi mỗi kỳ thay vì
+    số đếm thô (khóa luận Mục 2.4.2.3, owner 2026-11-19): tổng phản hồi tăng
+    gấp đôi mà cụm cũng gấp đôi thì không phải tăng đột biến. Không có
+    `totals` (cụm trộn cũ khi reconcile) → giữ cách tính số đếm thô.
+    """
+    current, previous = window_counts([m.occurred_at for m in members], now, settings)
+
+    if totals is not None and previous > 0 and totals[0] > 0 and totals[1] > 0:
+        ratio = (current / totals[0]) / (previous / totals[1])
+    elif previous > 0:
+        ratio = current / previous
+    else:
+        ratio = None
 
     # growth_ratio: chặn inf ra JSON — previous==0 → trần 9.99 khi có current
-    if previous > 0:
-        growth_ratio = round(current / previous, 2)
+    if ratio is not None:
+        growth_ratio = round(min(ratio, 9.99), 2)
     else:
         growth_ratio = 9.99 if current > 0 else 0.0
 
     is_spike = (
-        previous > 0
+        ratio is not None
         and current >= settings.CLUSTER_SPIKE_MIN_CURRENT
-        and current / previous >= settings.CLUSTER_SPIKE_RATIO
+        and ratio >= settings.CLUSTER_SPIKE_RATIO
     )
     is_emerging = previous == 0 and current >= settings.CLUSTER_EMERGING_MIN
 
