@@ -633,7 +633,7 @@ export function StepMapping({
 
       <Card className="py-0">
         <CardContent className="overflow-x-auto p-0">
-          <Table className="min-w-[48rem] table-fixed">
+          <Table className="min-w-[40rem] table-fixed">
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[30%]">{t.colCsv}</TableHead>

@@ -197,12 +197,18 @@ function Stakeholders({ initialReportId }: { initialReportId: string | null }) {
 
   const departmentCounts = useMemo(() => {
     const counts = new Map<string, number>()
-    for (const a of allItems) {
+    // Đếm theo bộ lọc trạng thái đang bật để số trên chip khớp danh sách bên dưới.
+    const inStatus = filterStakeholderActions(allItems, {
+      department: "all",
+      status: statusFilter,
+      selectedId,
+    })
+    for (const a of inStatus) {
       const key = toDepartment(a.function)
       counts.set(key, (counts.get(key) ?? 0) + 1)
     }
     return counts
-  }, [allItems])
+  }, [allItems, statusFilter, selectedId])
 
   // Empty state phải nói đúng lý do: kết luận chưa có hành động nào, hay có
   // nhưng đang bị bộ lọc trạng thái/phòng ban ẩn đi (HN-010).

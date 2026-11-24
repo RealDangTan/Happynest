@@ -32,8 +32,9 @@ export type FacetedFilterOption = {
   value: string
   label: string
   /** Số dòng mang giá trị này trong PHẠM VI đang xem (từ server). Bỏ trống thì
-   * dùng facet của trang hiện tại, vốn không đủ khi phân trang phía server. */
-  count?: number
+   * dùng facet của trang hiện tại, vốn không đủ khi phân trang phía server.
+   * `null` = không hiện số (server chưa có facet cho bộ lọc này). */
+  count?: number | null
 }
 
 export type FacetedFilterConfig = {

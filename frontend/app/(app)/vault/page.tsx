@@ -838,7 +838,8 @@ function Vault({
     // cho bảng vừa khít khung. Bật lại ở menu "Chọn cột hiển thị".
     const base: ColumnVisibilityState = { source: false }
     for (const m of metadataFacets ?? []) base[metaColumnId(m.zone, m.key)] = false
-    return { ...base, ...storedVisibility }
+    // "sentiment" chỉ là cột để bộ lọc Cảm xúc bám vào, không hiển thị.
+    return { ...base, ...storedVisibility, sentiment: false }
   }, [metadataFacets, storedVisibility])
 
   const filters = {
@@ -1223,6 +1224,15 @@ function Vault({
         },
       },
       {
+        id: "sentiment",
+        // Cột ẩn chỉ để bộ lọc "Sentiment" ở toolbar có chỗ bám; lọc chạy ở server.
+        accessorFn: (f: Feedback) => f.ai_analysis?.sentiment ?? "",
+        enableSorting: false,
+        enableHiding: false,
+        meta: { label: "Cảm xúc" },
+        cell: () => null,
+      },
+      {
         id: "topics",
         // accessorFn để cột lọc được (bộ lọc "Chủ đề" ở toolbar); lọc chạy ở server.
         accessorFn: (f: Feedback) => f.ai_analysis?.topics ?? [],
@@ -1395,12 +1405,12 @@ function Vault({
             filters={[
               {
                 columnId: "sentiment",
-                title: "Sentiment",
+                title: "Cảm xúc",
                 options: [
-                  { value: "negative", label: "Negative" },
-                  { value: "neutral", label: "Neutral" },
-                  { value: "positive", label: "Positive" },
-                  { value: "mixed", label: "Mixed" },
+                  { value: "negative", label: "Tiêu cực", count: null },
+                  { value: "neutral", label: "Trung lập", count: null },
+                  { value: "positive", label: "Tích cực", count: null },
+                  { value: "mixed", label: "Hỗn hợp", count: null },
                 ],
               },
               {
@@ -1725,13 +1735,13 @@ function Vault({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete feedback?</AlertDialogTitle>
+            <AlertDialogTitle>Xoá phản hồi này?</AlertDialogTitle>
             <AlertDialogDescription>
               Bản ghi sẽ bị xoá vĩnh viễn khỏi database (không thể hoàn tác).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogCancel>Giữ lại</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               disabled={deleteFeedback.isPending}
@@ -1752,7 +1762,7 @@ function Vault({
                 })
               }}
             >
-              Delete permanently
+              Xoá vĩnh viễn
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1763,7 +1773,7 @@ function Vault({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete {selected.size} feedback đã chọn?
+              Xoá {selected.size} phản hồi đã chọn?
             </AlertDialogTitle>
             <AlertDialogDescription>
               Tất cả bản ghi được chọn sẽ bị xoá vĩnh viễn khỏi database (không
@@ -1771,7 +1781,7 @@ function Vault({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep them</AlertDialogCancel>
+            <AlertDialogCancel>Giữ lại</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               disabled={bulkDelete.isPending}
@@ -1790,7 +1800,7 @@ function Vault({
                 })
               }}
             >
-              Delete permanently
+              Xoá vĩnh viễn
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1804,10 +1814,10 @@ function Vault({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete import{" "}
+              Xoá lô nhập{" "}
               {confirmImport?.original_filename ??
                 confirmImport?.id.slice(0, 8) ??
-                ""}{" "}
+                ""}
               ?
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -1816,7 +1826,7 @@ function Vault({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogCancel>Giữ lại</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               disabled={deleteImport.isPending}
@@ -1837,7 +1847,7 @@ function Vault({
                 })
               }}
             >
-              Delete permanently
+              Xoá vĩnh viễn
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

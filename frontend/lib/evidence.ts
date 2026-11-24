@@ -74,7 +74,8 @@ export type EvidenceView = {
   summary?: string;
   facts: { label: string; value: string }[];
   bars: { label: string; count: number; share: number }[];
-  quotes: { text: string; meta?: string }[];
+  /** `feedbackId` có khi công cụ trả mã phản hồi hợp lệ → giao diện mở được phản hồi gốc. */
+  quotes: { text: string; meta?: string; feedbackId?: string }[];
   /** Kết quả bị rút gọn khi lưu — chỉ hiển thị phần đọc được. */
   partial: boolean;
   empty: boolean;
@@ -242,6 +243,11 @@ const valueLabel = (v: unknown) => {
 const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+/** Chỉ nhận mã phản hồi đầy đủ (JSON bị cắt cụt có thể để lại mã dở dang). */
+const feedbackIdOf = (v: unknown) =>
+  typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+    ? v.toLowerCase()
+    : undefined;
 
 function toBars(rows: { label: string; count: number }[]) {
   const total = rows.reduce((sum, r) => sum + r.count, 0) || 1;
@@ -352,6 +358,7 @@ function describeTool(tool: string, data: Record<string, unknown>, view: Evidenc
         .map((r) => ({
           text: clean(r.snippet ?? r.text),
           meta: r.source ? `Nguồn: ${clean(r.source)}` : undefined,
+          feedbackId: feedbackIdOf(r.feedback_id ?? r.id),
         }))
         .filter((q) => q.text)
         .slice(0, 5);

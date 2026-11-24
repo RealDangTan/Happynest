@@ -5,7 +5,7 @@ import { getMarketingPage } from "@/lib/marketing-content"
 const page = getMarketingPage("/blog")
 
 export const metadata: Metadata = {
-  title: `Field notes — Happynest`,
+  title: `Field notes`,
   description: page.description,
 }
 

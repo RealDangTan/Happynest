@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { parseEvidence } from "@/lib/evidence"
 import { cn } from "@/lib/utils"
@@ -110,8 +111,18 @@ export function EvidenceCard({
               <p className={cn("leading-relaxed break-words", compact && "line-clamp-3")}>
                 “{quote.text}”
               </p>
-              {quote.meta ? (
-                <p className="text-[11px] text-muted-foreground">{quote.meta}</p>
+              {quote.meta || quote.feedbackId ? (
+                <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                  {quote.meta ? <span>{quote.meta}</span> : null}
+                  {quote.feedbackId ? (
+                    <Link
+                      href={`/feedbacks/${quote.feedbackId}`}
+                      className="font-medium text-signal underline-offset-2 hover:underline"
+                    >
+                      Mở phản hồi gốc
+                    </Link>
+                  ) : null}
+                </p>
               ) : null}
             </li>
           ))}

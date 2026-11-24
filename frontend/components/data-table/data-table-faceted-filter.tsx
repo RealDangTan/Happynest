@@ -82,7 +82,10 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
         ) : null}
         <div className="max-h-64 overflow-y-auto p-1">
           {visible.map((option) => {
-            const count = option.count ?? facets.get(option.value)
+            const count =
+              option.count === null
+                ? undefined
+                : (option.count ?? facets.get(option.value))
             return (
               <label
                 key={option.value}

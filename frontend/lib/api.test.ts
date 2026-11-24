@@ -7,6 +7,11 @@ describe("apiFetch", () => {
     await expect(apiFetch("/x")).resolves.toEqual({ ok: true });
   });
 
+  it("204 No Content (DELETE) → resolve undefined, không ném lỗi parse JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
+    await expect(apiFetch("/x", { method: "DELETE" })).resolves.toBeUndefined();
+  });
+
   it("401 detail chuỗi → message = detail", async () => {
     vi.stubGlobal(
       "fetch",

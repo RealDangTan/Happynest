@@ -5,7 +5,7 @@ import { silkscreen } from "./landing/fonts"
 import { BirdSvg, SignalField } from "./landing/motion"
 
 export const metadata: Metadata = {
-  title: "404 — Happynest",
+  title: "404",
 }
 
 export default function NotFound() {

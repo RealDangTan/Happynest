@@ -56,5 +56,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
     throw await ApiError.from(res);
   }
-  return (await res.json()) as T;
+  // 204/205 hoặc body rỗng (DELETE thành công) không có JSON để parse.
+  if (res.status === 204 || res.status === 205) return undefined as T;
+  const text = await res.text();
+  if (text === "") return undefined as T;
+  return JSON.parse(text) as T;
 }

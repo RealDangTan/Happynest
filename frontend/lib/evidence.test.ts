@@ -69,6 +69,15 @@ describe("parseEvidence", () => {
     expect(v.quotes).toEqual([{ text: "Face ID không hoạt động", meta: "Nguồn: app-store" }]);
   });
 
+  it("keeps a full feedback id on quotes so the source can be opened", () => {
+    const id = "3ee81be3-9fdd-4b8d-9545-a844e12eaf8e";
+    const v = parseEvidence(
+      `semantic_search: {"results": [{"id": "${id}", "source": "app", "snippet": "Đăng nhập lỗi"}, {"id": "3ee81be3-9fdd", "snippet": "Mã bị cắt"}]}`,
+    );
+    expect(v.quotes[0].feedbackId).toBe(id);
+    expect(v.quotes[1].feedbackId).toBeUndefined();
+  });
+
   it("says plainly when a step returned nothing", () => {
     const v = parseEvidence("compare_periods: {}");
     expect(v.empty).toBe(true);
