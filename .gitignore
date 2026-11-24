@@ -40,3 +40,11 @@ tmp/
 
 # PII: survey responses tho (email/ten that) — KHONG BAO GIO commit (Hard Rule 2)
 docs/thesis/*Form Responses*.csv
+
+# Dọn trước bản nộp final (2026-11-24)
+*.log
+*.stackdump
+backend/c.txt
+docs/.obsidian/
+# Skill/plugin bên thứ ba do IDE cài — giữ trên máy, không đưa lên repo
+plugins/

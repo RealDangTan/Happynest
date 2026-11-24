@@ -2,13 +2,13 @@
 
 Hợp đồng hiện hành: mọi tài khoản đăng nhập dùng chung workspace, dữ liệu và toàn bộ chức năng. Người dùng có thể nhập liệu, phân tích, duyệt, sửa và xoá; các thao tác vẫn tuân thủ trạng thái nghiệp vụ, xác nhận chi phí và xác nhận xoá.
 
-## Thứ tự đọc cho coding agent
+## Thứ tự đọc
 
-1. `AGENTS.md`: stack, phạm vi và quy tắc làm việc.
+1. [README gốc](../README.md): tổng quan, công nghệ và cách chạy trên máy.
 2. Tài liệu này: hành vi hiện hành và nguồn đối chiếu.
 3. [API checklist](api-checklist.md): endpoint, xác thực, schema và vị trí trên frontend.
-4. [Kiến trúc](architecture/README.md): luồng dữ liệu, state machine và mô hình dữ liệu.
-5. [Active board](plans/00-index.md) và [bàn giao](handoffs/README.md): công việc cần tiếp tục.
+4. [Decision log](decisions.md): các quyết định kỹ thuật và mọi lệch khỏi kế hoạch.
+5. [Active board](plans/00-index.md): công việc còn mở.
 
 Mã nguồn hiện tại và API checklist quyết định hợp đồng triển khai. Các bản kế hoạch, kết quả thử nghiệm và ảnh minh hoạ ghi nhận ngữ cảnh của chúng; không dùng chúng để bổ sung yêu cầu khác với hợp đồng hiện hành. Khi tài liệu lệch mã nguồn, kiểm tra hành vi thực tế và cập nhật tài liệu trước khi triển khai tiếp.
 

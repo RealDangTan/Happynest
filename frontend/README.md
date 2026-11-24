@@ -9,7 +9,7 @@ pnpm install   # yêu cầu Node ≥ 20.18.1 (đã chạy trên v24)
 pnpm dev       # http://localhost:3000
 ```
 
-Cần backend FastAPI chạy tại `http://127.0.0.1:8000` trước (xem `../AGENTS.md`):
+Cần backend FastAPI chạy tại `http://127.0.0.1:8000` trước (xem [README gốc](../README.md#chạy-trên-máy)):
 
 ```bash
 cd ../backend && uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
